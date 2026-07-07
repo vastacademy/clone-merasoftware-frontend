@@ -5,7 +5,7 @@ import uploadImage from '../helpers/uploadImage';
 import DisplayImage from './DisplayImage';
 import { MdDelete, MdAdd  } from "react-icons/md";
 import SummaryApi from '../common';
-import {toast} from 'react-toastify'
+import {toast} from 'sonner'
 import Select from 'react-select'
 import packageOptions, { CustomPackageOption, CustomPackageValue } from '../helpers/packageOptions';
 import perfectForOptions, { CustomPerfectForOption, CustomPerfectForValue } from '../helpers/perfectForOptions';

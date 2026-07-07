@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 import SummaryApi from '../common';
 import imageTobase64 from '../helpers/imageTobase64';
 import loginIcons from "../assest/signin.gif";

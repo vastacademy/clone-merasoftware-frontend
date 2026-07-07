@@ -1,7 +1,7 @@
 // App.js
 import './App.css';
-import 'react-toastify/dist/ReactToastify.css';
 import AppContent from './AppContent';
+import { Toaster } from 'sonner';
 import { createContext, useContext, useState, useEffect } from 'react';
 
 // Create a simple context for online status
@@ -36,6 +36,7 @@ function App() {
 
   return (
     <OnlineStatusContext.Provider value={{ isOnline, isInitialized }}>
+      <Toaster position="top-center" richColors />
       <AppContent />
     </OnlineStatusContext.Provider>
   );

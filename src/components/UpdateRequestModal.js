@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { X, Upload, Send, FileText, Image } from 'lucide-react';
 import SummaryApi from '../common';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 import TriangleMazeLoader from '../components/TriangleMazeLoader';
 import imageCompression from 'browser-image-compression'; // You'll need to install this package
 import SpinningLoader from './SpinningLoader';

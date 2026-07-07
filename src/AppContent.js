@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { Outlet } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { useOnlineStatus } from './App';
 import { setUserDetails, updateWalletBalance, logout } from './store/userSlice';
 import Header from './components/Header';
 import Footer from './components/Footer';
-import { ToastContainer } from 'react-toastify';
 import SummaryApi from './common';
 import Context from './context';
 import CookieManager from './utils/cookieManager';
@@ -26,35 +25,11 @@ const STORAGE_KEYS = {
 const AppContent = () => {
   const dispatch = useDispatch();
   const user = useSelector(state => state?.user?.user);
-  const navigate = useNavigate();
-  const location = useLocation();
   const { isOnline, isInitialized } = useOnlineStatus(); 
   const [cartProductCount, setCartProductCount] = useState(0);
   const [walletBalance, setWalletBalance] = useState(0);
   const [activeProject, setActiveProject] = useState(null);
   const [showQR, setShowQR] = useState(false);
-
-useEffect(() => {
-        // Agar user logged in hai aur home page par hai to role-based redirect karo
-        if (user?._id && location.pathname === '/') {
-            switch(user.role) {
-                case 'admin':
-                    navigate('/admin-panel/dashboard');
-                    break;
-                    case 'manager':
-                    navigate('/manager-panel/dashboard');
-                    break;
-                    case 'partner':
-                    navigate('/partner-panel/dashboard');
-                    break;
-                case 'developer':
-                    navigate('/developer-panel/developer-update-requests');
-                    break;
-                default:
-                    navigate('/home');
-            }
-        }
-    }, [user, location.pathname, navigate]);
 
   const handleLogout = async () => {
     try {
@@ -338,25 +313,18 @@ useEffect(() => {
         cartProductCount,
         fetchUserAddToCart,
         walletBalance,
-        setWalletBalance, // Add this to allow components to update wallet balance
+        setWalletBalance,
         fetchWalletBalance,
         handleLogout,
          activeProject,
-      updateActiveProject 
+      updateActiveProject
       }}>
-        {/* {console.log("Rendering Header with activeProject:", activeProject)} */}
-         <ScrollToTop />
-        <ToastContainer
-         position='top-center' 
-         autoClose={1000}
-         />
-        {user?.role !== 'partner' && <Header activeProject={activeProject} />}
+        <ScrollToTop />
+        <Header activeProject={activeProject} />
         <main className='min-h-[calc(100vh-120px)] pt-0 md:pt-0'>
        <Outlet/>
         </main>
-        {user?.role !== 'partner' && <Footer />}
-
-         {/* <QRModal show={showQR} onClose={() => setShowQR(false)} /> */}
+        <Footer />
       </Context.Provider>
   )
 }

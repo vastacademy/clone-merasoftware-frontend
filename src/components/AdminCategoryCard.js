@@ -4,7 +4,7 @@ import AdminEditCategory from './AdminEditCategory';
 import AdminDeleteCategory from './AdminDeleteCategory';
 import { MdDelete } from "react-icons/md";
 import SummaryApi from '../common';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 
 const serviceTypeOrder = [
   'Websites Development',

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { CgClose } from "react-icons/cg";
 import { FaCloudUploadAlt } from "react-icons/fa";
 import Select from 'react-select';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 import uploadImage from '../helpers/uploadImage';
 import SummaryApi from '../common';
 

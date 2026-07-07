@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import ROLE from '../common/role'
 import { IoMdClose } from "react-icons/io";
 import SummaryApi from '../common';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 
 const ChangeUserRole = ({
     name,
@@ -59,15 +59,9 @@ const ChangeUserRole = ({
              <p>Email : {email}</p> 
 
             <div className='flex items-center justify-between my-4'>
-                <p>Role :</p>  
-                <select className='border px-4 py-1' value={userRole} onChange={handleOnChangeSelect}>
-                    {
-                        Object.values(ROLE).map(el => {
-                            return(
-                                <option value={el} key={el}>{el}</option>
-                            )
-                        })
-                    }
+                <p>Role :</p>
+                <select className='border px-4 py-1' value={userRole} onChange={handleOnChangeSelect} disabled>
+                    <option value={ROLE.CUSTOMER} key={ROLE.CUSTOMER}>{ROLE.CUSTOMER}</option>
                 </select>
             </div>
 

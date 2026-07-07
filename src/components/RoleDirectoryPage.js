@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search } from 'lucide-react';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 import SummaryApi from '../common';
 import SignUp from '../pages/SignUp';
 

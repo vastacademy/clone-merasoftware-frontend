@@ -3,7 +3,7 @@ import { MdModeEditOutline, MdDelete } from "react-icons/md";
 import AdminEditBanner from './AdminEditBanner';
 import AdminDeleteBanner from './AdminDeleteBanner';
 import SummaryApi from '../common';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 
 const AdminBannerCard = ({ data, index, fetchData, userRole, isExpanded, onRowClick }) => {
     const [editBanner, setEditBanner] = useState(false);

@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 
 const OrderDetailsModal = ({ isOpen, order, onClose, onApprove, onReject }) => {
   const [rejectionReason, setRejectionReason] = useState('');

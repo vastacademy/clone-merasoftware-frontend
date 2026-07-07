@@ -4,7 +4,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import SummaryApi from '../common';
 import Context from '../context';
 import displayINRCurrency from '../helpers/displayCurrency';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 
 const RenewalModal = ({ plan, onClose, onRenewalSuccess }) => {
   const [isProcessing, setIsProcessing] = useState(false);

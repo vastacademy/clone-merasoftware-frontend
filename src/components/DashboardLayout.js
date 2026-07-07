@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 import { 
   Home, ShoppingBag, UserCircle, Wallet, MessageSquare, LogOut,
   Search, Bell, ChevronDown, User,

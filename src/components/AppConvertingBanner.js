@@ -802,10 +802,10 @@ const AppConvertingBanner = () => {
     // Process welcome data
     const title = welcome.title.replace('{username}', user?.name || 'User');
     const description = stripHtmlTags(welcome.description);
-    
+
     return (
       <div className="bg-gradient-to-r from-blue-50 to-red-50 py-16">
-        <div className="container mx-auto px-6">
+        <div className="max-w-7xl mx-auto px-6">
           <div className="flex items-center justify-between">
             <div className="w-1/2">
               <h1 className="text-5xl font-bold text-gray-900 leading-tight mb-6">
@@ -875,7 +875,7 @@ const AppConvertingBanner = () => {
   // Guest Slides Desktop View
   const GuestSlidesDesktop = ({ slide }) => (
     <section className="bg-gradient-to-r from-blue-50 to-red-50 text-white  w-full">
-    <div className="max-w-7xl mx-auto px-24">
+    <div className="max-w-7xl mx-auto px-6">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
         <div>
           <h1 className="text-3xl lg:text-4xl font-bold mb-4 text-gray-900">

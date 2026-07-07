@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Camera } from 'lucide-react';
 import imageTobase64 from '../helpers/imageTobase64';
 import uploadImage from '../helpers/uploadImage';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 
 const EditProfileModal = ({ user, onClose, onUpdate, loading, initialField }) => {
     const [formData, setFormData] = useState({

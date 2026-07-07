@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { X, Plus, Lock } from 'lucide-react';
 import SummaryApi from '../common';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 
 const ROLE_OPTIONS = ['admin', 'manager', 'partner', 'customer', 'developer'];
 

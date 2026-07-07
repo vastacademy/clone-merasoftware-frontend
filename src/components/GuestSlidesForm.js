@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { CgClose } from "react-icons/cg";
 import SummaryApi from '../common';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 
 const GuestSlidesForm = ({ onClose, fetchData, data, isEditing }) => {
     const [formData, setFormData] = useState({

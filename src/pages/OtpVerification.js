@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import SummaryApi from "../common";
 import CookieManager from '../utils/cookieManager';
 import { useNavigate } from 'react-router-dom';
@@ -110,26 +110,16 @@ const OtpVerification = ({ userData, onBackToLogin }) => {
           if (data.data.walletBalance) {
             dispatch(updateWalletBalance(data.data.walletBalance));
           }
-          if (context.fetchUserDetails) await context.fetchUserDetails();
-          if (context.fetchUserAddToCart) await context.fetchUserAddToCart();
           toast.success(data.message);
 
-          // ✅ Use backend isDetailsCompleted value directly
-        const isDetailsCompleted = data.data.isDetailsCompleted || false;
-          const role = data.data.user.role;
-          if (!isDetailsCompleted && role !== "customer") {
-            navigate("/complete-profile");
-          } else {
-            if (role === "admin") {
-              navigate("/admin-panel/all-products"); // 🟢 Admin redirect
-            } else if (role === "manager") {
-              navigate("/manager-panel/dashboard");
-            } else if (role === "partner") {
-              navigate("/partner-panel/dashboard");
-            } else {
-              navigate("/"); // 🟢 Non-admin redirect
-            }
+          if (context.fetchUserDetails) {
+            void context.fetchUserDetails();
           }
+          if (context.fetchUserAddToCart) {
+            void context.fetchUserAddToCart();
+          }
+
+          navigate("/home", { replace: true });
         } else {
           toast.error(data.message);
         }

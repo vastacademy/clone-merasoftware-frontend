@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 import SummaryApi from '../../common';
 
 const ProjectWorkspaceModal = ({ project, developers = [], onClose, onProjectUpdated, isReadOnly = false }) => {

@@ -1,23 +1,21 @@
 import { Cookies } from 'react-cookie';
 
-const COOKIE_DOMAIN = process.env.REACT_APP_COOKIE_DOMAIN || (
-  typeof window !== 'undefined' && window.location.hostname === 'localhost'
-    ? 'localhost'
-    : undefined
-);
+const COOKIE_DOMAIN = process.env.REACT_APP_COOKIE_DOMAIN && process.env.REACT_APP_COOKIE_DOMAIN !== 'localhost'
+  ? process.env.REACT_APP_COOKIE_DOMAIN
+  : undefined;
 const cookies = new Cookies();
 
 const DEFAULT_CONFIG = {
   path: '/',
   secure: process.env.NODE_ENV === 'production',
   sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-  domain: COOKIE_DOMAIN,
+  ...(COOKIE_DOMAIN ? { domain: COOKIE_DOMAIN } : {}),
 };
 
 class CookieManager {
   static setUserDetails(userDetails) {
     const minimalUserData = {
-      id: userDetails.id,
+      id: userDetails.id || userDetails._id,
       name: userDetails.name,
       email: userDetails.email,
       role: userDetails.role,
@@ -43,9 +41,9 @@ class CookieManager {
   static remove(name) {
     cookies.remove(name, {
       path: '/',
-      secure: true,
-      sameSite: 'none',
-      domain: COOKIE_DOMAIN,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      ...(COOKIE_DOMAIN ? { domain: COOKIE_DOMAIN } : {}),
     });
   }
 

@@ -1,7 +1,7 @@
 import React from 'react';
 import { CgClose } from "react-icons/cg";
 import SummaryApi from '../common';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 
 const AdminDeleteWelcomeContent = ({ contentId, contentType, onClose, fetchData }) => {
     const handleDelete = async () => {

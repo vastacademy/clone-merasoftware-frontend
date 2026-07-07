@@ -1,9 +1,5 @@
 const ROLE = {
-    ADMIN : "admin",
-    CUSTOMER : "customer",
-    DEVELOPER: "developer",
-    MANAGER: "manager",
-    PARTNER: "partner"
+    CUSTOMER : "customer"
 }
 
 export default ROLE;

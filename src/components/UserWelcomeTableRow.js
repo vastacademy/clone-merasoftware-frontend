@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import UserWelcomeForm from './UserWelcomeForm';
 import AdminDeleteWelcomeContent from './AdminDeleteWelcomeContent';
 import SummaryApi from '../common';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 
 const stripHtmlTags = (html) => {
   if (!html) return '';

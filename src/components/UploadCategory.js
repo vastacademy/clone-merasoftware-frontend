@@ -5,7 +5,7 @@ import { MdDelete } from "react-icons/md";
 import uploadImage from '../helpers/uploadImage';
 import DisplayImage from './DisplayImage';
 import SummaryApi from '../common';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 
 const UploadCategory = ({
     onClose,

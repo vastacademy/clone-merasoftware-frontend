@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import loginIcons from '../assest/signin.gif';
 import imageTobase64 from '../helpers/imageTobase64';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 import SummaryApi from '../common';
 
 const AddDeveloperModal = ({ isOpen, onClose, onDeveloperAdded }) => {

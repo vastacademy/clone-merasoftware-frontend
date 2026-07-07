@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import GuestSlidesForm from './GuestSlidesForm';
 import AdminDeleteWelcomeContent from './AdminDeleteWelcomeContent';
 import SummaryApi from '../common';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 
 const truncateText = (text, maxWords = 4) => {
   if (!text) return '';

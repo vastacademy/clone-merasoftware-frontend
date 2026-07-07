@@ -4,7 +4,7 @@ import PhoneInput from 'react-phone-input-2';
 import 'react-phone-input-2/lib/style.css';
 import SummaryApi from '../common';
 import '../index.css'
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 import Context from '../context';
 
 const LoginContactForm = ({ isOpen, onClose, productId }) => {

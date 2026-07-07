@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 import { CheckCircle } from 'lucide-react';
 import SummaryApi from '../../common';
 

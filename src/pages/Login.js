@@ -1,25 +1,25 @@
 import React, { useContext, useState } from "react";
-import loginIcons from "../assest/signin.gif";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
-import { Link, useNavigate } from "react-router-dom";
-import { toast } from "react-toastify";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
+import { ArrowRight } from "lucide-react";
+import { useDispatch } from "react-redux";
 import SummaryApi from "../common";
 import Context from "../context";
+import { setUserDetails, updateWalletBalance } from "../store/userSlice";
 import CookieManager from "../utils/cookieManager";
+import StorageService from "../utils/storageService";
 
-const STAFF_ROLES = ["admin", "manager", "developer", "partner"];
-
-const Login = ({ loginType = "customer" }) => {
-  const isStaffLogin = loginType === "staff";
+const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState({
     email: "",
     password: "",
-    role: "admin",
   });
 
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const { fetchUserDetails, fetchUserAddToCart } = useContext(Context);
 
   const handleOnChange = (e) => {
@@ -35,9 +35,7 @@ const Login = ({ loginType = "customer" }) => {
     setLoading(true);
 
     const endpoint = SummaryApi.signIn;
-    const payload = isStaffLogin
-      ? { email: data.email, password: data.password, role: data.role }
-      : { email: data.email, password: data.password, role: "customer" };
+    const payload = { email: data.email, password: data.password };
 
     try {
       const dataResponse = await fetch(endpoint.url, {
@@ -56,17 +54,6 @@ const Login = ({ loginType = "customer" }) => {
         return;
       }
 
-      const role = dataApi?.data?.user?.role;
-      if (isStaffLogin && !STAFF_ROLES.includes((role || "").toLowerCase())) {
-        toast.error("Invalid staff account. Please use customer login.");
-        return;
-      }
-
-      if (!isStaffLogin && STAFF_ROLES.includes((role || "").toLowerCase())) {
-        toast.error("Staff account detected. Please use staff login.");
-        return;
-      }
-
       CookieManager.setUserDetails({
         _id: dataApi.data.user._id,
         name: dataApi.data.user.name,
@@ -75,15 +62,19 @@ const Login = ({ loginType = "customer" }) => {
         isDetailsCompleted: dataApi.data.isDetailsCompleted || false,
       });
 
-      await fetchUserDetails();
-      await fetchUserAddToCart();
+      dispatch(setUserDetails(dataApi.data.user));
+      StorageService.setUserDetails(dataApi.data.user);
+
+      if (dataApi.data.walletBalance !== undefined) {
+        dispatch(updateWalletBalance(dataApi.data.walletBalance));
+      }
+
       toast.success(dataApi.message);
 
-      if (role === "admin") navigate("/admin-panel/dashboard");
-      else if (role === "manager") navigate("/manager-panel/dashboard");
-      else if (role === "partner") navigate("/partner-panel/dashboard");
-      else if (role === "developer") navigate("/developer-panel");
-      else navigate("/");
+      navigate("/home", { replace: true });
+
+      void fetchUserDetails();
+      void fetchUserAddToCart();
     } catch (error) {
       console.error("Login error:", error);
       toast.error("Login failed. Please try again.");
@@ -93,96 +84,153 @@ const Login = ({ loginType = "customer" }) => {
   };
 
   return (
-    <section id="login">
-      <div className="max-auto container p-4">
-        <div className="bg-white p-5 w-full max-w-sm mx-auto">
-          <div className="w-20 h-20 mx-auto">
-            <img src={loginIcons} alt="login icon" />
+    <section id="login" className="min-h-screen bg-white flex">
+      {/* Left Side - Dark Blue/Black with Branding */}
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-slate-900 via-blue-900 to-black flex-col justify-center items-center px-12 relative overflow-hidden">
+        {/* Decorative circles */}
+        <div className="absolute top-10 right-10 w-32 h-32 bg-blue-500 rounded-full opacity-10 blur-3xl"></div>
+        <div className="absolute bottom-20 left-10 w-40 h-40 bg-blue-600 rounded-full opacity-10 blur-3xl"></div>
+
+        <div className="relative z-10 text-center">
+          <div className="mb-8">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-500 rounded-xl mb-6">
+              <span className="text-white text-2xl font-bold">M</span>
+            </div>
           </div>
 
-          <h2 className="text-center text-lg font-semibold mt-3">
-            {isStaffLogin ? "Staff Login" : "Customer Login"}
-          </h2>
-          <p className="text-center text-sm text-slate-600 mt-1">
-            {isStaffLogin ? (
-              <>
-                Customer account?{" "}
-                <Link to="/login" className="text-blue-600 hover:underline">
-                  Go to customer login
-                </Link>
-              </>
-            ) : (
-              <>
-                Staff member?{" "}
-                <Link to="/staff/login" className="text-blue-600 hover:underline">
-                  Go to staff login
-                </Link>
-              </>
-            )}
+          <h1 className="text-4xl font-bold text-white mb-4">
+            MeraSoftware
+          </h1>
+          <p className="text-lg text-blue-200 mb-8 leading-relaxed max-w-sm">
+            We Build Software That Fits Your Business
           </p>
 
-          <form className="pt-6 flex flex-col gap-2" onSubmit={handleSubmit}>
-            <div className="grid">
-              <label>Email: </label>
-              <div className="bg-slate-200 p-2">
-                <input
-                  type="email"
-                  placeholder="enter email"
-                  name="email"
-                  value={data.email}
-                  onChange={handleOnChange}
-                  className="w-full h-full outline-none bg-transparent"
-                />
-              </div>
+          <div className="space-y-4 text-left inline-block">
+            <div className="flex items-center gap-3 text-blue-100">
+              <div className="w-1 h-1 bg-blue-400 rounded-full"></div>
+              <span>Custom Software Development</span>
+            </div>
+            <div className="flex items-center gap-3 text-blue-100">
+              <div className="w-1 h-1 bg-blue-400 rounded-full"></div>
+              <span>Web & Mobile Applications</span>
+            </div>
+            <div className="flex items-center gap-3 text-blue-100">
+              <div className="w-1 h-1 bg-blue-400 rounded-full"></div>
+              <span>Cloud Solutions & Support</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Right Side - Login Form */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center px-6 py-12 lg:px-12">
+        <div className="w-full max-w-md">
+          {/* Mobile Logo */}
+          <div className="lg:hidden mb-8 text-center">
+            <div className="inline-flex items-center justify-center w-14 h-14 bg-blue-500 rounded-lg mb-4">
+              <span className="text-white text-xl font-bold">M</span>
+            </div>
+            <h1 className="text-2xl font-bold text-slate-900">MeraSoftware</h1>
+          </div>
+
+          <div>
+            <h2 className="text-3xl font-bold text-slate-900 mb-2">
+              Welcome Back
+            </h2>
+            <p className="text-slate-600 mb-8">
+              Sign in to your account to continue
+            </p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Email Field */}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Email Address
+              </label>
+              <input
+                type="email"
+                placeholder="admin@merasoftware.com"
+                name="email"
+                value={data.email}
+                onChange={handleOnChange}
+                required
+                className="w-full px-4 py-3 rounded-lg border border-slate-300 bg-white text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+              />
             </div>
 
+            {/* Password Field */}
             <div>
-              <label>Password: </label>
-              <div className="bg-slate-200 p-2 flex">
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Password
+              </label>
+              <div className="relative">
                 <input
                   type={showPassword ? "text" : "password"}
+                  placeholder="••••••••"
                   name="password"
-                  placeholder="enter password"
                   value={data.password}
                   onChange={handleOnChange}
-                  className="w-full h-full outline-none bg-transparent"
+                  required
+                  className="w-full px-4 py-3 rounded-lg border border-slate-300 bg-white text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition pr-12"
                 />
-                <div
-                  className="cursor-pointer text-xl"
+                <button
+                  type="button"
                   onClick={() => setShowPassword((prev) => !prev)}
+                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-slate-600 hover:text-slate-900 transition"
                 >
-                  <span>{showPassword ? <FaEyeSlash /> : <FaEye />}</span>
-                </div>
+                  {showPassword ? (
+                    <FaEyeSlash className="w-5 h-5" />
+                  ) : (
+                    <FaEye className="w-5 h-5" />
+                  )}
+                </button>
               </div>
             </div>
 
-            {isStaffLogin && (
-              <div>
-                <label>Role: </label>
-                <div className="bg-slate-200 p-2">
-                  <select
-                    name="role"
-                    value={data.role}
-                    onChange={handleOnChange}
-                    className="w-full h-full outline-none bg-transparent"
-                  >
-                    <option value="admin">Admin</option>
-                    <option value="manager">Manager</option>
-                    <option value="developer">Developer</option>
-                    <option value="partner">Partner</option>
-                  </select>
-                </div>
-              </div>
-            )}
+            {/* Remember Me */}
+            <div className="flex items-center justify-between">
+              <label className="flex items-center gap-2 text-sm text-slate-600">
+                <input
+                  type="checkbox"
+                  className="w-4 h-4 rounded border-slate-300 text-blue-500 focus:ring-2 focus:ring-blue-500"
+                />
+                Remember me
+              </label>
+              <a href="#" className="text-sm text-blue-600 hover:text-blue-700 font-medium">
+                Forgot password?
+              </a>
+            </div>
 
+            {/* Login Button */}
             <button
               type="submit"
               disabled={loading}
-              className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 w-full max-w-[180px] rounded-full hover:scale-110 transition-all mx-auto block mt-6 disabled:opacity-50"
+              className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? "Please wait..." : isStaffLogin ? "Staff Login" : "Customer Login"}
+              {loading ? (
+                <>
+                  <span className="inline-block animate-spin">⏳</span>
+                  Signing in...
+                </>
+              ) : (
+                <>
+                  Sign In
+                  <ArrowRight className="w-5 h-5" />
+                </>
+              )}
             </button>
           </form>
+
+          {/* Footer */}
+          <div className="mt-8 text-center text-sm text-slate-600">
+            <p>
+              Don't have an account?{" "}
+              <a href="#" className="text-blue-600 hover:text-blue-700 font-medium">
+                Contact Sales
+              </a>
+            </p>
+          </div>
         </div>
       </div>
     </section>

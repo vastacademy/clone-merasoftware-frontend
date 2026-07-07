@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 // import { format } from 'date-fns';
 import { Ticket, Plus, ArrowRight, Filter } from 'lucide-react';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 import SummaryApi from '../common';
 import Context from '../context';
 import CreateTicket from './CreateTicket';
