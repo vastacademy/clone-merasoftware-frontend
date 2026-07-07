@@ -1,12 +1,12 @@
 import ProtectedRoute from "../components/ProtectedRoute";
-import AdminDashboardDummy from "../pages/AdminDashboardDummy";
+import AdminDashboard from "../pages/AdminDashboard";
 
 export const adminRoutes = [
   {
     path: "admin-panel/dashboard",
     element: (
       <ProtectedRoute requireRole={['admin']}>
-        <AdminDashboardDummy/>
+        <AdminDashboard/>
       </ProtectedRoute>
     )
   }

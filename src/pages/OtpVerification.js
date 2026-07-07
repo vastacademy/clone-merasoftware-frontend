@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { toast } from "sonner";
 import SummaryApi from "../common";
-import CookieManager from '../utils/cookieManager';
 import { useNavigate } from 'react-router-dom';
 import loginIcons from "../assest/signin.gif";
-import { useDispatch, useSelector } from 'react-redux';
-import { setUserDetails, updateWalletBalance } from '../store/userSlice';
+import { useDispatch } from 'react-redux';
 import Context from '../context';
+import postLogin from '../helpers/postLogin';
 
 const OtpVerification = ({ userData, onBackToLogin }) => {
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
@@ -15,7 +14,6 @@ const OtpVerification = ({ userData, onBackToLogin }) => {
   const [timerKey, setTimerKey] = useState(0); // Added state to restart timer
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const storeUser = useSelector(state => state.user.user);
   const context = useContext(Context);
 
   useEffect(() => {
@@ -98,28 +96,14 @@ const OtpVerification = ({ userData, onBackToLogin }) => {
       });
       const data = await response.json();
         if (data.success) {
-          CookieManager.setUserDetails({
-            _id: data.data.user._id,
-            name: data.data.user.name,
-            email: data.data.user.email,
-            role: data.data.user.role,
-             // ✅ Use backend isDetailsCompleted value
-          isDetailsCompleted: data.data.isDetailsCompleted || false
+          postLogin({
+            dataApi: data,
+            dispatch,
+            navigate,
+            toast,
+            fetchUserDetails: context.fetchUserDetails,
+            fetchUserAddToCart: context.fetchUserAddToCart,
           });
-          dispatch(setUserDetails(data.data.user));
-          if (data.data.walletBalance) {
-            dispatch(updateWalletBalance(data.data.walletBalance));
-          }
-          toast.success(data.message);
-
-          if (context.fetchUserDetails) {
-            void context.fetchUserDetails();
-          }
-          if (context.fetchUserAddToCart) {
-            void context.fetchUserAddToCart();
-          }
-
-          navigate("/home", { replace: true });
         } else {
           toast.error(data.message);
         }

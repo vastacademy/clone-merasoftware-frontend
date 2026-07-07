@@ -6,9 +6,7 @@ import { ArrowRight } from "lucide-react";
 import { useDispatch } from "react-redux";
 import SummaryApi from "../common";
 import Context from "../context";
-import { setUserDetails, updateWalletBalance } from "../store/userSlice";
-import CookieManager from "../utils/cookieManager";
-import StorageService from "../utils/storageService";
+import postLogin from "../helpers/postLogin";
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -54,27 +52,14 @@ const Login = () => {
         return;
       }
 
-      CookieManager.setUserDetails({
-        _id: dataApi.data.user._id,
-        name: dataApi.data.user.name,
-        email: dataApi.data.user.email,
-        role: dataApi.data.user.role,
-        isDetailsCompleted: dataApi.data.isDetailsCompleted || false,
+      postLogin({
+        dataApi,
+        dispatch,
+        navigate,
+        toast,
+        fetchUserDetails,
+        fetchUserAddToCart,
       });
-
-      dispatch(setUserDetails(dataApi.data.user));
-      StorageService.setUserDetails(dataApi.data.user);
-
-      if (dataApi.data.walletBalance !== undefined) {
-        dispatch(updateWalletBalance(dataApi.data.walletBalance));
-      }
-
-      toast.success(dataApi.message);
-
-      navigate("/home", { replace: true });
-
-      void fetchUserDetails();
-      void fetchUserAddToCart();
     } catch (error) {
       console.error("Login error:", error);
       toast.error("Login failed. Please try again.");
