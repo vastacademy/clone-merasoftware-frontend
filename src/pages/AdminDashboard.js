@@ -201,7 +201,7 @@ const AdminDashboard = () => {
   }, [clients]);
 
   const sidebarContent = (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full w-full flex-col">
       <div className="border-b border-slate-800 px-5 pt-8 pb-5">
         <div className="flex items-center gap-3">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-300">
@@ -293,7 +293,7 @@ const AdminDashboard = () => {
 
   return (
     <div className="min-h-screen bg-slate-100 lg:pl-72">
-      <aside className="fixed left-0 top-16 z-40 hidden h-[calc(100vh-4rem)] w-72 border-r border-slate-800 bg-slate-950 lg:flex">
+      <aside className="fixed left-0 top-16 z-40 hidden h-[calc(100vh-4rem)] w-72 border-r border-slate-800 bg-slate-950 text-white shadow-2xl lg:flex lg:flex-col">
         {sidebarContent}
       </aside>
 
