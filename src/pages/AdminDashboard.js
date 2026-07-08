@@ -11,6 +11,7 @@ import {
   Search,
   ShieldCheck,
   X,
+  LogOut,
   Users2,
   Users,
 } from "lucide-react";
@@ -21,6 +22,7 @@ import StorageService from "../utils/storageService";
 import { useOnlineStatus } from "../App";
 
 const sidebarModules = [
+  { id: "dashboard", label: "Dashboard", icon: BarChart3, live: true },
   { id: "clients", label: "Clients", icon: Users2, live: true },
   { id: "upcoming-orders", label: "Upcoming Orders", icon: Layers3, soon: true },
   { id: "upcoming-reports", label: "Upcoming Reports", icon: BarChart3, soon: true },
@@ -36,7 +38,7 @@ const AdminDashboard = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { isOnline } = useOnlineStatus();
-  const [activeModule, setActiveModule] = useState("clients");
+  const [activeModule, setActiveModule] = useState("dashboard");
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -284,6 +286,7 @@ const AdminDashboard = () => {
           onClick={handleLogout}
           className="flex w-full items-center gap-3 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-left text-sm font-semibold text-red-200 transition hover:bg-red-500/20"
         >
+          <LogOut size={18} className="shrink-0" />
           <span className="flex-1">Logout</span>
         </button>
       </div>
@@ -356,42 +359,44 @@ const AdminDashboard = () => {
       )}
 
       <main className="mx-auto flex max-w-7xl flex-col gap-6 px-4 pb-6 pt-20 sm:px-6 lg:px-8 lg:pt-6">
-        <section className="rounded-[2rem] border border-slate-200 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 text-white shadow-xl shadow-slate-900/10">
-          <div className="flex flex-col gap-6 p-6 lg:flex-row lg:items-end lg:justify-between lg:p-8">
-            <div className="max-w-3xl">
-              <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-xs font-semibold text-emerald-300">
-                <ShieldCheck size={14} />
-                Admin Panel
+        {activeModule === "dashboard" && (
+          <section className="rounded-[2rem] border border-slate-200 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 text-white shadow-xl shadow-slate-900/10">
+            <div className="flex flex-col gap-6 p-6 lg:flex-row lg:items-end lg:justify-between lg:p-8">
+              <div className="max-w-3xl">
+                <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-xs font-semibold text-emerald-300">
+                  <ShieldCheck size={14} />
+                  Admin Panel
+                </div>
+                <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
+                  Admin Dashboard
+                </h1>
+                <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300 sm:text-base">
+                  Fixed sidebar layout on desktop, drawer on mobile, with summary cards in Dashboard and the client table in Clients.
+                </p>
               </div>
-              <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
-                Admin Dashboard
-              </h1>
-              <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300 sm:text-base">
-                Fixed sidebar layout on desktop, drawer on mobile, and clients module as the active source right now.
-              </p>
+
+              <button
+                type="button"
+                onClick={handleRefresh}
+                disabled={loading || refreshing}
+                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <RefreshCw size={16} className={refreshing ? "animate-spin" : ""} />
+                Refresh
+              </button>
             </div>
 
-            <button
-              type="button"
-              onClick={handleRefresh}
-              disabled={loading || refreshing}
-              className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              <RefreshCw size={16} className={refreshing ? "animate-spin" : ""} />
-              Refresh
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 border-t border-white/10 p-6 sm:grid-cols-2 xl:grid-cols-3">
-            <StatCard icon={Users} label="Total Clients" value={clients.length} />
-            <StatCard icon={Layers3} label="Active Clients" value={activeClients} />
-            <StatCard
-              icon={BarChart3}
-              label="Joined This Month"
-              value={joinedThisMonth}
-            />
-          </div>
-        </section>
+            <div className="grid grid-cols-1 gap-4 border-t border-white/10 p-6 sm:grid-cols-2 xl:grid-cols-3">
+              <StatCard icon={Users} label="Total Clients" value={clients.length} />
+              <StatCard icon={Layers3} label="Active Clients" value={activeClients} />
+              <StatCard
+                icon={BarChart3}
+                label="Joined This Month"
+                value={joinedThisMonth}
+              />
+            </div>
+          </section>
+        )}
 
         {activeModule === "clients" && (
           <section className="rounded-[2rem] border border-slate-200 bg-white shadow-sm">
@@ -420,6 +425,9 @@ const AdminDashboard = () => {
                 <thead className="bg-slate-50">
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 sm:px-6">
+                      No.
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 sm:px-6">
                       Name
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 sm:px-6">
@@ -440,15 +448,18 @@ const AdminDashboard = () => {
                   {loading ? (
                     <tr>
                       <td
-                        colSpan={5}
+                        colSpan={6}
                         className="px-4 py-12 text-center text-sm text-slate-500 sm:px-6"
                       >
                         Loading clients...
                       </td>
                     </tr>
                   ) : filteredClients.length > 0 ? (
-                    filteredClients.map((client) => (
+                    filteredClients.map((client, index) => (
                       <tr key={client._id} className="hover:bg-slate-50">
+                        <td className="px-4 py-4 text-sm font-medium text-slate-500 sm:px-6">
+                          {index + 1}
+                        </td>
                         <td className="px-4 py-4 text-sm font-medium text-slate-900 sm:px-6">
                           {client.name || "N/A"}
                         </td>
@@ -471,7 +482,7 @@ const AdminDashboard = () => {
                   ) : (
                     <tr>
                       <td
-                        colSpan={5}
+                        colSpan={6}
                         className="px-4 py-12 text-center text-sm text-slate-500 sm:px-6"
                       >
                         No clients found.

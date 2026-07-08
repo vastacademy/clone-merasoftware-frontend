@@ -163,9 +163,9 @@ const DashboardLayout = ({ children, user, walletBalance, cartCount, isLoading, 
 
   return (
     <>
-      <div className="flex min-h-screen bg-slate-100">
-        <aside className="hidden lg:flex lg:w-72 flex-col border-r border-slate-800 bg-slate-950 text-white shadow-2xl">
-          <div className="border-b border-white/10 px-5 py-5">
+      <div className="min-h-screen bg-slate-100 lg:pl-72">
+        <aside className="fixed left-0 top-16 z-40 hidden h-[calc(100vh-4rem)] w-72 flex-col border-r border-slate-800 bg-slate-950 text-white shadow-2xl lg:flex">
+          <div className="border-b border-white/10 px-5 pt-8 pb-5">
             <div className="flex items-center gap-3">
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-300 ring-1 ring-emerald-400/20">
                 {currentUser?.profilePic ? (
@@ -190,7 +190,7 @@ const DashboardLayout = ({ children, user, walletBalance, cartCount, isLoading, 
               </div>
             </div>
 
-            <div className="mt-4 inline-flex rounded-full border border-emerald-400/30 bg-emerald-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-emerald-300">
+            <div className="mt-6 inline-flex rounded-full border border-emerald-400/30 bg-emerald-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-emerald-300">
               {getPageTitle()}
             </div>
           </div>
@@ -296,7 +296,7 @@ const DashboardLayout = ({ children, user, walletBalance, cartCount, isLoading, 
           </div>
         </aside>
 
-        <div className="flex-1 min-w-0">
+        <div className="min-w-0">
           <main className="min-h-screen overflow-auto bg-slate-100">
             {children}
           </main>
