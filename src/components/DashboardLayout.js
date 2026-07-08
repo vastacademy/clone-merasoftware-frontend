@@ -5,7 +5,6 @@ import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'sonner';
 import { 
   Home, ShoppingBag, UserCircle, Wallet, MessageSquare, LogOut,
-  Search, Bell, ChevronDown, User,
   FileText, X
 } from 'lucide-react';
 import SummaryApi from '../common';
@@ -164,121 +163,141 @@ const DashboardLayout = ({ children, user, walletBalance, cartCount, isLoading, 
 
   return (
     <>
-      <div className="flex min-h-screen bg-gray-50">
-        {/* Sidebar - Only visible on desktop */}
-        <aside className="hidden lg:block lg:w-64 bg-white border-r shadow-sm">
-          <div className="p-4 border-b">
-            <div className="flex items-center space-x-2">
-            <h1 className="mr-2 text-2xl font-bold text-gray-800">{getPageTitle()}</h1>
+      <div className="flex min-h-screen bg-slate-100">
+        <aside className="hidden lg:flex lg:w-72 flex-col border-r border-slate-800 bg-slate-950 text-white shadow-2xl">
+          <div className="border-b border-white/10 px-5 py-5">
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-300 ring-1 ring-emerald-400/20">
+                {currentUser?.profilePic ? (
+                  <img
+                    src={currentUser.profilePic}
+                    alt={currentUser?.name || 'User'}
+                    className="h-full w-full rounded-2xl object-cover"
+                  />
+                ) : (
+                  <span className="text-lg font-bold">
+                    {(currentUser?.name || 'U').trim().charAt(0).toUpperCase()}
+                  </span>
+                )}
+              </div>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-white">
+                  {currentUser?.name || 'User'}
+                </p>
+                <p className="truncate text-xs text-slate-400">
+                  {currentUser?.email || 'Customer Portal'}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-4 inline-flex rounded-full border border-emerald-400/30 bg-emerald-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-emerald-300">
+              {getPageTitle()}
             </div>
           </div>
-          
-          <div className="py-4">
-            <div className="px-4 mb-2 text-xs font-semibold text-gray-500 uppercase">Main Menu</div>
-            <ul>
-              <li>
-                <Link 
-                  to="/dashboard" 
-                  className={`flex items-center px-4 py-3 ${
-                    isActive('/dashboard') 
-                      ? 'text-blue-600 bg-blue-50 border-r-4 border-blue-600' 
-                      : 'text-gray-700 hover:bg-gray-100'
-                  }`}
-                >
-                  <Home size={20} className="mr-3" />
-                  <span className="font-medium">Dashboard</span>
-                </Link>
-              </li>
-              <li>
-                <Link 
-                  to="/order" 
-                  className={`flex items-center px-4 py-3 ${
-                    isActive('/order') 
-                      ? 'text-blue-600 bg-blue-50 border-r-4 border-blue-600' 
-                      : 'text-gray-700 hover:bg-gray-100'
-                  }`}
-                >
-                  <ShoppingBag size={20} className="mr-3" />
-                  <span className="font-medium">Your Orders</span>
-                </Link>
-              </li>
-              <li>
-                <Link 
-                   to={getProjectLink()} 
-                  className={`flex items-center px-4 py-3 ${
-                    isActive('/project-details') 
-                      ? 'text-blue-600 bg-blue-50 border-r-4 border-blue-600' 
-                      : 'text-gray-700 hover:bg-gray-100'
-                  }`}
-                >
-                  <FileText size={20} className="mr-3" />
-                  <span className="font-medium">Your Project</span>
-                </Link>
-              </li>
-              <li>
-                <Link 
-                  to="/profile" 
-                  className={`flex items-center px-4 py-3 ${
-                    isActive('/profile') 
-                      ? 'text-blue-600 bg-blue-50 border-r-4 border-blue-600' 
-                      : 'text-gray-700 hover:bg-gray-100'
-                  }`}
-                >
-                  <UserCircle size={20} className="mr-3" />
-                  <span className="font-medium">Account</span>
-                </Link>
-              </li>
-              <li>
-                <Link 
-                  to="/wallet" 
-                  className={`flex items-center px-4 py-3 ${
-                    isActive('/wallet') 
-                      ? 'text-blue-600 bg-blue-50 border-r-4 border-blue-600' 
-                      : 'text-gray-700 hover:bg-gray-100'
-                  }`}
-                >
-                  <Wallet size={20} className="mr-3" />
-                  <span className="font-medium">Wallet</span>
-                </Link>
-              </li>
-            </ul>
-            
-            <div className="px-4 mt-6 mb-2 text-xs font-semibold text-gray-500 uppercase">Help & Support</div>
-            <ul>
-              <li>
-                <Link 
-                  to="/support" 
-                  className={`flex items-center px-4 py-3 ${
-                    isActive('/support') 
-                      ? 'text-blue-600 bg-blue-50 border-r-4 border-blue-600' 
-                      : 'text-gray-700 hover:bg-gray-100'
-                  }`}
-                >
-                  <MessageSquare size={20} className="mr-3" />
-                  <span className="font-medium">Contact Support</span>
-                </Link>
-              </li>
-            </ul>
+
+          <div className="flex-1 px-3 py-4">
+            <p className="px-3 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+              Modules
+            </p>
+
+            <div className="mt-3 space-y-2">
+              <Link
+                to="/dashboard"
+                className={[
+                  "group flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition-all",
+                  isActive('/dashboard')
+                    ? 'bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-950/30'
+                    : 'bg-slate-900/70 text-slate-200 hover:bg-slate-800',
+                ].join(' ')}
+              >
+                <Home size={18} className="shrink-0" />
+                <span className="flex-1">Dashboard</span>
+                <span className="text-xs opacity-70">Live</span>
+              </Link>
+
+              <Link
+                to="/order"
+                className={[
+                  "group flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition-all",
+                  isActive('/order')
+                    ? 'bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-950/30'
+                    : 'bg-slate-900/70 text-slate-200 hover:bg-slate-800',
+                ].join(' ')}
+              >
+                <ShoppingBag size={18} className="shrink-0" />
+                <span className="flex-1">Orders</span>
+              </Link>
+
+              <Link
+                to={getProjectLink()}
+                className={[
+                  "group flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition-all",
+                  isActive('/project-details')
+                    ? 'bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-950/30'
+                    : 'bg-slate-900/70 text-slate-200 hover:bg-slate-800',
+                ].join(' ')}
+              >
+                <FileText size={18} className="shrink-0" />
+                <span className="flex-1">Project</span>
+              </Link>
+
+              <Link
+                to="/profile"
+                className={[
+                  "group flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition-all",
+                  isActive('/profile')
+                    ? 'bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-950/30'
+                    : 'bg-slate-900/70 text-slate-200 hover:bg-slate-800',
+                ].join(' ')}
+              >
+                <UserCircle size={18} className="shrink-0" />
+                <span className="flex-1">Account</span>
+              </Link>
+
+              <Link
+                to="/wallet"
+                className={[
+                  "group flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition-all",
+                  isActive('/wallet')
+                    ? 'bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-950/30'
+                    : 'bg-slate-900/70 text-slate-200 hover:bg-slate-800',
+                ].join(' ')}
+              >
+                <Wallet size={18} className="shrink-0" />
+                <span className="flex-1">Wallet</span>
+              </Link>
+
+              <Link
+                to="/support"
+                className={[
+                  "group flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition-all",
+                  isActive('/support')
+                    ? 'bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-950/30'
+                    : 'bg-slate-900/70 text-slate-200 hover:bg-slate-800',
+                ].join(' ')}
+              >
+                <MessageSquare size={18} className="shrink-0" />
+                <span className="flex-1">Support</span>
+              </Link>
+            </div>
           </div>
-          
-          <div className="mt-auto border-t p-4">
-            <button 
+
+          <div className="border-t border-white/10 p-4">
+            <button
               onClick={handleLogoutClick}
-              className="flex items-center text-red-600 hover:text-red-700 w-full"
+              className="flex w-full items-center gap-3 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-left text-sm font-semibold text-red-200 transition hover:bg-red-500/20"
               disabled={isLoggingOut}
             >
-              <LogOut size={20} className="mr-3" />
-              <span className="font-medium">
+              <LogOut size={18} className="shrink-0" />
+              <span className="flex-1">
                 {isLoggingOut ? 'Logging out...' : 'Logout'}
               </span>
             </button>
           </div>
         </aside>
-        
-        {/* Main Content */}
-        <div className="flex-1 flex flex-col">
-          {/* Page Content */}
-          <main className="flex-1 overflow-auto">
+
+        <div className="flex-1 min-w-0">
+          <main className="min-h-screen overflow-auto bg-slate-100">
             {children}
           </main>
         </div>

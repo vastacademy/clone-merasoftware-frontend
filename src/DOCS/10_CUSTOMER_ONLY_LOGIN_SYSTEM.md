@@ -2,6 +2,8 @@
 **Date:** 2026-07-02  
 **Status:** ✅ COMPLETE
 
+> Legacy note: this document describes an older customer-only experiment. The current login behavior is documented in `00_CURRENT_SYSTEM.md`.
+
 ## Overview
 Implemented a **customer-only role system** where all users have a single "customer" role, regardless of their previous role assignments. No more admin/manager/developer/partner panels - only customer experience.
 

@@ -1,7 +1,6 @@
 import React, { useContext, useEffect, useRef, useState } from "react";
 import Logo from "../assest/newlogo.png";
 import { GrSearch } from "react-icons/gr";
-import { FaRegCircleUser } from "react-icons/fa6";
 import { FaShoppingCart } from "react-icons/fa";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
@@ -17,6 +16,7 @@ import StorageService from "../utils/storageService";
 import displayCurrency from "../helpers/displayCurrency";
 import NotificationBell from "./NotificationBell";
 import LoginPopup from "../components/LoginPopup";
+import { ChevronDown } from "lucide-react";
 
 const CustomerHeader = () => {
   const user = useSelector((state) => state?.user?.user);
@@ -35,6 +35,7 @@ const CustomerHeader = () => {
   const [serviceTypes, setServiceTypes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showLoginPopup, setShowLoginPopup] = useState(false);
+  const userInitial = (user?.name || "A").trim().charAt(0).toUpperCase();
 
   const userDetails = useSelector((state) => state.user.user);
   const isAuthenticated = !!userDetails?._id;
@@ -72,6 +73,9 @@ const CustomerHeader = () => {
       navigate(targetPath || e.currentTarget.getAttribute('href'));
     }
   };
+
+  const openMenu = () => setMenuDisplay(true);
+  const closeMenu = () => setMenuDisplay(false);
 
   useEffect(() => {
     const loadServiceTypes = async () => {
@@ -245,134 +249,94 @@ const CustomerHeader = () => {
             </div>
 
             <div className="flex items-center space-x-6">
-              <Link to={"/wallet"}>
-                {user?._id && (
-                  <div className="flex items-center gap-2 px-3 py-1 rounded-full">
-                    <IoWalletOutline className="text-xl text-green-600" />
-                    <span className="font-medium text-green-600">
-                      {displayCurrency(context.walletBalance)}
-                    </span>
-                  </div>
-                )}
-              </Link>
-              <div className="relative flex justify-center">
-                {user?._id && (
-                  <div
-                    className="text-3xl cursor-pointer relative flex justify-center"
-                    onClick={() => setMenuDisplay((preve) => !preve)}
+              <div className="flex items-center gap-3">
+                <Link to={"/wallet"}>
+                  {user?._id && (
+                    <div className="flex items-center gap-2 px-3 py-1 rounded-full">
+                      <IoWalletOutline className="text-xl text-green-600" />
+                      <span className="font-medium text-green-600">
+                        {displayCurrency(context.walletBalance)}
+                      </span>
+                    </div>
+                  )}
+                </Link>
+                <NotificationBell />
+              </div>
+              {!user?._id ? (
+                <Link
+                  to="/login"
+                  className="inline-flex items-center justify-center rounded-full bg-blue-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
+                >
+                  Login
+                </Link>
+              ) : (
+                <div
+                  className="relative flex justify-center"
+                  onMouseEnter={openMenu}
+                  onMouseLeave={closeMenu}
+                >
+                  <button
+                    type="button"
+                    className="cursor-pointer flex items-center gap-3 rounded-full transition-transform hover:scale-105"
+                    onClick={openMenu}
+                    aria-label="Open profile menu"
                   >
                     {user?.profilePic ? (
                       <img
                         src={user?.profilePic}
-                        className="w-10 h-10 rounded-full"
+                        className="w-12 h-12 rounded-full object-cover border border-slate-200"
                         alt={user?.name}
                       />
                     ) : (
-                      <FaRegCircleUser />
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-lg font-bold text-slate-900 border border-slate-200">
+                        {userInitial}
+                      </div>
                     )}
-                  </div>
-                )}
-
-                {menuDisplay && (
+                    <div className="hidden sm:block text-left">
+                      <p className="text-sm font-semibold text-slate-900 leading-tight">
+                        {user?.name || "User"}
+                      </p>
+                      <p className="text-xs text-slate-500 leading-tight">
+                        My Account
+                      </p>
+                    </div>
+                    <ChevronDown
+                      size={18}
+                      className={`text-slate-500 transition-transform duration-200 ${
+                        menuDisplay ? "rotate-180" : ""
+                      }`}
+                    />
+                  </button>
+                  {menuDisplay && (
                   <div
                     className="absolute bg-white bottom-0 w-44 top-11 h-fit p-2 shadow-lg rounded"
                     ref={menuRef}
+                    onMouseEnter={openMenu}
+                    onMouseLeave={closeMenu}
                   >
-                    <nav>
+                    <nav className="space-y-1">
                       <Link
-                        to={"/order"}
-                        className="whitespace-nowrap hidden md:block hover:bg-slate-100 p-2"
-                        onClick={() => setMenuDisplay((preve) => !preve)}
+                        to={"/dashboard"}
+                        className="block px-3 py-2 rounded hover:bg-slate-100 text-slate-700 text-sm"
+                        onClick={() => setMenuDisplay(false)}
                       >
-                        Settings
+                        Dashboard
                       </Link>
-                      <div className="p-2 hover:bg-slate-100 flex items-center gap-2">
-                        <IoWalletOutline />
-                        <span>Balance: ₹{context.walletBalance}</span>
-                      </div>
+                      <button
+                        onClick={handleLogout}
+                        className="w-full text-left px-3 py-2 rounded hover:bg-red-50 text-red-500 text-sm font-medium"
+                      >
+                        Logout
+                      </button>
                     </nav>
                   </div>
-                )}
-              </div>
+                  )}
+                </div>
+              )}
 
-              <NotificationBell />
-
-              <div className="hidden md:block">
-                {user?._id ? (
-                  <button
-                    onClick={handleLogout}
-                    className="px-3 py-1 rounded-full text-white bg-blue-600 hover:bg-blue-700"
-                  >
-                    Logout
-                  </button>
-                ) : (
-                  <Link
-                    to={"/login"}
-                    className="px-6 py-2.5 rounded-lg text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-blue-700 shadow-lg hover:from-blue-700 hover:to-blue-800 hover:shadow-xl active:scale-95 transition-all duration-150"
-                  >
-                    Sign In
-                  </Link>
-                )}
-              </div>
             </div>
           </div>
 
-          {user?.role !== ROLE.PARTNER && (
-            <nav className="border-t py-3">
-              <ul className="flex justify-between overflow-x-auto scrollbar-none">
-                <li>
-                  <a
-                    href="/dashboard"
-                    onClick={(e) => handleProtectedNavigation(e, '/dashboard')}
-                    className="text-gray-800 font-medium whitespace-nowrap hover:text-blue-600 px-3"
-                  >
-                    My Dashboard
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="/order"
-                    onClick={(e) => handleProtectedNavigation(e, '/order')}
-                    className="text-gray-800 font-medium whitespace-nowrap hover:text-blue-600 px-3"
-                  >
-                    My Orders
-                  </a>
-                </li>
-                <li>
-                  <Link
-                    to={getProjectLink()}
-                    onClick={(e) => {
-                      if (isInitialized && !userDetails) {
-                        e.preventDefault();
-                        setShowLoginPopup(true);
-                      }
-                    }}
-                    className="text-gray-800 font-medium whitespace-nowrap hover:text-blue-600 px-3"
-                  >
-                    My Projects
-                  </Link>
-                </li>
-                <li>
-                  <a
-                    href="/wallet"
-                    onClick={(e) => handleProtectedNavigation(e, '/wallet')}
-                    className="text-gray-800 font-medium whitespace-nowrap hover:text-blue-600 px-3"
-                  >
-                    My Wallet
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="/support"
-                    onClick={(e) => handleProtectedNavigation(e, '/support')}
-                    className="text-gray-800 font-medium whitespace-nowrap hover:text-blue-600 px-3"
-                  >
-                    Contact Support
-                  </a>
-                </li>
-              </ul>
-            </nav>
-          )}
         </div>
       </header>
 
@@ -388,6 +352,46 @@ const CustomerHeader = () => {
           </Link>
 
           <div className="flex items-center space-x-3">
+            {!user?._id ? (
+              <Link
+                to="/login"
+                className="inline-flex items-center justify-center rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
+              >
+                Login
+              </Link>
+            ) : (
+              <button
+                onClick={() => setMenuDisplay(!menuDisplay)}
+                className="flex items-center gap-2 rounded-full transition-transform hover:scale-105"
+                aria-label="Open profile menu"
+              >
+                {user?.profilePic ? (
+                  <img
+                    src={user?.profilePic}
+                    className="w-12 h-12 rounded-full object-cover border border-slate-200"
+                    alt={user?.name}
+                  />
+                ) : (
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-sm font-bold text-slate-900 border border-slate-200">
+                    {userInitial}
+                  </div>
+                )}
+                <div className="text-left">
+                  <p className="text-sm font-semibold text-slate-900 leading-tight">
+                    {user?.name || "User"}
+                  </p>
+                  <p className="text-xs text-slate-500 leading-tight">
+                    My Account
+                  </p>
+                </div>
+                <ChevronDown
+                  size={16}
+                  className={`text-slate-500 transition-transform duration-200 ${
+                    menuDisplay ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+            )}
           </div>
         </div>
 

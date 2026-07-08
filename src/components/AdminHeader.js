@@ -1,6 +1,5 @@
 import React, { useRef, useState } from "react";
 import { GrSearch } from "react-icons/gr";
-import { FaRegCircleUser } from "react-icons/fa6";
 import { Link, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import SummaryApi from "../common";
@@ -9,7 +8,7 @@ import { logout } from "../store/userSlice";
 import { useOnlineStatus } from "../App";
 import CookieManager from "../utils/cookieManager";
 import StorageService from "../utils/storageService";
-import { MdAdminPanelSettings } from "react-icons/md";
+import { ChevronDown } from "lucide-react";
 
 const AdminHeader = () => {
   const user = useSelector((state) => state?.user?.user);
@@ -19,6 +18,8 @@ const AdminHeader = () => {
   const [menuDisplay, setMenuDisplay] = useState(false);
   const menuRef = useRef(null);
   const [search, setSearch] = useState("");
+
+  const userInitial = (user?.name || "A").trim().charAt(0).toUpperCase();
 
   const handleLogout = async () => {
     try {
@@ -48,9 +49,11 @@ const AdminHeader = () => {
   };
 
   const handleSearch = (e) => {
-    const { value } = e.target;
-    setSearch(value);
+    setSearch(e.target.value);
   };
+
+  const openMenu = () => setMenuDisplay(true);
+  const closeMenu = () => setMenuDisplay(false);
 
   React.useEffect(() => {
     const handleClickOutside = (event) => {
@@ -81,20 +84,20 @@ const AdminHeader = () => {
   return (
     <>
       {/* Desktop Admin Header */}
-      <header className="hidden md:block bg-slate-900 shadow-lg sticky top-0 z-50">
+      <header className="hidden md:block bg-white shadow-sm border-b border-slate-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6">
           <div className="py-4 flex items-center justify-between">
             {/* Logo */}
             <Link to={"/"}>
               <div className="flex items-center space-x-2">
-                <div className="h-10 w-10 bg-blue-500 rounded-lg flex items-center justify-center">
+                <div className="h-10 w-10 bg-blue-600 rounded-lg flex items-center justify-center">
                   <span className="text-white font-bold text-xl">M</span>
                 </div>
                 <div>
-                  <span className="font-bold text-lg text-white">
+                  <span className="font-bold text-lg text-slate-900">
                     MeraSoftware
                   </span>
-                  <p className="text-xs text-gray-400">Admin Portal</p>
+                  <p className="text-xs text-slate-500">Admin Portal</p>
                 </div>
               </div>
             </Link>
@@ -105,71 +108,86 @@ const AdminHeader = () => {
                 <input
                   type="text"
                   placeholder="Search..."
-                  className="w-full pl-10 pr-4 py-2 border border-slate-700 rounded-lg bg-slate-800 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg bg-slate-50 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   onChange={handleSearch}
                   value={search}
                 />
                 <GrSearch
                   size={18}
-                  className="absolute left-3 top-2.5 text-gray-500"
+                  className="absolute left-3 top-2.5 text-slate-400"
                 />
               </div>
             </div>
 
             {/* Right Section */}
             <div className="flex items-center space-x-4">
-              {/* Admin Panel Button */}
-              <Link
-                to="/admin-panel/dashboard"
-                className="hidden md:flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-all"
-              >
-                <MdAdminPanelSettings className="text-lg" />
-                Admin Panel
-              </Link>
-
               {/* Profile Section */}
-              <div className="relative flex justify-center">
+              <div
+                className="relative flex justify-center"
+                onMouseEnter={openMenu}
+                onMouseLeave={closeMenu}
+              >
                 {user?._id && (
-                  <div
-                    className="cursor-pointer flex justify-center"
-                    onClick={() => setMenuDisplay((prev) => !prev)}
+                  <button
+                    type="button"
+                    className="cursor-pointer flex items-center gap-3 rounded-full transition-transform hover:scale-105"
+                    onClick={openMenu}
+                    aria-label="Open admin profile menu"
                   >
                     {user?.profilePic ? (
                       <img
                         src={user?.profilePic}
-                        className="w-10 h-10 rounded-full border-2 border-blue-500"
+                        className="w-12 h-12 rounded-full border-2 border-slate-200 object-cover"
                         alt={user?.name}
                       />
                     ) : (
-                      <FaRegCircleUser className="text-2xl text-gray-300" />
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-lg font-bold text-slate-900 border-2 border-slate-200">
+                        {userInitial}
+                      </div>
                     )}
-                  </div>
+                    <div className="hidden sm:block text-left">
+                      <p className="text-sm font-semibold text-slate-900 leading-tight">
+                        {user?.name || "Admin User"}
+                      </p>
+                      <p className="text-xs text-slate-500 leading-tight">
+                        Admin
+                      </p>
+                    </div>
+                    <ChevronDown
+                      size={18}
+                      className={`text-slate-500 transition-transform duration-200 ${
+                        menuDisplay ? "rotate-180" : ""
+                      }`}
+                    />
+                  </button>
                 )}
 
                 {menuDisplay && (
                   <div
-                    className="absolute bg-slate-800 border border-slate-700 bottom-0 w-56 top-12 h-fit p-3 shadow-xl rounded-lg"
+                    className="absolute bg-white border border-slate-200 bottom-0 w-56 top-12 h-fit p-3 shadow-xl rounded-lg"
                     ref={menuRef}
+                    onMouseEnter={openMenu}
+                    onMouseLeave={closeMenu}
                   >
-                    <div className="border-b border-slate-700 pb-3 mb-3">
-                      <p className="text-white font-semibold text-sm">{user?.name}</p>
-                      <p className="text-gray-400 text-xs">{user?.email}</p>
-                      <p className="text-blue-400 text-xs font-medium mt-1">
+                    <div className="border-b border-slate-200 pb-3 mb-3">
+                      <p className="text-slate-900 font-semibold text-sm">{user?.name}</p>
+                      <p className="text-slate-500 text-xs">{user?.email}</p>
+                      <p className="text-blue-600 text-xs font-medium mt-1">
                         Role: Admin
                       </p>
                     </div>
                     <nav className="space-y-2">
                       <Link
                         to="/admin-panel/dashboard"
-                        className="block px-3 py-2 rounded hover:bg-slate-700 text-gray-200 text-sm"
+                        className="block px-3 py-2 rounded hover:bg-slate-100 text-slate-700 text-sm"
                         onClick={() => setMenuDisplay(false)}
                       >
-                        Dashboard
+                        Admin Panel
                       </Link>
-                      <div className="border-t border-slate-700 pt-2 mt-2">
+                      <div className="border-t border-slate-200 pt-2 mt-2">
                         <button
                           onClick={handleLogout}
-                          className="w-full text-left px-3 py-2 rounded hover:bg-red-600/20 text-red-400 text-sm font-medium"
+                          className="w-full text-left px-3 py-2 rounded hover:bg-red-50 text-red-500 text-sm font-medium"
                         >
                           Logout
                         </button>
@@ -179,33 +197,22 @@ const AdminHeader = () => {
                 )}
               </div>
 
-              {/* Logout Button */}
-              <div className="hidden md:block">
-                {user?._id && (
-                  <button
-                    onClick={handleLogout}
-                    className="px-4 py-2 rounded-lg text-white bg-red-600 hover:bg-red-700 font-medium transition-all"
-                  >
-                    Logout
-                  </button>
-                )}
-              </div>
             </div>
           </div>
         </div>
       </header>
 
       {/* Mobile Admin Header */}
-      <header className="md:hidden bg-slate-900 shadow-lg px-4 py-3 sticky top-0 z-50">
+      <header className="md:hidden bg-white shadow-sm border-b border-slate-200 px-4 py-3 sticky top-0 z-50">
         <div className="flex items-center justify-between">
           <Link to={"/"}>
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 flex items-center justify-center bg-blue-500 text-white font-bold rounded-md">
+              <div className="w-8 h-8 flex items-center justify-center bg-blue-600 text-white font-bold rounded-md">
                 M
               </div>
               <div>
-                <span className="font-bold text-sm text-white">MeraSoftware</span>
-                <p className="text-xs text-gray-400">Admin</p>
+                <span className="font-bold text-sm text-slate-900">MeraSoftware</span>
+                <p className="text-xs text-slate-500">Admin</p>
               </div>
             </div>
           </Link>
@@ -214,35 +221,52 @@ const AdminHeader = () => {
             {user?._id && (
               <button
                 onClick={() => setMenuDisplay(!menuDisplay)}
-                className="w-8 h-8 flex items-center justify-center"
+                className="flex items-center gap-2 rounded-full transition-transform hover:scale-105"
+                aria-label="Open admin profile menu"
               >
                 {user?.profilePic ? (
                   <img
                     src={user?.profilePic}
-                    className="w-8 h-8 rounded-full border border-blue-500"
+                    className="w-12 h-12 rounded-full border border-slate-200 object-cover"
                     alt={user?.name}
                   />
                 ) : (
-                  <FaRegCircleUser className="text-lg text-gray-300" />
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-sm font-bold text-slate-900 border border-slate-200">
+                    {userInitial}
+                  </div>
                 )}
+                <div className="text-left">
+                  <p className="text-sm font-semibold text-slate-900 leading-tight">
+                    {user?.name || "Admin User"}
+                  </p>
+                  <p className="text-xs text-slate-500 leading-tight">
+                    Admin
+                  </p>
+                </div>
+                <ChevronDown
+                  size={16}
+                  className={`text-slate-500 transition-transform duration-200 ${
+                    menuDisplay ? "rotate-180" : ""
+                  }`}
+                />
               </button>
             )}
           </div>
         </div>
 
         {menuDisplay && (
-          <div className="mt-3 bg-slate-800 border border-slate-700 rounded-lg p-3">
-            <p className="text-white font-semibold text-sm mb-2">{user?.name}</p>
+          <div className="mt-3 bg-white border border-slate-200 rounded-lg p-3 shadow-lg">
+            <p className="text-slate-900 font-semibold text-sm mb-2">{user?.name}</p>
             <Link
               to="/admin-panel/dashboard"
-              className="block px-3 py-2 rounded hover:bg-slate-700 text-gray-200 text-sm mb-2"
+              className="block px-3 py-2 rounded hover:bg-slate-100 text-slate-700 text-sm mb-2"
               onClick={() => setMenuDisplay(false)}
             >
-              Dashboard
+              Admin Panel
             </Link>
             <button
               onClick={handleLogout}
-              className="w-full text-left px-3 py-2 rounded hover:bg-red-600/20 text-red-400 text-sm font-medium"
+              className="w-full text-left px-3 py-2 rounded hover:bg-red-50 text-red-500 text-sm font-medium"
             >
               Logout
             </button>

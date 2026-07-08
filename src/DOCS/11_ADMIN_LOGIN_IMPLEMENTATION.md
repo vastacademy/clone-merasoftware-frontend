@@ -2,6 +2,8 @@
 **Date:** 2026-07-03  
 **Status:** ✅ COMPLETE
 
+> Legacy note: this document records an older admin-login implementation. The current route and dashboard state is documented in `00_CURRENT_SYSTEM.md`.
+
 ## Overview
 Implemented a separate admin login flow that allows admin users to access the admin dashboard without customer UI interference.
 
