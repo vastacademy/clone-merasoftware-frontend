@@ -12,8 +12,12 @@ Fast lookup for the current codebase.
 | `src/components/AdminHeader.js` | Admin header UI |
 | `src/components/CustomerHeader.js` | Customer header UI |
 | `src/components/DashboardLayout.js` | Customer dashboard shell |
+| `src/components/AdminLayout.js` | Shared admin shell |
 | `src/pages/UserDashboard.js` | Customer dashboard content |
 | `src/pages/AdminDashboard.js` | Admin dashboard content |
+| `src/pages/AdminClientsPage.js` | Admin client list page |
+| `src/pages/AdminClientWorkspace.js` | Admin client detail page |
+| `src/common/index.js` | API endpoint definitions, including admin delete order |
 | `src/pages/Login.js` | Login form |
 | `src/helpers/postLogin.js` | Login post-processing and redirect |
 | `src/routes/index.js` | Route assembly |
@@ -53,6 +57,8 @@ Fast lookup for the current codebase.
 ### Admin
 
 - `/admin-panel/dashboard`
+- `/admin-panel/clients`
+- `/admin-panel/clients/:customerId`
 
 ## Current Login Flow
 
@@ -67,7 +73,13 @@ Fast lookup for the current codebase.
 - Customer dashboard work belongs in `UserDashboard.js`
 - Customer shell work belongs in `DashboardLayout.js`
 - Admin dashboard work belongs in `AdminDashboard.js`
-- Admin shell/header work belongs in `AdminHeader.js`
+- Admin client list work belongs in `AdminClientsPage.js`
+- Admin client detail work belongs in `AdminClientWorkspace.js`
+- Admin shell work belongs in `AdminLayout.js`
+- Admin header work belongs in `AdminHeader.js`
+- Admin client overview data should be pulled from the existing customer APIs, not a separate admin DB
+- Admin project delete work belongs to the admin delete order controller and `AdminClientWorkspace.js`
+- Admin project and plan details in the workspace should stay as in-page subviews that return to their list tabs
 
 ## API Files To Check First
 
@@ -79,4 +91,3 @@ Fast lookup for the current codebase.
 ## Historical Files
 
 Older docs such as `06_CODE_AUDIT_FINDINGS.md`, `10_CUSTOMER_ONLY_LOGIN_SYSTEM.md`, and `11_ADMIN_LOGIN_IMPLEMENTATION.md` are legacy references. Use them only for history, not as current behavior.
-

@@ -652,6 +652,10 @@ const SummaryApi = {
     adminUserWorkspace: {
         url: `${backendDomain}/api/admin/user-workspace`,
         method: "get"
+    },
+    adminDeleteOrder: {
+        url: `${backendDomain}/api/admin/delete-order`,
+        method: "delete"
     }
 }
 

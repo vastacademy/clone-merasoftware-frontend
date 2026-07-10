@@ -48,6 +48,8 @@ This document describes the active frontend behavior as of the current codebase.
 ### Admin routes
 
 - `/admin-panel/dashboard` - `AdminDashboard`
+- `/admin-panel/clients` - `AdminClientsPage`
+- `/admin-panel/clients/:customerId` - `AdminClientWorkspace`
 
 ## 3. Active Layouts
 
@@ -64,6 +66,7 @@ This document describes the active frontend behavior as of the current codebase.
 - `DashboardLayout` is the active customer dashboard shell
 - `UserDashboard` is the active customer dashboard content page
 - `AdminDashboard` is the active admin dashboard page
+- `AdminLayout` is the shared admin shell used by dashboard, clients, and client detail pages
 
 ## 4. Dashboard Behavior
 
@@ -75,12 +78,28 @@ This document describes the active frontend behavior as of the current codebase.
 
 ### Admin dashboard
 
-- `AdminDashboard` currently shows the client list as the active module
+- `AdminDashboard` now shows dashboard summary content only
+- `AdminClientsPage` shows the client list as its own route
 - It has:
   - fixed desktop sidebar
   - mobile drawer
   - landscape orientation button on mobile
-  - client search and refresh actions
+  - dashboard refresh actions
+
+### Admin clients
+
+- `AdminClientsPage` shows the searchable client table
+- The table can be sorted by name and last updated
+- Clicking a client opens `/admin-panel/clients/:customerId`
+- Browser history now keeps `dashboard -> clients -> client detail`
+- `AdminClientWorkspace` loads customer overview data from the existing customer SSOT APIs
+- `AdminClientWorkspace` has simple `Projects` and `Plans` tabs
+- The `Projects` tab now opens a project subpage inside the same workspace, and back returns to the projects list
+- The `Plans` tab now opens a plan subpage inside the same workspace, and back returns to the plans list
+- Each project/plan row also has an admin delete action that permanently removes the order record and linked workspace data
+- Admin project and plan subpages reuse the same order details backend with admin access
+- Admin project details page now includes a history-following back button in the main header
+- Overview cards are populated from orders, plans, invoices, update requests, and wallet balance
 
 ## 5. API Notes
 
@@ -88,6 +107,7 @@ This document describes the active frontend behavior as of the current codebase.
 - Customer dashboard reads orders and wallet data from existing API calls
 - Admin dashboard fetches clients from `SummaryApi.adminClients`
 - `backend/controller/user/getAdminClients.js` powers the admin client list endpoint
+- `backend/controller/order/deleteOrder.js` handles admin-only project deletion with linked cleanup
 
 ## 6. What Is Legacy
 
@@ -97,4 +117,3 @@ Do not treat these as current source of truth:
 - old docs describing `/admin-panel/dashboard` as removed
 - old docs describing a customer-only system with no admin route
 - old homepage cleanup docs that mention deleted landing pages as if they were current
-

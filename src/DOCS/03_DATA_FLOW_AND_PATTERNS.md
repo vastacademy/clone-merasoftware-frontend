@@ -555,6 +555,10 @@ try {
 - Admin updates category
 - Admin deletes item
 
+**Clear admin workspace project data**:
+- Admin deletes a project/order
+- Remove linked invoices, transactions, update requests, and cached workspace counts
+
 ### Implementation
 
 ```javascript
@@ -631,4 +635,3 @@ console.log(store.getState())
 const contextValue = useContext(Context)
 console.log('Context:', contextValue)
 ```
-

@@ -19,15 +19,7 @@ const createAppRouter = (routes) => {
 
 // Export factory function and base routes
 export const createRoleBasedRouter = (user, initialized) => {
-  let routes = [...publicRoutes];
-
-  if (initialized && user?._id) {
-    if (user.role === 'admin') {
-      routes = [...routes, ...adminRoutes];
-    } else if (user.role === 'customer') {
-      routes = [...routes, ...customerRoutes];
-    }
-  }
+  const routes = [...publicRoutes, ...customerRoutes, ...adminRoutes];
 
   return createAppRouter(routes);
 };

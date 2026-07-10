@@ -1,38 +1,79 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
 import { 
   Bell, MessageCircle, X, ArrowLeft, ChevronRight, 
   Send, Clock, Check, ChevronUp, ChevronDown, List, Upload,
   CheckCircle, ExternalLink
 } from 'lucide-react';
+import { toast } from 'sonner';
 import SummaryApi from '../common';
 import TriangleMazeLoader from '../components/TriangleMazeLoader';
 import DashboardLayout from '../components/DashboardLayout';
+import AdminLayout from '../components/AdminLayout';
 import UpdateRequestModal from '../components/UpdateRequestModal';
 import PaymentAlert from '../components/PaymentAlert';
+import { logout } from '../store/userSlice';
+import CookieManager from '../utils/cookieManager';
+import StorageService from '../utils/storageService';
+import { useOnlineStatus } from '../App';
 
-const ProjectDetails = () => {
+const ProjectDetails = ({ isAdminView = false }) => {
   const { orderId } = useParams();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const user = useSelector((state) => state?.user?.user);
+  const { isOnline } = useOnlineStatus();
   const timelineRef = useRef(null);
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [shouldShowPaymentAlert, setShouldShowPaymentAlert] = useState(false);
   const [currentInstallment, setCurrentInstallment] = useState(null);
-  const [user, setUser] = useState(null);
   const [updateModalOpen, setUpdateModalOpen] = useState(false);
   const [isProjectPaused, setIsProjectPaused] = useState(false);
   const [showAllUpdates, setShowAllUpdates] = useState(false);
   const [expandedNotification, setExpandedNotification] = useState(null);
   const [timelineExpanded, setTimelineExpanded] = useState(false);
 
+  const handleLogout = async () => {
+    try {
+      if (isOnline) {
+        const response = await fetch(SummaryApi.logout_user.url, {
+          method: SummaryApi.logout_user.method,
+          credentials: 'include',
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          toast.success(data.message);
+        }
+      }
+
+      CookieManager.clearAll();
+      StorageService.clearUserData();
+
+      dispatch(logout());
+      navigate('/');
+    } catch (error) {
+      console.error('Error during logout:', error);
+      toast.error('Logout failed. Please try again.');
+    }
+  };
+
+  const Shell = isAdminView ? AdminLayout : DashboardLayout;
+  const shellProps = isAdminView
+    ? {
+        user,
+        onLogout: handleLogout,
+        mobileTitle: 'Project Details',
+        mobileSubtitle: order?.productId?.serviceName || 'Admin View',
+      }
+    : {
+        user,
+      };
+
   useEffect(() => {
     fetchOrderDetails();
-    // Fetch user from local storage or state management
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
   }, [orderId]);
 
   // Add polling mechanism
@@ -240,6 +281,15 @@ const ProjectDetails = () => {
     return `${formatDate(date)} at ${formatTime(date)}`;
   };
 
+  const handleBack = () => {
+    if (isAdminView) {
+      navigate(-1);
+      return;
+    }
+
+    navigate('/dashboard');
+  };
+
   const handleMakePayment = () => {
     if (currentInstallment) {
       navigate(`/installment-payment/${orderId}/${currentInstallment.installmentNumber}`);
@@ -277,20 +327,20 @@ const ProjectDetails = () => {
 
   if (loading) {
     return (
-      <DashboardLayout user={user}>
+      <Shell {...shellProps}>
         <div className="fixed inset-0 bg-black bg-opacity-10 flex items-center justify-center z-50">
           <div className="rounded-lg p-8">
             <TriangleMazeLoader />
           </div>
         </div>
-      </DashboardLayout>
+      </Shell>
     );
   }
 
   // Special rendering for pending approval
-  if (order && order.isPendingApproval) {
+  if (order && order.isPendingApproval && !isAdminView) {
     return (
-      <DashboardLayout user={user}>
+      <Shell {...shellProps}>
         <div className="p-6">
           <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-lg shadow-sm">
             <div className="flex">
@@ -307,7 +357,7 @@ const ProjectDetails = () => {
                 </div>
                 <div className="mt-4">
                   <button
-                    onClick={() => navigate('/dashboard')}
+                    onClick={handleBack}
                     className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                   >
                     Back to Dashboard
@@ -317,14 +367,14 @@ const ProjectDetails = () => {
             </div>
           </div>
         </div>
-      </DashboardLayout>
+      </Shell>
     );
   }
 
   // Special rendering for rejected payments
-  if (order && order.isPaymentRejected) {
+  if (order && order.isPaymentRejected && !isAdminView) {
     return (
-      <DashboardLayout user={user}>
+      <Shell {...shellProps}>
         <div className="p-6">
           <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg shadow-sm">
             <div className="flex">
@@ -341,7 +391,7 @@ const ProjectDetails = () => {
                 </div>
                 <div className="mt-4 flex space-x-4">
                   <button
-                    onClick={() => navigate('/dashboard')}
+                    onClick={handleBack}
                     className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
                   >
                     Back to Dashboard
@@ -374,26 +424,26 @@ const ProjectDetails = () => {
             </div>
           </div>
         </div>
-      </DashboardLayout>
+      </Shell>
     );
   }
 
   if (!order) {
     return (
-      <DashboardLayout user={user}>
+      <Shell {...shellProps}>
         <div className="p-6">
           <div className="bg-white rounded-lg p-6 text-center shadow-sm">
             <h2 className="text-xl font-bold text-red-600 mb-2">Project Not Found</h2>
             <p className="text-gray-600 mb-4">The project you're looking for doesn't exist or you don't have access to it.</p>
             <button
-              onClick={() => navigate('/dashboard')}
+                    onClick={handleBack}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
             >
               Back to Dashboard
             </button>
           </div>
         </div>
-      </DashboardLayout>
+      </Shell>
     );
   }
   
@@ -433,17 +483,29 @@ const ProjectDetails = () => {
   ].filter(Boolean); // Remove undefined values
 
   return (
-    <DashboardLayout user={user}>
+      <Shell {...shellProps}>
       <div className="w-full max-w-4xl mx-auto p-4 bg-gray-50">
         <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100 transition-all duration-300 hover:shadow-xl">
           {/* Header with blue background */}
           <div className="bg-blue-600 p-6 border-b border-blue-700">
-            <h1 className="text-2xl font-bold text-white">{order.productId?.serviceName}</h1>
-            <p className="text-blue-100 text-sm mt-1">Type: {order.productId?.category?.split('_').join(' ')}</p>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <button
+                  type="button"
+                  onClick={handleBack}
+                  className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-sm font-semibold text-white transition hover:bg-white/20"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  Back
+                </button>
+                <h1 className="mt-4 text-2xl font-bold text-white">{order.productId?.serviceName}</h1>
+                <p className="text-blue-100 text-sm mt-1">Type: {order.productId?.category?.split('_').join(' ')}</p>
+              </div>
+            </div>
           </div>
           
           {/* Payment Alert Banner */}
-          {shouldShowPaymentAlert && currentInstallment && (
+          {!isAdminView && shouldShowPaymentAlert && currentInstallment && (
             <PaymentAlert 
               installmentNumber={currentInstallment.installmentNumber}
               amount={currentInstallment.amount}
@@ -489,6 +551,7 @@ const ProjectDetails = () => {
               {/* Current Stage */}
               <div className="mt-6 text-center w-full">
                 <h3 className="text-lg font-semibold text-gray-700 mb-3">Current Stage</h3>
+                {!isAdminView && (
                 <div className="mt-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-4 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg cursor-pointer transform hover:scale-105">
                   <button
                     onClick={() => setUpdateModalOpen(true)}
@@ -498,6 +561,7 @@ const ProjectDetails = () => {
                     <span className="font-medium">Request Update</span>
                   </button>
                 </div>
+                )}
 
                  {/* View Project Button - Only show if projectLink exists */}
           {order.projectLink && order.projectLink.trim() !== '' && (
@@ -809,7 +873,7 @@ const ProjectDetails = () => {
         </div>
         
         {/* Update Request Modal */}
-        {updateModalOpen && (
+        {updateModalOpen && !isAdminView && (
           <UpdateRequestModal 
             plan={order}
             onClose={() => setUpdateModalOpen(false)}
@@ -821,7 +885,7 @@ const ProjectDetails = () => {
           />
         )}
       </div>
-    </DashboardLayout>
+      </Shell>
   );
 };
 
