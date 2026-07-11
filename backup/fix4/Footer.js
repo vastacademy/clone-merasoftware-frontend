@@ -67,7 +67,7 @@ const Footer = () => {
   return (
     <>
       {/* Desktop Footer - Hidden on mobile */}
-      <footer className="hidden md:block bg-gray-800 text-gray-300 py-10">
+      <footer className="hidden md:block bg-gray-800 text-gray-300 py-10 mt-32">
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
             <div>

@@ -163,7 +163,7 @@ const DashboardLayout = ({ children, user, walletBalance, cartCount, isLoading, 
 
   return (
     <>
-      <div className="bg-slate-100 lg:pl-72">
+      <div className="min-h-screen bg-slate-100 lg:pl-72">
         <aside className="fixed left-0 top-16 z-40 hidden h-[calc(100vh-4rem)] w-72 flex-col border-r border-slate-800 bg-slate-950 text-white shadow-2xl lg:flex">
           <div className="border-b border-white/10 px-5 pt-8 pb-5">
             <div className="flex items-center gap-3">
@@ -297,7 +297,7 @@ const DashboardLayout = ({ children, user, walletBalance, cartCount, isLoading, 
         </aside>
 
         <div className="min-w-0">
-          <main className="overflow-auto bg-slate-100">
+          <main className="min-h-screen overflow-auto bg-slate-100">
             {children}
           </main>
         </div>

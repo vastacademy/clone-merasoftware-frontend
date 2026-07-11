@@ -613,7 +613,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
 
   return (
     <Shell {...shellProps}>
-      <div className="w-full bg-slate-50 px-4 py-4 pb-8 sm:px-6 lg:px-8 lg:pb-10">
+      <div className="w-full bg-slate-50 px-4 py-4 sm:px-6 lg:px-8">
         <div className="mx-auto flex w-full max-w-7xl flex-col gap-4">
           <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
             <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-blue-950 px-5 py-5 text-white sm:px-6 lg:px-8">

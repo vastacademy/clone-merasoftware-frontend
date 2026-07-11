@@ -45,7 +45,6 @@ This document describes the active frontend behavior as of the current codebase.
 - `/support-tickets/:ticketId`
 - `/complete-profile`
 - `/project-details/:orderId` now opens a timeline-driven project view where the selected checkpoint shows only its own linked textual details below, and the latest active checkpoint is selected by default
-- `/project-details/:orderId` desktop layout now uses three aligned cards with shared row height, inner scroll areas, and no runtime size measuring; the main page bottom spacing is handled on the page container so the footer follows naturally after content
 
 ### Admin routes
 
@@ -69,7 +68,6 @@ This document describes the active frontend behavior as of the current codebase.
 - `UserDashboard` is the active customer dashboard content page
 - `AdminDashboard` is the active admin dashboard page
 - `AdminLayout` is the shared admin shell used by dashboard, clients, and client detail pages
-- `AppContent` now keeps the app outlet content flow natural instead of forcing a viewport min-height, so the footer can sit directly after page content
 
 ## 4. Dashboard Behavior
 

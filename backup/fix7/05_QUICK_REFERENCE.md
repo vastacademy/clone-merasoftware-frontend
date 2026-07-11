@@ -13,12 +13,10 @@ Fast lookup for the current codebase.
 | `src/components/CustomerHeader.js` | Customer header UI |
 | `src/components/DashboardLayout.js` | Customer dashboard shell |
 | `src/components/AdminLayout.js` | Shared admin shell |
-| `src/components/Footer.js` | Global footer |
 | `src/pages/UserDashboard.js` | Customer dashboard content |
 | `src/pages/AdminDashboard.js` | Admin dashboard content |
 | `src/pages/AdminClientsPage.js` | Admin client list page |
 | `src/pages/AdminClientWorkspace.js` | Admin client detail page |
-| `src/pages/ProjectDetails.js` | Customer/admin project detail timeline page |
 | `src/common/index.js` | API endpoint definitions, including admin delete order |
 | `src/pages/Login.js` | Login form |
 | `src/helpers/postLogin.js` | Login post-processing and redirect |
@@ -55,7 +53,6 @@ Fast lookup for the current codebase.
 - `/profile`
 - `/support-tickets/:ticketId`
 - `/complete-profile`
-- `/project-details/:orderId` now uses a fixed desktop three-column shell with equal-height cards, inner timeline/detail scrolling, and page-level bottom breathing room so the footer follows content naturally
 
 ### Admin
 
@@ -80,8 +77,6 @@ Fast lookup for the current codebase.
 - Admin client detail work belongs in `AdminClientWorkspace.js`
 - Admin shell work belongs in `AdminLayout.js`
 - Admin header work belongs in `AdminHeader.js`
-- Project detail UI work belongs in `ProjectDetails.js`
-- Footer spacing and shell flow work belong to `AppContent.js`, `DashboardLayout.js`, and `Footer.js`
 - Admin client overview data should be pulled from the existing customer APIs, not a separate admin DB
 - Admin project detail now follows a history-first subpage pattern: checkpoint list, selected checkpoint notes, project submissions, and file metadata all live in the same project subpage
 - Customer project detail at `/project-details/:orderId` is checkpoint-driven: the active checkpoint opens by default, timeline clicks update the detail panel, and the old Recent Updates feed is not shown

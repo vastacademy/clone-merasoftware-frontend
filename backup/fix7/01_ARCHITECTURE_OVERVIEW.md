@@ -65,8 +65,6 @@ This is the current architecture summary for the active frontend code.
 - `DashboardLayout` is the shared customer dashboard shell
 - `UserDashboard` is the active customer dashboard page
 - `AdminDashboard` is the active admin dashboard page
-- `ProjectDetails` is a routed customer/admin detail page that now uses a fixed desktop shell height with scrollable timeline/details panels and a compact snapshot column
-- `AppContent` and `DashboardLayout` keep content flow natural instead of forcing viewport-height wrappers, so footer placement follows actual content height
 
 ## Current Notes
 
@@ -74,3 +72,4 @@ This is the current architecture summary for the active frontend code.
 - The admin dashboard is no longer a dummy page; `AdminDashboard.js` is the active page
 - The customer dashboard side panel is the active shell for the current UI direction
 - Old admin dummy and landing-page docs are legacy only
+
