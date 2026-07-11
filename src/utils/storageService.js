@@ -201,24 +201,33 @@ const StorageService = {
     }
   },
 
-// User Orders ke liye
-setUserOrders: (userId, orders) => {
-  try {
-    localStorage.setItem(`${STORAGE_KEYS.USER_ORDERS}_${userId}`, JSON.stringify(orders));
-  } catch (error) {
-    console.error('Error storing user orders:', error);
-  }
-},
+  // User Orders ke liye
+  setUserOrders: (userId, orders) => {
+    try {
+      localStorage.setItem(`${STORAGE_KEYS.USER_ORDERS}_${userId}`, JSON.stringify(orders));
+    } catch (error) {
+      console.error('Error storing user orders:', error);
+    }
+  },
 
-getUserOrders: (userId) => {
-  try {
-    const orders = localStorage.getItem(`${STORAGE_KEYS.USER_ORDERS}_${userId}`);
-    return orders ? JSON.parse(orders) : null;
-  } catch (error) {
-    console.error('Error getting user orders:', error);
-    return null;
-  }
-},
+  getUserOrders: (userId) => {
+    try {
+      const orders = localStorage.getItem(`${STORAGE_KEYS.USER_ORDERS}_${userId}`);
+      return orders ? JSON.parse(orders) : null;
+    } catch (error) {
+      console.error('Error getting user orders:', error);
+      return null;
+    }
+  },
+
+  clearUserOrders: (userId) => {
+    try {
+      if (!userId) return;
+      localStorage.removeItem(`${STORAGE_KEYS.USER_ORDERS}_${userId}`);
+    } catch (error) {
+      console.error('Error clearing user orders:', error);
+    }
+  },
 
 // User Welcome ke liye
 setUserWelcome: (welcome) => {

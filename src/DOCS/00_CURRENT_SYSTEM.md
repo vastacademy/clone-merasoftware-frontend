@@ -96,7 +96,10 @@ This document describes the active frontend behavior as of the current codebase.
 - `AdminClientWorkspace` has simple `Projects` and `Plans` tabs
 - The `Projects` tab now opens a project subpage inside the same workspace, and back returns to the projects list
 - The `Plans` tab now opens a plan subpage inside the same workspace, and back returns to the plans list
-- Each project/plan row also has an admin delete action that permanently removes the order record and linked workspace data
+- Project subpages now fetch an admin-only project history bundle from the same order-details source: checkpoint progress, linked checkpoint notes, update requests, file metadata, invoices, and transactions stay in one record view for projects
+- Project subpages now show a checkpoint list first, then a checkpoint detail panel with linked notes; project submission and file records are shown below for project-level history
+- Each project/plan row now opens a compact scan-driven delete modal first, then requires all active linked sections to be selected before deletion; missing sections are shown prechecked and disabled
+- Admin delete flow uses a shared delete-plan scan helper plus a serialized delete controller so scan and delete stay on the same source of truth
 - Admin project and plan subpages reuse the same order details backend with admin access
 - Admin project details page now includes a history-following back button in the main header
 - Overview cards are populated from orders, plans, invoices, update requests, and wallet balance
@@ -107,7 +110,9 @@ This document describes the active frontend behavior as of the current codebase.
 - Customer dashboard reads orders and wallet data from existing API calls
 - Admin dashboard fetches clients from `SummaryApi.adminClients`
 - `backend/controller/user/getAdminClients.js` powers the admin client list endpoint
-- `backend/controller/order/deleteOrder.js` handles admin-only project deletion with linked cleanup
+- `backend/controller/order/scanDeleteOrder.js` is called by `/api/admin/delete-order/:orderId/scan` for the delete scan step
+- `backend/controller/order/scanDeleteOrder.js` handles the admin delete scan response
+- `backend/controller/order/deleteOrder.js` handles admin-only project deletion with linked cleanup after checklist confirmation
 
 ## 6. What Is Legacy
 

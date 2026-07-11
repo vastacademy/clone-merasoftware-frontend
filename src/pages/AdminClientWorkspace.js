@@ -147,6 +147,65 @@ const isSameId = (value, targetId) => {
   return Boolean(comparable && targetId && comparable === String(targetId));
 };
 
+const formatBytes = (value) => {
+  if (value === null || value === undefined || Number.isNaN(Number(value))) return "N/A";
+  const size = Number(value);
+  if (size < 1024) return `${size} B`;
+  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+};
+
+const getCheckpointStatusLabel = (checkpoint) => {
+  if (checkpoint?.completed) return "Completed";
+  if ((checkpoint?.completedAt && safeDateTime(checkpoint.completedAt)) || checkpoint?.percentage >= 100) return "Completed";
+  return "Pending";
+};
+
+const getCheckpointBadgeClass = (checkpoint) => {
+  const label = getCheckpointStatusLabel(checkpoint).toLowerCase();
+  if (label === "completed") return "bg-emerald-100 text-emerald-800";
+  return "bg-slate-100 text-slate-700";
+};
+
+const getProjectHistoryOverview = (projectHistory) => {
+  if (!projectHistory?.summary) {
+    return [
+      { id: "progress", label: "Progress Checkpoints", value: 0, helper: "Loaded from project record" },
+      { id: "messages", label: "Checkpoint Notes", value: 0, helper: "Linked progress text" },
+      { id: "submissions", label: "Project Submissions", value: 0, helper: "Update requests and files" },
+      { id: "files", label: "Uploaded Files", value: 0, helper: "Text, images, docs" },
+    ];
+  }
+
+  const summary = projectHistory.summary;
+  return [
+    {
+      id: "progress",
+      label: "Progress Checkpoints",
+      value: `${summary.completedCheckpointCount}/${summary.checkpointCount}`,
+      helper: "Completed vs total checkpoints",
+    },
+    {
+      id: "messages",
+      label: "Checkpoint Notes",
+      value: summary.messageCount,
+      helper: "Messages linked to checkpoint history",
+    },
+    {
+      id: "submissions",
+      label: "Project Submissions",
+      value: summary.submissionCount,
+      helper: "Update request entries",
+    },
+    {
+      id: "files",
+      label: "Uploaded Files",
+      value: summary.fileCount,
+      helper: "File records with size/date info",
+    },
+  ];
+};
+
 const AdminClientWorkspace = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -160,11 +219,16 @@ const AdminClientWorkspace = () => {
   const [fetchError, setFetchError] = useState("");
   const [customer, setCustomer] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleteScan, setDeleteScan] = useState(null);
+  const [deleteScanLoading, setDeleteScanLoading] = useState(false);
+  const [deleteSelections, setDeleteSelections] = useState({});
+  const [deleteError, setDeleteError] = useState("");
   const [deletingOrderId, setDeletingOrderId] = useState(null);
   const [activeProjectId, setActiveProjectId] = useState(null);
   const [activeProject, setActiveProject] = useState(null);
   const [activeProjectLoading, setActiveProjectLoading] = useState(false);
   const [activeProjectError, setActiveProjectError] = useState("");
+  const [selectedProjectCheckpointId, setSelectedProjectCheckpointId] = useState(null);
   const [activePlanId, setActivePlanId] = useState(null);
   const [activePlan, setActivePlan] = useState(null);
   const [activePlanLoading, setActivePlanLoading] = useState(false);
@@ -187,8 +251,51 @@ const AdminClientWorkspace = () => {
   const createdAt = formatDate(client?.createdAt);
   const lastUpdatedAt = formatDateTime(client?.updatedAt || client?.lastUpdated || client?.createdAt);
 
-  const handleRequestDelete = (item) => {
+  const resetDeleteFlow = () => {
+    setDeleteTarget(null);
+    setDeleteScan(null);
+    setDeleteScanLoading(false);
+    setDeleteSelections({});
+    setDeleteError("");
+  };
+
+  const handleRequestDelete = async (item) => {
+    if (!item?._id) return;
+
     setDeleteTarget(item);
+    setDeleteScan(null);
+    setDeleteSelections({});
+    setDeleteError("");
+    setDeleteScanLoading(true);
+
+    try {
+      const response = await fetch(`${SummaryApi.adminDeleteOrderScan.url}/${item._id}/scan`, {
+        method: SummaryApi.adminDeleteOrderScan.method,
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.message || "Failed to scan project delete plan");
+      }
+
+      const scan = result.data || null;
+      setDeleteScan(scan);
+
+      const initialSelections = {};
+      (scan?.sections || []).forEach((section) => {
+        if (section.present) {
+          initialSelections[section.key] = false;
+        }
+      });
+      setDeleteSelections(initialSelections);
+    } catch (error) {
+      console.error("Error scanning delete plan:", error);
+      setDeleteError(error.message || "Failed to scan project delete plan");
+    } finally {
+      setDeleteScanLoading(false);
+    }
   };
 
   const handleOpenProject = (project) => {
@@ -196,6 +303,13 @@ const AdminClientWorkspace = () => {
     setActiveProjectId(project._id);
     setActiveProject(project);
     setActiveProjectError("");
+    const initialCheckpointId =
+      project?.projectHistory?.checkpoints?.find((checkpoint) => checkpoint?.completed)?.checkpointId ??
+      project?.projectHistory?.checkpoints?.[0]?.checkpointId ??
+      project?.checkpoints?.find((checkpoint) => checkpoint?.completed)?.checkpointId ??
+      project?.checkpoints?.[0]?.checkpointId ??
+      null;
+    setSelectedProjectCheckpointId(initialCheckpointId);
     setActiveTab("projects");
     setActivePlanId(null);
     setActivePlan(null);
@@ -208,6 +322,7 @@ const AdminClientWorkspace = () => {
     setActiveProject(null);
     setActiveProjectError("");
     setActiveProjectLoading(false);
+    setSelectedProjectCheckpointId(null);
   };
 
   const handleOpenPlan = (plan) => {
@@ -229,6 +344,13 @@ const AdminClientWorkspace = () => {
     setActivePlanLoading(false);
   };
 
+  const handleToggleDeleteSection = (sectionKey) => {
+    setDeleteSelections((prev) => ({
+      ...prev,
+      [sectionKey]: !prev[sectionKey],
+    }));
+  };
+
   const removeOrderFromWorkspace = (orderId) => {
     setAllData((prev) => {
       const filteredOrders = prev.orders.filter((order) => !isSameId(order?._id, orderId));
@@ -236,6 +358,7 @@ const AdminClientWorkspace = () => {
       const filteredInvoices = prev.invoices.filter((invoice) => !isSameId(invoice?.orderId, orderId));
       const filteredUpdates = prev.updates.filter((update) => !isSameId(update?.updatePlanId, orderId));
       const filteredRenewals = prev.renewals.filter((renewal) => !isSameId(renewal?.orderId, orderId) && !isSameId(renewal?.planId, orderId));
+      const filteredPlans = prev.plans.filter((plan) => !isSameId(plan?._id, orderId));
 
       return {
         ...prev,
@@ -244,6 +367,7 @@ const AdminClientWorkspace = () => {
         invoices: filteredInvoices,
         updates: filteredUpdates,
         renewals: filteredRenewals,
+        plans: filteredPlans,
         summary: null,
       };
     });
@@ -330,11 +454,23 @@ const AdminClientWorkspace = () => {
   }, [activePlanId]);
 
   useEffect(() => {
+    const checkpoints = activeProject?.projectHistory?.checkpoints || activeProject?.checkpoints || [];
+    if (!checkpoints.length) return;
+
+    const selectedExists = checkpoints.some((checkpoint) => String(checkpoint?.checkpointId) === String(selectedProjectCheckpointId));
+    if (selectedExists) return;
+
+    const firstCheckpoint = checkpoints.find((checkpoint) => checkpoint?.completed) || checkpoints[0] || null;
+    setSelectedProjectCheckpointId(firstCheckpoint ? firstCheckpoint.checkpointId : null);
+  }, [activeProject, selectedProjectCheckpointId]);
+
+  useEffect(() => {
     if (activeTab !== "projects" && activeProjectId) {
       setActiveProjectId(null);
       setActiveProject(null);
       setActiveProjectError("");
       setActiveProjectLoading(false);
+      setSelectedProjectCheckpointId(null);
     }
   }, [activeTab, activeProjectId]);
 
@@ -348,7 +484,11 @@ const AdminClientWorkspace = () => {
   }, [activeTab, activePlanId]);
 
   const handleConfirmDelete = async () => {
-    if (!deleteTarget?._id) return;
+    if (!deleteTarget?._id || !deleteScan) return;
+
+    const selectedSections = Object.entries(deleteSelections)
+      .filter(([, isSelected]) => isSelected)
+      .map(([sectionKey]) => sectionKey);
 
     const orderId = deleteTarget._id;
     setDeletingOrderId(orderId);
@@ -358,6 +498,7 @@ const AdminClientWorkspace = () => {
         method: SummaryApi.adminDeleteOrder.method,
         credentials: "include",
         headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ selectedSections }),
       });
 
       const result = await response.json();
@@ -373,8 +514,11 @@ const AdminClientWorkspace = () => {
       if (activePlanId === orderId) {
         handleBackToPlans();
       }
+      if (client?._id || customerId) {
+        StorageService.clearUserOrders(client?._id || customerId);
+      }
       toast.success(result.message || "Project deleted successfully");
-      setDeleteTarget(null);
+      resetDeleteFlow();
     } catch (error) {
       console.error("Error deleting project:", error);
       toast.error(error.message || "Failed to delete project");
@@ -382,6 +526,12 @@ const AdminClientWorkspace = () => {
       setDeletingOrderId(null);
     }
   };
+
+  const deleteChecklistSections = deleteScan?.sections || [];
+  const deleteRequiredSections = deleteChecklistSections.filter((section) => section.present);
+  const allDeleteSectionsSelected =
+    deleteRequiredSections.length > 0 &&
+    deleteRequiredSections.every((section) => deleteSelections[section.key]);
 
   useEffect(() => {
     if (!customerId) return;
@@ -419,6 +569,7 @@ const AdminClientWorkspace = () => {
         setActiveProject(null);
         setActiveProjectId(null);
         setActiveProjectError("");
+        setSelectedProjectCheckpointId(null);
         setActivePlan(null);
         setActivePlanId(null);
         setActivePlanError("");
@@ -680,6 +831,9 @@ const AdminClientWorkspace = () => {
                 detailLabel="Project"
                 notesText="This is the workspace subpage version for projects. It stays inside the same client workspace, and the back button returns to the projects list without leaving the page."
                 summaryTitle="Project progress snapshot"
+                projectHistory={activeProject?.projectHistory}
+                selectedCheckpointId={selectedProjectCheckpointId}
+                onSelectCheckpoint={setSelectedProjectCheckpointId}
               />
             ) : (
               <CompactWorkspaceCard
@@ -776,44 +930,119 @@ const AdminClientWorkspace = () => {
 
         {deleteTarget ? (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 px-4 py-6">
-            <div className="w-full max-w-lg rounded-[2rem] border border-slate-200 bg-white p-6 shadow-2xl">
+            <div className="w-full max-w-xl rounded-[2rem] border border-slate-200 bg-white p-6 shadow-2xl">
               <div className="flex items-start gap-4">
                 <div className="rounded-2xl bg-rose-50 p-3 text-rose-600">
                   <Trash2 size={20} />
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-xl font-bold text-slate-900">Delete project permanently?</h3>
+                  <h3 className="text-xl font-bold text-slate-900">
+                    Delete {deleteScan?.orderType === "plan" ? "plan" : "project"} permanently?
+                  </h3>
                   <p className="mt-2 text-sm text-slate-600">
-                    This will remove the project from admin and customer views and permanently delete all linked database records for this project.
+                    Scan linked data, check only active sections, and delete runs only when all present items are selected.
                   </p>
-                  <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
-                    <p className="font-semibold text-slate-900">{deleteTarget.productId?.serviceName || "Project"}</p>
-                    <p className="mt-1">Project ID: {deleteTarget._id}</p>
-                  </div>
+                  <p className="mt-3 text-xs font-medium text-slate-500">
+                    {deleteScan?.serviceName || deleteTarget.productId?.serviceName || "Project"} | Order ID: {deleteTarget._id}
+                  </p>
                 </div>
                 <button
                   type="button"
-                  onClick={() => setDeleteTarget(null)}
+                  onClick={resetDeleteFlow}
                   className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition hover:bg-slate-50 hover:text-slate-700"
                   aria-label="Close delete dialog"
+                  disabled={Boolean(deletingOrderId) || deleteScanLoading}
                 >
                   <X size={16} />
                 </button>
               </div>
 
+              <div className="mt-6 space-y-4">
+                {deleteScanLoading ? (
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+                    Scanning linked records...
+                  </div>
+                ) : null}
+
+                {deleteError ? (
+                  <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
+                    {deleteError}
+                  </div>
+                ) : null}
+
+                {deleteScan && !deleteScanLoading ? (
+                  <>
+                    <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-semibold text-slate-900">Select every existing section</p>
+                          <p className="mt-1 text-xs text-slate-500">
+                            Missing sections stay disabled, present sections must be checked.
+                          </p>
+                        </div>
+                        <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-500">
+                          {deleteRequiredSections.length} active
+                        </span>
+                      </div>
+
+                      <div className="mt-4 space-y-2">
+                        {deleteChecklistSections.map((section) => {
+                          const isLocked = !section.present;
+                          const isChecked = isLocked ? true : Boolean(deleteSelections[section.key]);
+
+                          return (
+                            <label
+                              key={section.key}
+                              className={[
+                                "flex items-center gap-3 rounded-2xl border px-4 py-3 text-sm transition",
+                                isLocked
+                                  ? "cursor-not-allowed border-slate-200 bg-white text-slate-400"
+                                  : "cursor-pointer border-slate-200 bg-white text-slate-700 hover:border-emerald-200 hover:bg-emerald-50/40",
+                              ].join(" ")}
+                            >
+                              <input
+                                type="checkbox"
+                                className="h-4 w-4 shrink-0 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                                checked={isChecked}
+                                disabled={isLocked || Boolean(deletingOrderId)}
+                                onChange={() => handleToggleDeleteSection(section.key)}
+                              />
+                              <span className="min-w-0 flex-1 truncate font-semibold text-slate-900">
+                                {section.label}
+                              </span>
+                              <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-500">
+                                {section.count}
+                              </span>
+                              <span
+                                className={[
+                                  "shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold",
+                                  section.present ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-400",
+                                ].join(" ")}
+                              >
+                                {section.present ? "Present" : "Missing"}
+                              </span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </>
+                ) : null}
+              </div>
+
               <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
                 <button
                   type="button"
-                  onClick={() => setDeleteTarget(null)}
+                  onClick={resetDeleteFlow}
                   className="inline-flex items-center justify-center rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-                  disabled={Boolean(deletingOrderId)}
+                  disabled={Boolean(deletingOrderId) || deleteScanLoading}
                 >
                   Cancel
                 </button>
                 <button
                   type="button"
                   onClick={handleConfirmDelete}
-                  disabled={Boolean(deletingOrderId)}
+                  disabled={Boolean(deletingOrderId) || deleteScanLoading || !allDeleteSectionsSelected}
                   className="inline-flex items-center justify-center gap-2 rounded-2xl bg-rose-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-70"
                 >
                   {deletingOrderId ? (
@@ -824,7 +1053,7 @@ const AdminClientWorkspace = () => {
                   ) : (
                     <>
                       <Trash2 size={16} />
-                      Delete permanently
+                      Delete selected sections
                     </>
                   )}
                 </button>
@@ -917,8 +1146,22 @@ const WorkspaceDetailSubpage = ({
   detailLabel,
   notesText,
   summaryTitle,
+  projectHistory,
+  selectedCheckpointId,
+  onSelectCheckpoint,
 }) => {
   const itemStatus = getStatusLabel(item);
+  const isProjectDetail = detailLabel === "Project";
+  const checkpoints = projectHistory?.checkpoints || item?.checkpoints || [];
+  const selectedCheckpoint =
+    checkpoints.find((checkpoint) => String(checkpoint?.checkpointId) === String(selectedCheckpointId)) ||
+    checkpoints.find((checkpoint) => checkpoint?.completed) ||
+    checkpoints[0] ||
+    null;
+  const selectedCheckpointMessages = selectedCheckpoint?.linkedMessages || [];
+  const checkpointOverview = getProjectHistoryOverview(projectHistory);
+  const submissionHistory = projectHistory?.submissions || [];
+  const timelineHistory = projectHistory?.timeline || [];
 
   return (
     <div className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
@@ -1013,6 +1256,205 @@ const WorkspaceDetailSubpage = ({
               </div>
             </div>
           </div>
+
+          {isProjectDetail && projectHistory ? (
+            <div className="space-y-5">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                {checkpointOverview.map((card) => (
+                  <div key={card.id} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">{card.label}</p>
+                    <p className="mt-1 text-sm font-semibold text-slate-900">{card.value}</p>
+                    <p className="mt-1 text-xs text-slate-500">{card.helper}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.15fr_0.85fr]">
+                <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-medium text-slate-500">Progress Checkpoints</p>
+                      <h3 className="mt-1 text-lg font-semibold text-slate-900">Click a checkpoint for details</h3>
+                    </div>
+                    <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-500">
+                      {checkpoints.length} checkpoints
+                    </span>
+                  </div>
+
+                  <div className="mt-4 space-y-2">
+                    {checkpoints.length === 0 ? (
+                      <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-500">
+                        No checkpoint history available for this project.
+                      </div>
+                    ) : (
+                      checkpoints.map((checkpoint) => {
+                        const isSelected = String(checkpoint?.checkpointId) === String(selectedCheckpoint?.checkpointId);
+
+                        return (
+                          <button
+                            key={checkpoint.checkpointId}
+                            type="button"
+                            onClick={() => onSelectCheckpoint?.(checkpoint.checkpointId)}
+                            className={[
+                              "flex w-full items-start gap-4 rounded-2xl border px-4 py-3 text-left transition",
+                              isSelected
+                                ? "border-emerald-300 bg-emerald-50 shadow-sm"
+                                : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50",
+                            ].join(" ")}
+                          >
+                            <div className="min-w-0 flex-1">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <p className="truncate font-semibold text-slate-900">{checkpoint.name}</p>
+                                <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${getCheckpointBadgeClass(checkpoint)}`}>
+                                  {getCheckpointStatusLabel(checkpoint)}
+                                </span>
+                              </div>
+                              <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
+                                <span>Progress: {checkpoint.percentage || 0}%</span>
+                                <span>Completed: {formatDateTime(checkpoint.completedAt)}</span>
+                                <span>Notes: {(checkpoint.linkedMessages || []).length}</span>
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+
+                <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-medium text-slate-500">Checkpoint Details</p>
+                      <h3 className="mt-1 text-lg font-semibold text-slate-900">
+                        {selectedCheckpoint?.name || "Select a checkpoint"}
+                      </h3>
+                    </div>
+                    {selectedCheckpoint ? (
+                      <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getCheckpointBadgeClass(selectedCheckpoint)}`}>
+                        {getCheckpointStatusLabel(selectedCheckpoint)}
+                      </span>
+                    ) : null}
+                  </div>
+
+                  {selectedCheckpoint ? (
+                    <div className="mt-4 space-y-4">
+                      <div className="grid grid-cols-2 gap-3">
+                        <InfoPill label="Checkpoint ID" value={selectedCheckpoint.checkpointId || "N/A"} />
+                        <InfoPill label="Progress" value={`${selectedCheckpoint.percentage || 0}%`} />
+                        <InfoPill label="Completed At" value={formatDateTime(selectedCheckpoint.completedAt)} />
+                        <InfoPill label="Notes Count" value={(selectedCheckpointMessages || []).length} />
+                      </div>
+
+                      <div className="rounded-[1.25rem] border border-slate-200 bg-white p-4">
+                        <p className="text-sm font-medium text-slate-500">Linked Progress Notes</p>
+                        <div className="mt-3 space-y-3">
+                          {selectedCheckpointMessages.length === 0 ? (
+                            <p className="text-sm text-slate-500">No checkpoint notes found for this stage.</p>
+                          ) : (
+                            selectedCheckpointMessages.map((message) => (
+                              <div key={message.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                                <div className="flex items-center justify-between gap-3">
+                                  <p className="text-sm font-semibold text-slate-900 capitalize">{message.sender}</p>
+                                  <p className="text-xs text-slate-500">{formatDateTime(message.timestamp)}</p>
+                                </div>
+                                <p className="mt-2 text-sm text-slate-700 whitespace-pre-line">{message.message}</p>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="mt-4 rounded-[1.25rem] border border-slate-200 bg-white p-4 text-sm text-slate-500">
+                      Choose a checkpoint from the list to inspect its full note history.
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+                <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
+                  <p className="text-sm font-medium text-slate-500">Project Submissions</p>
+                  <h3 className="mt-1 text-lg font-semibold text-slate-900">Instructions and file records</h3>
+                  <div className="mt-4 space-y-3">
+                    {submissionHistory.length === 0 ? (
+                      <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-500">
+                        No update requests found for this project.
+                      </div>
+                    ) : (
+                      submissionHistory.map((submission) => (
+                        <div key={submission._id} className="rounded-2xl border border-slate-200 bg-white p-4">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <p className="text-sm font-semibold text-slate-900">Request #{String(submission._id).slice(-6)}</p>
+                            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
+                              {submission.status || "pending"}
+                            </span>
+                          </div>
+                          <p className="mt-1 text-xs text-slate-500">{formatDateTime(submission.createdAt)}</p>
+                          <p className="mt-3 whitespace-pre-line text-sm text-slate-700">
+                            {submission.instructionText || "No text instructions provided."}
+                          </p>
+
+                          <div className="mt-4 space-y-2">
+                            {(submission.files || []).length === 0 ? (
+                              <p className="text-xs text-slate-500">No files attached.</p>
+                            ) : (
+                              submission.files.map((file, index) => (
+                                <div key={`${submission._id}-${index}`} className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                                  <p className="text-sm font-semibold text-slate-900">{file.originalName || file.filename || "File"}</p>
+                                  <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-500">
+                                    <span>Type: {file.type || "N/A"}</span>
+                                    <span>Size: {formatBytes(file.size)}</span>
+                                    <span>Expires: {formatDateTime(file.expirationDate)}</span>
+                                  </div>
+                                  {file.driveLink ? (
+                                    <a
+                                      href={file.driveLink}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="mt-2 inline-flex text-xs font-semibold text-blue-600 hover:text-blue-800"
+                                    >
+                                      Open file
+                                    </a>
+                                  ) : null}
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+
+                <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
+                  <p className="text-sm font-medium text-slate-500">Combined Project History</p>
+                  <h3 className="mt-1 text-lg font-semibold text-slate-900">Chronological record</h3>
+                  <div className="mt-4 space-y-3">
+                    {timelineHistory.length === 0 ? (
+                      <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-500">
+                        No combined timeline available yet.
+                      </div>
+                    ) : (
+                      timelineHistory.map((entry, index) => (
+                        <div key={`${entry.type}-${index}`} className="rounded-2xl border border-slate-200 bg-white p-4">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <p className="text-sm font-semibold text-slate-900">{entry.title}</p>
+                            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
+                              {entry.type}
+                            </span>
+                          </div>
+                          <p className="mt-1 text-xs text-slate-500">{formatDateTime(entry.timestamp)}</p>
+                          <p className="mt-2 whitespace-pre-line text-sm text-slate-700">{entry.description || "No details available."}</p>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : null}
 
           <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
             <p className="text-sm font-medium text-slate-500">Notes</p>

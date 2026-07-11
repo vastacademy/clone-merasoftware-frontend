@@ -27,7 +27,7 @@ Admin ko same SSOT backend/data par customer ka full read + manage access dena h
 - Admin dashboard me clients list already available hai
 - `AdminClientWorkspace` page live hai
 - Admin client detail/workspace page ka data flow SSOT pattern par shift ho chuka hai
-- Admin workspace projects/plans ke liye hard delete flow added hai; linked DB data aur workspace traces ko remove karne ka target hai
+- Admin workspace projects/plans ke liye compact scan-driven delete flow added hai; delete se pehle linked records scan hote hain, missing sections prechecked/disabled dikhte hain, aur sirf fully selected sections delete hote hain
 - Projects aur Plans tabs ke liye in-workspace subpage flow add ho raha hai, so back returns to the respective list instead of leaving the workspace
 
 ## Customer Current Access Pattern
@@ -48,6 +48,7 @@ Main active data sources:
 - Admin specific actions ke liye sirf zarurat par extra route/controller add hoga
 - Common read logic shared rahega
 - Common write/manage logic bhi shared service layer se aayega, duplicate system nahi
+- Delete flow me shared scan helper use hoga taaki scan aur final delete same source of truth follow karein
 
 ## Phase 1 Plan
 - Customer data flow ko final map karna
@@ -63,6 +64,7 @@ Main active data sources:
 - History, active, pending, completed, rejected, balance
 - Admin controls for allowed actions
 - Project/order delete with linked cleanup
+- Project/order delete with scan + checklist confirmation + full cleanup
 - Projects and Plans subpages inside workspace
 - Live refresh / activity sync
 

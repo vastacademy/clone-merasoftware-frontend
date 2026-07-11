@@ -218,6 +218,23 @@ try {
 - Token expires after 365 days
 - Clear cookies on logout
 
+### Admin Delete Flow
+
+**Current pattern**:
+1. Admin clicks delete in `AdminClientWorkspace`
+2. Frontend calls the delete scan endpoint first
+3. Backend returns the active linked sections and any already-missing sections
+4. Admin checks every active section in the modal
+5. Final delete request sends the checked section list back to backend
+6. Backend validates the same scan plan again, then deletes linked records in a serialized order
+7. Frontend clears the affected customer's cached order list
+8. UI removes the project only after the backend confirms full success
+
+**Why this matters**:
+- It avoids partial deletes being treated as success
+- It keeps scan and delete on the same SSOT path
+- Dead/corrupt records can still be scanned and cleaned if linked data remains
+
 ---
 
 ## 📊 Complete Data Flow Examples

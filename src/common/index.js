@@ -656,6 +656,10 @@ const SummaryApi = {
     adminDeleteOrder: {
         url: `${backendDomain}/api/admin/delete-order`,
         method: "delete"
+    },
+    adminDeleteOrderScan: {
+        url: `${backendDomain}/api/admin/delete-order`,
+        method: "get"
     }
 }
 

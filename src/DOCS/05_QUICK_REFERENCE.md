@@ -78,7 +78,8 @@ Fast lookup for the current codebase.
 - Admin shell work belongs in `AdminLayout.js`
 - Admin header work belongs in `AdminHeader.js`
 - Admin client overview data should be pulled from the existing customer APIs, not a separate admin DB
-- Admin project delete work belongs to the admin delete order controller and `AdminClientWorkspace.js`
+- Admin project detail now follows a history-first subpage pattern: checkpoint list, selected checkpoint notes, project submissions, and file metadata all live in the same project subpage
+- Admin project delete work belongs to the scan endpoint, admin delete controller, and `AdminClientWorkspace.js`
 - Admin project and plan details in the workspace should stay as in-page subviews that return to their list tabs
 
 ## API Files To Check First
