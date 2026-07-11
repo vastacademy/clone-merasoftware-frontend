@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { 
@@ -152,6 +152,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
   const user = useSelector((state) => state?.user?.user);
   const { isOnline } = useOnlineStatus();
   const timelineRef = useRef(null);
+  const progressCardRef = useRef(null);
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [shouldShowPaymentAlert, setShouldShowPaymentAlert] = useState(false);
@@ -160,6 +161,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
   const [isProjectPaused, setIsProjectPaused] = useState(false);
   const [timelineExpanded, setTimelineExpanded] = useState(false);
   const [selectedCheckpointId, setSelectedCheckpointId] = useState('');
+  const [matchingCardHeight, setMatchingCardHeight] = useState(null);
 
   const handleLogout = async () => {
     try {
@@ -185,6 +187,34 @@ const ProjectDetails = ({ isAdminView = false }) => {
       toast.error('Logout failed. Please try again.');
     }
   };
+
+  useLayoutEffect(() => {
+    const node = progressCardRef.current;
+
+    if (!node) {
+      return undefined;
+    }
+
+    const updateHeight = () => {
+      setMatchingCardHeight(Math.round(node.getBoundingClientRect().height));
+    };
+
+    updateHeight();
+
+    if (typeof ResizeObserver === 'undefined') {
+      window.addEventListener('resize', updateHeight);
+      return () => window.removeEventListener('resize', updateHeight);
+    }
+
+    const observer = new ResizeObserver(updateHeight);
+    observer.observe(node);
+    window.addEventListener('resize', updateHeight);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', updateHeight);
+    };
+  }, [isAdminView, order?.projectLink]);
 
   const Shell = isAdminView ? AdminLayout : DashboardLayout;
   const shellProps = isAdminView
@@ -646,8 +676,8 @@ const ProjectDetails = ({ isAdminView = false }) => {
 
             <div className="px-5 py-5 sm:px-6 lg:px-8">
               <div className="hidden gap-5 lg:grid lg:grid-cols-[280px_minmax(0,1fr)_360px] lg:items-stretch">
-                <aside className="grid h-[470px] grid-rows-[minmax(0,1fr)_minmax(0,1fr)] gap-4">
-                  <div className="flex h-full min-h-0 flex-col rounded-[1.75rem] border border-slate-200 bg-slate-50 p-4 shadow-sm">
+                <aside className="flex h-[640px] flex-col gap-4">
+                  <div ref={progressCardRef} className="flex shrink-0 flex-col rounded-[1.75rem] border border-slate-200 bg-slate-50 p-4 shadow-sm">
                       <div className="flex items-center justify-center">
                         <div className="relative flex h-40 w-40 items-center justify-center">
                           <div className="absolute inset-0 rounded-full border-[12px] border-slate-200"></div>
@@ -695,7 +725,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
                       ) : null}
                   </div>
 
-                  <section className="flex h-full min-h-0 flex-col rounded-[1.75rem] border border-slate-200 bg-white p-4 shadow-sm">
+                  <section className="flex flex-col rounded-[1.75rem] border border-slate-200 bg-white p-4 shadow-sm">
                       <p className="text-sm font-semibold text-slate-900">Snapshot</p>
                       <div className="mt-3 space-y-2.5">
                         <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-2.5">
@@ -715,8 +745,11 @@ const ProjectDetails = ({ isAdminView = false }) => {
 
                 </aside>
 
-                <section className="min-w-0 h-full lg:h-[470px]">
-                  <div className="flex h-full min-h-0 flex-col rounded-[1.75rem] border border-slate-200 bg-slate-50 p-4 shadow-sm">
+                <section className="min-w-0">
+                  <div
+                    className="flex flex-col rounded-[1.75rem] border border-slate-200 bg-slate-50 p-4 shadow-sm"
+                    style={matchingCardHeight ? { height: `${matchingCardHeight}px` } : undefined}
+                  >
                     <div className="flex flex-col gap-2 border-b border-slate-200 pb-4 sm:flex-row sm:items-center sm:justify-between">
                       <div>
                         <p className="text-sm font-medium text-slate-500">Progress Timeline</p>
@@ -727,7 +760,10 @@ const ProjectDetails = ({ isAdminView = false }) => {
                       </span>
                     </div>
 
-                    <div ref={timelineRef} className="mt-3 flex-1 min-h-0 overflow-auto pr-1">
+                    <div
+                      ref={timelineRef}
+                      className="mt-3 flex-1 overflow-auto pr-1"
+                    >
                       <div className="relative pl-2">
                         <div className="absolute left-[22px] top-2 bottom-2 w-px bg-slate-200"></div>
                         <div className="space-y-2">
@@ -755,10 +791,11 @@ const ProjectDetails = ({ isAdminView = false }) => {
                   </div>
                 </section>
 
-                <aside className="h-full min-w-0 lg:h-[470px]">
-                  <div className="sticky top-6 flex h-full flex-col">
+                <aside className="space-y-5">
+                  <div className="sticky top-6 space-y-5">
                     <section
-                      className="flex h-full min-h-0 flex-col rounded-[1.75rem] border border-slate-200 bg-white p-4 shadow-sm"
+                      className="flex flex-col rounded-[1.75rem] border border-slate-200 bg-white p-4 shadow-sm"
+                      style={matchingCardHeight ? { height: `${matchingCardHeight}px` } : undefined}
                     >
                       <div className="flex items-start justify-between gap-4 border-b border-slate-200 pb-3">
                         <div>
@@ -778,7 +815,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
                       </div>
 
                       {selectedCheckpoint ? (
-                        <div className="mt-3 flex-1 min-h-0 space-y-3 overflow-auto pr-1">
+                        <div className="mt-3 flex-1 space-y-3 overflow-auto pr-1">
                           <div className="grid grid-cols-2 gap-2.5">
                             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-2.5">
                               <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">Checkpoint</p>
@@ -800,14 +837,14 @@ const ProjectDetails = ({ isAdminView = false }) => {
                             </div>
                           </div>
 
-                          <div className="flex min-h-0 flex-1 flex-col rounded-[1.25rem] border border-slate-200 bg-slate-50 p-3.5">
+                          <div className="rounded-[1.25rem] border border-slate-200 bg-slate-50 p-3.5">
                             <div className="flex items-center justify-between gap-3">
                               <p className="text-sm font-semibold text-slate-900">Textual Record</p>
                               <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-500">
                                 {selectedCheckpointMessages.length} note{selectedCheckpointMessages.length === 1 ? '' : 's'}
                               </span>
                             </div>
-                            <div className="mt-3 flex-1 min-h-0 space-y-3 overflow-auto pr-1">
+                            <div className="mt-3 max-h-[31vh] space-y-3 overflow-auto pr-1">
                               {selectedCheckpointMessages.length > 0 ? (
                                 selectedCheckpointMessages.map((message, index) => (
                                   <div

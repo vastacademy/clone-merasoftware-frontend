@@ -646,8 +646,8 @@ const ProjectDetails = ({ isAdminView = false }) => {
 
             <div className="px-5 py-5 sm:px-6 lg:px-8">
               <div className="hidden gap-5 lg:grid lg:grid-cols-[280px_minmax(0,1fr)_360px] lg:items-stretch">
-                <aside className="grid h-[470px] grid-rows-[minmax(0,1fr)_minmax(0,1fr)] gap-4">
-                  <div className="flex h-full min-h-0 flex-col rounded-[1.75rem] border border-slate-200 bg-slate-50 p-4 shadow-sm">
+                <aside className="flex flex-col gap-4 self-stretch">
+                  <div className="flex shrink-0 flex-col rounded-[1.75rem] border border-slate-200 bg-slate-50 p-4 shadow-sm">
                       <div className="flex items-center justify-center">
                         <div className="relative flex h-40 w-40 items-center justify-center">
                           <div className="absolute inset-0 rounded-full border-[12px] border-slate-200"></div>
@@ -695,7 +695,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
                       ) : null}
                   </div>
 
-                  <section className="flex h-full min-h-0 flex-col rounded-[1.75rem] border border-slate-200 bg-white p-4 shadow-sm">
+                  <section className="flex flex-col rounded-[1.75rem] border border-slate-200 bg-white p-4 shadow-sm">
                       <p className="text-sm font-semibold text-slate-900">Snapshot</p>
                       <div className="mt-3 space-y-2.5">
                         <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-2.5">
@@ -715,7 +715,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
 
                 </aside>
 
-                <section className="min-w-0 h-full lg:h-[470px]">
+                <section className="min-w-0 h-full">
                   <div className="flex h-full min-h-0 flex-col rounded-[1.75rem] border border-slate-200 bg-slate-50 p-4 shadow-sm">
                     <div className="flex flex-col gap-2 border-b border-slate-200 pb-4 sm:flex-row sm:items-center sm:justify-between">
                       <div>
@@ -755,7 +755,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
                   </div>
                 </section>
 
-                <aside className="h-full min-w-0 lg:h-[470px]">
+                <aside className="h-full min-w-0">
                   <div className="sticky top-6 flex h-full flex-col">
                     <section
                       className="flex h-full min-h-0 flex-col rounded-[1.75rem] border border-slate-200 bg-white p-4 shadow-sm"
