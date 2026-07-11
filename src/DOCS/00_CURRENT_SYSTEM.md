@@ -44,6 +44,7 @@ This document describes the active frontend behavior as of the current codebase.
 - `/profile`
 - `/support-tickets/:ticketId`
 - `/complete-profile`
+- `/project-details/:orderId` now opens a timeline-driven project view where the selected checkpoint shows only its own linked textual details below, and the latest active checkpoint is selected by default
 
 ### Admin routes
 
@@ -98,6 +99,7 @@ This document describes the active frontend behavior as of the current codebase.
 - The `Plans` tab now opens a plan subpage inside the same workspace, and back returns to the plans list
 - Project subpages now fetch an admin-only project history bundle from the same order-details source: checkpoint progress, linked checkpoint notes, update requests, file metadata, invoices, and transactions stay in one record view for projects
 - Project subpages now show a checkpoint list first, then a checkpoint detail panel with linked notes; project submission and file records are shown below for project-level history
+- Customer project details now use the same checkpoint-driven pattern on the customer side and no longer show a separate Recent Updates feed
 - Each project/plan row now opens a compact scan-driven delete modal first, then requires all active linked sections to be selected before deletion; missing sections are shown prechecked and disabled
 - Admin delete flow uses a shared delete-plan scan helper plus a serialized delete controller so scan and delete stay on the same source of truth
 - Admin project and plan subpages reuse the same order details backend with admin access

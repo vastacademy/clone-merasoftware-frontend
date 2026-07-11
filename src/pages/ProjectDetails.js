@@ -1,9 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { 
-  Bell, MessageCircle, X, ArrowLeft, ChevronRight, 
-  Send, Clock, Check, ChevronUp, ChevronDown, List, Upload,
+  X, ArrowLeft, Clock, Check, List, Upload,
   CheckCircle, ExternalLink
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -18,6 +17,51 @@ import CookieManager from '../utils/cookieManager';
 import StorageService from '../utils/storageService';
 import { useOnlineStatus } from '../App';
 
+const normalizeCheckpointKey = (value) => {
+  if (value === null || value === undefined) {
+    return '';
+  }
+
+  return String(value).trim();
+};
+
+const getCheckpointKey = (checkpoint, index = 0) => {
+  const rawKey =
+    checkpoint?.checkpointId ??
+    checkpoint?._id ??
+    checkpoint?.id ??
+    checkpoint?.name ??
+    `checkpoint-${index}`;
+
+  return normalizeCheckpointKey(rawKey);
+};
+
+const getMessageCheckpointKey = (message, index = 0) => {
+  const rawKey =
+    message?.checkpointId ??
+    message?.checkpointKey ??
+    message?.checkpointName ??
+    message?.nodeName ??
+    message?.name ??
+    `message-${index}`;
+
+  return normalizeCheckpointKey(rawKey);
+};
+
+const getDefaultCheckpointKey = (checkpoints = []) => {
+  const activeCheckpoint = checkpoints.find((checkpoint) => !checkpoint.completed);
+
+  if (activeCheckpoint) {
+    return getCheckpointKey(activeCheckpoint, checkpoints.indexOf(activeCheckpoint));
+  }
+
+  if (checkpoints.length > 0) {
+    return getCheckpointKey(checkpoints[checkpoints.length - 1], checkpoints.length - 1);
+  }
+
+  return '';
+};
+
 const ProjectDetails = ({ isAdminView = false }) => {
   const { orderId } = useParams();
   const navigate = useNavigate();
@@ -31,9 +75,8 @@ const ProjectDetails = ({ isAdminView = false }) => {
   const [currentInstallment, setCurrentInstallment] = useState(null);
   const [updateModalOpen, setUpdateModalOpen] = useState(false);
   const [isProjectPaused, setIsProjectPaused] = useState(false);
-  const [showAllUpdates, setShowAllUpdates] = useState(false);
-  const [expandedNotification, setExpandedNotification] = useState(null);
   const [timelineExpanded, setTimelineExpanded] = useState(false);
+  const [selectedCheckpointId, setSelectedCheckpointId] = useState('');
 
   const handleLogout = async () => {
     try {
@@ -71,114 +114,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
     : {
         user,
       };
-
-  useEffect(() => {
-    fetchOrderDetails();
-  }, [orderId]);
-
-  // Add polling mechanism
-  useEffect(() => {
-    const intervalId = setInterval(() => {
-      fetchOrderDetails();
-    }, 30000); // Check every 30 seconds
-    
-    return () => clearInterval(intervalId);
-  }, [orderId]);
-
-  const fetchOrderDetails = async () => {
-    try {
-      // First fetch order data
-      const orderResponse = await fetch(`${SummaryApi.orderDetails.url}/${orderId}`, {
-        credentials: 'include',
-      });
-      const orderData = await orderResponse.json();
-      
-      if (orderData.success) {
-        const order = orderData.data;
-        
-        // Check if this order is visible to the user
-        if (order.orderVisibility === 'pending-approval') {
-          setOrder({
-            ...order,
-            isPendingApproval: true,
-            pendingMessage: "Your payment is being processed. Project details will be available after admin approval."
-          });
-          setLoading(false);
-          return;
-        }
-        
-        if (order.orderVisibility === 'payment-rejected') {
-          setOrder({
-            ...order,
-            isPaymentRejected: true,
-            rejectionReason: order.rejectionReason || "Your payment was rejected. Please retry payment to access this project."
-          });
-          setLoading(false);
-          return;
-        }
-        
-        setOrder(order);
-
-        if (order.messages && order.messages.length > 0) {
-          console.log("Message structure check:");
-          console.log(order.messages[0]); // Look at the first message
-          
-          if (order.checkpoints && order.checkpoints.length > 0) {
-            console.log("Checkpoint structure check:");
-            console.log(order.checkpoints[0]); // Look at the first checkpoint
-          }
-        }
-
-        if (order.messages && order.messages.length > 0) {
-          // Keep these logs for debugging
-          console.log("FIRST MESSAGE:", order.messages[0]);
-          
-          order.messages = order.messages.map((message) => {
-            // If the message already has a checkpointName, use it
-            if (message.checkpointName) {
-              return message;
-            }
-            
-            // If the message has checkpointId, try to find the matching checkpoint
-            if (message.checkpointId) {
-              const matchedCheckpoint = order.checkpoints.find(cp => 
-                cp.checkpointId === message.checkpointId
-              );
-              
-              if (matchedCheckpoint) {
-                return {
-                  ...message,
-                  checkpointName: matchedCheckpoint.name
-                };
-              }
-            }
-            
-            // Short-term solution: For existing messages, fall back to checkpoint sequence
-            // This will gradually be replaced as new messages come in with proper checkpointId
-            const index = order.messages.indexOf(message);
-            const checkpointIndex = Math.min(index, order.checkpoints.length - 1);
-            
-            return {
-              ...message,
-              checkpointName: order.checkpoints[checkpointIndex].name
-            };
-          });
-        }
-
-        // Check if this is a partial payment order and if we should show payment alert
-        if (order.isPartialPayment) {
-          checkPaymentStatus(order);
-        }
-      }
-    } catch (error) {
-      console.error("Error:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-
-  const checkPaymentStatus = async (order) => {
+  const checkPaymentStatus = useCallback(async (order) => {
     // If project is already completed, don't show payment alert
     if (order.projectProgress >= 100 || order.currentPhase === 'completed') {
       setShouldShowPaymentAlert(false);
@@ -259,7 +195,89 @@ const ProjectDetails = ({ isAdminView = false }) => {
         setIsProjectPaused(false);
       }
     }
-  };
+  }, []);
+
+  const fetchOrderDetails = useCallback(async () => {
+    try {
+      // First fetch order data
+      const orderResponse = await fetch(`${SummaryApi.orderDetails.url}/${orderId}`, {
+        credentials: 'include',
+      });
+      const orderData = await orderResponse.json();
+      
+      if (orderData.success) {
+        const order = orderData.data;
+        
+        // Check if this order is visible to the user
+        if (order.orderVisibility === 'pending-approval') {
+          setOrder({
+            ...order,
+            isPendingApproval: true,
+            pendingMessage: "Your payment is being processed. Project details will be available after admin approval."
+          });
+          setLoading(false);
+          return;
+        }
+        
+        if (order.orderVisibility === 'payment-rejected') {
+          setOrder({
+            ...order,
+            isPaymentRejected: true,
+            rejectionReason: order.rejectionReason || "Your payment was rejected. Please retry payment to access this project."
+          });
+          setLoading(false);
+          return;
+        }
+
+        const normalizedCheckpoints = Array.isArray(order.checkpoints) ? order.checkpoints : [];
+        const normalizedMessages = Array.isArray(order.messages)
+          ? order.messages.map((message, index) => {
+              const messageCheckpointKey = getMessageCheckpointKey(message, index);
+              const exactMatchedCheckpoint = normalizedCheckpoints.find((checkpoint, checkpointIndex) => {
+                const checkpointKey = getCheckpointKey(checkpoint, checkpointIndex);
+                return checkpointKey === messageCheckpointKey || normalizeCheckpointKey(checkpoint.checkpointId) === messageCheckpointKey;
+              });
+              const fallbackCheckpoint = exactMatchedCheckpoint || normalizedCheckpoints[Math.min(index, Math.max(normalizedCheckpoints.length - 1, 0))];
+
+              return {
+                ...message,
+                timelineCheckpointKey: fallbackCheckpoint ? getCheckpointKey(fallbackCheckpoint, normalizedCheckpoints.indexOf(fallbackCheckpoint)) : '',
+                checkpointName: message.checkpointName || fallbackCheckpoint?.name || 'Project Update',
+              };
+            })
+          : [];
+
+        const mappedOrder = {
+          ...order,
+          messages: normalizedMessages,
+        };
+
+        setOrder(mappedOrder);
+
+        // Check if this is a partial payment order and if we should show payment alert
+        if (order.isPartialPayment) {
+          checkPaymentStatus(mappedOrder);
+        }
+      }
+    } catch (error) {
+      console.error("Error:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, [orderId, checkPaymentStatus]);
+
+  useEffect(() => {
+    fetchOrderDetails();
+  }, [fetchOrderDetails]);
+
+  // Add polling mechanism
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      fetchOrderDetails();
+    }, 30000); // Check every 30 seconds
+    
+    return () => clearInterval(intervalId);
+  }, [fetchOrderDetails]);
 
   const formatDate = (date) => {
     return new Date(date).toLocaleDateString('en-GB', {
@@ -307,23 +325,111 @@ const ProjectDetails = ({ isAdminView = false }) => {
     }
   };
 
-  // Scroll to center active node when timeline expands
+  const sortedCheckpoints = useMemo(() => {
+    const checkpoints = order?.checkpoints || [];
+
+    return [...checkpoints].sort((a, b) => {
+      const aMatch = a.name?.match(/(\d+)/);
+      const bMatch = b.name?.match(/(\d+)/);
+      if (aMatch && bMatch) {
+        return parseInt(aMatch[0]) - parseInt(bMatch[0]);
+      }
+      return 0;
+    });
+  }, [order?.checkpoints]);
+
+  const inProgressCheckpoint = useMemo(
+    () => sortedCheckpoints.find((checkpoint) => !checkpoint.completed),
+    [sortedCheckpoints]
+  );
+  const nextUpcomingCheckpoint = useMemo(
+    () =>
+      inProgressCheckpoint
+        ? sortedCheckpoints.find(
+            (checkpoint) => !checkpoint.completed && checkpoint !== inProgressCheckpoint
+          )
+        : null,
+    [inProgressCheckpoint, sortedCheckpoints]
+  );
+  const visibleCheckpoints = useMemo(
+    () => [
+      ...sortedCheckpoints.filter((checkpoint) => checkpoint.completed),
+      inProgressCheckpoint,
+      nextUpcomingCheckpoint,
+    ].filter(Boolean),
+    [inProgressCheckpoint, nextUpcomingCheckpoint, sortedCheckpoints]
+  );
+  const timelineNodes = useMemo(
+    () =>
+      visibleCheckpoints.map((checkpoint, index) => ({
+        ...checkpoint,
+        timelineKey: getCheckpointKey(checkpoint, index),
+      })),
+    [visibleCheckpoints]
+  );
+  const selectedCheckpoint = useMemo(
+    () =>
+      timelineNodes.find(
+        (checkpoint) => normalizeCheckpointKey(checkpoint.timelineKey) === normalizeCheckpointKey(selectedCheckpointId)
+      ) || null,
+    [selectedCheckpointId, timelineNodes]
+  );
+  const selectedCheckpointMessages = useMemo(
+    () =>
+      (order?.messages || []).filter(
+        (message) =>
+          normalizeCheckpointKey(message.timelineCheckpointKey) ===
+          normalizeCheckpointKey(selectedCheckpoint?.timelineKey)
+      ),
+    [order?.messages, selectedCheckpoint?.timelineKey]
+  );
+  const checkpointMessageCounts = useMemo(
+    () =>
+      timelineNodes.reduce((acc, checkpoint) => {
+        acc[checkpoint.timelineKey] = (order?.messages || []).filter(
+          (message) =>
+            normalizeCheckpointKey(message.timelineCheckpointKey) ===
+            normalizeCheckpointKey(checkpoint.timelineKey)
+        ).length;
+        return acc;
+      }, {}),
+    [order?.messages, timelineNodes]
+  );
+
+  useEffect(() => {
+    const defaultCheckpointKey = getDefaultCheckpointKey(sortedCheckpoints);
+
+    setSelectedCheckpointId((currentSelection) => {
+      const selectionExists = timelineNodes.some(
+        (checkpoint) => normalizeCheckpointKey(checkpoint.timelineKey) === normalizeCheckpointKey(currentSelection)
+      );
+
+      if (selectionExists) {
+        return currentSelection;
+      }
+
+      return defaultCheckpointKey;
+    });
+  }, [orderId, sortedCheckpoints, timelineNodes]);
+
+  // Scroll selected node into view when the timeline expands or data changes
   useEffect(() => {
     if (timelineRef.current && order) {
       const container = timelineRef.current;
-      const activeNode = container.querySelector('[data-status="in-progress"]');
+      const selectedNode = container.querySelector(
+        `[data-timeline-key="${selectedCheckpointId}"]`
+      );
       
-      if (activeNode) {
-        // Give DOM time to render and then scroll
+      if (selectedNode) {
         setTimeout(() => {
-          activeNode.scrollIntoView({
+          selectedNode.scrollIntoView({
             behavior: 'smooth',
             block: 'center'
           });
         }, 300);
       }
     }
-  }, [timelineExpanded, order]);
+  }, [timelineExpanded, order, selectedCheckpointId]);
 
   if (loading) {
     return (
@@ -450,37 +556,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
   // Calculate progress percentage
   const completedNodes = order.checkpoints ? 
     order.checkpoints.filter(checkpoint => checkpoint.completed).length : 0;
-  const inProgressNodes = order.checkpoints ? 
-    order.checkpoints.filter(checkpoint => !checkpoint.completed && checkpoint === order.checkpoints.find(cp => !cp.completed)).length : 0;
   const progressPercentage = Math.round(order.projectProgress);
-  
-  // Sort checkpoints in original order
-  const sortedCheckpoints = order.checkpoints ? 
-    [...order.checkpoints].sort((a, b) => {
-      // If names include numbers, try to sort by those numbers
-      const aMatch = a.name.match(/(\d+)/);
-      const bMatch = b.name.match(/(\d+)/);
-      if (aMatch && bMatch) {
-        return parseInt(aMatch[0]) - parseInt(bMatch[0]);
-      }
-      return 0; // Keep original order if no numbers found
-    }) : [];
-
-  // Get the current in-progress checkpoint
-  const inProgressCheckpoint = sortedCheckpoints.find(checkpoint => !checkpoint.completed);
-  
-  // Get the next upcoming checkpoint (only one)
-  const nextUpcomingCheckpoint = inProgressCheckpoint ? 
-    sortedCheckpoints.find(checkpoint => 
-      !checkpoint.completed && checkpoint !== inProgressCheckpoint
-    ) : null;
-  
-  // Define visible nodes for the timeline - completed + in-progress + next upcoming
-  const visibleCheckpoints = [
-    ...sortedCheckpoints.filter(checkpoint => checkpoint.completed),
-    inProgressCheckpoint,
-    nextUpcomingCheckpoint
-  ].filter(Boolean); // Remove undefined values
 
   return (
       <Shell {...shellProps}>
@@ -598,17 +674,22 @@ const ProjectDetails = ({ isAdminView = false }) => {
                   <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-blue-500"></div>
                   
                   <div className="space-y-3">
-                    {visibleCheckpoints.map((checkpoint) => {
+                    {timelineNodes.map((checkpoint) => {
                       const isCompleted = checkpoint.completed;
                       const isInProgress = !isCompleted && checkpoint === inProgressCheckpoint;
                       const status = isCompleted ? 'completed' : (isInProgress ? 'in-progress' : 'pending');
+                      const isSelected = normalizeCheckpointKey(selectedCheckpointId) === normalizeCheckpointKey(checkpoint.timelineKey);
                       
                       return (
-                        <div 
-                          key={checkpoint.checkpointId}
+                        <button
+                          type="button"
+                          key={checkpoint.timelineKey}
                           data-status={status}
-                          className={`relative flex rounded-lg transition-all duration-300 ${
-                            isInProgress ? 'bg-blue-50 p-4 shadow-sm border-l-4 border-blue-500' : 
+                          data-timeline-key={checkpoint.timelineKey}
+                          onClick={() => setSelectedCheckpointId(checkpoint.timelineKey)}
+                          className={`relative flex w-full rounded-lg text-left transition-all duration-300 ${
+                            isSelected ? 'bg-white p-4 ring-2 ring-blue-400 shadow-md' :
+                            isInProgress ? 'bg-blue-50 p-4 shadow-sm border-l-4 border-blue-500' :
                             isCompleted ? 'p-4 hover:bg-blue-50' : 'p-4'
                           }`}
                           style={{ scrollSnapAlign: 'start' }}
@@ -616,6 +697,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
                           {/* Node dot */}
                           <div 
                             className={`z-10 flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
+                              isSelected ? 'ring-2 ring-blue-300' :
                               isCompleted ? 'border-2 border-green-500' :
                               isInProgress ? 'border-2 border-blue-500' :
                               'border-2 border-gray-300 '
@@ -643,14 +725,11 @@ const ProjectDetails = ({ isAdminView = false }) => {
                               isInProgress ? 'In Progress' : 'Upcoming'}
                             </p>
                             
-                            {/* Show related messages if any */}
-                            {order.messages && order.messages.filter(msg => msg.checkpointId === checkpoint.checkpointId).length > 0 && (
-                              <div className="mt-1">
-                                <span className="text-sm text-blue-500">
-                                  {order.messages.filter(msg => msg.checkpointId === checkpoint.checkpointId).length} updates
-                                </span>
-                              </div>
-                            )}
+                            <div className="mt-1">
+                              <span className="text-sm text-blue-500">
+                                {checkpointMessageCounts[checkpoint.timelineKey] || 0} updates
+                              </span>
+                            </div>
                           </div>
                           
                           {/* Right side - date */}
@@ -659,7 +738,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
                               {checkpoint.completedAt ? formatDate(checkpoint.completedAt) : 'Upcoming'}
                             </span>
                           </div>
-                        </div>
+                        </button>
                       );
                     })}
                   </div>
@@ -714,22 +793,28 @@ const ProjectDetails = ({ isAdminView = false }) => {
                     {/* Vertical line running from top to active node */}
                     <div className="absolute left-4 top-0 bg-blue-500 w-0.5" 
                         style={{ 
-                          height: `${visibleCheckpoints.findIndex(checkpoint => 
-                            checkpoint === inProgressCheckpoint) * 88 + 88}px`
+                          height: `${Math.max(visibleCheckpoints.findIndex(checkpoint =>
+                            normalizeCheckpointKey(checkpoint.timelineKey) === normalizeCheckpointKey(selectedCheckpoint?.timelineKey)
+                          ), 0) * 88 + 88}px`
                         }}></div>
                     
                     <div className="space-y-8">
-                      {visibleCheckpoints.map((checkpoint) => {
+                      {timelineNodes.map((checkpoint) => {
                         const isCompleted = checkpoint.completed;
                         const isInProgress = !isCompleted && checkpoint === inProgressCheckpoint;
                         const status = isCompleted ? 'completed' : (isInProgress ? 'in-progress' : 'pending');
+                        const isSelected = normalizeCheckpointKey(selectedCheckpointId) === normalizeCheckpointKey(checkpoint.timelineKey);
                         
                         return (
-                          <div 
-                            key={checkpoint.checkpointId}
+                          <button
+                            type="button"
+                            key={checkpoint.timelineKey}
                             data-status={status}
-                            className={`relative flex rounded-lg transition-all duration-300 ${
-                              isInProgress ? 'bg-blue-50 p-4 border-l-4 border-blue-500' : 
+                            data-timeline-key={checkpoint.timelineKey}
+                            onClick={() => setSelectedCheckpointId(checkpoint.timelineKey)}
+                            className={`relative flex w-full rounded-lg text-left transition-all duration-300 ${
+                              isSelected ? 'bg-white p-4 ring-2 ring-blue-400 shadow-md' :
+                              isInProgress ? 'bg-blue-50 p-4 border-l-4 border-blue-500' :
                               isCompleted ? 'p-4 hover:bg-blue-50' : 'p-4'
                             }`}
                             style={{ scrollSnapAlign: 'start' }}
@@ -737,6 +822,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
                             {/* Node dot */}
                             <div 
                               className={`z-10 flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
+                                isSelected ? 'ring-2 ring-blue-300' :
                                 isCompleted ? 'border-2 border-green-500 bg-green-50' :
                                 isInProgress ? 'border-2 border-blue-500 bg-blue-50 shadow-md' :
                                 'border-2 border-gray-300 bg-white'
@@ -765,12 +851,9 @@ const ProjectDetails = ({ isAdminView = false }) => {
                                   isInProgress ? 'In Progress' : 'Upcoming'}
                                 </span>
                                 
-                                {/* Show related messages if any */}
-                                {order.messages && order.messages.filter(msg => msg.checkpointId === checkpoint.checkpointId).length > 0 && (
-                                  <span className="text-sm text-blue-500 mt-1">
-                                    {order.messages.filter(msg => msg.checkpointId === checkpoint.checkpointId).length} updates
-                                  </span>
-                                )}
+                                <span className="text-sm text-blue-500 mt-1">
+                                  {checkpointMessageCounts[checkpoint.timelineKey] || 0} updates
+                                </span>
                               </div>
                             </div>
                             
@@ -780,7 +863,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
                                 {checkpoint.completedAt ? formatDate(checkpoint.completedAt) : 'Upcoming'}
                               </span>
                             </div>
-                          </div>
+                          </button>
                         );
                       })}
                     </div>
@@ -790,85 +873,82 @@ const ProjectDetails = ({ isAdminView = false }) => {
             </div>
           </div>
           
-          {/* Notifications Section */}
+          {/* Selected Checkpoint Details */}
           <div className="border-t border-gray-200 p-6 bg-gray-50">
-          {!expandedNotification ? (
-  // Collapsed notification view (list of updates)
-  <>
-    <div className="flex items-center justify-between mb-4">
-      <div className="flex items-center">
-        <Bell className="w-5 h-5 text-blue-500 mr-2" />
-        <h2 className="text-lg font-semibold text-gray-700">Recent Updates</h2>
-      </div>
-      {order.messages && order.messages.length > 3 && (
-        <button 
-          className="text-blue-500 text-sm font-medium flex items-center"
-          onClick={() => setShowAllUpdates(!showAllUpdates)}
-        >
-          <span>View All</span> 
-          <ChevronRight className="w-4 h-4 ml-1" />
-        </button>
-      )}
-    </div>
-    
-    {order.messages && order.messages.length > 0 ? (
-  <div className="space-y-2">
-    {(showAllUpdates ? order.messages : order.messages.slice(0, 3)).map((message, index) => {
-      console.log("Rendering message:", message, "checkpointName:", message.checkpointName);
-      return (
-        <div 
-          key={message.id || index}
-          className="p-3 bg-white rounded-md border border-gray-200 hover:border-blue-300 transition-colors cursor-pointer"
-          onClick={() => setExpandedNotification({
-            ...message,
-            nodeName: message.checkpointName || 'Project Update',
-            fullContent: message.message
-          })}
-        >
-          <div className="flex justify-between">
-            <span className="font-medium">{message.checkpointName || 'Project Update'}</span>
-            <span className="text-xs text-gray-500">{formatDate(message.timestamp)}</span>
-          </div>
-          <p className="text-sm text-gray-600 mt-1">{message.message}</p>
-          <div className="flex justify-end">
-            <ChevronRight className="w-4 h-4 text-gray-400" />
-          </div>
-        </div>
-      );
-    })}
-  </div>
-) : (
-  <p className="text-gray-500 text-center py-4 bg-white rounded-md border border-gray-200">No updates yet</p>
-)}
-  </>
-) : (
-  // Expanded notification view (inline, not modal)
-  <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-    <div className="flex items-center border-b border-gray-200 p-4 mb-4">
-      <button 
-        onClick={() => setExpandedNotification(null)}
-        className="mr-3 hover:bg-gray-100 p-1 rounded"
-      >
-        <ArrowLeft className="w-5 h-5 text-blue-500" />
-      </button>
-      <h2 className="text-lg font-semibold text-gray-700">Update Details</h2>
-    </div>
-    
-    <div className='p-4'>
-      <div className="mb-4 border-b border-gray-200 pb-4">
-        <h3 className="text-xl font-bold text-gray-800">{expandedNotification.nodeName}</h3>
-        <div className="flex justify-between items-center mt-2">
-          <span className="text-sm text-gray-500">Date: {formatDate(expandedNotification.timestamp)}</span>
-        </div>
-      </div>
-      
-      <div>
-        <h4 className="text-md font-semibold text-gray-700 mb-2">Details</h4>
-        <p className="text-gray-600 whitespace-pre-line">{expandedNotification.fullContent}</p>
-      </div>
-    </div>
-  </div>
-)}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+              <div className="flex items-center justify-between border-b border-gray-200 p-4">
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-700">Checkpoint Details</h2>
+                  <p className="text-sm text-gray-500">
+                    {selectedCheckpoint ? 'Selected timeline node' : 'No checkpoint selected'}
+                  </p>
+                </div>
+                {selectedCheckpoint && (
+                  <span className={`text-xs font-semibold px-3 py-1 rounded-full ${
+                    selectedCheckpoint.completed
+                      ? 'bg-green-100 text-green-700'
+                      : 'bg-blue-100 text-blue-700'
+                  }`}>
+                    {selectedCheckpoint.completed ? 'Completed' : 'Active'}
+                  </span>
+                )}
+              </div>
+
+              {selectedCheckpoint ? (
+                <div className="p-4 space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="rounded-lg border border-gray-200 p-4">
+                      <p className="text-xs uppercase tracking-wider text-gray-500">Checkpoint</p>
+                      <p className="mt-1 text-lg font-semibold text-gray-800">{selectedCheckpoint.name}</p>
+                    </div>
+                    <div className="rounded-lg border border-gray-200 p-4">
+                      <p className="text-xs uppercase tracking-wider text-gray-500">Date</p>
+                      <p className="mt-1 text-lg font-semibold text-gray-800">
+                        {selectedCheckpoint.completedAt ? formatDate(selectedCheckpoint.completedAt) : 'Upcoming'}
+                      </p>
+                    </div>
+                    <div className="rounded-lg border border-gray-200 p-4">
+                      <p className="text-xs uppercase tracking-wider text-gray-500">Updates</p>
+                      <p className="mt-1 text-lg font-semibold text-gray-800">{selectedCheckpointMessages.length}</p>
+                    </div>
+                  </div>
+
+                  <div className="rounded-lg border border-gray-200 p-4 bg-gray-50">
+                    <p className="text-sm font-semibold text-gray-700 mb-2">Textual Record</p>
+                    {selectedCheckpointMessages.length > 0 ? (
+                      <div className="space-y-3">
+                        {selectedCheckpointMessages.map((message, index) => (
+                          <div key={message._id || message.id || `${selectedCheckpoint.timelineKey}-message-${index}`} className="rounded-md bg-white border border-gray-200 p-3">
+                            <div className="flex items-center justify-between gap-4">
+                              <p className="font-medium text-gray-800">{message.checkpointName || selectedCheckpoint.name}</p>
+                              <p className="text-xs text-gray-500">
+                                {message.timestamp ? formatDateTime(message.timestamp) : 'No date'}
+                              </p>
+                            </div>
+                            <p className="mt-2 text-sm text-gray-600 whitespace-pre-line">
+                              {message.message || message.remark || message.notes || 'No textual details available.'}
+                            </p>
+                            {(message.fileSize || message.fileName) && (
+                              <p className="mt-2 text-xs text-gray-500">
+                                {message.fileName ? `File: ${message.fileName}` : 'Attachment'}{message.fileSize ? ` | Size: ${message.fileSize}` : ''}
+                              </p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-500">
+                        No textual record is linked to this checkpoint yet.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="p-4">
+                  <p className="text-sm text-gray-500">Timeline data is not available yet.</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
         
