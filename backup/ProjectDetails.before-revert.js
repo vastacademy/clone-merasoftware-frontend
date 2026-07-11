@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { 
   X, ArrowLeft, Clock, Check, List, Upload,
-  ExternalLink
+  CheckCircle, ExternalLink
 } from 'lucide-react';
 import { toast } from 'sonner';
 import SummaryApi from '../common';
@@ -60,89 +60,6 @@ const getDefaultCheckpointKey = (checkpoints = []) => {
   }
 
   return '';
-};
-
-const TimelineCheckpointItem = ({
-  checkpoint,
-  isCompleted,
-  isInProgress,
-  isSelected,
-  messageCount,
-  formatDate,
-  onSelect,
-  compact = false,
-}) => {
-  const statusLabel = compact
-    ? isCompleted
-      ? 'Done'
-      : isInProgress
-        ? 'Live'
-        : 'Soon'
-    : isCompleted
-      ? 'Completed'
-      : isInProgress
-        ? 'In Progress'
-        : 'Upcoming';
-
-  const statusTone = isCompleted
-    ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-    : isInProgress
-      ? 'border-blue-200 bg-blue-50 text-blue-700'
-      : 'border-slate-200 bg-white text-slate-600';
-
-  return (
-    <button
-      type="button"
-      data-timeline-key={checkpoint.timelineKey}
-      onClick={onSelect}
-      className={[
-        compact
-          ? 'flex w-full items-start gap-3 rounded-[1.25rem] border p-3.5 text-left transition'
-          : 'relative flex w-full items-start gap-3 rounded-[1.25rem] border p-3 text-left transition',
-        isSelected
-          ? compact
-            ? 'border-blue-300 bg-slate-50 ring-2 ring-blue-100'
-            : 'border-blue-300 bg-white shadow-md ring-2 ring-blue-100'
-          : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50',
-      ].join(' ')}
-    >
-      <div
-        className={[
-          'flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2',
-          isSelected
-            ? 'border-blue-500 bg-blue-50'
-            : isCompleted
-              ? 'border-emerald-500 bg-emerald-50'
-              : isInProgress
-                ? 'border-blue-500 bg-blue-50'
-                : 'border-slate-300 bg-white',
-        ].join(' ')}
-      >
-        {isCompleted ? (
-          <Check className="h-4 w-4 text-emerald-500" />
-        ) : isInProgress ? (
-          <Clock className="h-4 w-4 text-blue-500" />
-        ) : (
-          <span className="h-3 w-3 rounded-full bg-slate-300"></span>
-        )}
-      </div>
-
-      <div className="min-w-0 flex-1">
-        <div className={compact ? 'flex items-center justify-between gap-2' : 'flex flex-wrap items-center gap-2'}>
-          <h3 className={compact ? 'truncate text-sm font-semibold text-slate-900' : 'truncate text-sm font-semibold text-slate-900'}>
-            {checkpoint.name}
-          </h3>
-          <span className={["rounded-full border px-2 py-0.5 text-[11px] font-semibold", statusTone].join(' ')}>
-            {statusLabel}
-          </span>
-        </div>
-        <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-500">
-          <span>{messageCount} updates</span>
-          <span>{checkpoint.completedAt ? formatDate(checkpoint.completedAt) : 'Upcoming'}</span>
-        </div>
-      </div>
-    </button>
-  );
 };
 
 const ProjectDetails = ({ isAdminView = false }) => {
@@ -433,7 +350,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
   );
   const timelineNodes = useMemo(
     () =>
-      [...visibleCheckpoints].reverse().map((checkpoint, index) => ({
+      visibleCheckpoints.map((checkpoint, index) => ({
         ...checkpoint,
         timelineKey: getCheckpointKey(checkpoint, index),
       })),
@@ -483,6 +400,25 @@ const ProjectDetails = ({ isAdminView = false }) => {
       return defaultCheckpointKey;
     });
   }, [orderId, sortedCheckpoints, timelineNodes]);
+
+  // Scroll selected node into view when the timeline expands or data changes
+  useEffect(() => {
+    if (timelineRef.current && order) {
+      const container = timelineRef.current;
+      const selectedNode = container.querySelector(
+        `[data-timeline-key="${selectedCheckpointId}"]`
+      );
+      
+      if (selectedNode) {
+        setTimeout(() => {
+          selectedNode.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center'
+          });
+        }, 300);
+      }
+    }
+  }, [timelineExpanded, order, selectedCheckpointId]);
 
   if (loading) {
     return (
@@ -609,7 +545,6 @@ const ProjectDetails = ({ isAdminView = false }) => {
   // Calculate progress percentage
   const progressPercentage = Math.round(order.projectProgress);
   const currentStageLabel = inProgressCheckpoint?.name || selectedCheckpoint?.name || 'All stages completed';
-  const totalUpdates = order?.messages?.length || 0;
 
   return (
     <Shell {...shellProps}>
@@ -645,12 +580,13 @@ const ProjectDetails = ({ isAdminView = false }) => {
             )}
 
             <div className="px-5 py-5 sm:px-6 lg:px-8">
-              <div className="hidden gap-5 lg:grid lg:grid-cols-[280px_minmax(0,1fr)_360px] lg:items-stretch">
-                <aside className="flex h-[640px] flex-col gap-4">
-                  <div className="flex shrink-0 flex-col rounded-[1.75rem] border border-slate-200 bg-slate-50 p-4 shadow-sm">
+              <div className="hidden gap-5 lg:grid lg:grid-cols-[280px_minmax(0,1fr)_360px]">
+                <aside className="space-y-5">
+                  <div className="sticky top-6 space-y-5">
+                    <section className="rounded-[1.75rem] border border-slate-200 bg-slate-50 p-5 shadow-sm">
                       <div className="flex items-center justify-center">
-                        <div className="relative flex h-40 w-40 items-center justify-center">
-                          <div className="absolute inset-0 rounded-full border-[12px] border-slate-200"></div>
+                        <div className="relative flex h-44 w-44 items-center justify-center">
+                          <div className="absolute inset-0 rounded-full border-[14px] border-slate-200"></div>
                           <svg className="absolute inset-0 h-full w-full" viewBox="0 0 100 100">
                             <circle
                               cx="50"
@@ -665,17 +601,22 @@ const ProjectDetails = ({ isAdminView = false }) => {
                             />
                           </svg>
                           <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-                            <span className="text-3xl font-bold text-slate-900">{progressPercentage}%</span>
+                            <span className="text-4xl font-bold text-slate-900">{progressPercentage}%</span>
                             <span className="mt-1 text-sm font-medium text-slate-500">Complete</span>
                           </div>
                         </div>
+                      </div>
+
+                      <div className="mt-5 rounded-[1.5rem] border border-slate-200 bg-white p-4">
+                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Current Stage</p>
+                        <p className="mt-2 text-base font-semibold text-slate-900">{currentStageLabel}</p>
                       </div>
 
                       {!isAdminView ? (
                         <button
                           type="button"
                           onClick={() => setUpdateModalOpen(true)}
-                          className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700"
+                          className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
                         >
                           <Upload className="h-4 w-4" />
                           Request Update
@@ -687,40 +628,23 @@ const ProjectDetails = ({ isAdminView = false }) => {
                           href={order.projectLink}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100"
+                          className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100"
                         >
                           <ExternalLink className="h-4 w-4" />
                           View Project
                         </a>
                       ) : null}
-                  </div>
-
-                  <section className="flex flex-col rounded-[1.75rem] border border-slate-200 bg-white p-4 shadow-sm">
-                      <p className="text-sm font-semibold text-slate-900">Snapshot</p>
-                      <div className="mt-3 space-y-2.5">
-                        <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-2.5">
-                          <span className="text-sm text-slate-500">Last update</span>
-                          <span className="text-sm font-semibold text-slate-900">{formatDateTime(order.updatedAt || order.createdAt)}</span>
-                        </div>
-                        <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-2.5">
-                          <span className="text-sm text-slate-500">Updates linked</span>
-                          <span className="text-sm font-semibold text-slate-900">{totalUpdates}</span>
-                        </div>
-                        <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-2.5">
-                          <span className="text-sm text-slate-500">Current phase</span>
-                          <span className="text-sm font-semibold text-slate-900">{order.currentPhase || 'N/A'}</span>
-                        </div>
-                      </div>
                     </section>
 
+                  </div>
                 </aside>
 
                 <section className="min-w-0">
-                  <div className="flex h-[640px] flex-col rounded-[1.75rem] border border-slate-200 bg-slate-50 p-4 shadow-sm">
+                  <div className="rounded-[1.75rem] border border-slate-200 bg-slate-50 p-5 shadow-sm">
                     <div className="flex flex-col gap-2 border-b border-slate-200 pb-4 sm:flex-row sm:items-center sm:justify-between">
                       <div>
                         <p className="text-sm font-medium text-slate-500">Progress Timeline</p>
-                        <h2 className="mt-1 text-xl font-bold text-slate-900">Click any checkpoint to inspect its record</h2>
+                        <h2 className="mt-1 text-xl font-bold text-slate-900">Timeline</h2>
                       </div>
                       <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-500">
                         {timelineNodes.length} stages
@@ -729,27 +653,69 @@ const ProjectDetails = ({ isAdminView = false }) => {
 
                     <div
                       ref={timelineRef}
-                      className="mt-3 flex-1 overflow-auto pr-1"
+                      className="mt-4 max-h-[318px] overflow-auto pr-1"
                     >
                       <div className="relative pl-2">
                         <div className="absolute left-[22px] top-2 bottom-2 w-px bg-slate-200"></div>
-                        <div className="space-y-2">
+                        <div className="space-y-2.5">
                           {timelineNodes.map((checkpoint) => {
                             const isCompleted = checkpoint.completed;
                             const isInProgress = !isCompleted && checkpoint === inProgressCheckpoint;
                             const isSelected = normalizeCheckpointKey(selectedCheckpointId) === normalizeCheckpointKey(checkpoint.timelineKey);
+                            const statusLabel = isCompleted ? 'Completed' : isInProgress ? 'In Progress' : 'Upcoming';
+                            const statusTone = isCompleted
+                              ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                              : isInProgress
+                                ? 'border-blue-200 bg-blue-50 text-blue-700'
+                                : 'border-slate-200 bg-white text-slate-600';
 
                             return (
-                              <TimelineCheckpointItem
+                              <button
+                                type="button"
                                 key={checkpoint.timelineKey}
-                                checkpoint={checkpoint}
-                              isCompleted={isCompleted}
-                              isInProgress={isInProgress}
-                              isSelected={isSelected}
-                              messageCount={checkpointMessageCounts[checkpoint.timelineKey] || 0}
-                              formatDate={formatDate}
-                              onSelect={() => setSelectedCheckpointId(checkpoint.timelineKey)}
-                            />
+                                data-timeline-key={checkpoint.timelineKey}
+                                onClick={() => setSelectedCheckpointId(checkpoint.timelineKey)}
+                                className={[
+                                  "relative flex w-full items-start gap-4 rounded-[1.25rem] border p-3.5 text-left transition",
+                                  isSelected
+                                    ? "border-blue-300 bg-white shadow-md ring-2 ring-blue-100"
+                                    : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50",
+                                ].join(" ")}
+                              >
+                                <div
+                                  className={[
+                                    "z-10 flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2",
+                                    isSelected
+                                      ? "border-blue-500 bg-blue-50"
+                                      : isCompleted
+                                        ? "border-emerald-500 bg-emerald-50"
+                                        : isInProgress
+                                          ? "border-blue-500 bg-blue-50"
+                                          : "border-slate-300 bg-white",
+                                  ].join(" ")}
+                                >
+                                  {isCompleted ? (
+                                    <CheckCircle className="h-5 w-5 text-emerald-500" />
+                                  ) : isInProgress ? (
+                                    <Clock className="h-5 w-5 text-blue-500" />
+                                  ) : (
+                                    <span className="h-3 w-3 rounded-full bg-slate-300"></span>
+                                  )}
+                                </div>
+
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <h3 className="truncate text-base font-semibold text-slate-900">{checkpoint.name}</h3>
+                                    <span className={["rounded-full border px-2.5 py-0.5 text-[11px] font-semibold", statusTone].join(" ")}>
+                                      {statusLabel}
+                                    </span>
+                                  </div>
+                                  <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
+                                    <span>{checkpointMessageCounts[checkpoint.timelineKey] || 0} updates</span>
+                                    <span>{checkpoint.completedAt ? formatDate(checkpoint.completedAt) : 'Upcoming'}</span>
+                                  </div>
+                                </div>
+                              </button>
                             );
                           })}
                         </div>
@@ -760,8 +726,8 @@ const ProjectDetails = ({ isAdminView = false }) => {
 
                 <aside className="space-y-5">
                   <div className="sticky top-6 space-y-5">
-                    <section className="flex h-[640px] flex-col rounded-[1.75rem] border border-slate-200 bg-white p-4 shadow-sm">
-                      <div className="flex items-start justify-between gap-4 border-b border-slate-200 pb-3">
+                    <section className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm">
+                      <div className="flex items-start justify-between gap-4 border-b border-slate-200 pb-4">
                         <div>
                           <p className="text-sm font-medium text-slate-500">Checkpoint Details</p>
                           <h2 className="mt-1 text-xl font-bold text-slate-900">
@@ -779,36 +745,32 @@ const ProjectDetails = ({ isAdminView = false }) => {
                       </div>
 
                       {selectedCheckpoint ? (
-                        <div className="mt-3 flex-1 space-y-3 overflow-auto pr-1">
-                          <div className="grid grid-cols-2 gap-2.5">
-                            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-2.5">
+                        <div className="mt-4 space-y-4">
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
                               <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">Checkpoint</p>
                               <p className="mt-1 text-sm font-semibold text-slate-900">{selectedCheckpoint.name}</p>
                             </div>
-                            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-2.5">
+                            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
                               <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">Date</p>
                               <p className="mt-1 text-sm font-semibold text-slate-900">
                                 {selectedCheckpoint.completedAt ? formatDate(selectedCheckpoint.completedAt) : 'Upcoming'}
                               </p>
                             </div>
-                            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-2.5">
+                          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
                               <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">Updates</p>
                               <p className="mt-1 text-sm font-semibold text-slate-900">{selectedCheckpointMessages.length}</p>
                             </div>
-                            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-2.5">
-                              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">Timeline</p>
-                              <p className="mt-1 text-sm font-semibold text-slate-900">{selectedCheckpoint.timelineKey || 'N/A'}</p>
-                            </div>
                           </div>
 
-                          <div className="rounded-[1.25rem] border border-slate-200 bg-slate-50 p-3.5">
+                          <div className="rounded-[1.25rem] border border-slate-200 bg-slate-50 p-4">
                             <div className="flex items-center justify-between gap-3">
                               <p className="text-sm font-semibold text-slate-900">Textual Record</p>
                               <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-500">
                                 {selectedCheckpointMessages.length} note{selectedCheckpointMessages.length === 1 ? '' : 's'}
                               </span>
                             </div>
-                            <div className="mt-3 max-h-[31vh] space-y-3 overflow-auto pr-1">
+                            <div className="mt-3 max-h-[36vh] space-y-3 overflow-auto pr-1">
                               {selectedCheckpointMessages.length > 0 ? (
                                 selectedCheckpointMessages.map((message, index) => (
                                   <div
@@ -854,11 +816,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
 
               <div className="space-y-4 lg:hidden">
                 <section className="rounded-[1.75rem] border border-slate-200 bg-slate-50 p-5 shadow-sm">
-                  <div className="flex items-center justify-between gap-4">
-                    <div>
-                      <p className="text-sm font-medium text-slate-500">Current Stage</p>
-                      <h2 className="mt-1 text-xl font-bold text-slate-900">{currentStageLabel}</h2>
-                    </div>
+                  <div className="flex items-center justify-center">
                     <div className="relative flex h-24 w-24 items-center justify-center">
                       <div className="absolute inset-0 rounded-full border-8 border-slate-200"></div>
                       <svg className="absolute inset-0 h-full w-full" viewBox="0 0 100 100">
@@ -881,15 +839,9 @@ const ProjectDetails = ({ isAdminView = false }) => {
                     </div>
                   </div>
 
-                  <div className="mt-4 grid grid-cols-2 gap-3">
-                    <div className="rounded-2xl border border-slate-200 bg-white p-3">
-                      <p className="text-[11px] uppercase tracking-[0.2em] text-slate-500">Updates</p>
-                      <p className="mt-1 text-sm font-semibold text-slate-900">{totalUpdates}</p>
-                    </div>
-                    <div className="rounded-2xl border border-slate-200 bg-white p-3">
-                      <p className="text-[11px] uppercase tracking-[0.2em] text-slate-500">Checkpoints</p>
-                      <p className="mt-1 text-sm font-semibold text-slate-900">{timelineNodes.length}</p>
-                    </div>
+                  <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-3">
+                    <p className="text-[11px] uppercase tracking-[0.2em] text-slate-500">Current Stage</p>
+                    <p className="mt-1 text-sm font-semibold text-slate-900">{currentStageLabel}</p>
                   </div>
 
                   {!isAdminView ? (
@@ -951,19 +903,57 @@ const ProjectDetails = ({ isAdminView = false }) => {
                           const isCompleted = checkpoint.completed;
                           const isInProgress = !isCompleted && checkpoint === inProgressCheckpoint;
                           const isSelected = normalizeCheckpointKey(selectedCheckpointId) === normalizeCheckpointKey(checkpoint.timelineKey);
+                          const statusTone = isCompleted
+                            ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                            : isInProgress
+                              ? 'border-blue-200 bg-blue-50 text-blue-700'
+                              : 'border-slate-200 bg-white text-slate-600';
 
                           return (
-                            <TimelineCheckpointItem
+                            <button
+                              type="button"
                               key={checkpoint.timelineKey}
-                              checkpoint={checkpoint}
-                              isCompleted={isCompleted}
-                              isInProgress={isInProgress}
-                              isSelected={isSelected}
-                              messageCount={checkpointMessageCounts[checkpoint.timelineKey] || 0}
-                              formatDate={formatDate}
-                              onSelect={() => setSelectedCheckpointId(checkpoint.timelineKey)}
-                              compact
-                            />
+                              data-timeline-key={checkpoint.timelineKey}
+                              onClick={() => setSelectedCheckpointId(checkpoint.timelineKey)}
+                              className={[
+                                "flex w-full items-start gap-3 rounded-[1.25rem] border p-3.5 text-left transition",
+                                isSelected
+                                  ? "border-blue-300 bg-slate-50 ring-2 ring-blue-100"
+                                  : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50",
+                              ].join(" ")}
+                            >
+                              <div
+                                className={[
+                                  "flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2",
+                                  isCompleted
+                                    ? "border-emerald-500 bg-emerald-50"
+                                    : isInProgress
+                                      ? "border-blue-500 bg-blue-50"
+                                      : "border-slate-300 bg-white",
+                                ].join(" ")}
+                              >
+                                {isCompleted ? (
+                                  <Check className="h-4 w-4 text-emerald-500" />
+                                ) : isInProgress ? (
+                                  <Clock className="h-4 w-4 text-blue-500" />
+                                ) : (
+                                  <span className="h-3 w-3 rounded-full bg-slate-300"></span>
+                                )}
+                              </div>
+
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center justify-between gap-2">
+                                  <p className="truncate text-sm font-semibold text-slate-900">{checkpoint.name}</p>
+                                  <span className={["rounded-full border px-2 py-0.5 text-[11px] font-semibold", statusTone].join(" ")}>
+                                    {isCompleted ? 'Done' : isInProgress ? 'Live' : 'Soon'}
+                                  </span>
+                                </div>
+                                <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-500">
+                                  <span>{checkpointMessageCounts[checkpoint.timelineKey] || 0} updates</span>
+                                  <span>{checkpoint.completedAt ? formatDate(checkpoint.completedAt) : 'Upcoming'}</span>
+                                </div>
+                              </div>
+                            </button>
                           );
                         })}
                       </div>
