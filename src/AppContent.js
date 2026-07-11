@@ -316,15 +316,17 @@ useEffect(() => {
         setWalletBalance,
         fetchWalletBalance,
         handleLogout,
-         activeProject,
+        activeProject,
       updateActiveProject
       }}>
-        <ScrollToTop />
-        <Header activeProject={activeProject} />
-        <main className='pt-0 md:pt-0'>
-       <Outlet/>
-        </main>
-        <Footer />
+        <div className="flex min-h-screen flex-col">
+          <ScrollToTop />
+          <Header activeProject={activeProject} />
+          <main className="flex-1 pt-0 md:pt-0">
+            <Outlet />
+          </main>
+          <Footer />
+        </div>
       </Context.Provider>
   )
 }
