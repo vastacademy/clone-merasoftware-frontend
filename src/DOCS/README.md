@@ -49,7 +49,7 @@ These files are historical snapshots. Read them only if you need old context:
 - Customer header: `CustomerHeader`
 - Admin header: `AdminHeader`
 - Customer dashboard shell: `DashboardLayout`
-- Customer dashboard page: `UserDashboard`
+- Customer dashboard page: `CustomerDashboard`
 - Admin dashboard page: `AdminDashboard`
 
 ## Notes
@@ -57,5 +57,4 @@ These files are historical snapshots. Read them only if you need old context:
 - `Header` is role-based and selects the admin or customer header automatically.
 - Login currently uses direct sign-in with `postLogin()` redirecting to `/home`.
 - `AdminDashboardDummy.js` is no longer part of the active codebase.
-- `UserDashboard` is the active customer dashboard page.
-
+- `CustomerDashboard` is the active customer dashboard page.

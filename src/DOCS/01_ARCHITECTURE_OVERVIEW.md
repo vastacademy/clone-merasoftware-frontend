@@ -69,10 +69,13 @@ This is the current architecture summary for the active frontend code.
 - `ProjectDetails` is a routed customer/admin detail page that now uses a fixed desktop shell height with scrollable timeline/details panels and a compact snapshot column
 - `AppContent` and `DashboardLayout` keep content flow natural instead of forcing viewport-height wrappers, so footer placement follows actual content height
 - The customer dashboard shell now emphasizes dashboard, track project, start new project, and wallet as primary quick links, with orders/profile/support available as secondary links
+- Wallet balance is sourced from `current_user` / `userDetails` and surfaced through `AppContent`; the dashboard no longer owns a separate wallet endpoint flow
+- The dashboard page now only reads wallet state, order data, and active project state from the shared app layer
 
 ## Current Notes
 
 - The customer login path currently redirects to `/home`
 - The admin dashboard is no longer a dummy page; `AdminDashboard.js` is the active page
 - The customer dashboard side panel is the active shell for the current UI direction
+- Localhost cookie warnings can appear if production cookie-domain env values are reused in dev
 - Old admin dummy and landing-page docs are legacy only

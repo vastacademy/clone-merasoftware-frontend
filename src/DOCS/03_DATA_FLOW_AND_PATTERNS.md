@@ -42,6 +42,11 @@ This guide explains how data flows through the application from frontend to back
 - Cleared on logout
 - Auto-loaded on app restart
 
+**Current wallet SSOT note**:
+- `walletBalance` is initialized from the authenticated user snapshot
+- The clean source of truth is backend `current_user` / `userDetails`
+- Do not treat `/api/wallet/balance` as a required frontend dependency unless backend adds it explicitly
+
 ### Layer 2: React Context (Shared App Data)
 **File**: `context/index.js`
 
@@ -119,6 +124,14 @@ Store result in Redux + localStorage
 Component uses data
 ```
 
+### Wallet SSOT Rules
+
+- One source of truth: backend user record `walletBalance`
+- One read path: `current_user` / `userDetails`
+- One UI consumer: `AppContent` shared context and Redux
+- No dashboard-specific wallet fetch should be added in `CustomerDashboard`
+- If a separate wallet endpoint exists later, it must replace, not duplicate, the user snapshot source
+
 ---
 
 ## 🔌 API Integration Pattern
@@ -153,6 +166,13 @@ export default SummaryApi
 - Easy to find all APIs
 - Consistent structure
 - Simple refactoring (change URL once)
+
+**Wallet flow in the current cleaned architecture**:
+1. App init verifies session through `current_user`
+2. Backend returns `walletBalance` with the user snapshot
+3. `AppContent` writes wallet balance to Redux + local cache
+4. Customer dashboard reads the shared wallet state
+5. Wallet-changing actions update backend first, then refresh the shared snapshot
 
 ### Making API Calls (Fetch Pattern)
 
@@ -607,6 +627,10 @@ storageService.removeItem('cartProductCount')
 // URL: customer.merasoftware.com → subdomain = "customer"
 // Can conditionally set API_URL per subdomain
 ```
+
+**Local cookie domain note**:
+- If local dev reuses production cookie-domain env values, browser may reject `user-details`
+- That warning is an environment config issue, not a wallet logic failure
 
 ---
 

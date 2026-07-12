@@ -19,8 +19,12 @@ export const userSlice = createSlice({
       console.log("📝 [userSlice] State updated - initialized set to true");
     },
     updateWalletBalance: (state, action) => {
-      console.log("💰 [userSlice] updateWalletBalance called with:", action.payload);
-      state.walletBalance = action.payload
+      const nextBalance = Number(action.payload || 0);
+      if (state.walletBalance === nextBalance) {
+        return;
+      }
+      console.log("💰 [userSlice] updateWalletBalance called with:", nextBalance);
+      state.walletBalance = nextBalance
     },
     logout: (state) => {
       console.log("🚪 [userSlice] logout called");

@@ -47,23 +47,7 @@ const DashboardLayout = ({ children, user, walletBalance, cartCount, isLoading, 
     return 'Dashboard';
   };
 
-  const getTrackProjectLink = () => {
-    // If activeProject is provided and has an _id, use it
-    if (activeProject && activeProject._id) {
-      return `/project-details/${activeProject._id}`;
-    }
-    
-    // If user is already on a project details page, keep them on that project
-    if (currentPath.startsWith('/project-details/')) {
-      return currentPath;
-    }
-    
-    // Otherwise, redirect to orders page where they can select a project
-    return '/order';
-  };
-
-  const trackProjectActive =
-    currentPath.startsWith('/project-details') || currentPath.startsWith('/order');
+  const projectsAndPlansActive = currentPath.startsWith('/projects-and-plans');
   const quickLinks = [
     {
       to: '/dashboard',
@@ -72,10 +56,10 @@ const DashboardLayout = ({ children, user, walletBalance, cartCount, isLoading, 
       active: currentPath === '/dashboard',
     },
     {
-      to: getTrackProjectLink(),
-      label: 'Track Project',
+      to: '/projects-and-plans',
+      label: 'Projects and Plans',
       icon: FileText,
-      active: trackProjectActive,
+      active: projectsAndPlansActive,
     },
     {
       to: '/home',
@@ -177,7 +161,7 @@ const DashboardLayout = ({ children, user, walletBalance, cartCount, isLoading, 
   };
 
   // Loading state or no user
-  if (isLoading || !currentUser) {
+  if (!currentUser) {
     return (
       <div className="flex min-h-screen bg-gray-50">
         <div className="w-full p-4 flex flex-col">

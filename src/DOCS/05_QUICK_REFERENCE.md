@@ -77,6 +77,8 @@ Fast lookup for the current codebase.
 - Customer dashboard work belongs in `CustomerDashboard.js`
 - `UserDashboard.js` is legacy and should not be extended for the current dashboard experience
 - Customer shell work belongs in `DashboardLayout.js`
+- Wallet balance ownership belongs in `AppContent.js` + backend `current_user`
+- Do not add a separate dashboard-owned wallet fetch path
 - Admin dashboard work belongs in `AdminDashboard.js`
 - Admin client list work belongs in `AdminClientsPage.js`
 - Admin client detail work belongs in `AdminClientWorkspace.js`
@@ -90,6 +92,7 @@ Fast lookup for the current codebase.
 - Admin project delete work belongs to the scan endpoint, admin delete controller, and `AdminClientWorkspace.js`
 - Admin project and plan details in the workspace should stay as in-page subviews that return to their list tabs
 - Customer dashboard quick links now prioritize Dashboard, Track Project, Start New Project, and Wallet
+- Localhost cookie warnings usually mean production cookie-domain env values are being reused in dev
 
 ## API Files To Check First
 

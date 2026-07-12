@@ -49,6 +49,7 @@ This guide focuses on the active components that matter most in the current code
 - Fetches dashboard summary data from the order list source
 - Shows all key customer info, next actions, wallet snapshot, and the latest 5 projects/plans
 - Uses `DashboardLayout` for the shell
+- Does not own the wallet source of truth; it reads wallet state from the shared app context/Redux layer
 
 ### `UserDashboard.js`
 
@@ -83,6 +84,7 @@ This guide focuses on the active components that matter most in the current code
 - Keep UI shell changes inside `Header`, `DashboardLayout`, or the page shell
 - Keep dashboard business logic inside the page component
 - Do not move working data fetching into docs-only examples
+- Keep wallet balance ownership in `AppContent` + backend `current_user`; avoid duplicate wallet fetches from dashboard pages
 
 ## Legacy Note
 

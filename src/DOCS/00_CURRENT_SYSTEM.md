@@ -80,6 +80,7 @@ This document describes the active frontend behavior as of the current codebase.
 - Left panel UI comes from `DashboardLayout`
 - The dashboard is a launchpad for key customer information and next actions, not a workflow-heavy control panel
 - Primary sidebar links prioritize Dashboard, Track Project, Start New Project, and Wallet, with Orders/Profile/Support kept as secondary links
+- Wallet balance is treated as a single source of truth from `current_user` / `userDetails`; `AppContent` reads that value and the dashboard does not own a separate wallet fetch
 
 ### Admin dashboard
 
@@ -114,11 +115,17 @@ This document describes the active frontend behavior as of the current codebase.
 
 - Login uses the sign-in endpoint from `SummaryApi`
 - Customer dashboard reads orders and wallet data from existing API calls
+- Wallet balance is not fetched from a separate `/api/wallet/balance` endpoint in the current clean flow
 - Admin dashboard fetches clients from `SummaryApi.adminClients`
 - `backend/controller/user/getAdminClients.js` powers the admin client list endpoint
 - `backend/controller/order/scanDeleteOrder.js` is called by `/api/admin/delete-order/:orderId/scan` for the delete scan step
 - `backend/controller/order/scanDeleteOrder.js` handles the admin delete scan response
 - `backend/controller/order/deleteOrder.js` handles admin-only project deletion with linked cleanup after checklist confirmation
+
+## 7. Local Dev Note
+
+- Localhost may show `Cookie "user-details" has been rejected for invalid domain` if `REACT_APP_COOKIE_DOMAIN` is set for the production domain.
+- In local development, cookie domain should be unset or localhost-safe so cookie writes are accepted.
 
 ## 6. What Is Legacy
 

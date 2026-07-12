@@ -59,48 +59,26 @@ const AppContent = () => {
     }
   };
 
-  useEffect(() => {
-    const initializeWalletBalance = async () => {
-      if (!isInitialized) return;
-      
-      // Check if user is logged in
-      const sessionCookie = document.cookie.includes('user-details');
-      if (!sessionCookie) return;
-  
-      // Get cached balance first
-      const cachedBalance = StorageService.getWalletBalance();
-      if (cachedBalance !== null) {
-        setWalletBalance(cachedBalance);
-        dispatch(updateWalletBalance(cachedBalance));
-      }
-  
-      // Then fetch fresh balance if online
-      if (isOnline) {
-        await fetchWalletBalance();
-      }
-    };
-  
-    initializeWalletBalance();
-  }, [isInitialized, isOnline]);
-  
-  // 2. Modify the fetchWalletBalance function
   const fetchWalletBalance = async () => {
     try {
-      const response = await fetch(SummaryApi.wallet.balance.url, {
-        method: SummaryApi.wallet.balance.method,
+      const response = await fetch(SummaryApi.current_user.url, {
+        method: SummaryApi.current_user.method,
         credentials: 'include'
       });
-      
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch wallet balance: ${response.status}`);
+      }
+
       const data = await response.json();
       if (data.success) {
-        const balance = data.data.balance;
+        const balance = Number(data.data?.walletBalance || 0);
         setWalletBalance(balance);
         dispatch(updateWalletBalance(balance));
-        StorageService.setWalletBalance(balance); // Always update storage on successful fetch
+        StorageService.setWalletBalance(balance);
       }
     } catch (error) {
       console.error("Error fetching wallet balance:", error);
-      // On error, try to use cached balance
       const cachedBalance = StorageService.getWalletBalance();
       if (cachedBalance !== null) {
         setWalletBalance(cachedBalance);
@@ -111,12 +89,16 @@ const AppContent = () => {
 
   const fetchUserDetails = async () => {
     try {
+      let hasUserData = false;
+
       // First check localStorage
       const cachedDetails = StorageService.getUserDetails();
       if (cachedDetails) {
         dispatch(setUserDetails(cachedDetails));
-        setWalletBalance(cachedDetails.walletBalance || 0);
-        dispatch(updateWalletBalance(cachedDetails.walletBalance || 0));
+        const cachedWalletBalance = Number(cachedDetails.walletBalance || 0);
+        setWalletBalance(cachedWalletBalance);
+        dispatch(updateWalletBalance(cachedWalletBalance));
+        hasUserData = true;
       }
 
       // If online, fetch fresh data
@@ -125,6 +107,9 @@ const AppContent = () => {
           method: SummaryApi.current_user.method,
           credentials: 'include'
         });
+        if (!dataResponse.ok) {
+          return hasUserData;
+        }
         const dataApi = await dataResponse.json();
         
         if (dataApi.success && dataApi.data) {
@@ -142,17 +127,19 @@ const AppContent = () => {
           
           // Update wallet balance if it exists
           if (dataApi.data.walletBalance !== undefined) {
-            setWalletBalance(dataApi.data.walletBalance);
-            dispatch(updateWalletBalance(dataApi.data.walletBalance));
-            StorageService.setWalletBalance(dataApi.data.walletBalance);
+            const balance = Number(dataApi.data.walletBalance || 0);
+            setWalletBalance(balance);
+            dispatch(updateWalletBalance(balance));
+            StorageService.setWalletBalance(balance);
           }
-          
-          // Fetch latest wallet balance
-          await fetchWalletBalance();
+          hasUserData = true;
         }
       }
+
+      return hasUserData;
     } catch (error) {
       console.error("Error fetching user details:", error);
+      return false;
     }
   };
 
@@ -201,31 +188,22 @@ const AppContent = () => {
 
         if (cachedUser) {
           console.log("✅ [AppContent] Restoring user from localStorage:", cachedUser.name);
-          dispatch(setUserDetails(cachedUser));
+          await fetchUserDetails();
           await fetchUserAddToCart();
           return;
         }
 
-        // If online, verify user session with API
-        // This will work even if httpOnly cookies exist (browser includes them automatically)
         if (isOnline) {
           console.log("🌐 [AppContent] User is online, verifying session with API");
-          const userResponse = await fetch(SummaryApi.current_user.url, {
-            method: SummaryApi.current_user.method,
-            credentials: 'include' // Browser will include httpOnly cookies
-          });
+          const userLoaded = await fetchUserDetails();
 
-          console.log("🌐 [AppContent] API response ok:", userResponse.ok);
-
-          if (!userResponse.ok) {
+          if (!userLoaded) {
             console.log("❌ [AppContent] API returned not ok, logging out");
             dispatch(logout());
             await fetchUserAddToCart();
             return;
           }
 
-          console.log("✅ [AppContent] Fetching user details from API");
-          await fetchUserDetails();
           await fetchUserAddToCart();
         } else {
           // Offline aur no cached user
