@@ -1,5 +1,5 @@
 import ProtectedRoute from "../components/ProtectedRoute";
-import UserDashboard from "../pages/UserDashboard";
+import CustomerDashboard from "../pages/CustomerDashboard";
 import Cart from "../pages/Cart";
 import OrderPage from "../pages/OrderPage";
 import OrderDetailPage from "../pages/OrderDetailPage";
@@ -25,7 +25,7 @@ export const customerRoutes = [
     path: "dashboard",
     element: (
       <CustomerProtectedRoute>
-        <UserDashboard/>
+        <CustomerDashboard/>
       </CustomerProtectedRoute>
     )
   },

@@ -30,7 +30,8 @@ This guide focuses on the active components that matter most in the current code
 
 - Shared customer dashboard shell
 - Left side panel is fixed on desktop
-- Drawer behavior is handled on the page shell where needed
+- Primary quick links are dashboard, track project, start new project, and wallet
+- Orders, profile, and support remain as secondary links
 - Logout confirmation popup is part of this layout
 - Does not change the customer dashboard business logic
 
@@ -42,11 +43,17 @@ This guide focuses on the active components that matter most in the current code
 
 ## Active Pages
 
+### `CustomerDashboard.js`
+
+- Main customer dashboard launchpad page
+- Fetches dashboard summary data from the order list source
+- Shows all key customer info, next actions, wallet snapshot, and the latest 5 projects/plans
+- Uses `DashboardLayout` for the shell
+
 ### `UserDashboard.js`
 
-- Main customer dashboard content page
-- Fetches and displays customer orders and plan state
-- Uses `DashboardLayout` for the shell
+- Legacy customer dashboard page
+- Kept in the codebase for reference only
 
 ### `AdminDashboard.js`
 
@@ -80,4 +87,3 @@ This guide focuses on the active components that matter most in the current code
 ## Legacy Note
 
 Older admin/customer dashboard variants are no longer active reference points. If you see them in old docs, treat them as historical only.
-

@@ -14,7 +14,8 @@ Fast lookup for the current codebase.
 | `src/components/DashboardLayout.js` | Customer dashboard shell |
 | `src/components/AdminLayout.js` | Shared admin shell |
 | `src/components/Footer.js` | Global footer |
-| `src/pages/UserDashboard.js` | Customer dashboard content |
+| `src/pages/CustomerDashboard.js` | Active customer dashboard launchpad |
+| `src/pages/UserDashboard.js` | Legacy customer dashboard content |
 | `src/pages/AdminDashboard.js` | Admin dashboard content |
 | `src/pages/AdminClientsPage.js` | Admin client list page |
 | `src/pages/AdminClientWorkspace.js` | Admin client detail page |
@@ -73,7 +74,8 @@ Fast lookup for the current codebase.
 
 ## Current Dashboard Roles
 
-- Customer dashboard work belongs in `UserDashboard.js`
+- Customer dashboard work belongs in `CustomerDashboard.js`
+- `UserDashboard.js` is legacy and should not be extended for the current dashboard experience
 - Customer shell work belongs in `DashboardLayout.js`
 - Admin dashboard work belongs in `AdminDashboard.js`
 - Admin client list work belongs in `AdminClientsPage.js`
@@ -87,6 +89,7 @@ Fast lookup for the current codebase.
 - Customer project detail at `/project-details/:orderId` is checkpoint-driven: the active checkpoint opens by default, timeline clicks update the detail panel, and the old Recent Updates feed is not shown
 - Admin project delete work belongs to the scan endpoint, admin delete controller, and `AdminClientWorkspace.js`
 - Admin project and plan details in the workspace should stay as in-page subviews that return to their list tabs
+- Customer dashboard quick links now prioritize Dashboard, Track Project, Start New Project, and Wallet
 
 ## API Files To Check First
 

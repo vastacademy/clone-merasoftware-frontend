@@ -30,7 +30,7 @@ This is the current architecture summary for the active frontend code.
 
 ### Customer
 
-- `/dashboard` - `UserDashboard`
+- `/dashboard` - `CustomerDashboard`
 - `/order`
 - `/order-detail/:orderId`
 - `/project-details/:orderId`
@@ -63,10 +63,12 @@ This is the current architecture summary for the active frontend code.
 - `CustomerHeader` is the customer-facing header
 - `AdminHeader` is the admin-facing header
 - `DashboardLayout` is the shared customer dashboard shell
-- `UserDashboard` is the active customer dashboard page
+- `CustomerDashboard` is the active customer dashboard page
+- `UserDashboard` is legacy and no longer the routed dashboard surface
 - `AdminDashboard` is the active admin dashboard page
 - `ProjectDetails` is a routed customer/admin detail page that now uses a fixed desktop shell height with scrollable timeline/details panels and a compact snapshot column
 - `AppContent` and `DashboardLayout` keep content flow natural instead of forcing viewport-height wrappers, so footer placement follows actual content height
+- The customer dashboard shell now emphasizes dashboard, track project, start new project, and wallet as primary quick links, with orders/profile/support available as secondary links
 
 ## Current Notes
 

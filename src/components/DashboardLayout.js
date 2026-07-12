@@ -5,7 +5,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'sonner';
 import { 
   Home, ShoppingBag, UserCircle, Wallet, MessageSquare, LogOut,
-  FileText, X
+  FileText, PlusCircle, X
 } from 'lucide-react';
 import SummaryApi from '../common';
 import { logout } from '../store/userSlice';
@@ -35,25 +35,19 @@ const DashboardLayout = ({ children, user, walletBalance, cartCount, isLoading, 
     }
   }, [currentUser, isLoading, navigate]);
   
-  // Check if the path is active
-  const isActive = (path) => {
-    if (path === '/dashboard' && currentPath === '/dashboard') return true;
-    if (path !== '/dashboard' && currentPath.startsWith(path)) return true;
-    return false;
-  };
-
   // Get the page title based on current path
   const getPageTitle = () => {
     if (currentPath.startsWith('/dashboard')) return 'Dashboard';
     if (currentPath.startsWith('/order')) return 'Your Orders';
     if (currentPath.startsWith('/project-details')) return 'Your Project';
+    if (currentPath.startsWith('/home')) return 'Start New Project';
     if (currentPath.startsWith('/profile')) return 'Account Details';
     if (currentPath.startsWith('/wallet')) return 'Wallet Details';
     if (currentPath.startsWith('/support')) return 'Contact Support';
     return 'Dashboard';
   };
 
-  const getProjectLink = () => {
+  const getTrackProjectLink = () => {
     // If activeProject is provided and has an _id, use it
     if (activeProject && activeProject._id) {
       return `/project-details/${activeProject._id}`;
@@ -67,6 +61,41 @@ const DashboardLayout = ({ children, user, walletBalance, cartCount, isLoading, 
     // Otherwise, redirect to orders page where they can select a project
     return '/order';
   };
+
+  const trackProjectActive =
+    currentPath.startsWith('/project-details') || currentPath.startsWith('/order');
+  const quickLinks = [
+    {
+      to: '/dashboard',
+      label: 'Dashboard',
+      icon: Home,
+      active: currentPath === '/dashboard',
+    },
+    {
+      to: getTrackProjectLink(),
+      label: 'Track Project',
+      icon: FileText,
+      active: trackProjectActive,
+    },
+    {
+      to: '/home',
+      label: 'Start New Project',
+      icon: PlusCircle,
+      active: currentPath.startsWith('/home'),
+    },
+    {
+      to: '/wallet',
+      label: 'Wallet',
+      icon: Wallet,
+      active: currentPath.startsWith('/wallet'),
+    },
+  ];
+
+  const secondaryLinks = [
+    { to: '/order', label: 'Orders', icon: ShoppingBag, active: currentPath.startsWith('/order') },
+    { to: '/profile', label: 'Profile', icon: UserCircle, active: currentPath.startsWith('/profile') },
+    { to: '/support', label: 'Support', icon: MessageSquare, active: currentPath.startsWith('/support') },
+  ];
 
   // Handle logout confirmation
   const handleLogoutClick = () => {
@@ -197,88 +226,48 @@ const DashboardLayout = ({ children, user, walletBalance, cartCount, isLoading, 
 
           <div className="flex-1 px-3 py-4">
             <p className="px-3 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-              Modules
+              Quick Links
             </p>
 
             <div className="mt-3 space-y-2">
-              <Link
-                to="/dashboard"
-                className={[
-                  "group flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition-all",
-                  isActive('/dashboard')
-                    ? 'bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-950/30'
-                    : 'bg-slate-900/70 text-slate-200 hover:bg-slate-800',
-                ].join(' ')}
-              >
-                <Home size={18} className="shrink-0" />
-                <span className="flex-1">Dashboard</span>
-                <span className="text-xs opacity-70">Live</span>
-              </Link>
+              {quickLinks.map(({ to, label, icon: Icon, active }) => (
+                <Link
+                  key={label}
+                  to={to}
+                  className={[
+                    "group flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition-all",
+                    active
+                      ? 'bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-950/30'
+                      : 'bg-slate-900/70 text-slate-200 hover:bg-slate-800',
+                  ].join(' ')}
+                >
+                  <Icon size={18} className="shrink-0" />
+                  <span className="flex-1">{label}</span>
+                </Link>
+              ))}
+            </div>
 
-              <Link
-                to="/order"
-                className={[
-                  "group flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition-all",
-                  isActive('/order')
-                    ? 'bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-950/30'
-                    : 'bg-slate-900/70 text-slate-200 hover:bg-slate-800',
-                ].join(' ')}
-              >
-                <ShoppingBag size={18} className="shrink-0" />
-                <span className="flex-1">Orders</span>
-              </Link>
-
-              <Link
-                to={getProjectLink()}
-                className={[
-                  "group flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition-all",
-                  isActive('/project-details')
-                    ? 'bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-950/30'
-                    : 'bg-slate-900/70 text-slate-200 hover:bg-slate-800',
-                ].join(' ')}
-              >
-                <FileText size={18} className="shrink-0" />
-                <span className="flex-1">Project</span>
-              </Link>
-
-              <Link
-                to="/profile"
-                className={[
-                  "group flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition-all",
-                  isActive('/profile')
-                    ? 'bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-950/30'
-                    : 'bg-slate-900/70 text-slate-200 hover:bg-slate-800',
-                ].join(' ')}
-              >
-                <UserCircle size={18} className="shrink-0" />
-                <span className="flex-1">Account</span>
-              </Link>
-
-              <Link
-                to="/wallet"
-                className={[
-                  "group flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition-all",
-                  isActive('/wallet')
-                    ? 'bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-950/30'
-                    : 'bg-slate-900/70 text-slate-200 hover:bg-slate-800',
-                ].join(' ')}
-              >
-                <Wallet size={18} className="shrink-0" />
-                <span className="flex-1">Wallet</span>
-              </Link>
-
-              <Link
-                to="/support"
-                className={[
-                  "group flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition-all",
-                  isActive('/support')
-                    ? 'bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-950/30'
-                    : 'bg-slate-900/70 text-slate-200 hover:bg-slate-800',
-                ].join(' ')}
-              >
-                <MessageSquare size={18} className="shrink-0" />
-                <span className="flex-1">Support</span>
-              </Link>
+            <div className="mt-6 border-t border-white/10 pt-4">
+              <p className="px-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+                More
+              </p>
+              <div className="mt-3 space-y-2">
+                {secondaryLinks.map(({ to, label, icon: Icon, active }) => (
+                  <Link
+                    key={label}
+                    to={to}
+                    className={[
+                      "group flex items-center gap-3 rounded-2xl px-4 py-2.5 text-sm font-medium transition-all",
+                      active
+                        ? 'bg-slate-800 text-white'
+                        : 'bg-slate-900/40 text-slate-300 hover:bg-slate-800',
+                    ].join(' ')}
+                  >
+                    <Icon size={16} className="shrink-0" />
+                    <span className="flex-1">{label}</span>
+                  </Link>
+                ))}
+              </div>
             </div>
           </div>
 

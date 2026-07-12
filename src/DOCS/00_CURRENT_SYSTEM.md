@@ -31,7 +31,7 @@ This document describes the active frontend behavior as of the current codebase.
 
 ### Customer routes
 
-- `/dashboard` - `UserDashboard`
+- `/dashboard` - `CustomerDashboard`
 - `/order`
 - `/order-detail/:orderId`
 - `/project-details/:orderId`
@@ -66,7 +66,8 @@ This document describes the active frontend behavior as of the current codebase.
   - hover dropdown on desktop
   - admin panel and logout in the dropdown
 - `DashboardLayout` is the active customer dashboard shell
-- `UserDashboard` is the active customer dashboard content page
+- `CustomerDashboard` is the active customer dashboard launchpad page
+- `UserDashboard` remains in the codebase as a legacy reference and is no longer the active dashboard route
 - `AdminDashboard` is the active admin dashboard page
 - `AdminLayout` is the shared admin shell used by dashboard, clients, and client detail pages
 - `AppContent` now keeps the app outlet content flow natural instead of forcing a viewport min-height, so the footer can sit directly after page content
@@ -75,9 +76,10 @@ This document describes the active frontend behavior as of the current codebase.
 
 ### Customer dashboard
 
-- Main content remains in `UserDashboard`
+- Main content now lives in `CustomerDashboard`
 - Left panel UI comes from `DashboardLayout`
-- The customer shell is visual-only and does not change the working content logic
+- The dashboard is a launchpad for key customer information and next actions, not a workflow-heavy control panel
+- Primary sidebar links prioritize Dashboard, Track Project, Start New Project, and Wallet, with Orders/Profile/Support kept as secondary links
 
 ### Admin dashboard
 
