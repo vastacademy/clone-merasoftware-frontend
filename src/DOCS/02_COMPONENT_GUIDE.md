@@ -30,8 +30,9 @@ This guide focuses on the active components that matter most in the current code
 
 - Shared customer dashboard shell
 - Left side panel is fixed on desktop
-- Primary quick links are dashboard, track project, start new project, and wallet
+- Primary quick links are dashboard, track project, and wallet
 - Orders, profile, and support remain as secondary links
+- `Start New Project` is temporarily hidden from the sidebar, but the `/home` route still exists
 - Logout confirmation popup is part of this layout
 - Does not change the customer dashboard business logic
 
@@ -47,9 +48,29 @@ This guide focuses on the active components that matter most in the current code
 
 - Main customer dashboard launchpad page
 - Fetches dashboard summary data from the order list source
-- Shows all key customer info, next actions, wallet snapshot, and the latest 5 projects/plans
+- Shows key customer info, next actions, wallet snapshot, and the latest 5 projects/plans
 - Uses `DashboardLayout` for the shell
 - Does not own the wallet source of truth; it reads wallet state from the shared app context/Redux layer
+- Recent items use the same row-based list language as `ProjectsAndPlans`, with progress shown only at the far-right row slot
+
+### `ProjectsAndPlans.js`
+
+- Active customer project/plan list page
+- Uses a dense row-based list with headers for item, type, status, updated date, and open action
+- Project rows show progress only at the far-right end slot
+- Plan rows show remaining days or updates in the same far-right placement
+
+### `OrderPage.js`
+
+- Active customer purchase-history list page
+- Uses a row-based purchase history layout
+- Shows price, purchase date, purchase type, and order status
+- Does not show progress percentage or days-left style tracking in the list
+
+### `OrderDetailPage.js`
+
+- Single-order detail page
+- Left unchanged while the order list UI was redesigned
 
 ### `UserDashboard.js`
 
@@ -85,6 +106,7 @@ This guide focuses on the active components that matter most in the current code
 - Keep dashboard business logic inside the page component
 - Do not move working data fetching into docs-only examples
 - Keep wallet balance ownership in `AppContent` + backend `current_user`; avoid duplicate wallet fetches from dashboard pages
+- Keep `ProjectsAndPlans` for project/plan tracking and `OrderPage` for purchase history; do not mix those purposes in the same list
 
 ## Legacy Note
 

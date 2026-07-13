@@ -5,7 +5,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'sonner';
 import { 
   Home, ShoppingBag, UserCircle, Wallet, MessageSquare, LogOut,
-  FileText, PlusCircle, X
+  FileText, X
 } from 'lucide-react';
 import SummaryApi from '../common';
 import { logout } from '../store/userSlice';
@@ -38,6 +38,7 @@ const DashboardLayout = ({ children, user, walletBalance, cartCount, isLoading, 
   // Get the page title based on current path
   const getPageTitle = () => {
     if (currentPath.startsWith('/dashboard')) return 'Dashboard';
+    if (currentPath.startsWith('/projects-and-plans')) return 'Projects and Plans';
     if (currentPath.startsWith('/order')) return 'Your Orders';
     if (currentPath.startsWith('/project-details')) return 'Your Project';
     if (currentPath.startsWith('/home')) return 'Start New Project';
@@ -60,12 +61,6 @@ const DashboardLayout = ({ children, user, walletBalance, cartCount, isLoading, 
       label: 'Projects and Plans',
       icon: FileText,
       active: projectsAndPlansActive,
-    },
-    {
-      to: '/home',
-      label: 'Start New Project',
-      icon: PlusCircle,
-      active: currentPath.startsWith('/home'),
     },
     {
       to: '/wallet',

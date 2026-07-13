@@ -61,6 +61,7 @@ Represents customer, admin, manager, developer, or partner accounts.
 **Current frontend SSOT usage**:
 - The frontend reads wallet balance from `GET /api/user-details` via `current_user`
 - The clean customer dashboard flow does not require a separate `/api/wallet/balance` call
+- The wallet page reads authenticated transaction history from `GET /api/wallet/history`; the endpoint filters by `req.userId` and reads `transactionModel`
 
 #### 2. **Product Model** (`productModel.js`)
 Represents services (website development, app development, website updates, feature upgrades).

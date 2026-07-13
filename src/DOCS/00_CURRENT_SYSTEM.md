@@ -32,9 +32,9 @@ This document describes the active frontend behavior as of the current codebase.
 ### Customer routes
 
 - `/dashboard` - `CustomerDashboard`
-- `/order`
-- `/order-detail/:orderId`
-- `/project-details/:orderId`
+- `/order` - `OrderPage`
+- `/order-detail/:orderId` - `OrderDetailPage`
+- `/project-details/:orderId` - `ProjectDetails`
 - `/wallet`
 - `/my-updates`
 - `/my-invoices`
@@ -66,8 +66,12 @@ This document describes the active frontend behavior as of the current codebase.
   - hover dropdown on desktop
   - admin panel and logout in the dropdown
 - `DashboardLayout` is the active customer dashboard shell
+- `DashboardLayout` owns the sidebar page badge; `/projects-and-plans` resolves to `Projects and Plans`
 - `CustomerDashboard` is the active customer dashboard launchpad page
 - `UserDashboard` remains in the codebase as a legacy reference and is no longer the active dashboard route
+- `ProjectsAndPlans` is the active customer project/plan list page
+- `OrderPage` is the active customer purchase-history list page
+- `OrderDetailPage` remains unchanged and is the order detail surface for a single record
 - `AdminDashboard` is the active admin dashboard page
 - `AdminLayout` is the shared admin shell used by dashboard, clients, and client detail pages
 - `AppContent` now keeps the app outlet content flow natural instead of forcing a viewport min-height, so the footer can sit directly after page content
@@ -79,8 +83,9 @@ This document describes the active frontend behavior as of the current codebase.
 - Main content now lives in `CustomerDashboard`
 - Left panel UI comes from `DashboardLayout`
 - The dashboard is a launchpad for key customer information and next actions, not a workflow-heavy control panel
-- Primary sidebar links prioritize Dashboard, Track Project, Start New Project, and Wallet, with Orders/Profile/Support kept as secondary links
+- Primary sidebar links prioritize Dashboard, Track Project, and Wallet, with Orders/Profile/Support kept as secondary links; `Start New Project` is currently hidden temporarily from the sidebar but the route still exists
 - Wallet balance is treated as a single source of truth from `current_user` / `userDetails`; `AppContent` reads that value and the dashboard does not own a separate wallet fetch
+- Dashboard recent items use a row-based list layout with status and progress-only-at-the-far-right presentation
 
 ### Admin dashboard
 
@@ -115,7 +120,9 @@ This document describes the active frontend behavior as of the current codebase.
 
 - Login uses the sign-in endpoint from `SummaryApi`
 - Customer dashboard reads orders and wallet data from existing API calls
+- `OrderPage` reads the full order list from `SummaryApi.ordersList` and renders a purchase-history list with price, purchase date, type, and status
 - Wallet balance is not fetched from a separate `/api/wallet/balance` endpoint in the current clean flow
+- Wallet transaction history is read from the authenticated `/api/wallet/history` endpoint backed by `transactionModel`; balance remains owned by `userDetails.walletBalance`
 - Admin dashboard fetches clients from `SummaryApi.adminClients`
 - `backend/controller/user/getAdminClients.js` powers the admin client list endpoint
 - `backend/controller/order/scanDeleteOrder.js` is called by `/api/admin/delete-order/:orderId/scan` for the delete scan step

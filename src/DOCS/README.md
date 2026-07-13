@@ -45,11 +45,15 @@ These files are historical snapshots. Read them only if you need old context:
 - Customer home: `/home`
 - Login: `/login`
 - Customer dashboard route: `/dashboard`
+- Customer purchase-history route: `/order`
 - Admin dashboard route: `/admin-panel/dashboard`
 - Customer header: `CustomerHeader`
 - Admin header: `AdminHeader`
 - Customer dashboard shell: `DashboardLayout`
 - Customer dashboard page: `CustomerDashboard`
+- Customer project/plan list page: `ProjectsAndPlans`
+- Customer order detail page: `OrderDetailPage`
+- Customer purchase-history list page: `OrderPage`
 - Admin dashboard page: `AdminDashboard`
 
 ## Notes
@@ -58,3 +62,6 @@ These files are historical snapshots. Read them only if you need old context:
 - Login currently uses direct sign-in with `postLogin()` redirecting to `/home`.
 - `AdminDashboardDummy.js` is no longer part of the active codebase.
 - `CustomerDashboard` is the active customer dashboard page.
+- `ProjectsAndPlans` is the active project and plan tracking list.
+- `OrderPage` is the active purchase-history list and should not be used for progress tracking.
+- The customer sidebar temporarily hides `Start New Project`, but the `/home` route still exists.

@@ -57,10 +57,23 @@ const WalletDetails = () => {
           "content-type": 'application/json'
         }
       });
-      const responseData = await response.json();
+      const responseText = await response.text();
+      let responseData;
+
+      try {
+        responseData = JSON.parse(responseText);
+      } catch {
+        throw new Error(`Wallet history returned an invalid response (${response.status})`);
+      }
+
+      if (!response.ok) {
+        throw new Error(responseData?.message || `Wallet history request failed (${response.status})`);
+      }
       
       if (responseData.success) {
-        setWalletHistory(responseData.data);
+        setWalletHistory(Array.isArray(responseData.data) ? responseData.data : []);
+      } else {
+        throw new Error(responseData.message || 'Wallet history request failed');
       }
     } catch (error) {
       console.error('Error fetching wallet history:', error);

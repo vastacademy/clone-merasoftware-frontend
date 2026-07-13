@@ -15,10 +15,13 @@ Fast lookup for the current codebase.
 | `src/components/AdminLayout.js` | Shared admin shell |
 | `src/components/Footer.js` | Global footer |
 | `src/pages/CustomerDashboard.js` | Active customer dashboard launchpad |
+| `src/pages/ProjectsAndPlans.js` | Active project/plan tracking list |
 | `src/pages/UserDashboard.js` | Legacy customer dashboard content |
 | `src/pages/AdminDashboard.js` | Admin dashboard content |
 | `src/pages/AdminClientsPage.js` | Admin client list page |
 | `src/pages/AdminClientWorkspace.js` | Admin client detail page |
+| `src/pages/OrderPage.js` | Active purchase-history list |
+| `src/pages/OrderDetailPage.js` | Single order detail page |
 | `src/pages/ProjectDetails.js` | Customer/admin project detail timeline page |
 | `src/common/index.js` | API endpoint definitions, including admin delete order |
 | `src/pages/Login.js` | Login form |
@@ -43,10 +46,10 @@ Fast lookup for the current codebase.
 
 ### Customer
 
-- `/dashboard`
-- `/order`
-- `/order-detail/:orderId`
-- `/project-details/:orderId`
+- `/dashboard` - `CustomerDashboard`
+- `/order` - `OrderPage`
+- `/order-detail/:orderId` - `OrderDetailPage`
+- `/project-details/:orderId` - `ProjectDetails`
 - `/wallet`
 - `/my-updates`
 - `/my-invoices`
@@ -57,6 +60,7 @@ Fast lookup for the current codebase.
 - `/support-tickets/:ticketId`
 - `/complete-profile`
 - `/project-details/:orderId` now uses a fixed desktop three-column shell with equal-height cards, inner timeline/detail scrolling, and page-level bottom breathing room so the footer follows content naturally
+- `/order` now uses a purchase-history row list with price, purchase date, type, and status only
 
 ### Admin
 
@@ -79,6 +83,8 @@ Fast lookup for the current codebase.
 - Customer shell work belongs in `DashboardLayout.js`
 - Wallet balance ownership belongs in `AppContent.js` + backend `current_user`
 - Do not add a separate dashboard-owned wallet fetch path
+- `ProjectsAndPlans.js` owns the project/plan row list, not the order history list
+- `OrderPage.js` owns purchase-history list behavior, not progress tracking
 - Admin dashboard work belongs in `AdminDashboard.js`
 - Admin client list work belongs in `AdminClientsPage.js`
 - Admin client detail work belongs in `AdminClientWorkspace.js`
@@ -91,7 +97,7 @@ Fast lookup for the current codebase.
 - Customer project detail at `/project-details/:orderId` is checkpoint-driven: the active checkpoint opens by default, timeline clicks update the detail panel, and the old Recent Updates feed is not shown
 - Admin project delete work belongs to the scan endpoint, admin delete controller, and `AdminClientWorkspace.js`
 - Admin project and plan details in the workspace should stay as in-page subviews that return to their list tabs
-- Customer dashboard quick links now prioritize Dashboard, Track Project, Start New Project, and Wallet
+- Customer dashboard quick links now prioritize Dashboard, Track Project, and Wallet; `Start New Project` is temporarily hidden from the customer sidebar
 - Localhost cookie warnings usually mean production cookie-domain env values are being reused in dev
 
 ## API Files To Check First

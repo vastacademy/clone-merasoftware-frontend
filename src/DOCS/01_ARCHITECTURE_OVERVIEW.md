@@ -31,9 +31,9 @@ This is the current architecture summary for the active frontend code.
 ### Customer
 
 - `/dashboard` - `CustomerDashboard`
-- `/order`
-- `/order-detail/:orderId`
-- `/project-details/:orderId`
+- `/order` - `OrderPage`
+- `/order-detail/:orderId` - `OrderDetailPage`
+- `/project-details/:orderId` - `ProjectDetails`
 - `/wallet`
 - `/my-updates`
 - `/my-invoices`
@@ -65,12 +65,17 @@ This is the current architecture summary for the active frontend code.
 - `DashboardLayout` is the shared customer dashboard shell
 - `CustomerDashboard` is the active customer dashboard page
 - `UserDashboard` is legacy and no longer the routed dashboard surface
+- `ProjectsAndPlans` is the active customer project/plan list page
+- `OrderPage` is the active customer purchase-history list page
+- `OrderDetailPage` is the single-order detail page and remains visually untouched
 - `AdminDashboard` is the active admin dashboard page
 - `ProjectDetails` is a routed customer/admin detail page that now uses a fixed desktop shell height with scrollable timeline/details panels and a compact snapshot column
 - `AppContent` and `DashboardLayout` keep content flow natural instead of forcing viewport-height wrappers, so footer placement follows actual content height
-- The customer dashboard shell now emphasizes dashboard, track project, start new project, and wallet as primary quick links, with orders/profile/support available as secondary links
+- The customer dashboard shell now emphasizes dashboard, track project, and wallet as primary quick links, with orders/profile/support available as secondary links; `Start New Project` is hidden temporarily from the sidebar
 - Wallet balance is sourced from `current_user` / `userDetails` and surfaced through `AppContent`; the dashboard no longer owns a separate wallet endpoint flow
 - The dashboard page now only reads wallet state, order data, and active project state from the shared app layer
+- `ProjectsAndPlans` uses a row-based list for projects and plans with progress percentage shown only at the far-right end slot
+- `OrderPage` uses a purchase-history row list with price, purchase date, type, and status, and does not show progress or days-left style tracking in the list
 
 ## Current Notes
 

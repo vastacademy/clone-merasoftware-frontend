@@ -131,6 +131,16 @@ Component uses data
 - One UI consumer: `AppContent` shared context and Redux
 - No dashboard-specific wallet fetch should be added in `CustomerDashboard`
 - If a separate wallet endpoint exists later, it must replace, not duplicate, the user snapshot source
+- Wallet history is a separate read-only transaction view from `/api/wallet/history`; it must never be used to recalculate or overwrite `walletBalance`
+
+### List Surface Contracts
+
+- `CustomerDashboard` recent items are a compact preview of the latest 5 project/plan records
+- `ProjectsAndPlans` is the full project/plan tracking list and keeps progress at the far-right row slot
+- `OrderPage` is the purchase-history list and shows price, purchase date, type, and order status only
+- `OrderDetailPage` remains the single-record detail surface and is not part of the row-list contract
+- Do not copy project-tracking fields such as percentage, days left, or updates left into `OrderPage`
+- Do not copy purchase-only fields such as price into `CustomerDashboard` or `ProjectsAndPlans` unless they are intentionally part of that surface
 
 ---
 
