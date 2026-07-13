@@ -108,7 +108,9 @@ This guide focuses on the active components that matter most in the current code
 - Do not move working data fetching into docs-only examples
 - Keep wallet balance ownership in `AppContent` + backend `current_user`; avoid duplicate wallet fetches from dashboard pages
 - Keep `ProjectsAndPlans` for project/plan tracking and `OrderPage` for purchase history; do not mix those purposes in the same list
-- `WalletDetails` follows the shared customer portal card, spacing, and action-color language; wallet data flow remains page-owned
+- `WalletDetails` follows the customer portal full-width workspace language with a balance header, four wallet metrics, Wallet Summary/Balance view, Recent Activity details, and complete transaction history
+- Transaction history provides All/Credit/Debit/Pending filters, text search, and pagination from the existing wallet history response
+- `WalletDetails` keeps recharge hidden until `Add Money` is selected; the existing UPI QR and verification flow opens in a right-side drawer without changing the wallet data flow
 
 ## Legacy Note
 

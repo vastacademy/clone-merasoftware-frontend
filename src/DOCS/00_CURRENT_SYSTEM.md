@@ -126,7 +126,9 @@ This document describes the active frontend behavior as of the current codebase.
 - `OrderPage` reads the full order list from `SummaryApi.ordersList` and renders a purchase-history list with price, purchase date, type, and status
 - Wallet balance is not fetched from a separate `/api/wallet/balance` endpoint in the current clean flow
 - Wallet transaction history is read from the authenticated `/api/wallet/history` endpoint backed by `transactionModel`; balance remains owned by `userDetails.walletBalance`
-- `WalletDetails` uses the customer portal slate/emerald single-card UI while preserving its existing recharge, verification, balance, active-project, and transaction-history flows
+- `WalletDetails` uses the full-width customer wallet workspace: balance header, Available Balance/Total Added/Total Spent/Transactions metrics, Wallet Summary, Recent Activity, and full transaction history
+- Wallet Summary exposes current balance, credit, debit, and pending amount; transaction history supports All/Credit/Debit/Pending filters, search, and pagination
+- Wallet recharge is progressively disclosed through an in-page right-side drawer opened by `Add Money`; the existing UPI QR and verification flow remains inside that drawer
 - Admin dashboard fetches clients from `SummaryApi.adminClients`
 - `backend/controller/user/getAdminClients.js` powers the admin client list endpoint
 - `backend/controller/order/scanDeleteOrder.js` is called by `/api/admin/delete-order/:orderId/scan` for the delete scan step
