@@ -317,8 +317,8 @@ const OrdersPage = () => {
       activeProject={activeProject}
     >
       <div className="min-h-full bg-[radial-gradient(circle_at_top_right,_rgba(59,130,246,0.16),_transparent_34%),linear-gradient(180deg,_#f8fafc_0%,_#eef2ff_50%,_#f8fafc_100%)] px-4 py-5 sm:px-6 lg:px-8 lg:py-8">
-        <div className="mx-auto flex max-w-7xl flex-col gap-6">
-          <section className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+        <section className="mx-auto max-w-7xl overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
+          <div className="p-5 sm:p-6">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">Orders</p>
@@ -356,9 +356,9 @@ const OrdersPage = () => {
                 </button>
               ))}
             </div>
-          </section>
+          </div>
 
-          <section className="rounded-[2rem] border border-slate-200 bg-white shadow-sm">
+          <div className="border-t border-slate-200">
             <div className="border-b border-slate-200 px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500 sm:px-6">
               <div className="grid grid-cols-12 gap-3">
                 <div className="col-span-12 lg:col-span-5">Order</div>
@@ -406,8 +406,8 @@ const OrdersPage = () => {
                 </div>
               </div>
             )}
-          </section>
-        </div>
+          </div>
+        </section>
       </div>
     </DashboardLayout>
   );
