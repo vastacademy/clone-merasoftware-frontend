@@ -108,6 +108,7 @@ This guide focuses on the active components that matter most in the current code
 - Do not move working data fetching into docs-only examples
 - Keep wallet balance ownership in `AppContent` + backend `current_user`; avoid duplicate wallet fetches from dashboard pages
 - Keep `ProjectsAndPlans` for project/plan tracking and `OrderPage` for purchase history; do not mix those purposes in the same list
+- `WalletDetails` follows the shared customer portal card, spacing, and action-color language; wallet data flow remains page-owned
 
 ## Legacy Note
 

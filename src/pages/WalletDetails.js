@@ -130,18 +130,18 @@ const WalletDetails = () => {
     if (transaction.type === 'refund') {
       return {
         sign: '+',
-        color: 'text-green-600',
+        color: 'text-emerald-600',
         title: transaction.description || 'Refund',
-        icon: <RefreshCw size={18} className="text-green-600" />,
-        iconBg: 'bg-green-100'
+        icon: <RefreshCw size={18} className="text-emerald-600" />,
+        iconBg: 'bg-emerald-100'
       };
     } else if (transaction.type === 'deposit') {
       return {
         sign: '+',
-        color: 'text-green-600',
+        color: 'text-emerald-600',
         title: 'Wallet Deposit',
-        icon: <CreditCard size={18} className="text-blue-600" />,
-        iconBg: 'bg-blue-100',
+        icon: <CreditCard size={18} className="text-emerald-600" />,
+        iconBg: 'bg-emerald-100',
         status: transaction.status
       };
     } else {
@@ -270,22 +270,23 @@ const WalletDetails = () => {
   return (
     <DashboardLayout user={user}
     activeProject={activeProject}>
-      <div className="min-h-screen bg-gray-100 p-4">
-        <div className="max-w-6xl mx-auto">
+      <div className="min-h-full bg-[radial-gradient(circle_at_top_right,_rgba(16,185,129,0.12),_transparent_30%),linear-gradient(180deg,_#f8fafc_0%,_#eef2ff_100%)] px-4 py-5 sm:px-6 lg:px-8 lg:py-8">
+        <div className="mx-auto max-w-7xl">
+          <section className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white/95 shadow-[0_25px_80px_-35px_rgba(15,23,42,0.35)] backdrop-blur">
           {/* Header with User Info and Balance */}
-          <div className="bg-white rounded-xl shadow-md p-6 mb-6">
+          <div className="border-b border-slate-200 px-5 py-5 sm:px-6">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between">
               <div>
-                <h1 className="text-2xl font-bold text-gray-800 capitalize">
+                <h1 className="text-2xl font-black tracking-tight text-slate-950 capitalize sm:text-3xl">
                   {getGreeting()}, {user?.name || 'User'}!
                 </h1>
-                <p className="text-gray-500 mt-1">Welcome back to your wallet dashboard</p>
+                <p className="mt-2 text-sm leading-6 text-slate-600">Welcome back to your wallet dashboard</p>
               </div>
               <div className="mt-4 md:mt-0">
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <p className="text-sm text-gray-600 mb-1">Current Balance</p>
+                <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+                  <p className="mb-1 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">Current Balance</p>
                   <div className="flex items-center justify-between">
-                    <p className="text-3xl font-bold text-blue-600">
+                    <p className="text-3xl font-black text-emerald-700">
                       {displayINRCurrency(context?.walletBalance || 0)}
                     </p>
                     <button 
@@ -295,7 +296,7 @@ const WalletDetails = () => {
                           context.fetchWalletBalance();
                         }
                       }}
-                      className="ml-4 text-blue-600 hover:text-blue-800 flex items-center text-sm"
+                      className="ml-4 inline-flex items-center gap-1 rounded-xl bg-slate-950 px-3 py-2 text-xs font-semibold text-white transition hover:bg-slate-800"
                     >
                       <RefreshCw className="mr-1" size={16} />
                       Refresh
@@ -307,14 +308,14 @@ const WalletDetails = () => {
           </div>
           
           {/* Main Content Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 divide-y divide-slate-200 lg:grid-cols-2 lg:divide-x lg:divide-y-0">
             {/* Recharge Wallet Section */}
-            <div className="bg-white rounded-xl shadow-md p-6">
-              <h2 className="text-xl font-semibold text-gray-800 mb-6">Recharge Your Wallet</h2>
+            <div className="p-5 sm:p-6">
+              <h2 className="mb-6 text-xl font-bold text-slate-950">Recharge Your Wallet</h2>
               
               {!showQR ? (
                 <div>
-                  <label htmlFor="amount" className="block text-gray-600 mb-2">Amount (₹)</label>
+                    <label htmlFor="amount" className="mb-2 block text-sm font-semibold text-slate-700">Amount (₹)</label>
                   <div className="relative">
                     <span className="absolute left-3 top-3 text-gray-500">₹</span>
                     <input
@@ -322,7 +323,7 @@ const WalletDetails = () => {
                       id="amount"
                       value={amount}
                       onChange={(e) => setAmount(e.target.value)}
-                      className="w-full pl-8 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                      className="w-full rounded-2xl border border-slate-200 py-3 pl-8 pr-4 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
                       placeholder="Enter amount to recharge"
                       min="1"
                     />
@@ -333,7 +334,7 @@ const WalletDetails = () => {
                       <button
                         key={quickAmount}
                         onClick={() => handleQuickAmount(quickAmount)}
-                        className="py-2 border border-gray-300 rounded-md hover:bg-gray-100 transition text-sm"
+                        className="rounded-xl border border-slate-200 py-2 text-sm font-semibold text-slate-700 transition hover:border-emerald-300 hover:bg-emerald-50"
                       >
                         ₹{quickAmount}
                       </button>
@@ -341,17 +342,17 @@ const WalletDetails = () => {
                   </div>
                   
                   <div className="mt-6">
-                    <div className="bg-gray-50 p-4 rounded-lg mb-4">
-                      <h3 className="text-sm font-medium text-gray-700 mb-2">Payment Summary</h3>
-                      <div className="flex justify-between mb-1">
-                        <span className="text-sm text-gray-500">Amount</span>
+                    <div className="mb-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                      <h3 className="mb-2 text-sm font-semibold text-slate-700">Payment Summary</h3>
+                      <div className="mb-1 flex justify-between">
+                        <span className="text-sm text-slate-500">Amount</span>
                         <span className="text-sm">₹{amount || '0'}</span>
                       </div>
-                      <div className="flex justify-between mb-1">
-                        <span className="text-sm text-gray-500">Fee</span>
+                      <div className="mb-1 flex justify-between">
+                        <span className="text-sm text-slate-500">Fee</span>
                         <span className="text-sm">₹0.00</span>
                       </div>
-                      <div className="border-t border-gray-200 my-2"></div>
+                      <div className="my-2 border-t border-slate-200"></div>
                       <div className="flex justify-between font-medium">
                         <span>Total</span>
                         <span>₹{amount || '0'}</span>
@@ -360,7 +361,7 @@ const WalletDetails = () => {
                     
                     <button
                       onClick={handleProceedToPayment}
-                      className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-lg transition flex items-center justify-center"
+                      className="flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 py-3 font-semibold text-white transition hover:bg-slate-800"
                     >
                       <CreditCard className="mr-2" size={18} />
                       Proceed to Payment
@@ -373,7 +374,7 @@ const WalletDetails = () => {
                     <p className="text-center mb-2">Scan QR code to pay ₹{amount}</p>
                     <p className="text-xs text-gray-500 mb-4 text-center">Transaction ID: {transactionId}</p>
                     
-                    <div className="bg-white p-4 rounded-lg shadow-inner mb-4 inline-block">
+                    <div className="mb-4 inline-block rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                       <QRCodeSVG value={upiLink} size={200} />
                     </div>
                     
@@ -397,7 +398,7 @@ const WalletDetails = () => {
                             setUpiTransactionId(value);
                           }
                         }}
-                        className="w-full pl-4 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                        className="w-full rounded-2xl border border-slate-200 py-3 pl-4 pr-4 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
                         placeholder="Enter the UPI transaction ID after payment"
                         minLength={10}
                         maxLength={12}
@@ -413,7 +414,7 @@ const WalletDetails = () => {
                     
                     <button
                       type="submit"
-                      className="w-full bg-green-500 text-white py-3 px-4 rounded-lg hover:bg-green-600 disabled:bg-gray-400 font-medium"
+                      className="w-full rounded-2xl bg-emerald-600 px-4 py-3 font-semibold text-white transition hover:bg-emerald-700 disabled:bg-slate-300"
                       disabled={loading || !upiTransactionId}
                     >
                       {loading ? 'Submitting...' : 'Submit for Verification'}
@@ -428,16 +429,16 @@ const WalletDetails = () => {
                   
                   <button
                     onClick={() => setShowQR(false)}
-                    className="mt-4 text-blue-600 hover:text-blue-800 text-sm"
+                    className="mt-4 text-sm font-semibold text-slate-600 transition hover:text-slate-950"
                   >
                     Cancel and go back
                   </button>
                 </div>
               ) : (
                 <div className="text-center">
-                  <div className="text-green-500 text-6xl mb-4">✓</div>
-                  <h3 className="text-xl font-medium mb-2">Verification request submitted</h3>
-                  <p className="text-gray-600 mb-4">
+                  <div className="mb-4 text-6xl text-emerald-600">✓</div>
+                  <h3 className="mb-2 text-xl font-bold text-slate-950">Verification request submitted</h3>
+                  <p className="mb-4 text-slate-600">
                     Your request for ₹{amount} is pending admin approval.
                   </p>
                   <button
@@ -450,7 +451,7 @@ const WalletDetails = () => {
                       setVerificationStatus('');
                       setUpiTransactionId('');
                     }}
-                    className="bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600"
+                    className="rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
                   >
                     Make Another Recharge
                   </button>
@@ -459,13 +460,13 @@ const WalletDetails = () => {
             </div>
             
             {/* Activity Summary for Desktop */}
-            <div className="hidden lg:block bg-white rounded-xl shadow-md p-6">
-              <h2 className="text-xl font-semibold text-gray-800 mb-6">Activity Summary</h2>
+            <div className="block p-5 sm:p-6">
+              <h2 className="mb-6 text-xl font-bold text-slate-950">Activity Summary</h2>
               <div className="space-y-6">
                 <div>
-                  <h3 className="text-sm font-medium text-gray-500 mb-3">User's Activity</h3>
-                  <div className="flex justify-between mb-2">
-                    <span className="text-gray-700">Total Spending</span>
+                  <h3 className="mb-3 text-sm font-semibold text-slate-500">User's Activity</h3>
+                  <div className="mb-2 flex justify-between">
+                    <span className="text-slate-700">Total Spending</span>
                     <span className="font-medium">{displayINRCurrency(getTotalSpending())}</span>
                   </div>
                   {/* <div className="flex justify-between mb-2">
@@ -483,19 +484,19 @@ const WalletDetails = () => {
                 </div>
                 
                 <div>
-                  <h3 className="text-sm font-medium text-gray-500 mb-3">Previous Transactions</h3>
+                  <h3 className="mb-3 text-sm font-semibold text-slate-500">Previous Transactions</h3>
                   <div className="space-y-5">
                     {walletHistory.slice(0, 3).map((transaction, index) => {
                       const display = getTransactionDisplay(transaction);
                       return (
-                        <div key={index} className="flex justify-between p-3 bg-gray-50 rounded-lg">
+                        <div key={index} className="flex justify-between rounded-2xl border border-slate-200 bg-slate-50 p-3">
                           <div className="flex items-center">
-                            <div className={`${display.iconBg} p-2 rounded-md mr-3`}>
+                            <div className={`${display.iconBg} mr-3 rounded-xl p-2`}>
                               {display.icon}
                             </div>
                             <div>
-                              <p className="font-medium text-gray-800 text-sm">{display.title}</p>
-                              <p className="text-xs text-gray-500">
+                              <p className="text-sm font-semibold text-slate-800">{display.title}</p>
+                              <p className="text-xs text-slate-500">
                                 {new Date(transaction.date).toLocaleDateString()} {new Date(transaction.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                               </p>
                             </div>
@@ -517,12 +518,12 @@ const WalletDetails = () => {
           </div>
           
           {/* Transaction History - Full Width */}
-          <div className="mt-6 bg-white rounded-xl shadow-md p-6">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
-              <h2 className="text-xl font-semibold text-gray-800">Transaction History</h2>
+          <div className="border-t border-slate-200 p-5 sm:p-6">
+            <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between">
+              <h2 className="text-xl font-bold text-slate-950">Transaction History</h2>
               <button 
                 onClick={fetchWalletHistory}
-                className="text-blue-500 hover:text-blue-700 flex items-center text-sm mt-2 md:mt-0"
+                className="mt-2 inline-flex items-center gap-1 rounded-xl bg-slate-950 px-3 py-2 text-xs font-semibold text-white transition hover:bg-slate-800 md:mt-0"
               >
                 <RefreshCw className="mr-1" size={16} />
                 Refresh
@@ -533,12 +534,12 @@ const WalletDetails = () => {
             <div className="hidden lg:block overflow-x-auto">
               <table className="min-w-full">
                 <thead>
-                  <tr className="bg-gray-50">
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Transaction</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date & Time</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Details</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                  <tr className="bg-slate-50">
+                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Transaction</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Date & Time</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Category</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Details</th>
+                    <th className="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-500">Amount</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -546,37 +547,37 @@ const WalletDetails = () => {
                     const display = getTransactionDisplay(transaction);
                     
                     return (
-                      <tr key={index} className="hover:bg-gray-50">
+                      <tr key={index} className="transition hover:bg-slate-50">
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
-                            <div className={`${display.iconBg} p-2 rounded-md mr-3`}>
+                            <div className={`${display.iconBg} mr-3 rounded-xl p-2`}>
                               {display.icon}
                             </div>
-                            <span className="font-medium text-gray-800">
+                            <span className="font-semibold text-slate-800">
                               {display.title}
                               {transaction.type === 'deposit' && getStatusBadge(transaction.status)}
                             </span>
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-500">
                           {new Date(transaction.date).toLocaleDateString()} {new Date(transaction.date).toLocaleTimeString()}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="whitespace-nowrap px-6 py-4">
                           <span className={`px-2 py-1 text-xs font-medium rounded-full ${
                             transaction.type === 'refund' 
-                              ? 'bg-green-100 text-green-800' 
+                                ? 'bg-emerald-100 text-emerald-800' 
                               : transaction.type === 'deposit'
                                 ? 'bg-blue-100 text-blue-800'
-                                : 'bg-gray-100 text-gray-800'
+                                : 'bg-slate-100 text-slate-800'
                           }`}>
                             {transaction.type?.toUpperCase() || 'PAYMENT'}
                           </span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-500">
                           {transaction.upiTransactionId && <div>UPI ID: {transaction.upiTransactionId}</div>}
                           {transaction.quantity && <div>Quantity: {transaction.quantity}</div>}
                         </td>
-                        <td className={`px-6 py-4 whitespace-nowrap text-right text-sm font-medium ${display.color}`}>
+                      <td className={`whitespace-nowrap px-6 py-4 text-right text-sm font-semibold ${display.color}`}>
                           {display.sign}{displayINRCurrency(Math.abs(transaction.amount))}
                         </td>
                       </tr>
@@ -592,30 +593,30 @@ const WalletDetails = () => {
                 const display = getTransactionDisplay(transaction);
                 
                 return (
-                  <div key={index} className="border border-gray-200 rounded-lg p-4">
+                  <div key={index} className="rounded-2xl border border-slate-200 bg-white p-4">
                     <div className="flex justify-between items-start mb-2">
                       <div className="flex items-center">
-                        <div className={`${display.iconBg} p-2 rounded-md mr-3`}>
+                        <div className={`${display.iconBg} mr-3 rounded-xl p-2`}>
                           {display.icon}
                         </div>
-                        <span className="font-medium text-gray-800">
+                        <span className="font-semibold text-slate-800">
                           {display.title}
                           {transaction.type === 'deposit' && getStatusBadge(transaction.status)}
                         </span>
                       </div>
-                      <span className={`font-medium ${display.color}`}>
+                      <span className={`font-semibold ${display.color}`}>
                         {display.sign}{displayINRCurrency(Math.abs(transaction.amount))}
                       </span>
                     </div>
-                    <div className="ml-11 text-sm text-gray-500">
+                    <div className="ml-11 text-sm text-slate-500">
                       <p>{new Date(transaction.date).toLocaleDateString()} {new Date(transaction.date).toLocaleTimeString()}</p>
                       <p className="mt-1">
                         <span className={`px-2 py-1 text-xs font-medium rounded-full ${
                           transaction.type === 'refund' 
-                            ? 'bg-green-100 text-green-800' 
+                              ? 'bg-emerald-100 text-emerald-800' 
                             : transaction.type === 'deposit'
                               ? 'bg-blue-100 text-blue-800'
-                              : 'bg-gray-100 text-gray-800'
+                              : 'bg-slate-100 text-slate-800'
                         }`}>
                           {transaction.type?.toUpperCase() || 'PAYMENT'}
                         </span>
@@ -638,12 +639,13 @@ const WalletDetails = () => {
               </div>
             )}
           </div>
-        </div>
+        </section>
+      </div>
       </div>
       
       {loading && (
         <div className="fixed inset-0 bg-black bg-opacity-10 flex items-center justify-center z-50">
-          <div className="rounded-lg p-8">
+          <div className="rounded-2xl p-8">
             <TriangleMazeLoader />
           </div>
         </div>
