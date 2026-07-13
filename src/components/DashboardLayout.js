@@ -44,7 +44,14 @@ const DashboardLayout = ({ children, user, walletBalance, cartCount, isLoading, 
     if (currentPath.startsWith('/home')) return 'Start New Project';
     if (currentPath.startsWith('/profile')) return 'Account Details';
     if (currentPath.startsWith('/wallet')) return 'Wallet Details';
+    if (currentPath.startsWith('/support-tickets')) return 'Support Tickets';
     if (currentPath.startsWith('/support')) return 'Contact Support';
+    if (currentPath.startsWith('/my-updates')) return 'My Updates';
+    if (currentPath.startsWith('/my-invoices')) return 'My Invoices';
+    if (currentPath.startsWith('/direct-payment')) return 'Direct Payment';
+    if (currentPath.startsWith('/installment-payment')) return 'Installment Payment';
+    if (currentPath.startsWith('/cart')) return 'Cart';
+    if (currentPath.startsWith('/complete-profile')) return 'Complete Profile';
     return 'Dashboard';
   };
 

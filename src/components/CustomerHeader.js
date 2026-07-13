@@ -223,7 +223,7 @@ const CustomerHeader = () => {
           <div className="py-4 flex items-center justify-between">
             <Link to={"/"}>
               <div className="flex items-center space-x-2">
-                <div className="h-10 w-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                <div className="h-10 w-10 bg-emerald-500 rounded-lg flex items-center justify-center">
                   <span className="text-white font-bold text-xl">M</span>
                 </div>
                 <span className="font-bold text-xl text-gray-800">
@@ -265,7 +265,7 @@ const CustomerHeader = () => {
               {!user?._id ? (
                 <Link
                   to="/login"
-                  className="inline-flex items-center justify-center rounded-full bg-blue-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
+                  className="inline-flex items-center justify-center rounded-full bg-emerald-500 px-5 py-2 text-sm font-semibold text-slate-950 transition hover:bg-emerald-600"
                 >
                   Login
                 </Link>
@@ -344,7 +344,7 @@ const CustomerHeader = () => {
         <div className="flex items-center justify-between">
           <Link to={"/"}>
             <div className="flex items-center">
-              <div className="w-8 h-8 flex items-center justify-center bg-blue-600 text-white font-bold rounded-md mr-2">
+              <div className="w-8 h-8 flex items-center justify-center bg-emerald-500 text-slate-950 font-bold rounded-md mr-2">
                 M
               </div>
               <span className="font-bold text-lg">MeraSoftware</span>
@@ -355,7 +355,7 @@ const CustomerHeader = () => {
             {!user?._id ? (
               <Link
                 to="/login"
-                className="inline-flex items-center justify-center rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
+                className="inline-flex items-center justify-center rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-emerald-600"
               >
                 Login
               </Link>

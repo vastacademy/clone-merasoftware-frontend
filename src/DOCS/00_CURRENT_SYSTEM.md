@@ -67,7 +67,9 @@ This document describes the active frontend behavior as of the current codebase.
   - admin panel and logout in the dropdown
 - `DashboardLayout` is the active customer dashboard shell
 - `DashboardLayout` owns the sidebar page badge; `/projects-and-plans` resolves to `Projects and Plans`
+- `DashboardLayout` resolves customer badges for wallet, orders, projects, support, updates, invoices, payments, cart, and profile-completion routes
 - `OrderPage` keeps its header, filters, counts, and order list inside one shared card, matching the Projects and Plans single-box layout
+- `OrderPage` active filters use the same emerald selection color as `ProjectsAndPlans`
 - `CustomerDashboard` is the active customer dashboard launchpad page
 - `UserDashboard` remains in the codebase as a legacy reference and is no longer the active dashboard route
 - `ProjectsAndPlans` is the active customer project/plan list page

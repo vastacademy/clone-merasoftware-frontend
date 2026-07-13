@@ -34,6 +34,7 @@ This guide focuses on the active components that matter most in the current code
 - Orders, profile, and support remain as secondary links
 - `Start New Project` is temporarily hidden from the sidebar, but the `/home` route still exists
 - Logout confirmation popup is part of this layout
+- Customer route page badges are resolved centrally from the current pathname, including updates, invoices, payments, cart, support tickets, and profile completion
 - Does not change the customer dashboard business logic
 
 ### `ProtectedRoute.js`
