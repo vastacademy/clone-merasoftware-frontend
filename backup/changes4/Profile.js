@@ -66,8 +66,7 @@ const Profile = () => {
 
   const handleChange = (event) => {
     const { name, value } = event.target;
-    const nextValue = name === 'phone' || name === 'age' ? value.replace(/\D/g, '') : value;
-    setFormData((current) => ({ ...current, [name]: nextValue }));
+    setFormData((current) => ({ ...current, [name]: value }));
   };
 
   const handleImageChange = (event) => {
@@ -153,12 +152,12 @@ const Profile = () => {
             <div className="grid gap-6 sm:grid-cols-2">
               <label className="block"><span className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700"><User size={16} className="text-slate-400" /> Full name</span><input name="name" value={formData.name} onChange={handleChange} required className="w-full border-0 border-b border-slate-300 bg-transparent px-0 py-2 text-sm text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-0" /></label>
               <label className="block"><span className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700"><Mail size={16} className="text-slate-400" /> Email address</span><input name="email" value={formData.email} readOnly className="w-full border-0 border-b border-slate-200 bg-transparent px-0 py-2 text-sm text-slate-400 outline-none" /></label>
-              <label className="block"><span className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700"><Phone size={16} className="text-slate-400" /> Phone number</span><input name="phone" type="tel" inputMode="numeric" pattern="[0-9]*" value={formData.phone} onChange={handleChange} className="w-full border-0 border-b border-slate-300 bg-transparent px-0 py-2 text-sm text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-0" /></label>
-              <label className="block"><span className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700"><Calendar size={16} className="text-slate-400" /> Age</span><input name="age" type="text" inputMode="numeric" pattern="[0-9]*" maxLength="3" value={formData.age} onChange={handleChange} className="w-full border-0 border-b border-slate-300 bg-transparent px-0 py-2 text-sm text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-0" /></label>
+              <label className="block"><span className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700"><Phone size={16} className="text-slate-400" /> Phone number</span><input name="phone" type="tel" value={formData.phone} onChange={handleChange} className="w-full border-0 border-b border-slate-300 bg-transparent px-0 py-2 text-sm text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-0" /></label>
+              <label className="block"><span className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700"><Calendar size={16} className="text-slate-400" /> Age</span><input name="age" type="number" min="1" max="120" value={formData.age} onChange={handleChange} className="w-full border-0 border-b border-slate-300 bg-transparent px-0 py-2 text-sm text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-0" /></label>
             </div>
           </div>
 
-          <div className="flex justify-end border-t border-slate-200 pt-6"><button type="submit" disabled={!isDirty || saving} className={`rounded-xl px-6 py-3 text-sm font-semibold text-white transition ${isDirty && !saving ? 'bg-emerald-600 hover:bg-emerald-700' : 'cursor-not-allowed bg-slate-300'}`}>{saving ? 'Saving...' : 'Save changes'}</button></div>
+          {isDirty && <div className="flex justify-end border-t border-slate-200 pt-6"><button type="submit" disabled={saving} className="rounded-xl bg-slate-950 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60">{saving ? 'Saving...' : 'Save changes'}</button></div>}
         </form>
       </div>
     </DashboardLayout>

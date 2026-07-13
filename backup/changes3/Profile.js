@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Camera, Mail, Phone, User, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
@@ -24,7 +24,6 @@ const Profile = () => {
   const { isOnline } = useOnlineStatus();
   const user = useSelector((state) => state?.user?.user);
   const [formData, setFormData] = useState(() => getFormData(user));
-  const [initialFormData, setInitialFormData] = useState(() => getFormData(user));
   const [selectedImage, setSelectedImage] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -35,7 +34,6 @@ const Profile = () => {
       if (cachedUser) {
         dispatch(setUserDetails(cachedUser));
         setFormData(getFormData(cachedUser));
-        setInitialFormData(getFormData(cachedUser));
         setLoading(false);
       }
 
@@ -49,7 +47,6 @@ const Profile = () => {
         dispatch(setUserDetails(data.data));
         StorageService.setUserDetails(data.data);
         setFormData(getFormData(data.data));
-        setInitialFormData(getFormData(data.data));
       }
     } catch (error) {
       console.error('Error fetching user details:', error);
@@ -62,12 +59,16 @@ const Profile = () => {
     fetchUserDetails();
   }, [fetchUserDetails]);
 
-  const isDirty = Boolean(selectedImage) || Object.keys(initialFormData).some((key) => formData[key] !== initialFormData[key]);
+  useEffect(() => {
+    if (user?._id && !selectedImage) setFormData(getFormData(user));
+  }, [user, selectedImage]);
+
+  const initialData = useMemo(() => getFormData(user), [user]);
+  const isDirty = selectedImage || Object.keys(initialData).some((key) => formData[key] !== initialData[key]);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
-    const nextValue = name === 'phone' || name === 'age' ? value.replace(/\D/g, '') : value;
-    setFormData((current) => ({ ...current, [name]: nextValue }));
+    setFormData((current) => ({ ...current, [name]: value }));
   };
 
   const handleImageChange = (event) => {
@@ -117,7 +118,6 @@ const Profile = () => {
       dispatch(setUserDetails(data.data));
       setSelectedImage(null);
       setFormData(getFormData(data.data));
-      setInitialFormData(getFormData(data.data));
       toast.success('Profile saved successfully');
     } catch (error) {
       console.error('Error updating profile:', error);
@@ -153,12 +153,12 @@ const Profile = () => {
             <div className="grid gap-6 sm:grid-cols-2">
               <label className="block"><span className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700"><User size={16} className="text-slate-400" /> Full name</span><input name="name" value={formData.name} onChange={handleChange} required className="w-full border-0 border-b border-slate-300 bg-transparent px-0 py-2 text-sm text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-0" /></label>
               <label className="block"><span className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700"><Mail size={16} className="text-slate-400" /> Email address</span><input name="email" value={formData.email} readOnly className="w-full border-0 border-b border-slate-200 bg-transparent px-0 py-2 text-sm text-slate-400 outline-none" /></label>
-              <label className="block"><span className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700"><Phone size={16} className="text-slate-400" /> Phone number</span><input name="phone" type="tel" inputMode="numeric" pattern="[0-9]*" value={formData.phone} onChange={handleChange} className="w-full border-0 border-b border-slate-300 bg-transparent px-0 py-2 text-sm text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-0" /></label>
-              <label className="block"><span className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700"><Calendar size={16} className="text-slate-400" /> Age</span><input name="age" type="text" inputMode="numeric" pattern="[0-9]*" maxLength="3" value={formData.age} onChange={handleChange} className="w-full border-0 border-b border-slate-300 bg-transparent px-0 py-2 text-sm text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-0" /></label>
+              <label className="block"><span className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700"><Phone size={16} className="text-slate-400" /> Phone number</span><input name="phone" type="tel" value={formData.phone} onChange={handleChange} className="w-full border-0 border-b border-slate-300 bg-transparent px-0 py-2 text-sm text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-0" /></label>
+              <label className="block"><span className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700"><Calendar size={16} className="text-slate-400" /> Age</span><input name="age" type="number" min="1" max="120" value={formData.age} onChange={handleChange} className="w-full border-0 border-b border-slate-300 bg-transparent px-0 py-2 text-sm text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-0" /></label>
             </div>
           </div>
 
-          <div className="flex justify-end border-t border-slate-200 pt-6"><button type="submit" disabled={!isDirty || saving} className={`rounded-xl px-6 py-3 text-sm font-semibold text-white transition ${isDirty && !saving ? 'bg-emerald-600 hover:bg-emerald-700' : 'cursor-not-allowed bg-slate-300'}`}>{saving ? 'Saving...' : 'Save changes'}</button></div>
+          {isDirty && <div className="flex justify-end border-t border-slate-200 pt-6"><button type="submit" disabled={saving} className="rounded-xl bg-slate-950 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60">{saving ? 'Saving...' : 'Save changes'}</button></div>}
         </form>
       </div>
     </DashboardLayout>

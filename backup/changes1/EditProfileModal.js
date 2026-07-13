@@ -94,11 +94,22 @@ const EditProfileModal = ({ user, onClose, onUpdate, loading, initialField }) =>
         onUpdate(updateData);
     };
 
+    // Function to get the field label based on initialField
+    const getFieldLabel = () => {
+        switch(initialField) {
+            case 'name': return 'Name';
+            case 'email': return 'Email';
+            case 'phone': return 'Phone Number';
+            case 'age': return 'Age';
+            default: return 'Profile Information';
+        }
+    };
+
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg max-w-md w-full mx-4 overflow-hidden shadow-xl">
                 <div className="bg-blue-600 text-white px-6 py-4 flex justify-between items-center">
-                    <h3 className="text-lg font-semibold">Edit profile</h3>
+                    <h3 className="text-lg font-semibold">Edit {getFieldLabel()}</h3>
                     <button 
                         onClick={onClose}
                         className="text-white hover:text-blue-100"
@@ -168,10 +179,11 @@ const EditProfileModal = ({ user, onClose, onUpdate, loading, initialField }) =>
                                     type="email"
                                     name="email"
                                     value={formData.email}
-                                    readOnly
-                                    className="w-full p-2 border border-gray-200 rounded-md bg-gray-50 text-gray-500 outline-none"
+                                    onChange={handleChange}
+                                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+                                    placeholder="Enter your email"
+                                    required
                                 />
-                                <p className="mt-1 text-xs text-gray-500">Email changes require account verification.</p>
                             </div>
                         )}
                         
