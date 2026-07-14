@@ -252,11 +252,29 @@ const CustomerDashboard = () => {
   );
 
   const primaryWorkItem = activeProjects[0] || activePlans[0] || activeProject || null;
-  const primaryAction = activeWorkItemsCount > 1
-    ? { label: 'Projects and Plans', to: '/projects-and-plans' }
-    : primaryWorkItem
-      ? { label: 'Track Project', to: `/project-details/${primaryWorkItem._id}` }
-    : { label: 'Start New Project', to: '/home' };
+  const primaryAction = (() => {
+    if (activeProjects.length === 1 && activePlans.length === 0) {
+      return { label: 'Track Project', to: `/project-details/${activeProjects[0]._id}` };
+    }
+
+    if (activeProjects.length === 0 && activePlans.length === 1) {
+      return { label: 'Request Website Update', to: '/my-updates' };
+    }
+
+    if (activeProjects.length > 0 && activePlans.length > 0) {
+      return { label: `${activeWorkItemsCount} Active Services`, to: '/projects-and-plans' };
+    }
+
+    if (activeProjects.length > 1) {
+      return { label: `${activeProjects.length} Active Projects`, to: '/projects-and-plans' };
+    }
+
+    if (activePlans.length > 1) {
+      return { label: `${activePlans.length} Active Plans`, to: '/projects-and-plans' };
+    }
+
+    return { label: 'Start New Project', to: '/home' };
+  })();
 
   useEffect(() => {
     if (typeof context?.updateActiveProject === 'function') {
