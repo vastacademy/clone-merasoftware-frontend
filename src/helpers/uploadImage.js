@@ -9,8 +9,16 @@ const uploadImage = async(image) => {
         method : "post",
         body : formData
     })
+    const data = await dataResponse.json()
 
-    return dataResponse.json()
+    if (!dataResponse.ok || (!data?.secure_url && !data?.url)) {
+        throw new Error(data?.error?.message || "Image upload failed")
+    }
+
+    return {
+        ...data,
+        url: data.secure_url || data.url
+    }
 }
 
 export default uploadImage

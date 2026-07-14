@@ -269,18 +269,18 @@ const WalletDetails = () => {
     const formattedTime = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const upiReference = transaction.upiTransactionId ? ` · UPI ref: ${transaction.upiTransactionId.slice(-4)}` : '';
     return (
-      <div key={transaction._id || transaction.id || `${transaction.date}-${transaction.amount}`} className="grid grid-cols-[5.25rem_minmax(0,1fr)] items-center gap-x-3 gap-y-2 px-4 py-3.5 transition hover:bg-slate-50 sm:grid-cols-[5.25rem_minmax(0,1fr)_7.5rem_5.5rem] sm:px-5">
-        <p className={`w-[5.25rem] shrink-0 text-xs font-black ${display.color}`}>{display.sign}{displayINRCurrency(Math.abs(Number(transaction.amount) || 0))}</p>
+      <div key={transaction._id || transaction.id || `${transaction.date}-${transaction.amount}`} className="grid grid-cols-[5.25rem_minmax(0,1fr)] items-center gap-x-3 gap-y-2 px-5 py-4 transition hover:bg-slate-50 sm:grid-cols-[5.25rem_minmax(0,1fr)_7.5rem_5.5rem] sm:px-6">
+        <p className={`w-[5.25rem] shrink-0 text-sm font-black ${display.color}`}>{display.sign}{displayINRCurrency(Math.abs(Number(transaction.amount) || 0))}</p>
         <div className="flex min-w-0 items-center gap-2.5">
           <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${display.iconBg}`}>{React.cloneElement(display.icon, { size: 15 })}</div>
           <div className="min-w-0">
-            <p className="truncate text-xs font-bold text-slate-900">{display.title}</p>
-            <p className="mt-0.5 truncate text-[10px] text-slate-500">{formattedDate} · {formattedTime}{upiReference}</p>
+            <p className="truncate text-sm font-bold text-slate-900">{display.title}</p>
+            <p className="mt-0.5 truncate text-xs text-slate-500">{formattedDate} · {formattedTime}{upiReference}</p>
           </div>
         </div>
         <div className="col-start-2 flex items-center justify-between gap-2 sm:contents">
-          <div className="text-left sm:text-right"><p className="text-[9px] font-bold uppercase tracking-wider text-slate-400 sm:hidden">Payment mode</p><p className="text-[10px] font-bold text-slate-600">{getPaymentModeLabel(transaction.paymentMethod)}</p></div>
-          {status ? <span className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9px] font-bold ${status.className}`}>{status.icon}{status.label}</span> : <span className="text-[10px] text-slate-400">-</span>}
+          <div className="text-left sm:text-right"><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 sm:hidden">Payment mode</p><p className="text-xs font-bold text-slate-600">{getPaymentModeLabel(transaction.paymentMethod)}</p></div>
+          {status ? <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-bold ${status.className}`}>{status.icon}{status.label}</span> : <span className="text-xs text-slate-400">-</span>}
         </div>
       </div>
     );
