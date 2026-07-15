@@ -90,6 +90,10 @@ Fast lookup for the current codebase.
 - Admin client detail work belongs in `AdminClientWorkspace.js`
 - Admin shell work belongs in `AdminLayout.js`
 - Admin header work belongs in `AdminHeader.js`
+- Admin `Payment & Invoices` tab work belongs in `AdminClientWorkspace.js`
+- Admin payment records in that tab come from `allData.transactions`; do not create a separate admin payment source
+- Admin invoice records in that tab come from `allData.invoices`; `Mark Paid` calls `/api/invoices/:invoiceId/mark-paid`
+- Payment approve/reject actions should not be wired until active backend transaction approval routes are verified/completed
 - Project detail UI work belongs in `ProjectDetails.js`
 - Footer spacing and shell flow work belong to `AppContent.js`, `DashboardLayout.js`, and `Footer.js`
 - Admin client overview data should be pulled from the existing customer APIs, not a separate admin DB
@@ -106,6 +110,9 @@ Fast lookup for the current codebase.
 - `src/helpers/postLogin.js` for login redirect
 - `src/routes/customerRoutes.js` for customer access
 - `src/routes/adminRoutes.js` for admin access
+- `backend/controller/user/getAdminUserWorkspace.js` for admin customer workspace data
+- `backend/controller/invoice/monthlyInvoiceController.js` for invoice lifecycle admin actions
+- `backend/helpers/invoiceLifecycle.js` for overdue pause and paid resume rules
 
 ## Historical Files
 

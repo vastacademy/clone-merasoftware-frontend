@@ -29,6 +29,12 @@ Admin ko same SSOT backend/data par customer ka full read + manage access dena h
 - Admin client detail/workspace page ka data flow SSOT pattern par shift ho chuka hai
 - Admin workspace projects/plans ke liye compact scan-driven delete flow added hai; delete se pehle linked records scan hote hain, missing sections prechecked/disabled dikhte hain, aur sirf fully selected sections delete hote hain
 - Projects aur Plans tabs ke liye in-workspace subpage flow add ho raha hai, so back returns to the respective list instead of leaving the workspace
+- `Payment & Invoices` tab `AdminClientWorkspace` mein add ho chuki hai
+- Payment records same workspace ke `transactions` data se display hote hain
+- Invoice records same workspace ke `invoices` data se display hote hain
+- `unpaid` aur `overdue` invoices admin `Mark Paid` modal se paid mark ho sakti hain
+- Invoice `Mark Paid` flow existing backend route `/api/invoices/:invoiceId/mark-paid` use karta hai
+- Payment approve/reject buttons abhi intentionally wire nahi hain, kyunki active backend transaction approval routes verify/complete karne hain
 
 ## Customer Current Access Pattern
 Customer frontend backend endpoints ko token/cookie ke through access karta hai.
@@ -49,6 +55,11 @@ Main active data sources:
 - Common read logic shared rahega
 - Common write/manage logic bhi shared service layer se aayega, duplicate system nahi
 - Delete flow me shared scan helper use hoga taaki scan aur final delete same source of truth follow karein
+- Payment approval aur invoice lifecycle bhi same customer backend par chalega
+- Payment source of truth: `transactionModel`
+- Invoice source of truth: `monthlyInvoiceModel`
+- Plan/project source of truth: `orderProductModel`
+- Admin panel sirf control UI hoga; woh same backend records read/update karega
 
 ## Phase 1 Plan
 - Customer data flow ko final map karna
@@ -57,6 +68,7 @@ Main active data sources:
 - Read-only vs manage actions separate karna
 - Existing endpoints reuse list prepare karna
 - Sirf unavoidable admin mutation endpoints identify karna
+- Invoice mark-paid mutation endpoint completed
 
 ## Phase 2 Plan
 - Customer click par client workspace page
@@ -66,6 +78,8 @@ Main active data sources:
 - Project/order delete with linked cleanup
 - Project/order delete with scan + checklist confirmation + full cleanup
 - Projects and Plans subpages inside workspace
+- Payment & Invoices tab inside workspace
+- Invoice mark-paid admin flow
 - Live refresh / activity sync
 
 ## Phase 3 Plan
@@ -76,6 +90,7 @@ Main active data sources:
 - Audit log
 - Validation rules
 - Edge cases and rollback behavior
+- Complete and verify payment approve/reject backend routes, then wire admin payment action buttons
 
 ## What Must Not Happen
 - Duplicate customer backend
@@ -85,7 +100,7 @@ Main active data sources:
 - Unnecessary changes to customer UI or logic
 
 ## Open Decisions
-- Admin client page base: shared workspace vs new page
 - Admin action scope per tab
 - Which existing endpoints can be reused exactly
 - Which admin mutations are unavoidable
+- Payment approve/reject route completion for `transactionModel` records

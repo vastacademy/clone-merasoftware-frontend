@@ -653,6 +653,10 @@ const SummaryApi = {
         url: `${backendDomain}/api/admin/user-workspace`,
         method: "get"
     },
+    adminPaymentRecord: {
+        url: `${backendDomain}/api/admin/clients`,
+        method: "get"
+    },
     adminDeleteOrder: {
         url: `${backendDomain}/api/admin/delete-order`,
         method: "delete"

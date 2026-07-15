@@ -107,9 +107,12 @@ This document describes the active frontend behavior as of the current codebase.
 - Clicking a client opens `/admin-panel/clients/:customerId`
 - Browser history now keeps `dashboard -> clients -> client detail`
 - `AdminClientWorkspace` loads customer overview data from the existing customer SSOT APIs
-- `AdminClientWorkspace` has simple `Projects` and `Plans` tabs
+- `AdminClientWorkspace` has `Overview`, `Projects`, `Plans`, and `Payment & Invoices` tabs
 - The `Projects` tab now opens a project subpage inside the same workspace, and back returns to the projects list
 - The `Plans` tab now opens a plan subpage inside the same workspace, and back returns to the plans list
+- The `Payment & Invoices` tab uses existing workspace `transactions` and `invoices` arrays; it does not create a new admin payment source
+- The `Payment & Invoices` tab shows payment records as display-only until transaction approve/reject backend routes are verified/completed
+- The `Payment & Invoices` tab lets admin mark `unpaid` and `overdue` invoices as paid through `/api/invoices/:invoiceId/mark-paid`
 - Project subpages now fetch an admin-only project history bundle from the same order-details source: checkpoint progress, linked checkpoint notes, update requests, file metadata, invoices, and transactions stay in one record view for projects
 - Project subpages now show a checkpoint list first, then a checkpoint detail panel with linked notes; project submission and file records are shown below for project-level history
 - Customer project details now use the same checkpoint-driven pattern on the customer side and no longer show a separate Recent Updates feed
@@ -134,6 +137,10 @@ This document describes the active frontend behavior as of the current codebase.
 - `backend/controller/order/scanDeleteOrder.js` is called by `/api/admin/delete-order/:orderId/scan` for the delete scan step
 - `backend/controller/order/scanDeleteOrder.js` handles the admin delete scan response
 - `backend/controller/order/deleteOrder.js` handles admin-only project deletion with linked cleanup after checklist confirmation
+- `backend/controller/user/getAdminUserWorkspace.js` returns customer orders, transactions, invoices, update requests, plans, and summary data for `AdminClientWorkspace`
+- `backend/controller/invoice/monthlyInvoiceController.js` owns admin invoice lifecycle actions for overdue processing and marking invoices paid
+- `backend/helpers/invoiceLifecycle.js` is the shared backend helper that pauses plans on overdue invoices and resumes eligible plans on paid invoices
+- Payment/invoice admin UI must use existing backend models: `transactionModel`, `monthlyInvoiceModel`, and `orderProductModel`. Do not add a separate admin payment backend.
 
 ## 7. Local Dev Note
 

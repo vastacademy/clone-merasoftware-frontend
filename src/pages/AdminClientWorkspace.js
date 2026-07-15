@@ -26,6 +26,7 @@ const tabs = [
   { id: "overview", label: "Overview", active: true },
   { id: "projects", label: "Projects", active: true },
   { id: "plans", label: "Plans", active: true },
+  { id: "payments", label: "Payment & Invoices", active: true },
 ];
 
 const safeDateTime = (value) => {
@@ -118,6 +119,13 @@ const getBadgeClassName = (label) => {
   switch ((label || "").toLowerCase()) {
     case "active":
       return "bg-emerald-100 text-emerald-800";
+    case "paid":
+    case "verified":
+      return "bg-emerald-100 text-emerald-800";
+    case "unpaid":
+      return "bg-amber-100 text-amber-800";
+    case "overdue":
+      return "bg-rose-100 text-rose-800";
     case "inactive":
       return "bg-slate-100 text-slate-700";
     case "expired":
@@ -130,10 +138,41 @@ const getBadgeClassName = (label) => {
     case "completed":
       return "bg-emerald-100 text-emerald-800";
     case "rejected":
+    case "failed":
       return "bg-rose-100 text-rose-800";
+    case "cancelled":
+    case "canceled":
+      return "bg-slate-100 text-slate-700";
     default:
       return "bg-slate-100 text-slate-700";
   }
+};
+
+const formatCurrency = (value) => {
+  const amount = Number(value || 0);
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 0,
+  }).format(amount);
+};
+
+const getPaymentStatusLabel = (transaction) => {
+  if (!transaction?.status) return "N/A";
+  return String(transaction.status).replace(/_/g, " ");
+};
+
+const getInvoiceStatusLabel = (invoice) => {
+  if (!invoice?.status) return "N/A";
+  return String(invoice.status).replace(/_/g, " ");
+};
+
+const getLedgerStatusLabel = (status) => {
+  const normalizedStatus = String(status || "").toLowerCase();
+  if (["completed", "paid", "approved"].includes(normalizedStatus)) return "Paid";
+  if (["pending", "pending-approval", "unpaid", "overdue"].includes(normalizedStatus)) return "Pending";
+  if (["rejected", "failed", "cancelled", "canceled"].includes(normalizedStatus)) return "Rejected";
+  return status ? String(status).replace(/_/g, " ") : "N/A";
 };
 
 const toComparableId = (value) => {
@@ -213,7 +252,7 @@ const AdminClientWorkspace = () => {
   const dispatch = useDispatch();
   const user = useSelector((state) => state?.user?.user);
   const { isOnline } = useOnlineStatus();
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, setActiveTab] = useState(location.state?.activeTab || "overview");
   const [customerLoading, setCustomerLoading] = useState(true);
   const [dataLoading, setDataLoading] = useState(true);
   const [fetchError, setFetchError] = useState("");
@@ -532,6 +571,11 @@ const AdminClientWorkspace = () => {
   const allDeleteSectionsSelected =
     deleteRequiredSections.length > 0 &&
     deleteRequiredSections.every((section) => deleteSelections[section.key]);
+
+  const handleOpenPaymentRecord = (item) => {
+    if (!item?.raw?._id || !customerId) return;
+    navigate(`/admin-panel/clients/${customerId}/payments/${item.kind}/${item.raw._id}`);
+  };
 
   useEffect(() => {
     if (!customerId) return;
@@ -922,6 +966,16 @@ const AdminClientWorkspace = () => {
           </section>
         )}
 
+        {activeTab === "payments" && (
+          <PaymentInvoicesPanel
+            transactions={allData.transactions}
+            invoices={allData.invoices}
+            getBadgeClassName={getBadgeClassName}
+            formatDateTime={formatDateTime}
+            onOpenRecord={handleOpenPaymentRecord}
+          />
+        )}
+
         {fetchError ? (
           <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
             {fetchError}
@@ -1061,8 +1115,148 @@ const AdminClientWorkspace = () => {
             </div>
           </div>
         ) : null}
+
       </div>
     </AdminLayout>
+  );
+};
+
+const PaymentInvoicesPanel = ({
+  transactions,
+  invoices,
+  getBadgeClassName,
+  formatDateTime,
+  onOpenRecord,
+}) => {
+  const pendingPayments = transactions.filter((transaction) => transaction?.status === "pending");
+  const unpaidInvoices = invoices.filter((invoice) => ["unpaid", "overdue"].includes(invoice?.status));
+  const paidInvoices = invoices.filter((invoice) => invoice?.status === "paid");
+  const completedPayments = transactions.filter((transaction) => transaction?.status === "completed");
+  const transactionInvoiceIds = new Set(
+    transactions
+      .filter((transaction) => transaction?.invoiceId)
+      .map((transaction) => String(transaction.invoiceId?._id || transaction.invoiceId))
+  );
+  const ledgerItems = [
+    ...transactions.map((transaction) => ({
+      id: `transaction-${transaction._id}`,
+      kind: "transaction",
+      statusLabel: getPaymentStatusLabel(transaction),
+      title: transaction.transactionId || transaction.upiTransactionId || `Payment ${String(transaction._id).slice(-6)}`,
+      subtitle: `${transaction.sourceType || transaction.type || "payment"} payment`,
+      status: transaction.status,
+      amount: transaction.amount,
+      method: transaction.paymentMethod || "N/A",
+      reference: transaction.upiTransactionId || transaction.transactionId || "N/A",
+      date: transaction.date || transaction.createdAt,
+      raw: transaction,
+      sortDate: safeDateTime(transaction.date || transaction.createdAt)?.getTime() || 0,
+    })),
+    ...invoices
+      .filter((invoice) => !transactionInvoiceIds.has(String(invoice._id)))
+      .map((invoice) => ({
+        id: `invoice-${invoice._id}`,
+        kind: "invoice",
+        statusLabel: getInvoiceStatusLabel(invoice),
+        title: invoice.invoiceNumber || `Invoice ${String(invoice._id).slice(-6)}`,
+        subtitle: invoice.orderId?.productId?.serviceName || invoice.serviceName || "Monthly invoice",
+        status: invoice.status,
+        amount: invoice.amount,
+        method: invoice.paymentMethod || "N/A",
+        reference: invoice.transactionReference || "N/A",
+        date: invoice.paidDate || invoice.invoiceDate || invoice.createdAt,
+        raw: invoice,
+        sortDate: safeDateTime(invoice.paidDate || invoice.invoiceDate || invoice.createdAt)?.getTime() || 0,
+      })),
+  ].sort((left, right) => right.sortDate - left.sortDate);
+
+  return (
+    <section className="space-y-5">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
+        <InfoPill label="Paid Payments" value={completedPayments.length} />
+        <InfoPill label="Pending Payments" value={pendingPayments.length} />
+        <InfoPill label="Unpaid Invoices" value={unpaidInvoices.length} />
+        <InfoPill label="Paid Invoices" value={paidInvoices.length} />
+      </div>
+
+      <div className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-xl font-bold text-slate-900">Payment Ledger</h2>
+            <p className="mt-1 text-sm text-slate-500">Single payment and invoice history from the customer backend.</p>
+          </div>
+          <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+            {ledgerItems.length} records
+          </span>
+        </div>
+
+        <div className="mt-5 overflow-hidden rounded-[1.5rem] border border-slate-200">
+          {ledgerItems.length === 0 ? (
+            <div className="p-6 text-center text-slate-500">No payment or invoice records found for this client.</div>
+          ) : (
+            <div className="divide-y divide-slate-100 bg-white">
+              {ledgerItems.map((item) => {
+                const isTransaction = item.kind === "transaction";
+                const invoice = !isTransaction ? item.raw : null;
+
+                return (
+                  <div
+                    key={item.id}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => onOpenRecord?.(item)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        onOpenRecord?.(item);
+                      }
+                    }}
+                    className="cursor-pointer px-5 py-4 transition hover:bg-slate-50"
+                  >
+                    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-bold uppercase text-slate-500">
+                            {isTransaction ? "Payment" : "Invoice"}
+                          </span>
+                          <p className="font-semibold text-slate-900">{item.title}</p>
+                          <span className={`rounded-full px-3 py-1 text-xs font-semibold capitalize ${getBadgeClassName(getLedgerStatusLabel(item.status))}`}>
+                            {getLedgerStatusLabel(item.status)}
+                          </span>
+                        </div>
+                        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
+                          <span>Type: {item.subtitle}</span>
+                          <span>Method: {item.method}</span>
+                          <span>Reference: {item.reference}</span>
+                          <span>Date: {formatDateTime(item.date)}</span>
+                          {invoice?.dueDate ? <span>Due: {formatDateTime(invoice.dueDate)}</span> : null}
+                        </div>
+                        {isTransaction && item.raw?.rejectionReason ? (
+                          <div className="mt-3 rounded-2xl border border-rose-100 bg-rose-50 px-3 py-2 text-xs text-rose-700">
+                            Reason: {item.raw.rejectionReason}
+                          </div>
+                        ) : null}
+                      </div>
+
+                      <div className="flex shrink-0 flex-col items-start gap-3 lg:items-end">
+                        <div className="text-left lg:text-right">
+                          <p className="text-xs text-slate-500">Amount</p>
+                          <p className="text-lg font-bold text-slate-900">{formatCurrency(item.amount)}</p>
+                        </div>
+
+                        <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+                          Open detail
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
   );
 };
 
