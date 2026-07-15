@@ -4,6 +4,7 @@ import { useSelector } from 'react-redux';
 import { PlusCircle, Home, UserCircle, Wallet, MessageSquare } from 'lucide-react';
 import Context from '../context';
 import SummaryApi from '../common';
+import BrandLogo from './BrandLogo';
 
 const Footer = () => {
   const user = useSelector(state => state?.user?.user);
@@ -72,9 +73,7 @@ const Footer = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
             <div>
               <div className="flex items-center space-x-2 mb-4">
-                <div className="h-8 w-8 bg-emerald-500 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold">M</span>
-                </div>
+                <BrandLogo />
                 <span className="font-bold text-white">MeraSoftware</span>
               </div>
               <p className="text-sm">Your one-stop shop for all digital services. We help businesses build and enhance their online presence.</p>
