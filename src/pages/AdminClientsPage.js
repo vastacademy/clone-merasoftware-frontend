@@ -146,16 +146,16 @@ const AdminClientsPage = () => {
       mobileTitle="Clients"
       mobileSubtitle="Client list"
     >
-      <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 pb-6 sm:px-6 lg:px-8">
-        <section className="rounded-[2rem] border border-slate-200 bg-white shadow-sm">
-          <div className="flex flex-col gap-4 border-b border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+      <div className="mx-auto flex max-w-[90rem] flex-col gap-6 px-4 pb-6 sm:px-6 lg:px-8">
+        <section className="rounded-[2.5rem] border border-slate-200 bg-white shadow-sm">
+          <div className="flex flex-col gap-4 border-b border-slate-800 bg-slate-950 p-4 text-white sm:flex-row sm:items-center sm:justify-between sm:p-6">
             <div className="flex items-center gap-3">
-              <div className="rounded-2xl bg-emerald-50 p-3 text-emerald-600">
+              <div className="rounded-2xl bg-emerald-400/10 p-3 text-emerald-300 ring-1 ring-emerald-400/20">
                 <Users2 size={22} />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-slate-900">Clients</h1>
-                <p className="text-sm text-slate-500">Customer list fetched from the admin clients endpoint.</p>
+                <h1 className="text-xl font-bold text-white">Clients</h1>
+                <p className="text-sm text-slate-400">Customer list fetched from the admin clients endpoint.</p>
               </div>
             </div>
 
@@ -167,16 +167,16 @@ const AdminClientsPage = () => {
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Search clients by name, email, or phone"
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3 pl-10 pr-4 text-sm outline-none transition focus:border-slate-400 focus:bg-white"
+                  className="w-full rounded-2xl border border-white/10 bg-white/5 py-3 pl-10 pr-4 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-emerald-400/50 focus:bg-white/10"
                 />
               </div>
 
-              <label className="flex w-full items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-700 sm:w-72">
+              <label className="flex w-full items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-3 text-sm text-slate-200 sm:w-72">
                 <ArrowUpDown size={16} className="shrink-0 text-slate-400" />
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="w-full cursor-pointer bg-transparent outline-none"
+                  className="w-full cursor-pointer bg-slate-950 outline-none"
                   aria-label="Sort clients"
                 >
                   {sortOptions.map((option) => (
@@ -191,7 +191,7 @@ const AdminClientsPage = () => {
                 type="button"
                 onClick={handleRefresh}
                 disabled={loading || refreshing}
-                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <RefreshCw size={16} className={refreshing ? "animate-spin" : ""} />
                 Refresh

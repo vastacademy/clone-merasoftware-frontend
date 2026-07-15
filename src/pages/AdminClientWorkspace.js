@@ -750,68 +750,78 @@ const AdminClientWorkspace = () => {
       mobileTitle="Client Workspace"
       mobileSubtitle={clientName}
     >
-      <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 pb-6 sm:px-6 lg:px-8">
-        <div className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-            <div className="flex items-start gap-4">
-              <button
-                type="button"
-                onClick={handleBack}
-                className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 text-slate-700 transition hover:bg-slate-100"
-                aria-label="Go back"
-              >
-                <ArrowLeft size={18} />
-              </button>
+      <div className="mx-auto max-w-[90rem] px-4 pb-6 sm:px-6 lg:px-8">
+        <section className="overflow-hidden rounded-[2.5rem] border border-slate-200 bg-white shadow-sm">
+          <div className="border-b border-slate-800 bg-slate-950 p-5 text-white sm:p-6">
+            <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+              <div className="flex items-start gap-4">
+                <button
+                  type="button"
+                  onClick={handleBack}
+                  className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-white transition hover:bg-white/10"
+                  aria-label="Go back"
+                >
+                  <ArrowLeft size={18} />
+                </button>
 
-              <div>
-                <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
-                  <ShieldCheck size={14} />
-                  Admin Client Workspace
+                <div>
+                  <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-xs font-semibold text-emerald-300">
+                    <ShieldCheck size={14} />
+                    Admin Client Workspace
+                  </div>
+                  <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
+                    {clientName}
+                  </h1>
+                  <p className="mt-2 text-sm text-slate-400">{clientEmail}</p>
                 </div>
-                <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-                  {clientName}
-                </h1>
-                <p className="mt-2 text-sm text-slate-500">{clientEmail}</p>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-3">
+                <InfoPill label="Client ID" value={customerId || client?._id || "N/A"} dark />
+                <InfoPill label="Status" value={clientStatus} dark />
+                <InfoPill label="Joined" value={createdAt} dark />
               </div>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-3">
-              <InfoPill label="Client ID" value={customerId || client?._id || "N/A"} />
-              <InfoPill label="Status" value={clientStatus} />
-              <InfoPill label="Joined" value={createdAt} />
-            </div>
-
             {customerLoading ? (
-              <div className="mt-4 inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-500">
+              <div className="mt-4 inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-slate-300">
                 Loading customer profile...
               </div>
             ) : null}
           </div>
-        </div>
 
-        <div className="flex flex-wrap gap-2">
-          {tabs.map((tab) => {
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                className={[
-                  "inline-flex min-w-[132px] cursor-pointer items-center justify-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition",
-                  isActive
-                    ? "border-emerald-500 bg-emerald-500 text-white shadow-sm"
-                    : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
-                ].join(" ")}
-                onClick={() => setActiveTab(tab.id)}
-              >
-                <span>{tab.label}</span>
-              </button>
-            );
-          })}
-        </div>
+          <div className="border-b border-slate-200 px-5 sm:px-6">
+            <div
+              role="tablist"
+              aria-label="Client workspace sections"
+              className="flex gap-6 overflow-x-auto"
+            >
+              {tabs.map((tab) => {
+                const isActive = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={isActive}
+                    className={[
+                      "relative -mb-px inline-flex shrink-0 cursor-pointer items-center justify-center border-b-2 px-1 py-4 text-sm font-semibold transition",
+                      isActive
+                        ? "border-emerald-500 text-emerald-700"
+                        : "border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-900",
+                    ].join(" ")}
+                    onClick={() => setActiveTab(tab.id)}
+                  >
+                    <span>{tab.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
 
+          <div className="p-5 sm:p-6">
         {activeTab === "overview" && (
-          <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+          <section>
             <div className="mb-4">
               <h2 className="text-xl font-bold text-slate-900">Overview</h2>
               <p className="mt-1 text-sm text-slate-500">
@@ -975,6 +985,8 @@ const AdminClientWorkspace = () => {
             onOpenRecord={handleOpenPaymentRecord}
           />
         )}
+          </div>
+        </section>
 
         {fetchError ? (
           <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
@@ -1179,7 +1191,7 @@ const PaymentInvoicesPanel = ({
         <InfoPill label="Paid Invoices" value={paidInvoices.length} />
       </div>
 
-      <div className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+      <div>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-xl font-bold text-slate-900">Payment Ledger</h2>
@@ -1262,7 +1274,7 @@ const PaymentInvoicesPanel = ({
 
 const CompactWorkspaceCard = ({ title, subtitle, items, emptyText, onRowClick, onDelete, deletingOrderId, renderMeta, renderRight }) => {
   return (
-    <div className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+    <div>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-xl font-bold text-slate-900">{title}</h2>
@@ -1358,7 +1370,7 @@ const WorkspaceDetailSubpage = ({
   const timelineHistory = projectHistory?.timeline || [];
 
   return (
-    <div className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+    <div>
       <div className="mb-5 flex items-start justify-between gap-4">
         <div>
           <button
@@ -1671,13 +1683,13 @@ const InfoLine = ({ label, value }) => {
   );
 };
 
-const InfoPill = ({ label, value }) => {
+const InfoPill = ({ label, value, dark = false }) => {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+    <div className={dark ? "rounded-2xl border border-white/10 bg-white/5 px-4 py-3" : "rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3"}>
+      <p className={dark ? "text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400" : "text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500"}>
         {label}
       </p>
-      <p className="mt-1 truncate text-sm font-semibold text-slate-900">{value}</p>
+      <p className={dark ? "mt-1 truncate text-sm font-semibold text-white" : "mt-1 truncate text-sm font-semibold text-slate-900"}>{value}</p>
     </div>
   );
 };
