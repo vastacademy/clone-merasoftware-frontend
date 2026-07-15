@@ -21,6 +21,10 @@ import CookieManager from "../utils/cookieManager";
 import StorageService from "../utils/storageService";
 import { useOnlineStatus } from "../App";
 import AdminLayout from "../components/AdminLayout";
+import AdminInfoPill from "../components/admin/AdminInfoPill";
+import AdminWorkspaceList from "../components/admin/AdminWorkspaceList";
+import AdminWorkspaceShell, { AdminWorkspaceHeader } from "../components/admin/AdminWorkspaceShell";
+import AdminWorkspaceTabs from "../components/admin/AdminWorkspaceTabs";
 
 const tabs = [
   { id: "overview", label: "Overview", active: true },
@@ -747,77 +751,43 @@ const AdminClientWorkspace = () => {
     <AdminLayout
       user={user}
       onLogout={handleLogout}
-      mobileTitle="Client Workspace"
-      mobileSubtitle={clientName}
     >
-      <div className="mx-auto max-w-[90rem] px-4 pb-6 sm:px-6 lg:px-8">
-        <section className="overflow-hidden rounded-[2.5rem] border border-slate-200 bg-white shadow-sm">
-          <div className="border-b border-slate-800 bg-slate-950 p-5 text-white sm:p-6">
-            <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-              <div className="flex items-start gap-4">
-                <button
-                  type="button"
-                  onClick={handleBack}
-                  className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-white transition hover:bg-white/10"
-                  aria-label="Go back"
-                >
-                  <ArrowLeft size={18} />
-                </button>
-
-                <div>
-                  <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-xs font-semibold text-emerald-300">
-                    <ShieldCheck size={14} />
-                    Admin Client Workspace
-                  </div>
-                  <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
-                    {clientName}
-                  </h1>
-                  <p className="mt-2 text-sm text-slate-400">{clientEmail}</p>
-                </div>
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-3">
-                <InfoPill label="Client ID" value={customerId || client?._id || "N/A"} dark />
-                <InfoPill label="Status" value={clientStatus} dark />
-                <InfoPill label="Joined" value={createdAt} dark />
-              </div>
-            </div>
-
-            {customerLoading ? (
-              <div className="mt-4 inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-slate-300">
-                Loading customer profile...
-              </div>
-            ) : null}
-          </div>
-
-          <div className="border-b border-slate-200 px-5 sm:px-6">
-            <div
-              role="tablist"
-              aria-label="Client workspace sections"
-              className="flex gap-6 overflow-x-auto"
+      <AdminWorkspaceShell>
+        <AdminWorkspaceHeader
+          eyebrow={
+            <>
+              <ShieldCheck size={14} />
+              Admin Client Workspace
+            </>
+          }
+          title={clientName}
+          subtitle={clientEmail}
+          leadingAction={
+            <button
+              type="button"
+              onClick={handleBack}
+              className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-white transition hover:bg-white/10"
+              aria-label="Go back"
             >
-              {tabs.map((tab) => {
-                const isActive = activeTab === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    type="button"
-                    role="tab"
-                    aria-selected={isActive}
-                    className={[
-                      "relative -mb-px inline-flex shrink-0 cursor-pointer items-center justify-center border-b-2 px-1 py-4 text-sm font-semibold transition",
-                      isActive
-                        ? "border-emerald-500 text-emerald-700"
-                        : "border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-900",
-                    ].join(" ")}
-                    onClick={() => setActiveTab(tab.id)}
-                  >
-                    <span>{tab.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+              <ArrowLeft size={18} />
+            </button>
+          }
+          meta={
+            <>
+              <AdminInfoPill label="Client ID" value={customerId || client?._id || "N/A"} variant="dark" />
+              <AdminInfoPill label="Status" value={clientStatus} variant="dark" />
+              <AdminInfoPill label="Joined" value={createdAt} variant="dark" />
+            </>
+          }
+          loadingText={customerLoading ? "Loading customer profile..." : ""}
+        />
+
+        <AdminWorkspaceTabs
+          tabs={tabs}
+          activeTab={activeTab}
+          onChange={setActiveTab}
+          ariaLabel="Client workspace sections"
+        />
 
           <div className="p-5 sm:p-6">
         {activeTab === "overview" && (
@@ -985,14 +955,14 @@ const AdminClientWorkspace = () => {
             onOpenRecord={handleOpenPaymentRecord}
           />
         )}
-          </div>
-        </section>
 
         {fetchError ? (
-          <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          <div className="mt-5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
             {fetchError}
           </div>
         ) : null}
+          </div>
+      </AdminWorkspaceShell>
 
         {deleteTarget ? (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 px-4 py-6">
@@ -1128,7 +1098,6 @@ const AdminClientWorkspace = () => {
           </div>
         ) : null}
 
-      </div>
     </AdminLayout>
   );
 };
@@ -1185,10 +1154,10 @@ const PaymentInvoicesPanel = ({
   return (
     <section className="space-y-5">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
-        <InfoPill label="Paid Payments" value={completedPayments.length} />
-        <InfoPill label="Pending Payments" value={pendingPayments.length} />
-        <InfoPill label="Unpaid Invoices" value={unpaidInvoices.length} />
-        <InfoPill label="Paid Invoices" value={paidInvoices.length} />
+        <AdminInfoPill label="Paid Payments" value={completedPayments.length} />
+        <AdminInfoPill label="Pending Payments" value={pendingPayments.length} />
+        <AdminInfoPill label="Unpaid Invoices" value={unpaidInvoices.length} />
+        <AdminInfoPill label="Paid Invoices" value={paidInvoices.length} />
       </div>
 
       <div>
@@ -1281,12 +1250,19 @@ const CompactWorkspaceCard = ({ title, subtitle, items, emptyText, onRowClick, o
           <p className="mt-1 text-sm text-slate-500">{subtitle}</p>
         </div>
       </div>
-      <div className="mt-5 overflow-hidden rounded-[1.5rem] border border-slate-200">
-        {items.length === 0 ? (
-          <div className="p-6 text-center text-slate-500">{emptyText}</div>
-        ) : (
-          <div className="divide-y divide-slate-100 bg-white">
-            {items.map((item) => (
+
+      <div className="mt-5">
+        <AdminWorkspaceList
+          columns={[
+            { label: "Item", className: "col-span-12 lg:col-span-5" },
+            { label: "Details", className: "col-span-12 lg:col-span-4" },
+            { label: "Status", className: "col-span-6 lg:col-span-2" },
+            { label: "Action", className: "col-span-6 text-right lg:col-span-1" },
+          ]}
+          loading={false}
+          emptyText={emptyText}
+          items={items}
+          renderRow={(item, index) => (
               <div
                 key={item._id}
                 role="button"
@@ -1298,18 +1274,28 @@ const CompactWorkspaceCard = ({ title, subtitle, items, emptyText, onRowClick, o
                     onRowClick?.(item);
                   }
                 }}
-                className="flex w-full cursor-pointer flex-col gap-4 px-5 py-4 text-left transition hover:bg-slate-50 sm:flex-row sm:items-start sm:justify-between"
+                className={[
+                  "grid w-full cursor-pointer grid-cols-12 gap-3 px-5 py-4 text-left transition hover:bg-slate-100 sm:px-6",
+                  index % 2 === 0 ? "bg-white" : "bg-slate-50",
+                ].join(" ")}
               >
-                <div className="min-w-0 flex-1">
+                <div className="col-span-12 lg:col-span-5">
                   <p className="truncate text-base font-semibold text-slate-900">{item.productId?.serviceName || "N/A"}</p>
-                  <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
+                </div>
+
+                <div className="col-span-12 lg:col-span-4 lg:flex lg:items-center">
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
                     {renderMeta?.(item)?.map((meta) => (
                       <span key={meta}>{meta}</span>
                     ))}
                   </div>
                 </div>
-                <div className="flex shrink-0 items-start gap-3">
+
+                <div className="col-span-6 lg:col-span-2 lg:flex lg:items-center">
                   <div>{renderRight?.(item)}</div>
+                </div>
+
+                <div className="col-span-6 flex items-center justify-end lg:col-span-1">
                   {onDelete ? (
                     <button
                       type="button"
@@ -1330,9 +1316,8 @@ const CompactWorkspaceCard = ({ title, subtitle, items, emptyText, onRowClick, o
                   ) : null}
                 </div>
               </div>
-            ))}
-          </div>
-        )}
+          )}
+        />
       </div>
     </div>
   );
@@ -1413,10 +1398,10 @@ const WorkspaceDetailSubpage = ({
       ) : (
         <div className="space-y-5">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <InfoPill label="Order ID" value={item?._id || "N/A"} />
-            <InfoPill label="Status" value={itemStatus} />
-            <InfoPill label="Phase" value={item?.currentPhase || "N/A"} />
-            <InfoPill label="Progress" value={`${item?.projectProgress || 0}%`} />
+            <AdminInfoPill label="Order ID" value={item?._id || "N/A"} />
+            <AdminInfoPill label="Status" value={itemStatus} />
+            <AdminInfoPill label="Phase" value={item?.currentPhase || "N/A"} />
+            <AdminInfoPill label="Progress" value={`${item?.projectProgress || 0}%`} />
           </div>
 
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
@@ -1546,10 +1531,10 @@ const WorkspaceDetailSubpage = ({
                   {selectedCheckpoint ? (
                     <div className="mt-4 space-y-4">
                       <div className="grid grid-cols-2 gap-3">
-                        <InfoPill label="Checkpoint ID" value={selectedCheckpoint.checkpointId || "N/A"} />
-                        <InfoPill label="Progress" value={`${selectedCheckpoint.percentage || 0}%`} />
-                        <InfoPill label="Completed At" value={formatDateTime(selectedCheckpoint.completedAt)} />
-                        <InfoPill label="Notes Count" value={(selectedCheckpointMessages || []).length} />
+                        <AdminInfoPill label="Checkpoint ID" value={selectedCheckpoint.checkpointId || "N/A"} />
+                        <AdminInfoPill label="Progress" value={`${selectedCheckpoint.percentage || 0}%`} />
+                        <AdminInfoPill label="Completed At" value={formatDateTime(selectedCheckpoint.completedAt)} />
+                        <AdminInfoPill label="Notes Count" value={(selectedCheckpointMessages || []).length} />
                       </div>
 
                       <div className="rounded-[1.25rem] border border-slate-200 bg-white p-4">
@@ -1679,17 +1664,6 @@ const InfoLine = ({ label, value }) => {
     <div className="flex items-start justify-between gap-3">
       <span className="text-slate-500">{label}</span>
       <span className="max-w-[60%] truncate text-right font-semibold text-slate-900">{value}</span>
-    </div>
-  );
-};
-
-const InfoPill = ({ label, value, dark = false }) => {
-  return (
-    <div className={dark ? "rounded-2xl border border-white/10 bg-white/5 px-4 py-3" : "rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3"}>
-      <p className={dark ? "text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400" : "text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500"}>
-        {label}
-      </p>
-      <p className={dark ? "mt-1 truncate text-sm font-semibold text-white" : "mt-1 truncate text-sm font-semibold text-slate-900"}>{value}</p>
     </div>
   );
 };

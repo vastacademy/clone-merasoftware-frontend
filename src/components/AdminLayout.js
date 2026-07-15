@@ -1,13 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   BarChart3,
   Layers3,
   LogOut,
-  Menu,
-  RotateCw,
   Users2,
-  X,
 } from "lucide-react";
 
 export const adminSidebarModules = [
@@ -20,27 +17,10 @@ export const adminSidebarModules = [
 const AdminLayout = ({
   user,
   onLogout,
-  onLandscapeMode,
-  orientationLocking = false,
-  isLandscape = false,
-  mobileTitle = "Admin Dashboard",
-  mobileSubtitle = "Clients module",
   children,
 }) => {
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const location = useLocation();
   const currentPath = location.pathname;
-
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth >= 1024) {
-        setMobileSidebarOpen(false);
-      }
-    };
-
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
 
   const sidebarContent = (
     <div className="flex h-full w-full flex-col">
@@ -101,7 +81,6 @@ const AdminLayout = ({
                 <Link
                   key={module.id}
                   to={module.to}
-                  onClick={() => setMobileSidebarOpen(false)}
                   className={buttonClassName}
                 >
                   <Icon size={18} className="shrink-0" />
@@ -117,7 +96,6 @@ const AdminLayout = ({
               <button
                 key={module.id}
                 type="button"
-                onClick={() => setMobileSidebarOpen(false)}
                 disabled={isUpcoming}
                 className={buttonClassName}
               >
@@ -133,17 +111,6 @@ const AdminLayout = ({
       </div>
 
       <div className="border-t border-white/10 p-4">
-        {onLandscapeMode ? (
-          <button
-            type="button"
-            onClick={onLandscapeMode}
-            className="mb-3 flex w-full items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-left text-sm font-semibold text-slate-200 transition hover:bg-white/10 lg:hidden"
-          >
-            <span>Landscape Mode</span>
-            <RotateCw size={16} className={orientationLocking ? "animate-spin" : ""} />
-          </button>
-        ) : null}
-
         <button
           type="button"
           onClick={onLogout}
@@ -162,69 +129,7 @@ const AdminLayout = ({
         {sidebarContent}
       </aside>
 
-      <header className="fixed inset-x-0 top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur lg:hidden">
-        <div className="flex items-center justify-between px-4 py-3">
-          <button
-            type="button"
-            onClick={() => setMobileSidebarOpen(true)}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-700"
-            aria-label="Open admin menu"
-          >
-            <Menu size={20} />
-          </button>
-
-          <div className="text-center">
-            <p className="text-sm font-semibold text-slate-900">{mobileTitle}</p>
-            <p className="text-xs text-slate-500">{mobileSubtitle}</p>
-          </div>
-
-          {onLandscapeMode ? (
-            <button
-              type="button"
-              onClick={onLandscapeMode}
-              disabled={orientationLocking}
-              className="inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 px-3 text-xs font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              <RotateCw size={16} className={orientationLocking ? "animate-spin" : ""} />
-              {isLandscape ? "Portrait" : "Landscape"}
-            </button>
-          ) : (
-            <span className="inline-flex h-10 w-10" />
-          )}
-        </div>
-      </header>
-
-      {mobileSidebarOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden">
-          <button
-            type="button"
-            className="absolute inset-0 bg-slate-950/60"
-            aria-label="Close admin menu overlay"
-            onClick={() => setMobileSidebarOpen(false)}
-          />
-
-          <div className="absolute left-0 top-16 h-[calc(100vh-4rem)] w-[86vw] max-w-xs border-r border-slate-800 bg-slate-950 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-800 px-4 py-4">
-              <div>
-                <p className="text-sm font-semibold text-white">Admin Menu</p>
-                <p className="text-xs text-slate-400">Select module</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setMobileSidebarOpen(false)}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-700 text-slate-300"
-                aria-label="Close admin menu"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            {sidebarContent}
-          </div>
-        </div>
-      )}
-
-      <main className="min-h-screen overflow-auto bg-slate-100 pt-20 lg:pt-6">
+      <main className="min-h-screen overflow-auto bg-slate-100">
         {children}
       </main>
     </div>

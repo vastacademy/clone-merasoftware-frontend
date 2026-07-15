@@ -191,8 +191,6 @@ const ProjectDetails = ({ isAdminView = false }) => {
     ? {
         user,
         onLogout: handleLogout,
-        mobileTitle: 'Project Details',
-        mobileSubtitle: order?.productId?.serviceName || 'Admin View',
       }
     : {
         user,

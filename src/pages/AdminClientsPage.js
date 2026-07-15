@@ -9,6 +9,8 @@ import CookieManager from "../utils/cookieManager";
 import StorageService from "../utils/storageService";
 import { useOnlineStatus } from "../App";
 import AdminLayout from "../components/AdminLayout";
+import AdminWorkspaceShell, { AdminWorkspaceHeader } from "../components/admin/AdminWorkspaceShell";
+import AdminWorkspaceList from "../components/admin/AdminWorkspaceList";
 
 const formatDate = (value) => {
   if (!value) return "N/A";
@@ -143,22 +145,13 @@ const AdminClientsPage = () => {
     <AdminLayout
       user={user}
       onLogout={handleLogout}
-      mobileTitle="Clients"
-      mobileSubtitle="Client list"
     >
-      <div className="mx-auto flex max-w-[90rem] flex-col gap-6 px-4 pb-6 sm:px-6 lg:px-8">
-        <section className="rounded-[2.5rem] border border-slate-200 bg-white shadow-sm">
-          <div className="flex flex-col gap-4 border-b border-slate-800 bg-slate-950 p-4 text-white sm:flex-row sm:items-center sm:justify-between sm:p-6">
-            <div className="flex items-center gap-3">
-              <div className="rounded-2xl bg-emerald-400/10 p-3 text-emerald-300 ring-1 ring-emerald-400/20">
-                <Users2 size={22} />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-white">Clients</h1>
-                <p className="text-sm text-slate-400">Customer list fetched from the admin clients endpoint.</p>
-              </div>
-            </div>
-
+      <AdminWorkspaceShell>
+        <AdminWorkspaceHeader
+          icon={Users2}
+          title="Clients"
+          subtitle="Customer list fetched from the admin clients endpoint."
+          actions={
             <div className="flex w-full flex-col gap-3 sm:max-w-xl sm:flex-row">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-3 text-slate-400" size={18} />
@@ -197,92 +190,58 @@ const AdminClientsPage = () => {
                 Refresh
               </button>
             </div>
-          </div>
+          }
+        />
 
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-slate-200">
-              <thead className="bg-slate-50">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 sm:px-6">
-                    No.
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 sm:px-6">
-                    Name
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 sm:px-6">
-                    Email
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 sm:px-6">
-                    Phone
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 sm:px-6">
-                    Status
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 sm:px-6">
-                    Joined
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200">
-                {loading ? (
-                  <tr>
-                    <td colSpan={6} className="px-4 py-12 text-center text-sm text-slate-500 sm:px-6">
-                      Loading clients...
-                    </td>
-                  </tr>
-                ) : displayedClients.length > 0 ? (
-                  displayedClients.map((client, index) => (
-                    <tr
-                      key={client._id}
-                      onClick={() => handleClientOpen(client)}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter" || event.key === " ") {
-                          event.preventDefault();
-                          handleClientOpen(client);
-                        }
-                      }}
-                      tabIndex={0}
-                      role="button"
-                      className="cursor-pointer hover:bg-slate-50 focus:bg-slate-50 focus:outline-none"
-                    >
-                      <td className="px-4 py-4 text-sm font-medium text-slate-500 sm:px-6">
-                        {index + 1}
-                      </td>
-                      <td className="px-4 py-4 text-sm font-medium text-slate-900 sm:px-6">
-                        {client.name || "N/A"}
-                      </td>
-                      <td className="px-4 py-4 text-sm text-slate-600 sm:px-6">
-                        {client.email || "N/A"}
-                      </td>
-                      <td className="px-4 py-4 text-sm text-slate-600 sm:px-6">
-                        {client.phone || "N/A"}
-                      </td>
-                      <td className="px-4 py-4 text-sm sm:px-6">
-                        <span className="inline-flex rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-800">
-                          {client.status || "Active"}
-                        </span>
-                      </td>
-                      <td className="px-4 py-4 text-sm text-slate-600 sm:px-6">
-                        {formatDate(client.createdAt)}
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={6} className="px-4 py-12 text-center text-sm text-slate-500 sm:px-6">
-                      No clients found.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="border-t border-slate-200 px-4 py-3 text-sm text-slate-500 sm:px-6">
-            Showing {displayedClients.length} of {clients.length} clients
-          </div>
-        </section>
-      </div>
+        <div className="p-5 sm:p-6">
+          <AdminWorkspaceList
+            columns={[
+              { label: "Client", className: "col-span-12 lg:col-span-4" },
+              { label: "Contact", className: "col-span-6 lg:col-span-3" },
+              { label: "Status", className: "col-span-6 lg:col-span-2" },
+              { label: "Joined", className: "col-span-6 lg:col-span-2" },
+              { label: "Open", className: "col-span-6 text-right lg:col-span-1" },
+            ]}
+            loading={loading}
+            emptyText="No clients found."
+            items={displayedClients}
+            footer={`Showing ${displayedClients.length} of ${clients.length} clients`}
+            renderRow={(client, index) => (
+              <button
+                key={client._id}
+                type="button"
+                onClick={() => handleClientOpen(client)}
+                className={[
+                  "grid w-full grid-cols-12 gap-3 px-5 py-4 text-left transition hover:bg-slate-100 sm:px-6",
+                  index % 2 === 0 ? "bg-white" : "bg-slate-50",
+                ].join(" ")}
+              >
+                <div className="col-span-12 lg:col-span-4">
+                  <p className="truncate text-base font-bold text-slate-950">{client.name || "N/A"}</p>
+                  <p className="mt-1 text-xs text-slate-500">Client #{index + 1}</p>
+                </div>
+                <div className="col-span-6 lg:col-span-3 lg:flex lg:items-center">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-slate-900">{client.email || "N/A"}</p>
+                    <p className="mt-1 truncate text-xs text-slate-500">{client.phone || "N/A"}</p>
+                  </div>
+                </div>
+                <div className="col-span-6 lg:col-span-2 lg:flex lg:items-center">
+                  <span className="inline-flex rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-800">
+                    {client.status || "Active"}
+                  </span>
+                </div>
+                <div className="col-span-6 lg:col-span-2 lg:flex lg:items-center">
+                  <p className="text-sm font-semibold text-slate-900">{formatDate(client.createdAt)}</p>
+                </div>
+                <div className="col-span-6 flex items-center justify-end lg:col-span-1">
+                  <span className="text-xs font-semibold text-slate-500">Open</span>
+                </div>
+              </button>
+            )}
+          />
+        </div>
+      </AdminWorkspaceShell>
     </AdminLayout>
   );
 };
