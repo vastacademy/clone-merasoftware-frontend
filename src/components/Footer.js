@@ -3,7 +3,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { PlusCircle, Home, UserCircle, Wallet, MessageSquare } from 'lucide-react';
 import Context from '../context';
-import SummaryApi from '../common';
 import BrandLogo from './BrandLogo';
 
 const Footer = () => {
@@ -20,15 +19,10 @@ const Footer = () => {
       if (!user?._id) return;
       
       try {
-        const response = await fetch(SummaryApi.ordersList.url, {
-          method: SummaryApi.ordersList.method,
-          credentials: 'include'
-        });
-        
-        const data = await response.json();
-        if (data.success) {
+        const data = context?.activeProject ? [context.activeProject] : [];
+        if (data.length) {
           // Get all orders
-          const allOrders = data.data || [];
+          const allOrders = data;
           
           // Filter website projects
           const websiteProjects = allOrders.filter(order => {
@@ -51,7 +45,7 @@ const Footer = () => {
     };
 
     fetchActiveProject();
-  }, [user?._id]);
+  }, [user?._id, context?.activeProject]);
   
   // Handle click on My Project button
   const handleMyProjectClick = (e) => {

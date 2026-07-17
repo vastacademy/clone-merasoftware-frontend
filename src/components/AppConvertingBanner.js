@@ -5,6 +5,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import SummaryApi from '../common';
 import { useOnlineStatus } from '../App';
 import StorageService from '../utils/storageService';
+import { getOrderSummary } from '../utils/orderSummaryClient';
 import { FileText, Clock, ExternalLink, ChevronRight, Activity, ChevronLeft, ArrowRight } from "lucide-react";
 import guestSlide from '../assest/guestslide.png';
 
@@ -224,20 +225,15 @@ const AppConvertingBanner = () => {
 
   const fetchUserOrders = async () => {
     try {
-      const response = await fetch(SummaryApi.ordersList.url, {
-        method: SummaryApi.ordersList.method,
-        credentials: 'include'
-      });
-      
-      const data = await response.json();
-      if (data.success) {
-        const filteredOrders = filterWebsiteOrders(data.data);
+      const data = await getOrderSummary();
+      if (data) {
+        const filteredOrders = filterWebsiteOrders(data);
         setOrders(filteredOrders);
         setDataInitialized(true);
         
         // Store in localStorage
-        StorageService.setUserOrders(user._id, data.data);
-        return data.data;
+        StorageService.setUserOrders(user._id, data);
+        return data;
       }
       return null;
     } catch (error) {

@@ -11,6 +11,7 @@ import CookieManager from './utils/cookieManager';
 import StorageService from './utils/storageService';
 import ScrollToTop from './helpers/scrollTop';
 import { isOrderApproved } from './helpers/orderVisibility';
+import { clearOrderSummary, getOrderSummary } from './utils/orderSummaryClient';
 // import QRModal from './components/QRModal';
 // import socket from './components/socket';
 // import { AnimatePresence } from 'framer-motion';
@@ -45,6 +46,7 @@ const AppContent = () => {
         
         // Clear localStorage but preserve essential data
         StorageService.clearAll();
+        clearOrderSummary();
 
         // Clear session cookie
         document.cookie = "session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
@@ -226,14 +228,8 @@ useEffect(() => {
     if (!user?._id) return;
     
     try {
-      const response = await fetch(SummaryApi.ordersList.url, {
-        method: SummaryApi.ordersList.method,
-        credentials: 'include'
-      });
-      
-      const data = await response.json();
-      if (data.success) {
-        const allOrders = data.data || [];
+      const allOrders = await getOrderSummary({ force: true });
+      if (allOrders) {
         
         // Filter for website projects
         const websiteProjects = allOrders.filter(order => {

@@ -667,7 +667,7 @@ const AdminClientWorkspace = () => {
       {
         id: "issues",
         label: "Pending Updates",
-        value: allData.summary?.pendingUpdates ?? allData.updates.filter((update) => update?.status === "pending").length,
+        value: allData.summary?.pendingUpdates ?? 0,
         helper: "Update requests waiting",
         icon: AlertCircle,
       },
@@ -790,7 +790,7 @@ const AdminClientWorkspace = () => {
                 <div>
                   <h3 className="text-base font-semibold text-slate-900">Data Snapshot</h3>
                   <p className="mt-1 text-sm text-slate-500">
-                    Orders: {allData.orders.length} | Invoices: {allData.invoices.length} | Update Requests: {allData.updates.length}
+                    Orders: {allData.orders.length} | Invoices: {allData.invoices.length} | Update Requests: {allData.summary?.updateCount ?? 0}
                   </p>
                 </div>
                 <div className="text-sm text-slate-600">
@@ -1305,6 +1305,9 @@ const WorkspaceDetailSubpage = ({
   const itemStatus = getStatusLabel(item);
   const isProjectDetail = detailLabel === "Project";
   const checkpoints = item?.checkpoints || [];
+  const [updateMode, setUpdateMode] = useState(false);
+  const [selectedUpdateKeys, setSelectedUpdateKeys] = useState([]);
+  const [updateMessage, setUpdateMessage] = useState("");
   let cumulativeProgress = 0;
   const checkpointsWithProgress = checkpoints.map((checkpoint, index) => {
     const checkpointWeight = Number(checkpoint?.percentage) || 0;
@@ -1319,6 +1322,14 @@ const WorkspaceDetailSubpage = ({
     };
   });
   const displayedCheckpoints = [...checkpointsWithProgress].reverse();
+  const pendingCheckpoints = checkpointsWithProgress.filter((checkpoint) => !checkpoint?.completed);
+  const allCheckpointsCompleted = checkpoints.length > 0 && pendingCheckpoints.length === 0;
+
+  useEffect(() => {
+    setUpdateMode(false);
+    setSelectedUpdateKeys([]);
+    setUpdateMessage("");
+  }, [item?._id]);
   const selectedCheckpoint =
     checkpointsWithProgress.find(
       (checkpoint, index) => getCheckpointSelectionKey(checkpoint, index) === selectedCheckpointId
@@ -1397,7 +1408,32 @@ const WorkspaceDetailSubpage = ({
                         No checkpoint history available for this project.
                       </div>
                     ) : (
-                      displayedCheckpoints.map((checkpoint, index) => {
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => setUpdateMode(true)}
+                          className={[
+                            "w-full rounded-2xl border p-3 text-left transition",
+                            updateMode
+                              ? "border-slate-500 bg-slate-200 shadow-sm"
+                              : "border-slate-300 bg-slate-100 hover:border-slate-400 hover:bg-slate-200",
+                          ].join(" ")}
+                        >
+                          <div className="flex items-center justify-between gap-3">
+                            <div>
+                              <p className="text-sm font-semibold text-slate-900">
+                                {allCheckpointsCompleted ? "Send Update" : "Update Node"}
+                              </p>
+                              <p className="mt-1 text-xs text-slate-600">
+                                {allCheckpointsCompleted
+                                  ? "All nodes are complete. Select this item to send a project update."
+                                  : "Select this item to update one or more incomplete nodes."}
+                              </p>
+                            </div>
+                          </div>
+                        </button>
+
+                        {displayedCheckpoints.map((checkpoint, index) => {
                         const selectionKey = getCheckpointSelectionKey(checkpoint, index);
                         const isSelected = selectionKey === selectedCheckpointId;
 
@@ -1405,7 +1441,12 @@ const WorkspaceDetailSubpage = ({
                           <button
                             key={selectionKey}
                             type="button"
-                            onClick={() => onSelectCheckpoint?.(selectionKey)}
+                            onClick={() => {
+                              setUpdateMode(false);
+                              setSelectedUpdateKeys([]);
+                              setUpdateMessage("");
+                              onSelectCheckpoint?.(selectionKey);
+                            }}
                             className={[
                               "flex w-full items-start gap-4 rounded-2xl border px-4 py-3 text-left transition",
                               isSelected
@@ -1428,7 +1469,8 @@ const WorkspaceDetailSubpage = ({
                             </div>
                           </button>
                         );
-                      })
+                        })}
+                      </>
                     )}
                   </div>
                 </div>
@@ -1437,6 +1479,14 @@ const WorkspaceDetailSubpage = ({
                   checkpoint={selectedCheckpoint}
                   cumulativeProgress={selectedCheckpoint?.cumulativeProgress}
                   messages={item?.messages}
+                  updateMode={updateMode}
+                  updateModeLabel={allCheckpointsCompleted ? "Send Update" : "Update Node"}
+                  allCheckpoints={checkpointsWithProgress}
+                  selectedUpdateKeys={selectedUpdateKeys}
+                  updateMessage={updateMessage}
+                  onUpdateSelectionChange={setSelectedUpdateKeys}
+                  onUpdateMessageChange={setUpdateMessage}
+                  canCompleteNodes={!allCheckpointsCompleted && selectedUpdateKeys.length > 0}
                   formatDateTime={formatDateTime}
                 />
               </div>
