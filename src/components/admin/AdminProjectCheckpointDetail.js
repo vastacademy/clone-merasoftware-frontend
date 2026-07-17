@@ -9,7 +9,7 @@ const getStatusClassName = (checkpoint) => (
     : "bg-slate-100 text-slate-700"
 );
 
-const AdminProjectCheckpointDetail = ({ checkpoint, messages = [], formatDateTime }) => {
+const AdminProjectCheckpointDetail = ({ checkpoint, cumulativeProgress = 0, messages = [], formatDateTime }) => {
   if (!checkpoint) {
     return (
       <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
@@ -44,6 +44,7 @@ const AdminProjectCheckpointDetail = ({ checkpoint, messages = [], formatDateTim
       <div className="mt-4 grid grid-cols-2 gap-3">
         <AdminInfoPill label="Checkpoint ID" value={checkpoint.checkpointId || "N/A"} />
         <AdminInfoPill label="Progress Weight" value={`${checkpoint.percentage || 0}%`} />
+        <AdminInfoPill label="Total Progress Till Here" value={`${cumulativeProgress}%`} />
         <AdminInfoPill label="Completed At" value={formatDateTime(checkpoint.completedAt)} />
         <AdminInfoPill label="Related Records" value={linkedMessages.length} />
       </div>

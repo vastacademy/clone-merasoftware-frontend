@@ -199,7 +199,7 @@ const getCheckpointSelectionKey = (checkpoint, index) => {
   if (checkpoint?.checkpointId !== undefined && checkpoint?.checkpointId !== null) {
     return `checkpoint-${checkpoint.checkpointId}`;
   }
-  return `checkpoint-index-${index}`;
+  return `checkpoint-index-${checkpoint?.checkpointIndex ?? index}`;
 };
 
 const getCheckpointBadgeClass = (checkpoint) => {
@@ -1305,10 +1305,26 @@ const WorkspaceDetailSubpage = ({
   const itemStatus = getStatusLabel(item);
   const isProjectDetail = detailLabel === "Project";
   const checkpoints = item?.checkpoints || [];
+  let cumulativeProgress = 0;
+  const checkpointsWithProgress = checkpoints.map((checkpoint, index) => {
+    const checkpointWeight = Number(checkpoint?.percentage) || 0;
+    if (checkpoint?.completed) {
+      cumulativeProgress += checkpointWeight;
+    }
+
+    return {
+      ...checkpoint,
+      checkpointIndex: index,
+      cumulativeProgress: Math.round(cumulativeProgress * 100) / 100,
+    };
+  });
+  const displayedCheckpoints = [...checkpointsWithProgress].reverse();
   const selectedCheckpoint =
-    checkpoints.find((checkpoint, index) => getCheckpointSelectionKey(checkpoint, index) === selectedCheckpointId) ||
-    checkpoints.find((checkpoint) => !checkpoint?.completed) ||
-    checkpoints[checkpoints.length - 1] ||
+    checkpointsWithProgress.find(
+      (checkpoint, index) => getCheckpointSelectionKey(checkpoint, index) === selectedCheckpointId
+    ) ||
+    checkpointsWithProgress.find((checkpoint) => !checkpoint?.completed) ||
+    checkpointsWithProgress[checkpointsWithProgress.length - 1] ||
     null;
 
   return (
@@ -1361,6 +1377,73 @@ const WorkspaceDetailSubpage = ({
             <AdminInfoPill label="Progress" value={`${item?.projectProgress || 0}%`} />
           </div>
 
+          {isProjectDetail ? (
+            <div className="space-y-5">
+              <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.15fr_0.85fr]">
+                <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-medium text-slate-500">Progress Checkpoints</p>
+                      <h3 className="mt-1 text-lg font-semibold text-slate-900">Click a checkpoint for details</h3>
+                    </div>
+                    <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-500">
+                      {checkpoints.length} checkpoints
+                    </span>
+                  </div>
+
+                  <div className="mt-4 max-h-[25rem] space-y-2 overflow-y-auto pr-1">
+                    {checkpoints.length === 0 ? (
+                      <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-500">
+                        No checkpoint history available for this project.
+                      </div>
+                    ) : (
+                      displayedCheckpoints.map((checkpoint, index) => {
+                        const selectionKey = getCheckpointSelectionKey(checkpoint, index);
+                        const isSelected = selectionKey === selectedCheckpointId;
+
+                        return (
+                          <button
+                            key={selectionKey}
+                            type="button"
+                            onClick={() => onSelectCheckpoint?.(selectionKey)}
+                            className={[
+                              "flex w-full items-start gap-4 rounded-2xl border px-4 py-3 text-left transition",
+                              isSelected
+                                ? "border-emerald-300 bg-emerald-50 shadow-sm"
+                                : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50",
+                            ].join(" ")}
+                          >
+                            <div className="min-w-0 flex-1">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <p className="truncate font-semibold text-slate-900">{checkpoint.name}</p>
+                                <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${getCheckpointBadgeClass(checkpoint)}`}>
+                                  {getCheckpointStatusLabel(checkpoint)}
+                                </span>
+                              </div>
+                              <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
+                                <span>Weight: {checkpoint.percentage || 0}%</span>
+                                <span>Total: {checkpoint.cumulativeProgress}%</span>
+                                <span>Completed: {formatDateTime(checkpoint.completedAt)}</span>
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+
+                <AdminProjectCheckpointDetail
+                  checkpoint={selectedCheckpoint}
+                  cumulativeProgress={selectedCheckpoint?.cumulativeProgress}
+                  messages={item?.messages}
+                  formatDateTime={formatDateTime}
+                />
+              </div>
+
+            </div>
+          ) : null}
+
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
             <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5 lg:col-span-2">
               <div className="flex items-center justify-between gap-4">
@@ -1404,71 +1487,6 @@ const WorkspaceDetailSubpage = ({
               </div>
             </div>
           </div>
-
-          {isProjectDetail ? (
-            <div className="space-y-5">
-              <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.15fr_0.85fr]">
-                <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-medium text-slate-500">Progress Checkpoints</p>
-                      <h3 className="mt-1 text-lg font-semibold text-slate-900">Click a checkpoint for details</h3>
-                    </div>
-                    <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-500">
-                      {checkpoints.length} checkpoints
-                    </span>
-                  </div>
-
-                  <div className="mt-4 max-h-[25rem] space-y-2 overflow-y-auto pr-1">
-                    {checkpoints.length === 0 ? (
-                      <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-500">
-                        No checkpoint history available for this project.
-                      </div>
-                    ) : (
-                      checkpoints.map((checkpoint, index) => {
-                        const selectionKey = getCheckpointSelectionKey(checkpoint, index);
-                        const isSelected = selectionKey === selectedCheckpointId;
-
-                        return (
-                          <button
-                            key={selectionKey}
-                            type="button"
-                            onClick={() => onSelectCheckpoint?.(selectionKey)}
-                            className={[
-                              "flex w-full items-start gap-4 rounded-2xl border px-4 py-3 text-left transition",
-                              isSelected
-                                ? "border-emerald-300 bg-emerald-50 shadow-sm"
-                                : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50",
-                            ].join(" ")}
-                          >
-                            <div className="min-w-0 flex-1">
-                              <div className="flex flex-wrap items-center gap-2">
-                                <p className="truncate font-semibold text-slate-900">{checkpoint.name}</p>
-                                <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${getCheckpointBadgeClass(checkpoint)}`}>
-                                  {getCheckpointStatusLabel(checkpoint)}
-                                </span>
-                              </div>
-                              <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
-                                <span>Progress: {checkpoint.percentage || 0}%</span>
-                                <span>Completed: {formatDateTime(checkpoint.completedAt)}</span>
-                              </div>
-                            </div>
-                          </button>
-                        );
-                      })
-                    )}
-                  </div>
-                </div>
-
-                <AdminProjectCheckpointDetail
-                  checkpoint={selectedCheckpoint}
-                  messages={item?.messages}
-                  formatDateTime={formatDateTime}
-                />
-              </div>
-
-            </div>
-          ) : null}
 
           {!isProjectDetail && (
             <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
