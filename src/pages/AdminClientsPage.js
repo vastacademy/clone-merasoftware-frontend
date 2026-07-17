@@ -18,13 +18,13 @@ const formatDate = (value) => {
 };
 
 const sortOptions = [
-  { value: "lastUpdatedDesc", label: "Last Updated: Newest" },
+  { value: "activityDesc", label: "Active & Recently Updated" },
   { value: "lastUpdatedAsc", label: "Last Updated: Oldest" },
   { value: "nameAsc", label: "Name: A-Z" },
   { value: "nameDesc", label: "Name: Z-A" },
 ];
 
-const getClientLastUpdated = (client) => client?.updatedAt || client?.createdAt || null;
+const getClientLastUpdated = (client) => client?.latestActivityAt || client?.updatedAt || client?.createdAt || null;
 
 const AdminClientsPage = () => {
   const user = useSelector((state) => state?.user?.user);
@@ -35,7 +35,7 @@ const AdminClientsPage = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [sortBy, setSortBy] = useState("lastUpdatedDesc");
+  const [sortBy, setSortBy] = useState("activityDesc");
 
   const handleLogout = async () => {
     try {
@@ -77,11 +77,7 @@ const AdminClientsPage = () => {
         return;
       }
 
-      const customerList = (result.data || []).sort(
-        (left, right) => new Date(right.createdAt || 0) - new Date(left.createdAt || 0)
-      );
-
-      setClients(customerList);
+      setClients(result.data || []);
     } catch (error) {
       console.error("Error fetching clients:", error);
       toast.error("Error loading clients");
@@ -132,9 +128,9 @@ const AdminClientsPage = () => {
           return leftName.localeCompare(rightName, "en", { sensitivity: "base" });
         case "nameDesc":
           return rightName.localeCompare(leftName, "en", { sensitivity: "base" });
-        case "lastUpdatedDesc":
+        case "activityDesc":
         default:
-          return rightUpdated - leftUpdated || leftName.localeCompare(rightName, "en", { sensitivity: "base" });
+          return Number(right.hasActiveWork) - Number(left.hasActiveWork) || rightUpdated - leftUpdated || leftName.localeCompare(rightName, "en", { sensitivity: "base" });
       }
     });
 
