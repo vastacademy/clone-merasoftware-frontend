@@ -25,6 +25,7 @@ import AdminInfoPill from "../components/admin/AdminInfoPill";
 import AdminWorkspaceList from "../components/admin/AdminWorkspaceList";
 import AdminWorkspaceShell, { AdminWorkspaceHeader } from "../components/admin/AdminWorkspaceShell";
 import AdminWorkspaceTabs from "../components/admin/AdminWorkspaceTabs";
+import AdminProjectCheckpointDetail from "../components/admin/AdminProjectCheckpointDetail";
 
 const tabs = [
   { id: "overview", label: "Overview", active: true },
@@ -190,63 +191,21 @@ const isSameId = (value, targetId) => {
   return Boolean(comparable && targetId && comparable === String(targetId));
 };
 
-const formatBytes = (value) => {
-  if (value === null || value === undefined || Number.isNaN(Number(value))) return "N/A";
-  const size = Number(value);
-  if (size < 1024) return `${size} B`;
-  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
-  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+const getCheckpointStatusLabel = (checkpoint) => {
+  return checkpoint?.completed ? "Completed" : "Pending";
 };
 
-const getCheckpointStatusLabel = (checkpoint) => {
-  if (checkpoint?.completed) return "Completed";
-  if ((checkpoint?.completedAt && safeDateTime(checkpoint.completedAt)) || checkpoint?.percentage >= 100) return "Completed";
-  return "Pending";
+const getCheckpointSelectionKey = (checkpoint, index) => {
+  if (checkpoint?.checkpointId !== undefined && checkpoint?.checkpointId !== null) {
+    return `checkpoint-${checkpoint.checkpointId}`;
+  }
+  return `checkpoint-index-${index}`;
 };
 
 const getCheckpointBadgeClass = (checkpoint) => {
   const label = getCheckpointStatusLabel(checkpoint).toLowerCase();
   if (label === "completed") return "bg-emerald-100 text-emerald-800";
   return "bg-slate-100 text-slate-700";
-};
-
-const getProjectHistoryOverview = (projectHistory) => {
-  if (!projectHistory?.summary) {
-    return [
-      { id: "progress", label: "Progress Checkpoints", value: 0, helper: "Loaded from project record" },
-      { id: "messages", label: "Checkpoint Notes", value: 0, helper: "Linked progress text" },
-      { id: "submissions", label: "Project Submissions", value: 0, helper: "Update requests and files" },
-      { id: "files", label: "Uploaded Files", value: 0, helper: "Text, images, docs" },
-    ];
-  }
-
-  const summary = projectHistory.summary;
-  return [
-    {
-      id: "progress",
-      label: "Progress Checkpoints",
-      value: `${summary.completedCheckpointCount}/${summary.checkpointCount}`,
-      helper: "Completed vs total checkpoints",
-    },
-    {
-      id: "messages",
-      label: "Checkpoint Notes",
-      value: summary.messageCount,
-      helper: "Messages linked to checkpoint history",
-    },
-    {
-      id: "submissions",
-      label: "Project Submissions",
-      value: summary.submissionCount,
-      helper: "Update request entries",
-    },
-    {
-      id: "files",
-      label: "Uploaded Files",
-      value: summary.fileCount,
-      helper: "File records with size/date info",
-    },
-  ];
 };
 
 const AdminClientWorkspace = () => {
@@ -346,13 +305,12 @@ const AdminClientWorkspace = () => {
     setActiveProjectId(project._id);
     setActiveProject(project);
     setActiveProjectError("");
-    const initialCheckpointId =
-      project?.projectHistory?.checkpoints?.find((checkpoint) => checkpoint?.completed)?.checkpointId ??
-      project?.projectHistory?.checkpoints?.[0]?.checkpointId ??
-      project?.checkpoints?.find((checkpoint) => checkpoint?.completed)?.checkpointId ??
-      project?.checkpoints?.[0]?.checkpointId ??
-      null;
-    setSelectedProjectCheckpointId(initialCheckpointId);
+    const checkpoints = project?.checkpoints || [];
+    const initialCheckpointIndex = checkpoints.findIndex((checkpoint) => !checkpoint?.completed);
+    const selectedIndex = initialCheckpointIndex >= 0 ? initialCheckpointIndex : checkpoints.length - 1;
+    setSelectedProjectCheckpointId(
+      selectedIndex >= 0 ? getCheckpointSelectionKey(checkpoints[selectedIndex], selectedIndex) : null
+    );
     setActiveTab("projects");
     setActivePlanId(null);
     setActivePlan(null);
@@ -497,14 +455,19 @@ const AdminClientWorkspace = () => {
   }, [activePlanId]);
 
   useEffect(() => {
-    const checkpoints = activeProject?.projectHistory?.checkpoints || activeProject?.checkpoints || [];
+    const checkpoints = activeProject?.checkpoints || [];
     if (!checkpoints.length) return;
 
-    const selectedExists = checkpoints.some((checkpoint) => String(checkpoint?.checkpointId) === String(selectedProjectCheckpointId));
+    const selectedExists = checkpoints.some(
+      (checkpoint, index) => getCheckpointSelectionKey(checkpoint, index) === selectedProjectCheckpointId
+    );
     if (selectedExists) return;
 
-    const firstCheckpoint = checkpoints.find((checkpoint) => checkpoint?.completed) || checkpoints[0] || null;
-    setSelectedProjectCheckpointId(firstCheckpoint ? firstCheckpoint.checkpointId : null);
+    const currentIndex = checkpoints.findIndex((checkpoint) => !checkpoint?.completed);
+    const selectedIndex = currentIndex >= 0 ? currentIndex : checkpoints.length - 1;
+    setSelectedProjectCheckpointId(
+      selectedIndex >= 0 ? getCheckpointSelectionKey(checkpoints[selectedIndex], selectedIndex) : null
+    );
   }, [activeProject, selectedProjectCheckpointId]);
 
   useEffect(() => {
@@ -855,7 +818,6 @@ const AdminClientWorkspace = () => {
                 detailLabel="Project"
                 notesText="This is the workspace subpage version for projects. It stays inside the same client workspace, and the back button returns to the projects list without leaving the page."
                 summaryTitle="Project progress snapshot"
-                projectHistory={activeProject?.projectHistory}
                 selectedCheckpointId={selectedProjectCheckpointId}
                 onSelectCheckpoint={setSelectedProjectCheckpointId}
               />
@@ -1337,22 +1299,17 @@ const WorkspaceDetailSubpage = ({
   detailLabel,
   notesText,
   summaryTitle,
-  projectHistory,
   selectedCheckpointId,
   onSelectCheckpoint,
 }) => {
   const itemStatus = getStatusLabel(item);
   const isProjectDetail = detailLabel === "Project";
-  const checkpoints = projectHistory?.checkpoints || item?.checkpoints || [];
+  const checkpoints = item?.checkpoints || [];
   const selectedCheckpoint =
-    checkpoints.find((checkpoint) => String(checkpoint?.checkpointId) === String(selectedCheckpointId)) ||
-    checkpoints.find((checkpoint) => checkpoint?.completed) ||
-    checkpoints[0] ||
+    checkpoints.find((checkpoint, index) => getCheckpointSelectionKey(checkpoint, index) === selectedCheckpointId) ||
+    checkpoints.find((checkpoint) => !checkpoint?.completed) ||
+    checkpoints[checkpoints.length - 1] ||
     null;
-  const selectedCheckpointMessages = selectedCheckpoint?.linkedMessages || [];
-  const checkpointOverview = getProjectHistoryOverview(projectHistory);
-  const submissionHistory = projectHistory?.submissions || [];
-  const timelineHistory = projectHistory?.timeline || [];
 
   return (
     <div>
@@ -1448,18 +1405,8 @@ const WorkspaceDetailSubpage = ({
             </div>
           </div>
 
-          {isProjectDetail && projectHistory ? (
+          {isProjectDetail ? (
             <div className="space-y-5">
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                {checkpointOverview.map((card) => (
-                  <div key={card.id} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">{card.label}</p>
-                    <p className="mt-1 text-sm font-semibold text-slate-900">{card.value}</p>
-                    <p className="mt-1 text-xs text-slate-500">{card.helper}</p>
-                  </div>
-                ))}
-              </div>
-
               <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.15fr_0.85fr]">
                 <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
                   <div className="flex items-center justify-between gap-3">
@@ -1472,20 +1419,21 @@ const WorkspaceDetailSubpage = ({
                     </span>
                   </div>
 
-                  <div className="mt-4 space-y-2">
+                  <div className="mt-4 max-h-[25rem] space-y-2 overflow-y-auto pr-1">
                     {checkpoints.length === 0 ? (
                       <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-500">
                         No checkpoint history available for this project.
                       </div>
                     ) : (
-                      checkpoints.map((checkpoint) => {
-                        const isSelected = String(checkpoint?.checkpointId) === String(selectedCheckpoint?.checkpointId);
+                      checkpoints.map((checkpoint, index) => {
+                        const selectionKey = getCheckpointSelectionKey(checkpoint, index);
+                        const isSelected = selectionKey === selectedCheckpointId;
 
                         return (
                           <button
-                            key={checkpoint.checkpointId}
+                            key={selectionKey}
                             type="button"
-                            onClick={() => onSelectCheckpoint?.(checkpoint.checkpointId)}
+                            onClick={() => onSelectCheckpoint?.(selectionKey)}
                             className={[
                               "flex w-full items-start gap-4 rounded-2xl border px-4 py-3 text-left transition",
                               isSelected
@@ -1503,7 +1451,6 @@ const WorkspaceDetailSubpage = ({
                               <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
                                 <span>Progress: {checkpoint.percentage || 0}%</span>
                                 <span>Completed: {formatDateTime(checkpoint.completedAt)}</span>
-                                <span>Notes: {(checkpoint.linkedMessages || []).length}</span>
                               </div>
                             </div>
                           </button>
@@ -1513,146 +1460,24 @@ const WorkspaceDetailSubpage = ({
                   </div>
                 </div>
 
-                <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-medium text-slate-500">Checkpoint Details</p>
-                      <h3 className="mt-1 text-lg font-semibold text-slate-900">
-                        {selectedCheckpoint?.name || "Select a checkpoint"}
-                      </h3>
-                    </div>
-                    {selectedCheckpoint ? (
-                      <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getCheckpointBadgeClass(selectedCheckpoint)}`}>
-                        {getCheckpointStatusLabel(selectedCheckpoint)}
-                      </span>
-                    ) : null}
-                  </div>
-
-                  {selectedCheckpoint ? (
-                    <div className="mt-4 space-y-4">
-                      <div className="grid grid-cols-2 gap-3">
-                        <AdminInfoPill label="Checkpoint ID" value={selectedCheckpoint.checkpointId || "N/A"} />
-                        <AdminInfoPill label="Progress" value={`${selectedCheckpoint.percentage || 0}%`} />
-                        <AdminInfoPill label="Completed At" value={formatDateTime(selectedCheckpoint.completedAt)} />
-                        <AdminInfoPill label="Notes Count" value={(selectedCheckpointMessages || []).length} />
-                      </div>
-
-                      <div className="rounded-[1.25rem] border border-slate-200 bg-white p-4">
-                        <p className="text-sm font-medium text-slate-500">Linked Progress Notes</p>
-                        <div className="mt-3 space-y-3">
-                          {selectedCheckpointMessages.length === 0 ? (
-                            <p className="text-sm text-slate-500">No checkpoint notes found for this stage.</p>
-                          ) : (
-                            selectedCheckpointMessages.map((message) => (
-                              <div key={message.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
-                                <div className="flex items-center justify-between gap-3">
-                                  <p className="text-sm font-semibold text-slate-900 capitalize">{message.sender}</p>
-                                  <p className="text-xs text-slate-500">{formatDateTime(message.timestamp)}</p>
-                                </div>
-                                <p className="mt-2 text-sm text-slate-700 whitespace-pre-line">{message.message}</p>
-                              </div>
-                            ))
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="mt-4 rounded-[1.25rem] border border-slate-200 bg-white p-4 text-sm text-slate-500">
-                      Choose a checkpoint from the list to inspect its full note history.
-                    </div>
-                  )}
-                </div>
+                <AdminProjectCheckpointDetail
+                  checkpoint={selectedCheckpoint}
+                  messages={item?.messages}
+                  formatDateTime={formatDateTime}
+                />
               </div>
 
-              <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-                <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
-                  <p className="text-sm font-medium text-slate-500">Project Submissions</p>
-                  <h3 className="mt-1 text-lg font-semibold text-slate-900">Instructions and file records</h3>
-                  <div className="mt-4 space-y-3">
-                    {submissionHistory.length === 0 ? (
-                      <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-500">
-                        No update requests found for this project.
-                      </div>
-                    ) : (
-                      submissionHistory.map((submission) => (
-                        <div key={submission._id} className="rounded-2xl border border-slate-200 bg-white p-4">
-                          <div className="flex flex-wrap items-center justify-between gap-2">
-                            <p className="text-sm font-semibold text-slate-900">Request #{String(submission._id).slice(-6)}</p>
-                            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
-                              {submission.status || "pending"}
-                            </span>
-                          </div>
-                          <p className="mt-1 text-xs text-slate-500">{formatDateTime(submission.createdAt)}</p>
-                          <p className="mt-3 whitespace-pre-line text-sm text-slate-700">
-                            {submission.instructionText || "No text instructions provided."}
-                          </p>
-
-                          <div className="mt-4 space-y-2">
-                            {(submission.files || []).length === 0 ? (
-                              <p className="text-xs text-slate-500">No files attached.</p>
-                            ) : (
-                              submission.files.map((file, index) => (
-                                <div key={`${submission._id}-${index}`} className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
-                                  <p className="text-sm font-semibold text-slate-900">{file.originalName || file.filename || "File"}</p>
-                                  <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-500">
-                                    <span>Type: {file.type || "N/A"}</span>
-                                    <span>Size: {formatBytes(file.size)}</span>
-                                    <span>Expires: {formatDateTime(file.expirationDate)}</span>
-                                  </div>
-                                  {file.driveLink ? (
-                                    <a
-                                      href={file.driveLink}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="mt-2 inline-flex text-xs font-semibold text-blue-600 hover:text-blue-800"
-                                    >
-                                      Open file
-                                    </a>
-                                  ) : null}
-                                </div>
-                              ))
-                            )}
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-
-                <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
-                  <p className="text-sm font-medium text-slate-500">Combined Project History</p>
-                  <h3 className="mt-1 text-lg font-semibold text-slate-900">Chronological record</h3>
-                  <div className="mt-4 space-y-3">
-                    {timelineHistory.length === 0 ? (
-                      <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-500">
-                        No combined timeline available yet.
-                      </div>
-                    ) : (
-                      timelineHistory.map((entry, index) => (
-                        <div key={`${entry.type}-${index}`} className="rounded-2xl border border-slate-200 bg-white p-4">
-                          <div className="flex flex-wrap items-center justify-between gap-2">
-                            <p className="text-sm font-semibold text-slate-900">{entry.title}</p>
-                            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
-                              {entry.type}
-                            </span>
-                          </div>
-                          <p className="mt-1 text-xs text-slate-500">{formatDateTime(entry.timestamp)}</p>
-                          <p className="mt-2 whitespace-pre-line text-sm text-slate-700">{entry.description || "No details available."}</p>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-              </div>
             </div>
           ) : null}
 
-          <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
-            <p className="text-sm font-medium text-slate-500">Notes</p>
-            <p className="mt-2 text-sm text-slate-600">
-              {notesText}
-            </p>
-          </div>
+          {!isProjectDetail && (
+            <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
+              <p className="text-sm font-medium text-slate-500">Notes</p>
+              <p className="mt-2 text-sm text-slate-600">
+                {notesText}
+              </p>
+            </div>
+          )}
         </div>
       )}
     </div>
