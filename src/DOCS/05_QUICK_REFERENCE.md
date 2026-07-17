@@ -87,6 +87,10 @@ Fast lookup for the current codebase.
 - `OrderPage.js` owns purchase-history list behavior, not progress tracking
 - Admin dashboard work belongs in `AdminDashboard.js`
 - Admin client list work belongs in `AdminClientsPage.js`
+- Admin client list default sorting consumes backend `latestActivityAt`; the endpoint remains `GET /api/admin/clients`
+- Admin client activity read logic belongs in `backend/controller/user/getAdminClients.js`; do not add a separate activity endpoint or store
+- Node progress UI currently belongs to `components/admin/ProjectWorkspaceModal.js` and calls `SummaryApi.updateProjectProgress`
+- Node progress backend write-path is currently missing; before changing sorting, complete the admin-only route/controller against `orderProductModel`
 - Admin client detail work belongs in `AdminClientWorkspace.js`
 - Admin shell work belongs in `AdminLayout.js`
 - Admin header work belongs in `AdminHeader.js`
@@ -113,6 +117,9 @@ Fast lookup for the current codebase.
 - `backend/controller/user/getAdminUserWorkspace.js` for admin customer workspace data
 - `backend/controller/invoice/monthlyInvoiceController.js` for invoice lifecycle admin actions
 - `backend/helpers/invoiceLifecycle.js` for overdue pause and paid resume rules
+- `backend/controller/user/getAdminClients.js` for verified working-activity aggregation used by admin client sorting
+- `backend/models/orderProductModel.js` for checkpoint fields, project progress, and timestamp middleware
+- `backend/routes/index.js` to verify whether a node-progress route is actually active
 
 ## Historical Files
 

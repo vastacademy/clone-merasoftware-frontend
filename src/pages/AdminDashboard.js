@@ -59,7 +59,11 @@ const AdminDashboard = () => {
         return;
       }
 
-      setClients(result.data || []);
+      const customerList = (result.data || []).sort(
+        (left, right) => new Date(right.latestActivityAt || right.createdAt || 0) - new Date(left.latestActivityAt || left.createdAt || 0)
+      );
+
+      setClients(customerList);
     } catch (error) {
       console.error("Error fetching clients:", error);
       toast.error("Error loading clients");

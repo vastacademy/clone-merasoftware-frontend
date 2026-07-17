@@ -420,43 +420,38 @@ try {
     └─ Project begins
 ```
 
-### Example 4: Track Project Progress
+### Example 4: Track Project Progress (Current Audit State)
 
 ```
-1. Order in "approved" state
-   └─ Admin optionally assigns developer
-   └─ POST /api/assign-developer with developer ID
+1. Order/project data is owned by `orderProductModel`.
+   └─ Checkpoints contain `completed`, `completedAt`, and `percentage`.
+   └─ Orders contain `projectProgress`, `currentPhase`, `messages`, `updatedAt`, and `lastUpdated`.
 
-2. Developer sees assignment
-   └─ Developer dashboard shows order
+2. Admin UI currently prepares a node update
+   └─ `ProjectWorkspaceModal.js` calls `SummaryApi.updateProjectProgress`.
+   └─ Current payload: `{ projectId, checkpointId, name, completed: true }`.
 
-3. Admin updates progress
-   └─ POST /api/update-project-progress
-   └─ Body: { orderId, checkpointIndex, completed: true }
-   └─ Backend:
-     └─ Marks checkpoint completed
-     └─ Calculates new projectProgress %
-     └─ Updates timestamp
-     └─ Creates notification
+3. Verified current gap
+   └─ `SummaryApi` defines `POST /api/update-project-progress`.
+   └─ The active backend route/controller is not registered/found.
+   └─ Therefore node completion is not currently persisted through this flow.
 
-4. User sees update
-   └─ GET /api/order-details/:orderId
-   └─ Shows new progress bar
-   └─ Shows checkpoint completed badge
+4. Required next core flow (not yet implemented)
+   └─ Admin-only route/controller must update the existing order record.
+   └─ It must save checkpoint completion and `completedAt`.
+   └─ It must recalculate `projectProgress` through existing model behavior.
+   └─ It must preserve `updatedAt`/`lastUpdated` middleware behavior.
+   └─ It must keep `GET /api/order-details/:orderId` response compatibility for admin and customer portal.
 
-5. Communication
-   └─ Admin sends message via ProjectWorkspaceModal
-   └─ POST /api/project-message
-   └─ Backend stores in messages array
-   └─ Frontend shows in "Messages" tab
+5. Client-list activity flow already implemented
+   └─ `GET /api/admin/clients` remains the source of truth.
+   └─ It derives `latestActivityAt` from linked orders, checkpoints when dates exist, project messages, update requests, transactions, invoices, and tickets.
+   └─ `AdminClientsPage.js` and `AdminDashboard.js` sort using `latestActivityAt`.
 
-6. 100% Complete
-   └─ Last checkpoint marked completed
-   └─ projectProgress = 100
-   └─ currentPhase = "completed"
-   └─ Order status → "completed"
-   └─ Invoice generated
-   └─ Notification sent
+6. Regression guard
+   └─ Do not create a second activity backend/store.
+   └─ Do not use customer profile `updatedAt` as working activity.
+   └─ Do not change customer portal response shapes or payment/ticket lifecycle flows.
 ```
 
 ### Example 5: Subscription Renewal Flow

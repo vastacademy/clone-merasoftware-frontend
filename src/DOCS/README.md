@@ -27,6 +27,9 @@ Backend structure, routes, models, and helpers.
 ### `05_QUICK_REFERENCE.md`
 Fast lookup for files, routes, and common development tasks.
 
+### `12_CLIENT_ACTIVITY_SORT_AUDIT.md`
+Current audit and implementation routing for admin client working-activity sorting and the pending node-update write path.
+
 ## Legacy Docs
 
 These files are historical snapshots. Read them only if you need old context:
@@ -55,6 +58,8 @@ These files are historical snapshots. Read them only if you need old context:
 - Customer order detail page: `OrderDetailPage`
 - Customer purchase-history list page: `OrderPage`
 - Admin dashboard page: `AdminDashboard`
+- Admin client list sorting source: existing `GET /api/admin/clients` response field `latestActivityAt`
+- Node update status: UI endpoint definition exists, but the active backend write route/controller is not yet present; read `12_CLIENT_ACTIVITY_SORT_AUDIT.md` before implementing it
 
 ## Notes
 

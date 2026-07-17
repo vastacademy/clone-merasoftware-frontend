@@ -17,14 +17,20 @@ const formatDate = (value) => {
   return new Date(value).toLocaleDateString("en-IN");
 };
 
+const formatActivity = (client) => {
+  const date = formatDate(client?.latestActivityAt);
+  if (date === "N/A") return date;
+  return `${date} · ${(client.latestActivitySource || "client_created").replaceAll("_", " ")}`;
+};
+
 const sortOptions = [
-  { value: "activityDesc", label: "Active & Recently Updated" },
+  { value: "lastUpdatedDesc", label: "Last Updated: Newest" },
   { value: "lastUpdatedAsc", label: "Last Updated: Oldest" },
   { value: "nameAsc", label: "Name: A-Z" },
   { value: "nameDesc", label: "Name: Z-A" },
 ];
 
-const getClientLastUpdated = (client) => client?.latestActivityAt || client?.updatedAt || client?.createdAt || null;
+const getClientLastUpdated = (client) => client?.latestActivityAt || client?.createdAt || null;
 
 const AdminClientsPage = () => {
   const user = useSelector((state) => state?.user?.user);
@@ -35,7 +41,7 @@ const AdminClientsPage = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [sortBy, setSortBy] = useState("activityDesc");
+  const [sortBy, setSortBy] = useState("lastUpdatedDesc");
 
   const handleLogout = async () => {
     try {
@@ -77,7 +83,11 @@ const AdminClientsPage = () => {
         return;
       }
 
-      setClients(result.data || []);
+      const customerList = (result.data || []).sort(
+        (left, right) => new Date(right.latestActivityAt || right.createdAt || 0) - new Date(left.latestActivityAt || left.createdAt || 0)
+      );
+
+      setClients(customerList);
     } catch (error) {
       console.error("Error fetching clients:", error);
       toast.error("Error loading clients");
@@ -128,9 +138,9 @@ const AdminClientsPage = () => {
           return leftName.localeCompare(rightName, "en", { sensitivity: "base" });
         case "nameDesc":
           return rightName.localeCompare(leftName, "en", { sensitivity: "base" });
-        case "activityDesc":
+        case "lastUpdatedDesc":
         default:
-          return Number(right.hasActiveWork) - Number(left.hasActiveWork) || rightUpdated - leftUpdated || leftName.localeCompare(rightName, "en", { sensitivity: "base" });
+          return rightUpdated - leftUpdated || leftName.localeCompare(rightName, "en", { sensitivity: "base" });
       }
     });
 
@@ -146,7 +156,7 @@ const AdminClientsPage = () => {
         <AdminWorkspaceHeader
           icon={Users2}
           title="Clients"
-          subtitle="Customer list fetched from the admin clients endpoint."
+          subtitle="Customer list ordered by the latest verified client activity."
           actions={
             <div className="flex w-full flex-col gap-3 sm:max-w-xl sm:flex-row">
               <div className="relative flex-1">
@@ -215,6 +225,7 @@ const AdminClientsPage = () => {
                 <div className="col-span-12 lg:col-span-4">
                   <p className="truncate text-base font-bold text-slate-950">{client.name || "N/A"}</p>
                   <p className="mt-1 text-xs text-slate-500">Client #{index + 1}</p>
+                  <p className="mt-1 truncate text-xs text-emerald-700">Latest: {formatActivity(client)}</p>
                 </div>
                 <div className="col-span-6 lg:col-span-3 lg:flex lg:items-center">
                   <div className="min-w-0">

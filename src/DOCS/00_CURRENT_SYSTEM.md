@@ -103,7 +103,10 @@ This document describes the active frontend behavior as of the current codebase.
 ### Admin clients
 
 - `AdminClientsPage` shows the searchable client table
-- The table can be sorted by name and last updated
+- The default client-list order is latest verified working-related activity; the backend returns `latestActivityAt` and `latestActivitySource` from the existing admin clients endpoint
+- Activity candidates are customer creation fallback, order/project updates, checkpoint completion when persisted, project messages, update requests, payments, invoices, renewals, and support tickets
+- Customer profile `updatedAt` is intentionally not treated as business activity because it is not a reliable working-event source in the current data
+- The current node-update write path is not active: `SummaryApi.updateProjectProgress` is referenced by the admin project UI, but `/api/update-project-progress` is not registered in the active backend routes
 - Clicking a client opens `/admin-panel/clients/:customerId`
 - Browser history now keeps `dashboard -> clients -> client detail`
 - `AdminClientWorkspace` loads customer overview data from the existing customer SSOT APIs
@@ -141,6 +144,7 @@ This document describes the active frontend behavior as of the current codebase.
 - `backend/controller/invoice/monthlyInvoiceController.js` owns admin invoice lifecycle actions for overdue processing and marking invoices paid
 - `backend/helpers/invoiceLifecycle.js` is the shared backend helper that pauses plans on overdue invoices and resumes eligible plans on paid invoices
 - Payment/invoice admin UI must use existing backend models: `transactionModel`, `monthlyInvoiceModel`, and `orderProductModel`. Do not add a separate admin payment backend.
+- Client sorting is read from the same customer backend/database; no separate activity endpoint, activity store, or admin database exists.
 
 ## 7. Local Dev Note
 
