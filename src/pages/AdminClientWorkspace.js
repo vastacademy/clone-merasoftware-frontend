@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "sonner";
@@ -230,6 +230,7 @@ const AdminClientWorkspace = () => {
   const [activeProject, setActiveProject] = useState(null);
   const [activeProjectLoading, setActiveProjectLoading] = useState(false);
   const [activeProjectError, setActiveProjectError] = useState("");
+  const [activeProjectRefreshKey, setActiveProjectRefreshKey] = useState(0);
   const [selectedProjectCheckpointId, setSelectedProjectCheckpointId] = useState(null);
   const [activePlanId, setActivePlanId] = useState(null);
   const [activePlan, setActivePlan] = useState(null);
@@ -326,6 +327,10 @@ const AdminClientWorkspace = () => {
     setSelectedProjectCheckpointId(null);
   };
 
+  const handleSoftRefreshActiveProject = () => {
+    setActiveProjectRefreshKey((current) => current + 1);
+  };
+
   const handleOpenPlan = (plan) => {
     if (!plan?._id) return;
     setActivePlanId(plan._id);
@@ -412,7 +417,7 @@ const AdminClientWorkspace = () => {
     return () => {
       isMounted = false;
     };
-  }, [activeProjectId]);
+  }, [activeProjectId, activeProjectRefreshKey]);
 
   useEffect(() => {
     if (!activePlanId) return;
@@ -820,6 +825,7 @@ const AdminClientWorkspace = () => {
                 summaryTitle="Project progress snapshot"
                 selectedCheckpointId={selectedProjectCheckpointId}
                 onSelectCheckpoint={setSelectedProjectCheckpointId}
+                onSoftRefresh={handleSoftRefreshActiveProject}
               />
             ) : (
               <CompactWorkspaceCard
@@ -1301,13 +1307,21 @@ const WorkspaceDetailSubpage = ({
   summaryTitle,
   selectedCheckpointId,
   onSelectCheckpoint,
+  onSoftRefresh,
 }) => {
   const itemStatus = getStatusLabel(item);
   const isProjectDetail = detailLabel === "Project";
   const checkpoints = item?.checkpoints || [];
   const [updateMode, setUpdateMode] = useState(true);
-  const [selectedUpdateKeys, setSelectedUpdateKeys] = useState([]);
   const [updateMessage, setUpdateMessage] = useState("");
+  const [nodeUiState, setNodeUiState] = useState({});
+  const [selectedNodeKeys, setSelectedNodeKeys] = useState([]);
+  const [selectionAnchorKey, setSelectionAnchorKey] = useState(null);
+  const [focusedNodeKey, setFocusedNodeKey] = useState(null);
+  const nodeRowRefs = useRef({});
+  const [hideDeletedNodesForClient, setHideDeletedNodesForClient] = useState(false);
+  const [resetPreviewOpen, setResetPreviewOpen] = useState(false);
+  const [nodeActionNotice, setNodeActionNotice] = useState("");
   let cumulativeProgress = 0;
   const checkpointsWithProgress = checkpoints.map((checkpoint, index) => {
     const checkpointWeight = Number(checkpoint?.percentage) || 0;
@@ -1322,14 +1336,85 @@ const WorkspaceDetailSubpage = ({
     };
   });
   const displayedCheckpoints = [...checkpointsWithProgress].reverse();
+  const displayedCheckpointKeys = displayedCheckpoints.map((checkpoint, index) =>
+    getCheckpointSelectionKey(checkpoint, index)
+  );
   const pendingCheckpoints = checkpointsWithProgress.filter((checkpoint) => !checkpoint?.completed);
   const allCheckpointsCompleted = checkpoints.length > 0 && pendingCheckpoints.length === 0;
 
   useEffect(() => {
     setUpdateMode(true);
-    setSelectedUpdateKeys([]);
     setUpdateMessage("");
+    setNodeUiState({});
+    setSelectedNodeKeys([]);
+    setSelectionAnchorKey(null);
+    setFocusedNodeKey(null);
+    setHideDeletedNodesForClient(false);
+    setResetPreviewOpen(false);
+    setNodeActionNotice("");
   }, [item?._id]);
+  const getNodeSelectionRange = (selectionKey) => {
+    const anchorIndex = displayedCheckpointKeys.indexOf(selectionAnchorKey);
+    const targetIndex = displayedCheckpointKeys.indexOf(selectionKey);
+    if (anchorIndex < 0 || targetIndex < 0) return [selectionKey];
+    const rangeStart = Math.min(anchorIndex, targetIndex);
+    const rangeEnd = Math.max(anchorIndex, targetIndex);
+    return displayedCheckpointKeys.slice(rangeStart, rangeEnd + 1);
+  };
+  const toggleNodeSelection = (selectionKey) => {
+    setSelectedNodeKeys((current) => (
+      current.includes(selectionKey)
+        ? current.filter((key) => key !== selectionKey)
+        : [...current, selectionKey]
+    ));
+    setSelectionAnchorKey(selectionKey);
+  };
+  const selectNodeFromList = (selectionKey, { ctrlKey = false, shiftKey = false } = {}) => {
+    setFocusedNodeKey(selectionKey);
+    if (shiftKey && selectionAnchorKey) {
+      const selectedRange = getNodeSelectionRange(selectionKey);
+      setSelectedNodeKeys((current) => (
+        ctrlKey ? [...new Set([...current, ...selectedRange])] : selectedRange
+      ));
+    } else if (ctrlKey) {
+      setSelectedNodeKeys((current) => (
+        current.includes(selectionKey)
+          ? current.filter((key) => key !== selectionKey)
+          : [...current, selectionKey]
+      ));
+      setSelectionAnchorKey(selectionKey);
+    } else {
+      setSelectedNodeKeys([selectionKey]);
+      setSelectionAnchorKey(selectionKey);
+    }
+    setUpdateMode(false);
+    setUpdateMessage("");
+    onSelectCheckpoint?.(selectionKey);
+  };
+  const updateSelectedNodeUiState = (patch) => {
+    setNodeUiState((current) => selectedNodeKeys.reduce((next, selectionKey) => ({
+      ...next,
+      [selectionKey]: { ...next[selectionKey], ...patch },
+    }), current));
+  };
+  const updateSelectedInactiveNodeUiState = (patch) => {
+    setNodeUiState((current) => selectedNodeKeys.reduce((next, selectionKey) => (
+      next[selectionKey]?.isInactive
+        ? { ...next, [selectionKey]: { ...next[selectionKey], ...patch } }
+        : next
+    ), current));
+  };
+  const handleDeleteNodePreview = () => {
+    const selectedActiveCount = selectedNodeKeys.filter((key) => !nodeUiState[key]?.isInactive).length;
+    if (selectedActiveCount === 0) return;
+
+    updateSelectedNodeUiState({ isInactive: true });
+    setSelectedNodeKeys([]);
+    setSelectionAnchorKey(null);
+    setFocusedNodeKey(null);
+    setNodeActionNotice(`${selectedActiveCount} node(s) marked inactive in the local preview. A project-detail refresh has been requested.`);
+    onSoftRefresh?.();
+  };
   const selectedCheckpoint =
     checkpointsWithProgress.find(
       (checkpoint, index) => getCheckpointSelectionKey(checkpoint, index) === selectedCheckpointId
@@ -1337,6 +1422,16 @@ const WorkspaceDetailSubpage = ({
     checkpointsWithProgress.find((checkpoint) => !checkpoint?.completed) ||
     checkpointsWithProgress[checkpointsWithProgress.length - 1] ||
     null;
+  const selectedNodeStates = selectedNodeKeys.map((key) => nodeUiState[key] || {});
+  const hasSelectedActiveNodes = selectedNodeKeys.some((key) => !nodeUiState[key]?.isInactive);
+  const hasSelectedInactiveNodes = selectedNodeKeys.some((key) => nodeUiState[key]?.isInactive);
+  const hasInactiveNodes = checkpointsWithProgress.some((checkpoint, index) => {
+    const selectionKey = getCheckpointSelectionKey(checkpoint, index);
+    return nodeUiState[selectionKey]?.isInactive;
+  });
+  const selectedNodesAreHiddenForClient = selectedNodeStates.length > 0 && selectedNodeStates.every(
+    (nodeState) => nodeState.visibleToClient === false
+  );
 
   return (
     <div>
@@ -1402,10 +1497,77 @@ const WorkspaceDetailSubpage = ({
                       <p className="text-sm font-medium text-slate-500">Progress Checkpoints</p>
                       <h3 className="mt-1 text-lg font-semibold text-slate-900">Click a checkpoint for details</h3>
                     </div>
-                    <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-500">
-                      {checkpoints.length} checkpoints
-                    </span>
+                    <div className="flex flex-wrap items-center justify-end gap-2">
+                      <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-500">
+                        {checkpoints.length} checkpoints
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setResetPreviewOpen((current) => !current)}
+                        disabled={checkpoints.length === 0}
+                        className="rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        {resetPreviewOpen ? "Close reset" : "Reset project history"}
+                      </button>
+                    </div>
                   </div>
+
+                  <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2">
+                    <span className="mr-1 text-xs font-semibold text-slate-600">{selectedNodeKeys.length} selected</span>
+                    <button
+                      type="button"
+                      onClick={handleDeleteNodePreview}
+                      disabled={!hasSelectedActiveNodes}
+                      className="rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-xs font-semibold text-rose-700 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      Delete node
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => updateSelectedNodeUiState({ isInactive: false })}
+                      disabled={!hasSelectedInactiveNodes}
+                      className="rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-semibold text-emerald-700 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      Undo delete
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => updateSelectedInactiveNodeUiState({ visibleToClient: selectedNodesAreHiddenForClient })}
+                      disabled={!hasSelectedInactiveNodes}
+                      className="rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      {selectedNodesAreHiddenForClient ? "Show to client" : "Hide for client"}
+                    </button>
+                    <label className="ml-auto inline-flex items-center gap-2 text-xs font-semibold text-slate-700">
+                      <input
+                        type="checkbox"
+                        checked={hideDeletedNodesForClient}
+                        onChange={(event) => setHideDeletedNodesForClient(event.target.checked)}
+                        disabled={!hasInactiveNodes}
+                        className="h-4 w-4 rounded border-slate-300"
+                      />
+                      Always hide deleted nodes from client
+                    </label>
+                  </div>
+
+                  {nodeActionNotice ? (
+                    <p className="mt-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-800">
+                      {nodeActionNotice}
+                    </p>
+                  ) : null}
+
+                  {resetPreviewOpen ? (
+                    <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-dashed border-slate-300 bg-white px-3 py-2.5">
+                      <div>
+                        <p className="text-xs font-semibold text-slate-900">Reset archive preview</p>
+                        <p className="mt-0.5 text-xs text-slate-500">Current nodes would become archived history; active progress would restart at 0%.</p>
+                      </div>
+                      <label className="inline-flex items-center gap-2 text-xs font-semibold text-slate-700">
+                        <input type="checkbox" className="h-4 w-4 rounded border-slate-300" />
+                        Show old history to client
+                      </label>
+                    </div>
+                  ) : null}
 
                   <div className="mt-4 max-h-[25rem] space-y-2 overflow-y-auto pr-1">
                     {checkpoints.length === 0 ? (
@@ -1443,38 +1605,84 @@ const WorkspaceDetailSubpage = ({
                         {displayedCheckpoints.map((checkpoint, index) => {
                         const selectionKey = getCheckpointSelectionKey(checkpoint, index);
                         const isSelected = selectionKey === selectedCheckpointId;
+                        const checkpointUiState = nodeUiState[selectionKey] || {};
+                        const isInactive = Boolean(checkpointUiState.isInactive);
+                        const isVisibleToClient = checkpointUiState.visibleToClient !== false;
+                        const isHiddenFromClient = !isVisibleToClient || (isInactive && hideDeletedNodesForClient);
+                        const isFocusedForSelection = focusedNodeKey === selectionKey;
 
                         return (
-                          <button
+                          <div
                             key={selectionKey}
-                            type="button"
-                            onClick={() => {
-                              setUpdateMode(false);
-                              setSelectedUpdateKeys([]);
-                              setUpdateMessage("");
-                              onSelectCheckpoint?.(selectionKey);
-                            }}
-                            className={[
-                              "flex w-full items-start gap-4 rounded-2xl border px-4 py-3 text-left transition",
-                              isSelected
-                                ? "border-emerald-300 bg-emerald-50 shadow-sm"
-                                : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50",
-                            ].join(" ")}
+                            className="flex w-full items-center gap-2"
                           >
-                            <div className="min-w-0 flex-1">
+                            <input
+                              type="checkbox"
+                              checked={selectedNodeKeys.includes(selectionKey)}
+                              onFocus={() => setFocusedNodeKey(selectionKey)}
+                              onChange={() => toggleNodeSelection(selectionKey)}
+                              className="h-4 w-4 shrink-0 rounded border-slate-300 text-rose-600"
+                              aria-label={`Select ${checkpoint.name} for node management`}
+                            />
+                            <button
+                              type="button"
+                              ref={(element) => {
+                                if (element) nodeRowRefs.current[selectionKey] = element;
+                              }}
+                              onFocus={() => setFocusedNodeKey(selectionKey)}
+                              onKeyDown={(event) => {
+                                if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+                                  event.preventDefault();
+                                  const currentIndex = displayedCheckpointKeys.indexOf(selectionKey);
+                                  const direction = event.key === "ArrowUp" ? -1 : 1;
+                                  const nextIndex = Math.min(
+                                    Math.max(currentIndex + direction, 0),
+                                    displayedCheckpointKeys.length - 1
+                                  );
+                                  const nextKey = displayedCheckpointKeys[nextIndex];
+                                  nodeRowRefs.current[nextKey]?.focus();
+                                  setFocusedNodeKey(nextKey);
+                                  return;
+                                }
+                                if (event.key !== " " && event.key !== "Spacebar") return;
+                                event.preventDefault();
+                                if (event.shiftKey && selectionAnchorKey) {
+                                  setSelectedNodeKeys(getNodeSelectionRange(selectionKey));
+                                } else {
+                                  toggleNodeSelection(selectionKey);
+                                }
+                              }}
+                              onClick={(event) => selectNodeFromList(selectionKey, {
+                                ctrlKey: event.ctrlKey || event.metaKey,
+                                shiftKey: event.shiftKey,
+                              })}
+                              className={[
+                                "min-w-0 flex-1 rounded-2xl border px-4 py-3 text-left transition",
+                                isSelected
+                                  ? "border-emerald-300 bg-emerald-50 shadow-sm"
+                                  : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50",
+                                isFocusedForSelection ? "ring-2 ring-slate-300 ring-offset-1" : "",
+                              ].join(" ")}
+                            >
                               <div className="flex flex-wrap items-center gap-2">
                                 <p className="truncate font-semibold text-slate-900">{checkpoint.name}</p>
                                 <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${getCheckpointBadgeClass(checkpoint)}`}>
                                   {getCheckpointStatusLabel(checkpoint)}
                                 </span>
+                                {isInactive ? (
+                                  <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-800">Inactive</span>
+                                ) : null}
+                                {isHiddenFromClient ? (
+                                  <span className="rounded-full bg-slate-200 px-2 py-0.5 text-[11px] font-semibold text-slate-600">Client hidden</span>
+                                ) : null}
                               </div>
                               <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
                                 <span>Weight: {checkpoint.percentage || 0}%</span>
                                 <span>Total: {checkpoint.cumulativeProgress}%</span>
                                 <span>Completed: {formatDateTime(checkpoint.completedAt)}</span>
                               </div>
-                            </div>
-                          </button>
+                            </button>
+                          </div>
                         );
                         })}
                       </>
@@ -1488,12 +1696,9 @@ const WorkspaceDetailSubpage = ({
                   messages={item?.messages}
                   updateMode={updateMode}
                   updateModeLabel={allCheckpointsCompleted ? "Send Update" : "Update Node"}
-                  allCheckpoints={checkpointsWithProgress}
-                  selectedUpdateKeys={selectedUpdateKeys}
                   updateMessage={updateMessage}
-                  onUpdateSelectionChange={setSelectedUpdateKeys}
                   onUpdateMessageChange={setUpdateMessage}
-                  canCompleteNodes={!allCheckpointsCompleted && selectedUpdateKeys.length > 0}
+                  currentProjectProgress={item?.projectProgress || 0}
                   formatDateTime={formatDateTime}
                 />
               </div>

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import AdminInfoPill from "./AdminInfoPill";
 
 const getStatusLabel = (checkpoint) => (checkpoint?.completed ? "Completed" : "Pending");
@@ -12,15 +12,12 @@ const getStatusClassName = (checkpoint) => (
 const AdminProjectCheckpointDetail = ({
   checkpoint,
   cumulativeProgress = 0,
+  currentProjectProgress = 0,
   messages = [],
   updateMode = false,
   updateModeLabel = "Update Node",
-  allCheckpoints = [],
-  selectedUpdateKeys = [],
   updateMessage = "",
-  onUpdateSelectionChange,
   onUpdateMessageChange,
-  canCompleteNodes = false,
   formatDateTime,
 }) => {
   const [templates, setTemplates] = useState([
@@ -33,15 +30,19 @@ const AdminProjectCheckpointDetail = ({
   const [isSaveAsOpen, setIsSaveAsOpen] = useState(false);
   const [saveAsName, setSaveAsName] = useState("");
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [newNodeTitle, setNewNodeTitle] = useState("");
+  const [newNodePercentage, setNewNodePercentage] = useState("");
+  const [actionPreview, setActionPreview] = useState("");
   const selectedCheckpointKey = checkpoint
     ? `checkpoint-${checkpoint?.checkpointId ?? checkpoint?.checkpointIndex}`
     : null;
-  const selectedNodeKey = selectedUpdateKeys[0] || selectedCheckpointKey || "";
-
-  useEffect(() => {
-    if (!updateMode || !selectedCheckpointKey || selectedUpdateKeys.length > 0) return;
-    onUpdateSelectionChange?.([selectedCheckpointKey]);
-  }, [onUpdateSelectionChange, selectedCheckpointKey, selectedUpdateKeys, updateMode]);
+  const enteredPercentage = Number(newNodePercentage);
+  const minimumNextPercentage = Math.min(100, Number(currentProjectProgress || 0) + 0.1);
+  const isNewPercentageValid = newNodePercentage !== "" &&
+    Number.isFinite(enteredPercentage) &&
+    enteredPercentage >= minimumNextPercentage &&
+    enteredPercentage <= 100;
+  const canPreviewNode = Boolean(newNodeTitle.trim() && isNewPercentageValid);
 
   if (updateMode) {
     const selectedTemplate = templates.find((template) => template.id === selectedTemplateId);
@@ -84,60 +85,70 @@ const AdminProjectCheckpointDetail = ({
       setIsTemplateDirty(false);
       setIsDeleteConfirmOpen(false);
     };
-    const handleNodeChange = (event) => {
-      const selectionKey = event.target.value;
-      if (!selectionKey) return;
-      onUpdateSelectionChange?.([selectionKey]);
-    };
-
     return (
-      <div className="rounded-[1.5rem] border border-slate-300 bg-slate-100 p-5">
+      <div className="rounded-[1.25rem] border border-slate-300 bg-slate-100 p-4">
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-sm font-medium text-slate-500">Project Update</p>
             <h3 className="mt-1 text-lg font-semibold text-slate-900">{updateModeLabel}</h3>
           </div>
           <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700">
-            {updateModeLabel.includes("Send") ? "All nodes completed" : `${selectedUpdateKeys.length} selected`}
+            {updateModeLabel.includes("Send") ? "Project update" : (checkpoint?.name || "Selected node")}
           </span>
         </div>
 
-        <div className="mt-4 rounded-[1.25rem] border border-slate-300 bg-white p-4">
-          <label className="text-sm font-semibold text-slate-900" htmlFor="admin-update-checkpoints">
-            Select node
-          </label>
-          <select
-            id="admin-update-checkpoints"
-            value={selectedNodeKey}
-            onChange={handleNodeChange}
-            className="mt-3 w-full rounded-xl border border-slate-300 bg-white p-2 text-sm text-slate-800 outline-none focus:border-slate-500"
-          >
-            {allCheckpoints.map((node, index) => {
-              const selectionKey = `checkpoint-${node?.checkpointId ?? node?.checkpointIndex ?? index}`;
-              return (
-                <option key={selectionKey} value={selectionKey}>
-                  {node?.name || "Unnamed checkpoint"}{node?.completed ? " (Completed)" : ""}
-                </option>
-              );
-            })}
-          </select>
-          <p className="mt-2 text-xs text-slate-500">Current working node is selected by default. All project nodes are available in the dropdown.</p>
+        <div className="mt-3 rounded-xl border border-blue-200 bg-blue-50/60 p-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <p className="text-sm font-semibold text-slate-900">New node update</p>
+            </div>
+            <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-blue-700">
+              Current {Number(currentProjectProgress || 0).toFixed(1)}%
+            </span>
+          </div>
+          <div className="mt-2.5 grid gap-2 sm:grid-cols-[9rem_minmax(0,1fr)]">
+            <label className="text-xs font-semibold text-slate-700">
+              New progress %
+              <input
+                type="number"
+                min={minimumNextPercentage}
+                max="100"
+                step="0.1"
+                value={newNodePercentage}
+                onChange={(event) => setNewNodePercentage(event.target.value)}
+                placeholder={minimumNextPercentage.toFixed(1)}
+                className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm font-normal text-slate-800 outline-none focus:border-blue-500"
+              />
+            </label>
+            <label className="text-xs font-semibold text-slate-700">
+              Node title
+              <input
+                value={newNodeTitle}
+                onChange={(event) => setNewNodeTitle(event.target.value)}
+                placeholder="Example: Homepage approved"
+                className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm font-normal text-slate-800 outline-none focus:border-blue-500"
+              />
+            </label>
+          </div>
+          <p className={`mt-1.5 text-xs ${newNodePercentage && !isNewPercentageValid ? "text-rose-700" : "text-slate-500"}`}>
+            Valid range: {minimumNextPercentage.toFixed(1)}%–100%. UI preview only.
+          </p>
         </div>
 
-        <div className="mt-4 rounded-[1.25rem] border border-slate-300 bg-white p-4">
+        <div className="mt-3 rounded-xl border border-slate-300 bg-white p-3">
           <div className="flex items-center justify-between gap-3">
             <div>
               <label className="text-sm font-semibold text-slate-900" htmlFor="admin-update-template">
                 Message template
               </label>
-              <p className="mt-1 text-xs text-slate-500">Choose a template or edit the current message.</p>
+              <p className="mt-0.5 text-xs text-slate-500">Choose or edit a template.</p>
             </div>
           </div>
           <select
             id="admin-update-template"
             value={selectedTemplateId}
             onChange={handleTemplateChange}
-            className="mt-3 w-full rounded-xl border border-slate-300 bg-white p-2 text-sm text-slate-800 outline-none focus:border-slate-500"
+          className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm text-slate-800 outline-none focus:border-slate-500"
           >
             <option value="">Choose a template</option>
             {templates.map((template) => <option key={template.id} value={template.id}>{template.name}</option>)}
@@ -225,33 +236,37 @@ const AdminProjectCheckpointDetail = ({
             setIsTemplateDirty(Boolean(selectedTemplate && value !== selectedTemplate.message));
           }}
           placeholder="Write an update message..."
-          className="mt-4 min-h-28 w-full resize-none rounded-xl border border-slate-300 bg-white p-3 text-sm text-slate-700 outline-none focus:border-slate-500"
+          className="mt-3 min-h-20 w-full resize-none rounded-xl border border-slate-300 bg-white p-3 text-sm text-slate-700 outline-none focus:border-slate-500"
         />
         <div className="mt-3 flex flex-wrap justify-end gap-2">
           <button
             type="button"
-            disabled={!canCompleteNodes}
+            disabled={!canPreviewNode}
+            onClick={() => setActionPreview(`Preview ready: ${newNodeTitle.trim()} at ${enteredPercentage}% would be added when backend wiring is approved.`)}
             className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-600 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            Complete Selected
+            Add Node
           </button>
           <button
             type="button"
             disabled={!updateMessage.trim()}
+            onClick={() => setActionPreview("Preview ready: the message would be sent for the selected node when backend wiring is approved.")}
             className="rounded-xl bg-blue-600 px-3 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
           >
             Send Update
           </button>
-          {!updateModeLabel.includes("Send") && (
-            <button
-              type="button"
-              disabled={!canCompleteNodes || !updateMessage.trim()}
-              className="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Complete &amp; Send
-            </button>
-          )}
+          <button
+            type="button"
+            disabled={!canPreviewNode || !updateMessage.trim()}
+            onClick={() => setActionPreview(`Preview ready: ${newNodeTitle.trim()} and its message would be sent together when backend wiring is approved.`)}
+            className="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Add Node &amp; Send
+          </button>
         </div>
+        {actionPreview ? (
+          <p className="mt-3 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-medium text-blue-800">{actionPreview}</p>
+        ) : null}
       </div>
     );
   }
@@ -274,7 +289,6 @@ const AdminProjectCheckpointDetail = ({
       })
     : [];
   const statusLabel = getStatusLabel(checkpoint);
-
   return (
     <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
       <div className="flex items-start justify-between gap-3">
