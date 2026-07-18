@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import AdminInfoPill from "./AdminInfoPill";
 
 const getStatusLabel = (checkpoint) => (checkpoint?.completed ? "Completed" : "Pending");
@@ -29,29 +29,65 @@ const AdminProjectCheckpointDetail = ({
     { id: "review", name: "Ready for Review", message: "The selected work is ready for your review. Please share any feedback." },
   ]);
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
-  const [newTemplateName, setNewTemplateName] = useState("");
-  const [newTemplateMessage, setNewTemplateMessage] = useState("");
+  const [isTemplateDirty, setIsTemplateDirty] = useState(false);
+  const [isSaveAsOpen, setIsSaveAsOpen] = useState(false);
+  const [saveAsName, setSaveAsName] = useState("");
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const selectedCheckpointKey = checkpoint
+    ? `checkpoint-${checkpoint?.checkpointId ?? checkpoint?.checkpointIndex}`
+    : null;
+  const selectedNodeKey = selectedUpdateKeys[0] || selectedCheckpointKey || "";
+
+  useEffect(() => {
+    if (!updateMode || !selectedCheckpointKey || selectedUpdateKeys.length > 0) return;
+    onUpdateSelectionChange?.([selectedCheckpointKey]);
+  }, [onUpdateSelectionChange, selectedCheckpointKey, selectedUpdateKeys, updateMode]);
 
   if (updateMode) {
     const selectedTemplate = templates.find((template) => template.id === selectedTemplateId);
     const handleTemplateChange = (event) => {
       const templateId = event.target.value;
       setSelectedTemplateId(templateId);
+      setIsTemplateDirty(false);
+      setIsSaveAsOpen(false);
+      setSaveAsName("");
+      setIsDeleteConfirmOpen(false);
       const template = templates.find((item) => item.id === templateId);
-      if (template) onUpdateMessageChange?.(template.message);
+      onUpdateMessageChange?.(template?.message || "");
     };
-    const handleAddTemplate = () => {
-      if (!newTemplateName.trim() || !newTemplateMessage.trim()) return;
+    const handleSaveTemplate = () => {
+      if (!selectedTemplate || !isTemplateDirty) return;
+      setTemplates((current) => current.map((template) => (
+        template.id === selectedTemplate.id
+          ? { ...template, message: updateMessage }
+          : template
+      )));
+      setIsTemplateDirty(false);
+    };
+    const handleSaveAsTemplate = () => {
+      if (!saveAsName.trim() || !updateMessage.trim()) return;
       const template = {
         id: `custom-${Date.now()}`,
-        name: newTemplateName.trim(),
-        message: newTemplateMessage.trim(),
+        name: saveAsName.trim(),
+        message: updateMessage,
       };
       setTemplates((current) => [...current, template]);
       setSelectedTemplateId(template.id);
-      onUpdateMessageChange?.(template.message);
-      setNewTemplateName("");
-      setNewTemplateMessage("");
+      setIsTemplateDirty(false);
+      setIsSaveAsOpen(false);
+      setSaveAsName("");
+    };
+    const handleDeleteTemplate = () => {
+      if (!selectedTemplate) return;
+      setTemplates((current) => current.filter((template) => template.id !== selectedTemplate.id));
+      setSelectedTemplateId("");
+      setIsTemplateDirty(false);
+      setIsDeleteConfirmOpen(false);
+    };
+    const handleNodeChange = (event) => {
+      const selectionKey = event.target.value;
+      if (!selectionKey) return;
+      onUpdateSelectionChange?.([selectionKey]);
     };
 
     return (
@@ -68,49 +104,34 @@ const AdminProjectCheckpointDetail = ({
 
         <div className="mt-4 rounded-[1.25rem] border border-slate-300 bg-white p-4">
           <label className="text-sm font-semibold text-slate-900" htmlFor="admin-update-checkpoints">
-            Select upcoming node(s)
+            Select node
           </label>
           <select
             id="admin-update-checkpoints"
-            multiple
-            value={selectedUpdateKeys}
-            onChange={(event) =>
-              onUpdateSelectionChange?.(
-                Array.from(event.target.selectedOptions).map((option) => option.value)
-              )
-            }
-            size={Math.min(Math.max(allCheckpoints.length, 4), 6)}
-            className="mt-3 w-full rounded-xl border border-slate-300 bg-slate-50 p-2 text-sm text-slate-800 outline-none focus:border-slate-500"
+            value={selectedNodeKey}
+            onChange={handleNodeChange}
+            className="mt-3 w-full rounded-xl border border-slate-300 bg-white p-2 text-sm text-slate-800 outline-none focus:border-slate-500"
           >
             {allCheckpoints.map((node, index) => {
               const selectionKey = `checkpoint-${node?.checkpointId ?? node?.checkpointIndex ?? index}`;
               return (
-                <option key={selectionKey} value={selectionKey} disabled={Boolean(node?.completed)}>
+                <option key={selectionKey} value={selectionKey}>
                   {node?.name || "Unnamed checkpoint"}{node?.completed ? " (Completed)" : ""}
                 </option>
               );
             })}
           </select>
-          <p className="mt-2 text-xs text-slate-500">Completed nodes remain visible but cannot be selected.</p>
+          <p className="mt-2 text-xs text-slate-500">Current working node is selected by default. All project nodes are available in the dropdown.</p>
         </div>
 
         <div className="mt-4 rounded-[1.25rem] border border-slate-300 bg-white p-4">
           <div className="flex items-center justify-between gap-3">
-            <label className="text-sm font-semibold text-slate-900" htmlFor="admin-update-template">
-              Message template
-            </label>
-            {selectedTemplate && (
-              <button
-                type="button"
-                onClick={() => {
-                  setTemplates((current) => current.filter((template) => template.id !== selectedTemplate.id));
-                  setSelectedTemplateId("");
-                }}
-                className="text-xs font-semibold text-rose-700 hover:text-rose-800"
-              >
-                Remove template
-              </button>
-            )}
+            <div>
+              <label className="text-sm font-semibold text-slate-900" htmlFor="admin-update-template">
+                Message template
+              </label>
+              <p className="mt-1 text-xs text-slate-500">Choose a template or edit the current message.</p>
+            </div>
           </div>
           <select
             id="admin-update-template"
@@ -121,33 +142,88 @@ const AdminProjectCheckpointDetail = ({
             <option value="">Choose a template</option>
             {templates.map((template) => <option key={template.id} value={template.id}>{template.name}</option>)}
           </select>
-          <div className="mt-3 grid gap-2 sm:grid-cols-[0.8fr_1.2fr_auto]">
-            <input
-              value={newTemplateName}
-              onChange={(event) => setNewTemplateName(event.target.value)}
-              placeholder="New template name"
-              className="rounded-xl border border-slate-300 p-2 text-sm outline-none focus:border-slate-500"
-            />
-            <input
-              value={newTemplateMessage}
-              onChange={(event) => setNewTemplateMessage(event.target.value)}
-              placeholder="New template message"
-              className="rounded-xl border border-slate-300 p-2 text-sm outline-none focus:border-slate-500"
-            />
-            <button
-              type="button"
-              onClick={handleAddTemplate}
-              disabled={!newTemplateName.trim() || !newTemplateMessage.trim()}
-              className="rounded-xl bg-slate-800 px-3 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Add
-            </button>
-          </div>
+
+          {selectedTemplate ? (
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={handleSaveTemplate}
+                disabled={!isTemplateDirty}
+                className={[
+                  "rounded-lg px-2.5 py-1.5 text-xs font-semibold transition",
+                  isTemplateDirty
+                    ? "bg-emerald-600 text-white hover:bg-emerald-700"
+                    : "border border-slate-300 bg-white text-slate-400",
+                ].join(" ")}
+              >
+                Save
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsSaveAsOpen((current) => !current)}
+                className="rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-slate-400 hover:bg-slate-50"
+              >
+                Save As
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsDeleteConfirmOpen((current) => !current)}
+                className="rounded-lg border border-rose-200 px-2.5 py-1.5 text-xs font-semibold text-rose-700 transition hover:bg-rose-50"
+              >
+                Delete
+              </button>
+            </div>
+          ) : null}
+
+          {isDeleteConfirmOpen && selectedTemplate ? (
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2">
+              <p className="text-xs font-medium text-rose-800">Delete “{selectedTemplate.name}” permanently?</p>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsDeleteConfirmOpen(false)}
+                  className="rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDeleteTemplate}
+                  className="rounded-lg bg-rose-600 px-2.5 py-1.5 text-xs font-semibold text-white"
+                >
+                  Delete template
+                </button>
+              </div>
+            </div>
+          ) : null}
+
+          {isSaveAsOpen && selectedTemplate ? (
+            <div className="mt-3 flex flex-wrap gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
+              <input
+                value={saveAsName}
+                onChange={(event) => setSaveAsName(event.target.value)}
+                placeholder="New template name"
+                className="min-w-[12rem] flex-1 rounded-lg border border-slate-300 bg-white p-2 text-sm outline-none focus:border-slate-500"
+              />
+              <button
+                type="button"
+                onClick={handleSaveAsTemplate}
+                disabled={!saveAsName.trim() || !updateMessage.trim()}
+                className="rounded-lg bg-slate-800 px-3 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Save as new
+              </button>
+            </div>
+          ) : null}
         </div>
 
         <textarea
           value={updateMessage}
-          onChange={(event) => onUpdateMessageChange?.(event.target.value)}
+          onChange={(event) => {
+            const value = event.target.value;
+            onUpdateMessageChange?.(value);
+            setIsTemplateDirty(Boolean(selectedTemplate && value !== selectedTemplate.message));
+          }}
           placeholder="Write an update message..."
           className="mt-4 min-h-28 w-full resize-none rounded-xl border border-slate-300 bg-white p-3 text-sm text-slate-700 outline-none focus:border-slate-500"
         />
