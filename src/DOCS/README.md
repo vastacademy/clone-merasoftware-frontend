@@ -30,6 +30,12 @@ Fast lookup for files, routes, and common development tasks.
 ### `12_CLIENT_ACTIVITY_SORT_AUDIT.md`
 Current audit and implementation routing for admin client working-activity sorting and the pending node-update write path.
 
+### `13_PROJECT_CREATION_AND_APPROVAL_PLAN.md`
+Verified project categories, product fields, customer purchase flow, admin `Website Management > Projects` UI scaffold, approval integration, and regression guardrails.
+
+### `14_CODEBASE_AUDIT_INDEX.md`
+Central AI handoff index containing the audited route/file/model map, real database evidence, current implementation state, pending work, and regression boundaries.
+
 ## Legacy Docs
 
 These files are historical snapshots. Read them only if you need old context:
@@ -58,8 +64,11 @@ These files are historical snapshots. Read them only if you need old context:
 - Customer order detail page: `OrderDetailPage`
 - Customer purchase-history list page: `OrderPage`
 - Admin dashboard page: `AdminDashboard`
+- Admin project-product UI route: `/admin-panel/website-management/projects` (`AdminProjectProductsPage`); list UI is active, API wiring is pending
 - Admin client list sorting source: existing `GET /api/admin/clients` response field `latestActivityAt`
-- Node update status: UI endpoint definition exists, but the active backend write route/controller is not yet present; read `12_CLIENT_ACTIVITY_SORT_AUDIT.md` before implementing it
+- Node update status: canonical dynamic node schema/service and migrated-timeline-gated admin APIs exist; existing orders remain legacy until migration. Read `admin-nodes.md` and `13_PROJECT_CREATION_AND_APPROVAL_PLAN.md` before extending the flow
+- New project creation direction: admin `Website Management > Projects` now has the Clients-style list UI and Add Project entry point; product API/form wiring is still pending. Read `13_PROJECT_CREATION_AND_APPROVAL_PLAN.md` before extending it
+- Full audit handoff: read `14_CODEBASE_AUDIT_INDEX.md` first when resuming work in a new chat or by another AI
 
 ## Notes
 

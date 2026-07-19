@@ -4,7 +4,7 @@
 
 This document is the single handoff reference for the project-node redesign discussed with the user. Read it before planning or changing product, order, admin-project, customer-project, node, reset, visibility, or template behavior.
 
-Status on 2026-07-18: requirements discovery and audit completed. No new node backend or data-model implementation has been approved yet.
+Status on 2026-07-19: requirements discovery and audit completed. The order-owned dynamic node schema/service and migrated-timeline-gated admin node APIs are implemented; existing orders remain legacy version `0` until controlled migration.
 
 ## Working Rules
 
@@ -69,12 +69,21 @@ Status on 2026-07-18: requirements discovery and audit completed. No new node ba
 - The active admin route map has no product-management route.
 - `AllProducts`, `UploadProduct`, and `AdminEditProduct` still exist as legacy/unrouted product-management code. They can create/edit old predefined checkpoints but are not the correct foundation for the new system as-is.
 
+### New project-product direction
+
+- New project-product creation is now the next implementation priority under the planned admin main-page `Website Management` -> `Projects` module.
+- The product will store a mandatory Starting Node Title, but no predefined future nodes.
+- Customer purchase will continue through the existing `ProductDetails` -> `DirectPayment` -> pending order -> payment approval flow.
+- The approved order, not the product, will receive the copied 0% starting node.
+- Existing project migration is intentionally later; it is not a prerequisite for creating new project products.
+- See `13_PROJECT_CREATION_AND_APPROVAL_PLAN.md` for the verified category-specific fields and regression boundaries.
+
 ### Locked architecture implication for the new node system
 
 - An order is created before payment approval, but a project becomes active after approval. Therefore the product's required 0% Starting Node must be initialized at the approved project-start lifecycle point, not merely when a pending order is inserted.
 - This prevents rejected or still-pending payment orders from receiving a false active project timeline.
 - Product creation is still separate from project start: the future product record stores only its Starting Node Title; an approved order gets its own independent 0% node copy. Later product edits must not modify an already-started order.
-- The first implementation focus must be order-owned dynamic node persistence and the approved-project-start integration. The new product-management UI can follow after that backend lifecycle is reliable.
+- The order-owned dynamic node persistence is in place. The next implementation focus is the new project-product UI and its product contract; approved-project-start integration follows after the product form and customer purchase compatibility are locked.
 
 ### Evidence index for this audit
 
@@ -299,8 +308,9 @@ Reset rule:
 
 ### Phase 5: Product-management system
 
-- Add active admin product list/create/edit routes and navigation.
-- Remove predefined future-node configuration from the product form.
+- Add active admin product list/create/edit routes and navigation under `Website Management` -> `Projects`.
+- Build the category-aware project product form using the verified project field matrix.
+- Remove predefined future-node configuration from new project product creation.
 - Add required Starting Node Title for project products.
 - Make order/project start create the copied 0% starting node from the product template.
 - Keep plan-product flow separate.

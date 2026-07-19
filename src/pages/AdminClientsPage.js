@@ -11,6 +11,7 @@ import { useOnlineStatus } from "../App";
 import AdminLayout from "../components/AdminLayout";
 import AdminWorkspaceShell, { AdminWorkspaceHeader } from "../components/admin/AdminWorkspaceShell";
 import AdminWorkspaceList from "../components/admin/AdminWorkspaceList";
+import AdminFilterDropdown from "../components/admin/AdminFilterDropdown";
 
 const formatDate = (value) => {
   if (!value) return "N/A";
@@ -158,33 +159,15 @@ const AdminClientsPage = () => {
           title="Clients"
           subtitle="Customer list ordered by the latest verified client activity."
           actions={
-            <div className="flex w-full flex-col gap-3 sm:max-w-xl sm:flex-row">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-3 text-slate-400" size={18} />
-                <input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Search clients by name, email, or phone"
-                  className="w-full rounded-2xl border border-white/10 bg-white/5 py-3 pl-10 pr-4 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-emerald-400/50 focus:bg-white/10"
-                />
-              </div>
-
-              <label className="flex w-full items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-3 text-sm text-slate-200 sm:w-72">
-                <ArrowUpDown size={16} className="shrink-0 text-slate-400" />
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="w-full cursor-pointer bg-slate-950 outline-none"
-                  aria-label="Sort clients"
-                >
-                  {sortOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
+            <div className="flex w-full flex-col gap-3 sm:flex-row lg:min-w-[23rem] lg:justify-end">
+              <AdminFilterDropdown
+                icon={ArrowUpDown}
+                label="Sort"
+                value={sortBy}
+                options={sortOptions}
+                onChange={setSortBy}
+                ariaLabel="Sort clients"
+              />
 
               <button
                 type="button"
@@ -198,6 +181,19 @@ const AdminClientsPage = () => {
             </div>
           }
         />
+
+        <div className="border-b border-slate-200 bg-white px-5 py-4 sm:px-6">
+          <div className="relative w-full">
+            <Search className="absolute left-3 top-3 text-slate-400" size={18} />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search clients by name, email, or phone"
+              className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3 pl-10 pr-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
+            />
+          </div>
+        </div>
 
         <div className="p-5 sm:p-6">
           <AdminWorkspaceList

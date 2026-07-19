@@ -2,14 +2,25 @@ import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   BarChart3,
+  BriefcaseBusiness,
   Layers3,
   LogOut,
+  PanelsTopLeft,
   Users2,
 } from "lucide-react";
 
 export const adminSidebarModules = [
   { id: "dashboard", label: "Dashboard", icon: BarChart3, live: true, to: "/admin-panel/dashboard" },
   { id: "clients", label: "Clients", icon: Users2, live: true, to: "/admin-panel/clients" },
+  {
+    id: "website-management",
+    label: "Website Management",
+    icon: PanelsTopLeft,
+    group: true,
+    children: [
+      { id: "projects", label: "Projects", icon: BriefcaseBusiness, live: true, to: "/admin-panel/website-management/projects" },
+    ],
+  },
   { id: "upcoming-orders", label: "Upcoming Orders", icon: Layers3, soon: true },
   { id: "upcoming-reports", label: "Upcoming Reports", icon: BarChart3, soon: true },
 ];
@@ -62,6 +73,33 @@ const AdminLayout = ({
 
         <div className="mt-3 space-y-2">
           {adminSidebarModules.map((module) => {
+            if (module.group) {
+              const GroupIcon = module.icon;
+              return (
+                <div key={module.id} className="space-y-1">
+                  <div className="flex items-center gap-3 px-4 py-2 text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
+                    <GroupIcon size={16} className="shrink-0" />
+                    <span>{module.label}</span>
+                  </div>
+                  {module.children.map((child) => {
+                    const ChildIcon = child.icon;
+                    const childIsActive = currentPath === child.to || currentPath.startsWith(`${child.to}/`);
+                    return (
+                      <Link
+                        key={child.id}
+                        to={child.to}
+                        className={`group ml-3 flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition-all ${childIsActive ? "bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-950/30" : "bg-slate-900/70 text-slate-200 hover:bg-slate-800"}`}
+                      >
+                        <ChildIcon size={18} className="shrink-0" />
+                        <span className="flex-1">{child.label}</span>
+                        <span className="text-xs opacity-70">{child.live ? "Live" : "Soon"}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              );
+            }
+
             const isActive =
               currentPath === module.to ||
               (module.to && currentPath.startsWith(`${module.to}/`));

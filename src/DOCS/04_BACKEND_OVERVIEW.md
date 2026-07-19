@@ -693,3 +693,16 @@ Rejects: status = rejected, user can retry
 4. Test API endpoint with Postman/Insomnia
 5. Write corresponding frontend service call
 6. Test integration end-to-end
+
+---
+
+## New Dynamic Project Timeline Status
+
+- `orderProductModel` remains the project/order source of truth.
+- Canonical dynamic timeline fields are order-owned: `projectRuns`, `projectNodes`, and `projectNodeEvents`.
+- `projectProgress` remains the compatibility/current-progress projection used by existing dashboards and order summaries.
+- `backend/helpers/projectNodeService.js` owns node lifecycle validation and state transitions.
+- Admin node routes are available under `/api/admin/projects/:orderId/nodes...` and are gated to migrated timeline version `1` orders.
+- Existing orders remain legacy timeline version `0` until a controlled migration.
+- New project-product creation is planned under admin `Website Management > Projects`; project products will store a mandatory Starting Node Title and no predefined future-node template.
+- Product creation, customer order/payment, approval, and project-start initialization are separate lifecycle steps.

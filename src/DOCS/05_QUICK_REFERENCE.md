@@ -89,8 +89,9 @@ Fast lookup for the current codebase.
 - Admin client list work belongs in `AdminClientsPage.js`
 - Admin client list default sorting consumes backend `latestActivityAt`; the endpoint remains `GET /api/admin/clients`
 - Admin client activity read logic belongs in `backend/controller/user/getAdminClients.js`; do not add a separate activity endpoint or store
-- Node progress UI currently belongs to `components/admin/ProjectWorkspaceModal.js` and calls `SummaryApi.updateProjectProgress`
-- Node progress backend write-path is currently missing; before changing sorting, complete the admin-only route/controller against `orderProductModel`
+- `ProjectWorkspaceModal.js` and `SummaryApi.updateProjectProgress` are legacy node-write references.
+- Canonical dynamic node work belongs to `backend/helpers/projectNodeService.js`, `backend/controller/order/projectNodeController.js`, and order-owned timeline fields in `orderProductModel.js`.
+- New admin node APIs are migrated-timeline-gated under `/api/admin/projects/:orderId/nodes...`; existing orders remain legacy until migration.
 - Admin client detail work belongs in `AdminClientWorkspace.js`
 - Admin shell work belongs in `AdminLayout.js`
 - Admin header work belongs in `AdminHeader.js`
@@ -103,6 +104,7 @@ Fast lookup for the current codebase.
 - Admin client overview data should be pulled from the existing customer APIs, not a separate admin DB
 - Admin project detail now follows a history-first subpage pattern: checkpoint list, selected checkpoint notes, project submissions, and file metadata all live in the same project subpage
 - Customer project detail at `/project-details/:orderId` is checkpoint-driven: the active checkpoint opens by default, timeline clicks update the detail panel, and the old Recent Updates feed is not shown
+- New project product creation is planned under admin `Website Management > Projects`; see `13_PROJECT_CREATION_AND_APPROVAL_PLAN.md` for the category-specific field contract and approval sequence
 - Admin project delete work belongs to the scan endpoint, admin delete controller, and `AdminClientWorkspace.js`
 - Admin project and plan details in the workspace should stay as in-page subviews that return to their list tabs
 - Customer dashboard quick links now prioritize Dashboard, Track Project, and Wallet; `Start New Project` is temporarily hidden from the customer sidebar

@@ -2,7 +2,7 @@
 
 **Audit date**: 2026-07-17  
 **Scope**: Admin client-list working-activity sorting and its project/node activity source  
-**Status**: Activity read/sort layer implemented; node update write-path pending
+**Status**: Activity read/sort layer implemented; legacy node write-path remains retired; canonical dynamic node schema/service and migrated-timeline-gated admin APIs are implemented
 
 ## Verified objective
 
@@ -24,6 +24,7 @@ The endpoint derives the latest timestamp from customer-linked records:
 - Project work: order `updatedAt`/`lastUpdated`
 - Completed node/checkpoint: checkpoint `completedAt`, only when it is actually persisted
 - Project messages: order message `timestamp`
+- Dynamic node events: order `projectNodeEvents[].occurredAt`
 - Update requests: request lifecycle and instruction/developer message timestamps
 - Payments: submission time, approval `verificationDate`, or rejection `rejectedAt`
 - Invoices: lifecycle update or paid date
@@ -64,17 +65,22 @@ The modal currently sends this request only inside the update/message flow and r
 - `backend/models/orderProductModel.js` already has the required fields: `checkpoints[].completed`, `checkpoints[].completedAt`, `projectProgress`, `updatedAt`, and `lastUpdated`.
 - `backend/controller/order/getOrderDetails.js` already reads checkpoint completion and exposes it to admin/customer project detail surfaces.
 
+### Canonical dynamic node path
+
+- `backend/models/orderProductModel.js` now contains order-owned `projectRuns`, `projectNodes`, and `projectNodeEvents` fields.
+- `backend/helpers/projectNodeService.js` owns cumulative progress, idempotent starting-node initialization, soft delete, restore, visibility, and reset rules.
+- `backend/controller/order/projectNodeController.js` and the `/api/admin/projects/:orderId/nodes...` routes provide admin-only operations.
+- These new operations intentionally reject legacy timeline version `0` orders until controlled migration/initialization is completed.
+- The old `SummaryApi.updateProjectProgress` path remains legacy and is not the canonical new-node contract.
+
 ## Required next implementation
 
-1. Add the missing admin-authorized controller using the existing `orderProductModel`.
-2. Register the route in `backend/routes/index.js`.
-3. Validate `projectId` and `checkpointId`, confirm the order exists, and enforce admin authorization.
-4. Persist `completed: true` and `completedAt` on the selected checkpoint.
-5. Preserve existing model save middleware so `projectProgress`, `updatedAt`, and `lastUpdated` remain correct.
-6. Make repeated completion idempotent; do not overwrite an existing completion timestamp without a verified new event.
-7. Preserve the existing `order-details` response shape for both admin and customer portal.
-8. Decide and verify whether node completion must be independently submittable or remain coupled to a project message; do not silently change this behavior.
-9. After the write-path works, verify that the existing admin client endpoint reads the new checkpoint timestamp and moves the client to the top.
+1. Extend the existing Clients-style `Website Management > Projects` list UI with the approved product API.
+2. Add the project-product create/edit form and validate the product Starting Node Title for all project categories.
+3. Preserve customer listing, ProductDetails, DirectPayment, and approval contracts.
+4. Wire approved project activation to idempotent 0% starting-node initialization.
+5. Verify new node events move the correct client to the top through `GET /api/admin/clients`.
+6. Migrate existing legacy project timelines only after the new-project path is proven.
 
 ## Regression guardrails
 
@@ -91,7 +97,7 @@ The modal currently sends this request only inside the update/message flow and r
 - The returned order placed a client with the latest invoice activity above older project activity and creation-date fallbacks.
 - `node --check` passed for the activity endpoint and both admin consumers.
 - No client portal code was changed by the activity sorting work.
-- Node write-path audit found the missing route/controller described above.
+- The legacy write-path audit found the missing old route/controller; the new canonical path is now present and gated to migrated timelines.
 
 ## Working history retained
 

@@ -52,6 +52,17 @@ This document describes the active frontend behavior as of the current codebase.
 - `/admin-panel/dashboard` - `AdminDashboard`
 - `/admin-panel/clients` - `AdminClientsPage`
 - `/admin-panel/clients/:customerId` - `AdminClientWorkspace`
+- `/admin-panel/website-management/projects` - `AdminProjectProductsPage` (UI-only list shell; backend wiring pending)
+
+### Project product management status
+
+- Admin project-product management now has an active UI-only route and sidebar entry, but no product API is connected yet.
+- `AllProducts`, `UploadProduct`, and `AdminEditProduct` remain legacy/unrouted product-management code.
+- The active UI direction is the admin main-page `Website Management` section with a `Projects` tab for reusable project-product creation and management.
+- `AdminProjectProductsPage` currently matches the Clients page list shell: compact dark header, sort and Add Project controls in the header, full-width search below the header, and a project list empty state. It does not fetch or save projects.
+- `AdminClientsPage` keeps sort and refresh in the dark header while its full-width client search bar is rendered immediately below the header; this is the reference layout for the Projects list UI.
+- New project products must store a mandatory Starting Node Title and must not generate predefined future nodes.
+- Read `13_PROJECT_CREATION_AND_APPROVAL_PLAN.md` for the verified category/field matrix and implementation order.
 
 ## 3. Active Layouts
 
@@ -106,7 +117,8 @@ This document describes the active frontend behavior as of the current codebase.
 - The default client-list order is latest verified working-related activity; the backend returns `latestActivityAt` and `latestActivitySource` from the existing admin clients endpoint
 - Activity candidates are customer creation fallback, order/project updates, checkpoint completion when persisted, project messages, update requests, payments, invoices, renewals, and support tickets
 - Customer profile `updatedAt` is intentionally not treated as business activity because it is not a reliable working-event source in the current data
-- The current node-update write path is not active: `SummaryApi.updateProjectProgress` is referenced by the admin project UI, but `/api/update-project-progress` is not registered in the active backend routes
+- The old `SummaryApi.updateProjectProgress`/`/api/update-project-progress` path remains legacy and is not the new node contract.
+- The canonical dynamic node schema/service and migrated-timeline-gated admin node APIs now exist; existing orders remain on legacy timeline version `0` until migration.
 - Clicking a client opens `/admin-panel/clients/:customerId`
 - Browser history now keeps `dashboard -> clients -> client detail`
 - `AdminClientWorkspace` loads customer overview data from the existing customer SSOT APIs

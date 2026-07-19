@@ -35,6 +35,11 @@ Admin ko same SSOT backend/data par customer ka full read + manage access dena h
 - `unpaid` aur `overdue` invoices admin `Mark Paid` modal se paid mark ho sakti hain
 - Invoice `Mark Paid` flow existing backend route `/api/invoices/:invoiceId/mark-paid` use karta hai
 - Payment approve/reject buttons abhi intentionally wire nahi hain, kyunki active backend transaction approval routes verify/complete karne hain
+- New project creation is now the next implementation priority. Planned admin information architecture: `Website Management` -> `Projects`.
+- The UI-only Projects list route is now active at `/admin-panel/website-management/projects` and follows the Clients page compact list pattern. It currently has search, sort, Add Project entry point, and an empty state; it does not fetch or save products.
+- The Projects tab will create/manage reusable project products first; it will not create customer orders or bypass payment.
+- New project products must store a mandatory Starting Node Title and must not store predefined future-node percentage templates.
+- Existing project migration will follow after the new-project creation and approved-start flow is proven.
 
 ## Customer Current Access Pattern
 Customer frontend backend endpoints ko token/cookie ke through access karta hai.
@@ -91,6 +96,15 @@ Main active data sources:
 - Validation rules
 - Edge cases and rollback behavior
 - Complete and verify payment approve/reject backend routes, then wire admin payment action buttons
+
+## New Project Creation Sequence
+
+1. Build the admin main-page `Website Management` section.
+2. Add the `Projects` tab for project product list/create/edit/manage.
+3. Define category-specific project fields and validate mandatory Starting Node Title.
+4. Keep customer product listing, ProductDetails, DirectPayment, and payment contracts compatible.
+5. After product creation is stable, wire approval to initialize the order-owned 0% starting node.
+6. Migrate existing projects later through a controlled dry-run and rollback-safe process.
 
 ## What Must Not Happen
 - Duplicate customer backend
