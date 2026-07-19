@@ -12,7 +12,11 @@ import {
   ShieldCheck,
   Wallet,
   AlertCircle,
+  Eye,
+  EyeOff,
+  RotateCcw,
   Trash2,
+  Undo2,
   X,
 } from "lucide-react";
 import SummaryApi from "../common";
@@ -1505,9 +1509,12 @@ const WorkspaceDetailSubpage = ({
                         type="button"
                         onClick={() => setResetPreviewOpen((current) => !current)}
                         disabled={checkpoints.length === 0}
-                        className="rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-40"
+                        className="inline-flex h-10 items-center justify-center gap-1.5 rounded-full border border-rose-300 bg-rose-100 px-3 text-xs font-semibold text-rose-800 transition hover:bg-rose-200 disabled:cursor-not-allowed disabled:opacity-40"
+                        aria-label="Reset history"
+                        title={resetPreviewOpen ? "Close reset history preview" : "Reset history: archive current nodes and restart active progress at 0%"}
                       >
-                        {resetPreviewOpen ? "Close reset" : "Reset project history"}
+                        <RotateCcw size={19} />
+                        <span>Reset history</span>
                       </button>
                     </div>
                   </div>
@@ -1518,25 +1525,31 @@ const WorkspaceDetailSubpage = ({
                       type="button"
                       onClick={handleDeleteNodePreview}
                       disabled={!hasSelectedActiveNodes}
-                      className="rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-xs font-semibold text-rose-700 disabled:cursor-not-allowed disabled:opacity-40"
+                      className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-rose-300 bg-rose-100 text-rose-800 transition hover:bg-rose-200 disabled:cursor-not-allowed disabled:opacity-40"
+                      aria-label="Delete selected node(s)"
+                      title="Delete selected node(s)"
                     >
-                      Delete node
+                      <Trash2 size={19} />
                     </button>
                     <button
                       type="button"
                       onClick={() => updateSelectedNodeUiState({ isInactive: false })}
                       disabled={!hasSelectedInactiveNodes}
-                      className="rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-semibold text-emerald-700 disabled:cursor-not-allowed disabled:opacity-40"
+                      className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-emerald-300 bg-emerald-100 text-emerald-800 transition hover:bg-emerald-200 disabled:cursor-not-allowed disabled:opacity-40"
+                      aria-label="Undo delete for selected node(s)"
+                      title="Undo delete for selected node(s)"
                     >
-                      Undo delete
+                      <Undo2 size={19} />
                     </button>
                     <button
                       type="button"
                       onClick={() => updateSelectedInactiveNodeUiState({ visibleToClient: selectedNodesAreHiddenForClient })}
                       disabled={!hasSelectedInactiveNodes}
-                      className="rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
+                      className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-slate-400 bg-slate-100 text-slate-800 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-40"
+                      aria-label={selectedNodesAreHiddenForClient ? "Show selected node(s) to client" : "Hide selected node(s) from client"}
+                      title={selectedNodesAreHiddenForClient ? "Show selected node(s) to client" : "Hide selected node(s) from client"}
                     >
-                      {selectedNodesAreHiddenForClient ? "Show to client" : "Hide for client"}
+                      {selectedNodesAreHiddenForClient ? <Eye size={19} /> : <EyeOff size={19} />}
                     </button>
                     <label className="ml-auto inline-flex items-center gap-2 text-xs font-semibold text-slate-700">
                       <input
