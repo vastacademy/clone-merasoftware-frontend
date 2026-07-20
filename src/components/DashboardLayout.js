@@ -3,9 +3,9 @@ import React, { useState, useEffect } from 'react';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'sonner';
-import { 
+import {
   Home, ShoppingBag, UserCircle, Wallet, MessageSquare, LogOut,
-  FileText, X
+  FileText, X, PlusCircle
 } from 'lucide-react';
 import SummaryApi from '../common';
 import { logout } from '../store/userSlice';
@@ -68,6 +68,12 @@ const DashboardLayout = ({ children, user, walletBalance, cartCount, isLoading, 
       label: 'Projects and Plans',
       icon: FileText,
       active: projectsAndPlansActive,
+    },
+    {
+      to: '/home',
+      label: 'Start New Project',
+      icon: PlusCircle,
+      active: currentPath.startsWith('/home'),
     },
     {
       to: '/wallet',
