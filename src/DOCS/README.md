@@ -67,7 +67,7 @@ These files are historical snapshots. Read them only if you need old context:
 - Admin project-product UI route: `/admin-panel/website-management/projects` (`AdminProjectProductsPage`); list UI is active, API wiring is pending
 - Admin client list sorting source: existing `GET /api/admin/clients` response field `latestActivityAt`
 - Node update status: canonical dynamic node schema/service and migrated-timeline-gated admin APIs exist; existing orders remain legacy until migration. Read `admin-nodes.md` and `13_PROJECT_CREATION_AND_APPROVAL_PLAN.md` before extending the flow
-- New project creation direction: admin `Website Management > Projects` now has the Clients-style list UI and Add Project entry point; product API/form wiring is still pending. Read `13_PROJECT_CREATION_AND_APPROVAL_PLAN.md` before extending it
+- New project creation direction: admin `Website Management > Projects` now has the Clients-style list UI and an active UI-only Add Project form at `/admin-panel/website-management/projects/add`; the form has no backend save/API wiring yet. Read `13_PROJECT_CREATION_AND_APPROVAL_PLAN.md` before extending it
 - Full audit handoff: read `14_CODEBASE_AUDIT_INDEX.md` first when resuming work in a new chat or by another AI
 
 ## Notes

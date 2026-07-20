@@ -1,6 +1,6 @@
 # New Project Creation and Approval Plan
 
-**Status**: Planning and architecture locked; implementation not started for this module  
+**Status**: Architecture locked; admin project-product UI form implemented, backend creation not started  
 **Scope**: Admin project-product creation first, customer purchase and approval integration second  
 **Source of truth**: Existing customer/order backend and the order-owned dynamic project timeline
 
@@ -21,7 +21,11 @@ Admin main page
         └── Project details
 ```
 
-`Website Management > Projects` now has an active UI-only route and sidebar entry at `/admin-panel/website-management/projects`. Its current screen is only the Clients-style list shell with search, sort, Add Project entry point, and empty state; it does not read or write products yet. `AllProducts`, `UploadProduct`, and `AdminEditProduct` remain legacy/unrouted product-management code and are not the final foundation without redesign. For the complete audited file/state index, read `14_CODEBASE_AUDIT_INDEX.md`.
+`Website Management > Projects` has an active UI-only route and sidebar entry at `/admin-panel/website-management/projects`, plus the UI-only Add Project form at `/admin-panel/website-management/projects/add`. The list and form do not read or write products yet. `AllProducts`, `UploadProduct`, and `AdminEditProduct` remain legacy/unrouted product-management code and are not the final foundation without redesign. For the complete audited file/state index, read `14_CODEBASE_AUDIT_INDEX.md`.
+
+### Current Add Project UI contract
+
+The current form presents Project Name, Category, Starting Node Title, conditional Total Pages for website categories, Base Price, Selling Price, optional Project Image, Description / Specifications, Who is it for?, What's Included, and Visibility. Description / Specifications uses the shared rich-text editor. Who is it for? and What's Included retain resizable, scrollable textarea behavior; pressing Enter creates a visible new line with a subtle separator and each existing line can be removed with its `×` control. These fields are UI-only until the product API and save contract are approved.
 
 ## 2. Verified current customer purchase flow
 
@@ -158,6 +162,6 @@ Rejected or still-pending orders must never receive a false active project timel
 - Admin node endpoints exist but intentionally require a migrated timeline.
 - Existing orders remain on legacy timeline version `0`.
 - Clients-style `Website Management > Projects` list UI and route now exist, but the list is intentionally empty until the new product API is approved and wired.
-- Add Project is currently a UI entry point only; it does not create a product or open a backend-backed form.
-- Product Starting Node Title is not yet part of the active product model/form.
+- Add Project currently opens a UI-only form; it does not create a product or call a backend save API.
+- Product Starting Node Title is present in the UI form but is not yet connected to the active product model/API.
 - Approval-to-start initialization is not yet wired.

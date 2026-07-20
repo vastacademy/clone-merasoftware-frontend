@@ -102,7 +102,7 @@ const AdminProjectProductsPage = () => {
   };
 
   const handleAddProject = () => {
-    toast.info("Add Project form will be connected in the next UI step.");
+    navigate("/admin-panel/website-management/projects/add");
   };
 
   const handleProjectOpen = () => {

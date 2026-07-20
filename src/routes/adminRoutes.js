@@ -5,6 +5,7 @@ import AdminClientWorkspace from "../pages/AdminClientWorkspace";
 import AdminPaymentRecordDetail from "../pages/AdminPaymentRecordDetail";
 import ProjectDetails from "../pages/ProjectDetails";
 import AdminProjectProductsPage from "../pages/AdminProjectProductsPage";
+import AdminCreateProjectPage from "../pages/AdminCreateProjectPage";
 
 export const adminRoutes = [
   {
@@ -36,6 +37,14 @@ export const adminRoutes = [
     element: (
       <ProtectedRoute requireRole={['admin']}>
         <AdminClientWorkspace/>
+      </ProtectedRoute>
+    )
+  },
+  {
+    path: "admin-panel/website-management/projects/add",
+    element: (
+      <ProtectedRoute requireRole={['admin']}>
+        <AdminCreateProjectPage />
       </ProtectedRoute>
     )
   },

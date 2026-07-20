@@ -53,13 +53,14 @@ This document describes the active frontend behavior as of the current codebase.
 - `/admin-panel/clients` - `AdminClientsPage`
 - `/admin-panel/clients/:customerId` - `AdminClientWorkspace`
 - `/admin-panel/website-management/projects` - `AdminProjectProductsPage` (UI-only list shell; backend wiring pending)
+- `/admin-panel/website-management/projects/add` - `AdminCreateProjectPage` (UI-only add form; backend wiring pending)
 
 ### Project product management status
 
-- Admin project-product management now has an active UI-only route and sidebar entry, but no product API is connected yet.
+- Admin project-product management now has an active UI-only list route, sidebar entry, and Add Project form route, but no product API is connected yet.
 - `AllProducts`, `UploadProduct`, and `AdminEditProduct` remain legacy/unrouted product-management code.
 - The active UI direction is the admin main-page `Website Management` section with a `Projects` tab for reusable project-product creation and management.
-- `AdminProjectProductsPage` currently matches the Clients page list shell: compact dark header, sort and Add Project controls in the header, full-width search below the header, and a project list empty state. It does not fetch or save projects.
+- `AdminProjectProductsPage` currently matches the Clients page list shell: compact dark header, sort and Add Project controls in the header, full-width search below the header, and a project list empty state. `AdminCreateProjectPage` provides the UI-only form with project name, category, conditional website page count, starting node title, base/selling prices, optional project image, rich description/specifications, Who is it for?, What's Included, and visibility. It does not fetch or save projects.
 - `AdminClientsPage` keeps sort and refresh in the dark header while its full-width client search bar is rendered immediately below the header; this is the reference layout for the Projects list UI.
 - New project products must store a mandatory Starting Node Title and must not generate predefined future nodes.
 - Read `13_PROJECT_CREATION_AND_APPROVAL_PLAN.md` for the verified category/field matrix and implementation order.

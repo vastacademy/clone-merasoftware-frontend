@@ -92,6 +92,7 @@ const AppContent = () => {
   const fetchUserDetails = async () => {
     try {
       let hasUserData = false;
+      let loadedUser = null;
 
       // First check localStorage
       const cachedDetails = StorageService.getUserDetails();
@@ -101,6 +102,7 @@ const AppContent = () => {
         setWalletBalance(cachedWalletBalance);
         dispatch(updateWalletBalance(cachedWalletBalance));
         hasUserData = true;
+        loadedUser = cachedDetails;
       }
 
       // If online, fetch fresh data
@@ -110,7 +112,7 @@ const AppContent = () => {
           credentials: 'include'
         });
         if (!dataResponse.ok) {
-          return hasUserData;
+          return hasUserData ? loadedUser : null;
         }
         const dataApi = await dataResponse.json();
         
@@ -126,6 +128,7 @@ const AppContent = () => {
           // Save to localStorage
           StorageService.setUserDetails(dataApi.data);
           dispatch(setUserDetails(dataApi.data));
+          loadedUser = dataApi.data;
           
           // Update wallet balance if it exists
           if (dataApi.data.walletBalance !== undefined) {
@@ -138,10 +141,10 @@ const AppContent = () => {
         }
       }
 
-      return hasUserData;
+      return hasUserData ? loadedUser : null;
     } catch (error) {
       console.error("Error fetching user details:", error);
-      return false;
+      return null;
     }
   };
 
@@ -190,8 +193,12 @@ const AppContent = () => {
 
         if (cachedUser) {
           console.log("✅ [AppContent] Restoring user from localStorage:", cachedUser.name);
-          await fetchUserDetails();
-          await fetchUserAddToCart();
+          const loadedUser = await fetchUserDetails();
+          if (loadedUser?.role === "customer") {
+            await fetchUserAddToCart();
+          } else {
+            setCartProductCount(0);
+          }
           return;
         }
 
@@ -206,7 +213,11 @@ const AppContent = () => {
             return;
           }
 
-          await fetchUserAddToCart();
+          if (userLoaded.role === "customer") {
+            await fetchUserAddToCart();
+          } else {
+            setCartProductCount(0);
+          }
         } else {
           // Offline aur no cached user
           console.log("📡 [AppContent] Offline aur no cached user, logging out");
@@ -225,7 +236,10 @@ const AppContent = () => {
   // In AppContent.js
 useEffect(() => {
   const fetchActiveProject = async () => {
-    if (!user?._id) return;
+    if (!user?._id || user.role !== "customer") {
+      setActiveProject(null);
+      return;
+    }
     
     try {
       const allOrders = await getOrderSummary({ force: true });
@@ -265,7 +279,7 @@ useEffect(() => {
   const interval = setInterval(fetchActiveProject, 300000); // every 5 minutes
   return () => clearInterval(interval);
   
-}, [user?._id]);
+}, [user?._id, user?.role]);
 
 // useEffect(() => {
 //   const handleQR = () => setShowQR(true);

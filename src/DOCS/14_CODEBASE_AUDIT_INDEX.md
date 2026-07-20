@@ -34,14 +34,14 @@ This file is the central handoff index. It records what was verified in code and
 | Admin shell/dashboard | `AdminDashboard.js`, `AdminLayout.js`, `AdminHeader.js` | Active admin shell and dashboard |
 | Admin client list | `AdminClientsPage.js` | Client list sorted by `latestActivityAt`; sort/refresh stay in the dark header and the full-width search row is below it |
 | Admin client workspace | `AdminClientWorkspace.js` | Active client overview, projects, plans, payments, project subpage |
-| Admin project-product list UI | `AdminProjectProductsPage.js`, `AdminLayout.js`, `adminRoutes.js` | Active Clients-style list shell at `/admin-panel/website-management/projects`; search is full-width below the dark header, sort/Add Project remain in header, API is not wired |
+| Admin project-product UI | `AdminProjectProductsPage.js`, `AdminCreateProjectPage.js`, `AdminLayout.js`, `adminRoutes.js` | Active Clients-style list shell at `/admin-panel/website-management/projects` and UI-only Add Project form at `/admin-panel/website-management/projects/add`; API and save are not wired |
 | Admin node detail/update UI | `components/admin/AdminProjectCheckpointDetail.js` | Current local node/template UI; new API wiring is not connected yet |
 | Legacy node modal | `components/admin/ProjectWorkspaceModal.js` | Legacy/unrouted UI using old missing endpoint contracts |
 | Legacy product UI | `AllProducts.js`, `UploadProduct.js`, `AdminEditProduct.js` | Existing but not active admin route; generates old predefined checkpoints |
 
 ### Current admin route facts
 
-Active admin routes include dashboard, clients, client detail/workspace, payment record detail, admin project detail, and the UI-only project-product list at `/admin-panel/website-management/projects`. The project-product route is active in the sidebar, but its data/create/edit APIs are not implemented or connected yet.
+Active admin routes include dashboard, clients, client detail/workspace, payment record detail, admin project detail, the UI-only project-product list at `/admin-panel/website-management/projects`, and its UI-only Add Project form at `/admin-panel/website-management/projects/add`. Project-product data/create/edit APIs are not implemented or connected yet.
 
 ## 3. Verified customer purchase and approval flow
 
@@ -182,7 +182,7 @@ Product audit also confirmed existing product records use old checkpoint templat
 ### Pending next
 
 1. Add the new product API/data source to the existing Clients-style Projects list.
-2. Build the Add Project create form and edit/manage screens.
+2. Connect the existing Add Project UI form to the approved product create contract, then build edit/manage screens.
 3. Add `startingNodeTitle` to product model and new project-product validation.
 4. Remove predefined future-node generation from new product save/order creation while preserving legacy data.
 5. Verify customer product listing, ProductDetails, compatible features, pricing, and DirectPayment compatibility.
@@ -216,3 +216,4 @@ Product audit also confirmed existing product records use old checkpoint templat
 - `admin-nodes.md` — dynamic node requirements, rules, and implementation phases
 - `admin-plan.md` — admin strategy and project creation sequence
 - `AdminProjectProductsPage.js` — current UI-only Projects list screen; no API or database writes
+- `AdminCreateProjectPage.js` — current UI-only Add Project form; no API or database writes

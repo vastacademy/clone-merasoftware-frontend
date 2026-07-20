@@ -36,7 +36,7 @@ Admin ko same SSOT backend/data par customer ka full read + manage access dena h
 - Invoice `Mark Paid` flow existing backend route `/api/invoices/:invoiceId/mark-paid` use karta hai
 - Payment approve/reject buttons abhi intentionally wire nahi hain, kyunki active backend transaction approval routes verify/complete karne hain
 - New project creation is now the next implementation priority. Planned admin information architecture: `Website Management` -> `Projects`.
-- The UI-only Projects list route is now active at `/admin-panel/website-management/projects` and follows the Clients page compact list pattern. It currently has search, sort, Add Project entry point, and an empty state; it does not fetch or save products.
+- The UI-only Projects list route is active at `/admin-panel/website-management/projects` and follows the Clients page compact list pattern. Its Add Project control opens the UI-only form at `/admin-panel/website-management/projects/add`; neither screen fetches or saves products.
 - The Projects tab will create/manage reusable project products first; it will not create customer orders or bypass payment.
 - New project products must store a mandatory Starting Node Title and must not store predefined future-node percentage templates.
 - Existing project migration will follow after the new-project creation and approved-start flow is proven.

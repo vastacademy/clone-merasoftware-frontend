@@ -1,9 +1,9 @@
 // RichTextEditor.js
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Editor } from '@tiptap/react';
 import ReactDOM from 'react-dom/client';
 import StarterKit from '@tiptap/starter-kit';
-import { useEditor, EditorContent } from '@tiptap/react';
+import { useEditor, EditorContent, useEditorState } from '@tiptap/react';
 import Color from '@tiptap/extension-color';
 import TextStyle from '@tiptap/extension-text-style';
 import Underline from '@tiptap/extension-underline';
@@ -364,8 +364,34 @@ const FontSize = Extension.create({
 const MenuBar = ({ editor }) => {
   const [showIconSelector, setShowIconSelector] = useState(false);
   const [showLinkForm, setShowLinkForm] = useState(false);
+  const selectionRef = useRef(null);
+
+  const activeMarks = useEditorState({
+    editor,
+    selector: ({ editor: currentEditor }) => ({
+      bold: Boolean(currentEditor?.isActive('bold')),
+      italic: Boolean(currentEditor?.isActive('italic')),
+      underline: Boolean(currentEditor?.isActive('underline')),
+      link: Boolean(currentEditor?.isActive('link')),
+      bulletList: Boolean(currentEditor?.isActive('bulletList')),
+      orderedList: Boolean(currentEditor?.isActive('orderedList')),
+    }),
+  });
 
   if (!editor) return null;
+
+  const rememberSelection = () => {
+    const { from, to } = editor.state.selection;
+    selectionRef.current = { from, to };
+  };
+
+  const restoreSelection = () => {
+    const chain = editor.chain().focus();
+    if (selectionRef.current) {
+      chain.setTextSelection(selectionRef.current);
+    }
+    return chain;
+  };
 
   const handleButtonClick = (callback) => (e) => {
     e.preventDefault();
@@ -412,9 +438,6 @@ const MenuBar = ({ editor }) => {
     { value: '2.5', label: 'Triple' },
   ];
 
-   // Is link active check
-   const isLinkActive = editor.isActive('link');
-
   return (
     <div className="flex flex-wrap gap-2 p-2 border-b bg-slate-50">
       {/* Text Style Dropdown की जगह Font Size Dropdown */}
@@ -423,9 +446,10 @@ const MenuBar = ({ editor }) => {
           e.preventDefault();
           const size = e.target.value;
           if (size) {
-            editor.chain().focus().setFontSize(size).run();
+            restoreSelection().setFontSize(size).run();
           }
         }}
+        onMouseDown={rememberSelection}
         className="p-1 rounded border"
       >
         <option value="">Font Size</option>
@@ -444,10 +468,11 @@ const MenuBar = ({ editor }) => {
           if (lineHeight) {
             // First check if selection exists
             if (editor.state.selection) {
-              editor.commands.setLineHeight(lineHeight);
+              restoreSelection().setLineHeight(lineHeight).run();
             }
           }
         }}
+        onMouseDown={rememberSelection}
         className="p-1 rounded border"
       >
         <option value="">Line Height</option>
@@ -463,31 +488,35 @@ const MenuBar = ({ editor }) => {
         type="color"
         onChange={(e) => {
           e.preventDefault();
-          editor.chain().focus().setColor(e.target.value).run();
+          restoreSelection().setColor(e.target.value).run();
         }}
+        onMouseDown={rememberSelection}
         className="w-8 h-8 p-0 border rounded cursor-pointer"
       />
 
       {/* Text Formatting Buttons */}
       <button
-        onClick={handleButtonClick(() => editor.chain().focus().toggleBold().run())}
-        className={`p-2 rounded ${editor.isActive('bold') ? 'bg-slate-200' : 'hover:bg-slate-100'}`}
+        onClick={handleButtonClick(() => restoreSelection().toggleBold().run())}
+        onMouseDown={rememberSelection}
+        className={`p-2 rounded ${activeMarks.bold ? 'bg-slate-200' : 'hover:bg-slate-100'}`}
         type="button"
       >
         <strong>B</strong>
       </button>
 
       <button
-        onClick={handleButtonClick(() => editor.chain().focus().toggleItalic().run())}
-        className={`p-2 rounded ${editor.isActive('italic') ? 'bg-slate-200' : 'hover:bg-slate-100'}`}
+        onClick={handleButtonClick(() => restoreSelection().toggleItalic().run())}
+        onMouseDown={rememberSelection}
+        className={`p-2 rounded ${activeMarks.italic ? 'bg-slate-200' : 'hover:bg-slate-100'}`}
         type="button"
       >
         <i>I</i>
       </button>
 
       <button
-        onClick={handleButtonClick(() => editor.chain().focus().toggleUnderline().run())}
-        className={`p-2 rounded ${editor.isActive('underline') ? 'bg-slate-200' : 'hover:bg-slate-100'}`}
+        onClick={handleButtonClick(() => restoreSelection().toggleUnderline().run())}
+        onMouseDown={rememberSelection}
+        className={`p-2 rounded ${activeMarks.underline ? 'bg-slate-200' : 'hover:bg-slate-100'}`}
         type="button"
       >
         <u>U</u>
@@ -496,7 +525,8 @@ const MenuBar = ({ editor }) => {
        {/* Link Button - New */}
        <button
         onClick={handleButtonClick(() => setShowLinkForm(true))}
-        className={`p-2 rounded ${isLinkActive ? 'bg-slate-200' : 'hover:bg-slate-100'}`}
+        onMouseDown={rememberSelection}
+        className={`p-2 rounded ${activeMarks.link ? 'bg-slate-200' : 'hover:bg-slate-100'}`}
         type="button"
         title="Insert link"
       >
@@ -505,16 +535,18 @@ const MenuBar = ({ editor }) => {
 
       {/* List Buttons */}
       <button
-        onClick={handleButtonClick(() => editor.chain().focus().toggleBulletList().run())}
-        className={`p-2 rounded ${editor.isActive('bulletList') ? 'bg-slate-200' : 'hover:bg-slate-100'}`}
+        onClick={handleButtonClick(() => restoreSelection().toggleBulletList().run())}
+        onMouseDown={rememberSelection}
+        className={`p-2 rounded ${activeMarks.bulletList ? 'bg-slate-200' : 'hover:bg-slate-100'}`}
         type="button"
       >
         •
       </button>
 
       <button
-        onClick={handleButtonClick(() => editor.chain().focus().toggleOrderedList().run())}
-        className={`p-2 rounded ${editor.isActive('orderedList') ? 'bg-slate-200' : 'hover:bg-slate-100'}`}
+        onClick={handleButtonClick(() => restoreSelection().toggleOrderedList().run())}
+        onMouseDown={rememberSelection}
+        className={`p-2 rounded ${activeMarks.orderedList ? 'bg-slate-200' : 'hover:bg-slate-100'}`}
         type="button"
       >
         1.
@@ -522,7 +554,8 @@ const MenuBar = ({ editor }) => {
 
       {/* Horizontal Rule Button */}
       <button
-        onClick={handleButtonClick(() => editor.chain().focus().setHorizontalRule().run())}
+        onClick={handleButtonClick(() => restoreSelection().setHorizontalRule().run())}
+        onMouseDown={rememberSelection}
         className="p-2 rounded hover:bg-slate-100"
         type="button"
         title="Insert horizontal line"
@@ -556,8 +589,46 @@ const MenuBar = ({ editor }) => {
   );
 };
 
+const clearAdjacentWhitespaceMarks = (view) => {
+  const { state } = view;
+  const { selection } = state;
+
+  if (!selection.empty || !selection.$from.parent.isTextblock) return;
+
+  const cursorOffset = selection.$from.parentOffset;
+  const parentStart = selection.$from.start();
+  const transaction = state.tr;
+
+  selection.$from.parent.forEach((node, offset) => {
+    if (!node.isText || !node.text || node.marks.length === 0) return;
+
+    const whitespacePattern = /\s+/g;
+    let match;
+
+    while ((match = whitespacePattern.exec(node.text)) !== null) {
+      const whitespaceStart = offset + match.index;
+      const whitespaceEnd = whitespaceStart + match[0].length;
+      const cursorTouchesWhitespace = cursorOffset >= whitespaceStart && cursorOffset <= whitespaceEnd;
+
+      if (!cursorTouchesWhitespace) continue;
+
+      node.marks.forEach((mark) => {
+        transaction.removeMark(
+          parentStart + whitespaceStart,
+          parentStart + whitespaceEnd,
+          mark.type
+        );
+      });
+    }
+  });
+
+  if (transaction.docChanged) {
+    view.dispatch(transaction);
+  }
+};
+
 // RichTextEditor Component
-const RichTextEditor = ({ value, onChange, placeholder }) => {
+const RichTextEditor = ({ value, onChange, placeholder, wrapperClassName = 'bg-slate-100' }) => {
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -606,6 +677,17 @@ const RichTextEditor = ({ value, onChange, placeholder }) => {
       attributes: {
         class: 'prose max-w-none focus:outline-none min-h-[7rem] p-2',
       },
+      handleKeyDown: (view, event) => {
+        if (event.key === 'Backspace' || event.key === 'Delete') {
+          window.setTimeout(() => {
+            if (view.state.selection.empty) {
+              view.dispatch(view.state.tr.setStoredMarks([]));
+              clearAdjacentWhitespaceMarks(view);
+            }
+          }, 0);
+        }
+        return false;
+      },
     },
   });
    // Custom CSS rules को define करें
@@ -638,7 +720,7 @@ const RichTextEditor = ({ value, onChange, placeholder }) => {
  `;
 
   return (
-    <div className="border rounded bg-slate-100" onClick={e => e.stopPropagation()}>
+    <div className={`border rounded ${wrapperClassName}`} onClick={e => e.stopPropagation()}>
       <style>{customStyles}</style>
       <MenuBar editor={editor} />
       <EditorContent editor={editor} placeholder={placeholder} />
