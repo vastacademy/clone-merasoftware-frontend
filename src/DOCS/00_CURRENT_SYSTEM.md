@@ -44,6 +44,8 @@ This document describes the active frontend behavior as of the current codebase.
 - `/profile`
 - `/support-tickets/:ticketId`
 - `/complete-profile`
+- `/start-new-project` - `StartNewProject` (UI-only sample project grid; no backend wiring)
+- `/start-new-project/:projectId` - `StartNewProjectDetail` (UI-only project detail with a non-functional "Proceed to Payment" button; no backend wiring)
 - `/project-details/:orderId` now opens a timeline-driven project view where the selected checkpoint shows only its own linked textual details below, and the latest active checkpoint is selected by default
 - `/project-details/:orderId` desktop layout now uses three aligned cards with shared row height, inner scroll areas, and no runtime size measuring; the main page bottom spacing is handled on the page container so the footer follows naturally after content
 
@@ -90,6 +92,8 @@ This document describes the active frontend behavior as of the current codebase.
 - `AdminDashboard` is the active admin dashboard page
 - `AdminLayout` is the shared admin shell used by dashboard, clients, and client detail pages
 - `AppContent` now keeps the app outlet content flow natural instead of forcing a viewport min-height, so the footer can sit directly after page content
+- `DashboardLayout` and `AdminLayout` sidebars are `sticky` (not `fixed`) inside a `flex items-stretch` row with the content column; this lets the sidebar's background visually extend to match content height instead of being viewport-locked and skipped by the page footer
+- `Footer` no longer centers its desktop content with an internal `max-w-7xl`; it now uses the same `mx-auto max-w-[90rem] px-4 sm:px-6 lg:px-8` wrapper as `AdminWorkspaceShell`, so footer columns align with the sidebar-adjacent content width on both customer and admin pages instead of centering independently of the sidebar
 
 ## 4. Dashboard Behavior
 

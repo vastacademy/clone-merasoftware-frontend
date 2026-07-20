@@ -162,12 +162,12 @@ const AdminLayout = ({
   );
 
   return (
-    <div className="min-h-screen bg-slate-100 lg:pl-72">
-      <aside className="fixed left-0 top-16 z-40 hidden h-[calc(100vh-4rem)] w-72 border-r border-slate-800 bg-slate-950 text-white shadow-2xl lg:flex lg:flex-col">
+    <div className="flex min-h-full items-stretch bg-slate-100">
+      <aside className="sticky top-16 z-40 hidden h-[calc(100vh-4rem)] w-72 shrink-0 self-start overflow-y-auto border-r border-slate-800 bg-slate-950 text-white shadow-2xl lg:flex lg:flex-col">
         {sidebarContent}
       </aside>
 
-      <main className="min-h-screen overflow-auto bg-slate-100">
+      <main className="min-h-full min-w-0 flex-1 bg-slate-100">
         {children}
       </main>
     </div>

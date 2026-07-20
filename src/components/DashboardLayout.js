@@ -171,7 +171,7 @@ const DashboardLayout = ({ children, user, walletBalance, cartCount, isLoading, 
   // Loading state or no user
   if (!currentUser) {
     return (
-      <div className="flex min-h-screen bg-gray-50">
+      <div className="flex min-h-full bg-gray-50">
         <div className="w-full p-4 flex flex-col">
           <div className="animate-pulse">
             <div className="h-32 bg-gray-200 rounded mb-4"></div>
@@ -184,8 +184,8 @@ const DashboardLayout = ({ children, user, walletBalance, cartCount, isLoading, 
 
   return (
     <>
-      <div className="min-h-full bg-slate-100 lg:pl-72">
-        <aside className="fixed left-0 top-16 z-40 hidden h-[calc(100vh-4rem)] w-72 flex-col border-r border-slate-800 bg-slate-950 text-white shadow-2xl lg:flex">
+      <div className="flex min-h-full items-stretch bg-slate-100">
+        <aside className="sticky top-16 z-40 hidden h-[calc(100vh-4rem)] w-72 shrink-0 flex-col self-start overflow-y-auto border-r border-slate-800 bg-slate-950 text-white shadow-2xl lg:flex">
           <div className="border-b border-white/10 px-5 pt-8 pb-5">
             <div className="flex items-center gap-3">
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-300 ring-1 ring-emerald-400/20">
@@ -277,7 +277,7 @@ const DashboardLayout = ({ children, user, walletBalance, cartCount, isLoading, 
           </div>
         </aside>
 
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <main className="min-h-full bg-slate-100">
             {children}
           </main>
