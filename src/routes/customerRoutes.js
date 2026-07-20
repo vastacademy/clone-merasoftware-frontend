@@ -14,6 +14,8 @@ import Profile from "../pages/Profile";
 import TicketDetail from "../pages/TicketDetail";
 import CompleteProfile from "../pages/CompleteProfile";
 import ProjectsAndPlans from "../pages/ProjectsAndPlans";
+import StartNewProject from "../pages/StartNewProject";
+import StartNewProjectDetail from "../pages/StartNewProjectDetail";
 
 const CustomerProtectedRoute = ({ children }) => (
   <ProtectedRoute requireRole={['customer']}>
@@ -35,6 +37,22 @@ export const customerRoutes = [
     element: (
       <CustomerProtectedRoute>
         <ProjectsAndPlans/>
+      </CustomerProtectedRoute>
+    )
+  },
+  {
+    path: "start-new-project",
+    element: (
+      <CustomerProtectedRoute>
+        <StartNewProject/>
+      </CustomerProtectedRoute>
+    )
+  },
+  {
+    path: "start-new-project/:projectId",
+    element: (
+      <CustomerProtectedRoute>
+        <StartNewProjectDetail/>
       </CustomerProtectedRoute>
     )
   },
