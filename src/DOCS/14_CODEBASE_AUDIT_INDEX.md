@@ -31,6 +31,7 @@ This file is the central handoff index. It records what was verified in code and
 | Customer product detail | `ProductDetails.js` | Product details, compatible features, coupon, payment handoff |
 | Customer payment | `DirectPayment.js` | Full/partial wallet or UPI payment and order creation |
 | Customer project detail | `ProjectDetails.js` | Current checkpoint-driven customer/admin read view |
+| Customer start-new-project UI | `StartNewProject.js`, `StartNewProjectDetail.js`, `data/sampleStartNewProjects.js` | Active UI-only sample project grid at `/start-new-project` (tab-filtered by category, matches `ProjectsAndPlans.js` shell) and detail subpage at `/start-new-project/:projectId`; "Proceed to Payment" has no handler yet, no backend wiring. See `15_START_NEW_PROJECT_UI_HISTORY.md` for the full design-iteration and backup history. |
 | Admin shell/dashboard | `AdminDashboard.js`, `AdminLayout.js`, `AdminHeader.js` | Active admin shell and dashboard |
 | Admin client list | `AdminClientsPage.js` | Client list sorted by `latestActivityAt`; sort/refresh stay in the dark header and the full-width search row is below it |
 | Admin client workspace | `AdminClientWorkspace.js` | Active client overview, projects, plans, payments, project subpage |
@@ -177,6 +178,10 @@ Product audit also confirmed existing product records use old checkpoint templat
 - Admin client activity aggregation for node events
 - Clients-style `Website Management > Projects` list UI, nested sidebar entry, and protected route
 - Projects list search placement and compact list layout aligned with the Clients page
+- UI-only `AdminCreateProjectPage` Add Project form (no backend wiring; most inputs are unmanaged local state)
+- UI-only customer `/start-new-project` sample project grid and `/start-new-project/:projectId` detail subpage, with the sidebar quick link restored and pointed at the new route
+- `DashboardLayout`/`AdminLayout` sidebar changed from `position: fixed` to `sticky` inside a flex row with the content column, so the page footer runs full-width below both sidebar and content instead of only following content height
+- `Footer.js` desktop content now shares the same `mx-auto max-w-[90rem] px-4 sm:px-6 lg:px-8` wrapper as `AdminWorkspaceShell`, so footer columns align with sidebar-adjacent page content instead of centering independently
 - Documentation/index update
 
 ### Pending next

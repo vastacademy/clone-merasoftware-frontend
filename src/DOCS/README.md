@@ -36,6 +36,9 @@ Verified project categories, product fields, customer purchase flow, admin `Webs
 ### `14_CODEBASE_AUDIT_INDEX.md`
 Central AI handoff index containing the audited route/file/model map, real database evidence, current implementation state, pending work, and regression boundaries.
 
+### `15_START_NEW_PROJECT_UI_HISTORY.md`
+Current `/start-new-project` UI design, named backup folders (`backup_broad_card`, `backup_long_card`) with restore instructions, rejected/reverted approaches, and the related sidebar/footer layout fix.
+
 ## Legacy Docs
 
 These files are historical snapshots. Read them only if you need old context:
@@ -78,4 +81,5 @@ These files are historical snapshots. Read them only if you need old context:
 - `CustomerDashboard` is the active customer dashboard page.
 - `ProjectsAndPlans` is the active project and plan tracking list.
 - `OrderPage` is the active purchase-history list and should not be used for progress tracking.
-- The customer sidebar temporarily hides `Start New Project`, but the `/home` route still exists.
+- The customer sidebar `Start New Project` quick link is visible and points to `/start-new-project` (`StartNewProject` list page and `StartNewProjectDetail` detail page); both are UI-only sample data with no backend wiring yet.
+- `DashboardLayout` and `AdminLayout` sidebars use `sticky` positioning inside a flex row with the content column (not `position: fixed`), so the page footer runs full-width below both the sidebar and the content instead of only following content height.

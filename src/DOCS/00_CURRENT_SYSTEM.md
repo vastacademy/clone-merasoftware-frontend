@@ -102,7 +102,7 @@ This document describes the active frontend behavior as of the current codebase.
 - Main content now lives in `CustomerDashboard`
 - Left panel UI comes from `DashboardLayout`
 - The dashboard is a launchpad for key customer information and next actions, not a workflow-heavy control panel
-- Primary sidebar links prioritize Dashboard, Track Project, and Wallet, with Orders/Profile/Support kept as secondary links; `Start New Project` is currently hidden temporarily from the sidebar but the route still exists
+- Primary sidebar quick links are Dashboard, Projects and Plans, Start New Project, and Wallet, with Orders/Profile/Support kept as secondary links; the `Start New Project` quick link now points to `/start-new-project` (previously pointed to the public `/home` page before this link existed)
 - Wallet balance is treated as a single source of truth from `current_user` / `userDetails`; `AppContent` reads that value and the dashboard does not own a separate wallet fetch
 - Dashboard recent items use a row-based list layout with status and progress-only-at-the-far-right presentation
 
@@ -111,8 +111,7 @@ This document describes the active frontend behavior as of the current codebase.
 - `AdminDashboard` now shows dashboard summary content only
 - `AdminClientsPage` shows the client list as its own route
 - It has:
-  - fixed desktop sidebar
-  - mobile drawer
+  - sticky desktop sidebar (via `AdminLayout`); there is no mobile drawer for this sidebar — below the `lg` breakpoint the sidebar is not rendered at all, and mobile navigation comes only from `SharedHeader`'s own generic mobile nav dropdown
   - landscape orientation button on mobile
   - dashboard refresh actions
 
