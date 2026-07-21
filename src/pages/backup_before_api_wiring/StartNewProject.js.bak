@@ -1,9 +1,9 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { ArrowRight, Cloud, Database, Globe, Smartphone, Sparkles } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
-import SummaryApi from '../common';
+import { SAMPLE_PROJECTS } from '../data/sampleStartNewProjects';
 
 const CATEGORY_STYLE = {
   standard_websites: { icon: Globe, color: 'text-blue-600' },
@@ -12,7 +12,8 @@ const CATEGORY_STYLE = {
   app_development: { icon: Smartphone, color: 'text-orange-600' },
 };
 
-const BASE_TABS = [
+const TABS = [
+  { id: 'all', label: 'All' },
   { id: 'websites', label: 'Websites' },
   { id: 'cloud', label: 'Cloud Software' },
   { id: 'app', label: 'App Development' },
@@ -24,52 +25,16 @@ const TAB_CATEGORIES = {
   app: ['app_development'],
 };
 
-// Categories that are plans/add-ons, not standalone projects.
-const EXCLUDED_CATEGORIES = ['website_updates', 'feature_upgrades'];
-
-const MAPPED_CATEGORIES = new Set(Object.values(TAB_CATEGORIES).flat());
-
-const toTitleCase = (value) =>
-  value
-    .split('_')
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
-
-const stripHtml = (html) => html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-
 const StartNewProject = () => {
   const user = useSelector((state) => state?.user?.user);
   const navigate = useNavigate();
-  const [view, setView] = useState('websites');
-  const [projects, setProjects] = useState([]);
-
-  useEffect(() => {
-    const fetchProducts = async () => {
-      const response = await fetch(SummaryApi.allProduct.url);
-      const dataResponse = await response.json();
-      const allProducts = dataResponse?.data || [];
-      setProjects(allProducts.filter((product) => !EXCLUDED_CATEGORIES.includes(product.category)));
-    };
-    fetchProducts();
-  }, []);
-
-  const tabs = useMemo(() => {
-    const extraCategories = Array.from(
-      new Set(
-        projects
-          .map((project) => project.category)
-          .filter((category) => category && !MAPPED_CATEGORIES.has(category))
-      )
-    );
-    const extraTabs = extraCategories.map((category) => ({ id: category, label: toTitleCase(category) }));
-    return [...BASE_TABS, ...extraTabs];
-  }, [projects]);
+  const [view, setView] = useState('all');
 
   const visibleProjects = useMemo(() => {
-    const categories = TAB_CATEGORIES[view];
-    if (categories) return projects.filter((project) => categories.includes(project.category));
-    return projects.filter((project) => project.category === view);
-  }, [view, projects]);
+    if (view === 'all') return SAMPLE_PROJECTS;
+    const categories = TAB_CATEGORIES[view] || [];
+    return SAMPLE_PROJECTS.filter((project) => categories.includes(project.category));
+  }, [view]);
 
   return (
     <DashboardLayout user={user}>
@@ -92,7 +57,7 @@ const StartNewProject = () => {
 
               <div className="flex flex-wrap items-center gap-2">
                 <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700">
-                  Total: {projects.length}
+                  Total: {SAMPLE_PROJECTS.length}
                 </div>
               </div>
             </div>
@@ -100,7 +65,7 @@ const StartNewProject = () => {
 
           <div className="px-5 py-4 sm:px-6">
             <div className="flex flex-wrap gap-2">
-              {tabs.map((tab) => (
+              {TABS.map((tab) => (
                 <button
                   key={tab.id}
                   type="button"
@@ -124,13 +89,10 @@ const StartNewProject = () => {
                 const style = CATEGORY_STYLE[project.category] || CATEGORY_STYLE.standard_websites;
                 const Icon = style.icon;
 
-                const description = stripHtml(project.formattedDescriptions?.[0]?.content || '');
-                const perfectFor = project.perfectFor || [];
-
                 return (
                   <div
-                    key={project._id}
-                    className="flex h-full flex-col rounded-[1.5rem] border border-slate-200 bg-white px-4 py-5 shadow-xl shadow-slate-400/40 transition hover:shadow-2xl"
+                    key={project.id}
+                    className="flex h-full flex-col rounded-[1.5rem] border border-slate-200 bg-white/95 px-4 py-5 shadow-lg shadow-slate-300/50"
                   >
                     <div className="flex items-start gap-3">
                       <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-slate-100">
@@ -140,7 +102,7 @@ const StartNewProject = () => {
                         <h3 className="text-xl font-black leading-snug text-slate-950">
                           {project.serviceName}
                         </h3>
-                        <p className="mt-1 line-clamp-2 text-sm leading-5 text-slate-600">{description}</p>
+                        <p className="mt-1 line-clamp-2 text-sm leading-5 text-slate-600">{project.description}</p>
                       </div>
                     </div>
 
@@ -149,7 +111,7 @@ const StartNewProject = () => {
                         Who is it for?
                       </p>
                       <div className="mt-1.5 flex gap-x-3 overflow-hidden">
-                        {perfectFor.map((item) => (
+                        {project.perfectFor.map((item) => (
                           <span
                             key={item}
                             className="flex shrink-0 items-center gap-1.5 whitespace-nowrap text-sm text-slate-700"
@@ -161,10 +123,13 @@ const StartNewProject = () => {
                       </div>
                     </div>
 
-                    <div className="mt-auto flex items-center justify-end gap-2 pt-4">
+                    <div className="mt-auto flex items-center justify-between gap-2 pt-4">
+                      <p className="line-clamp-1 text-sm font-semibold text-slate-600">
+                        Type: <span className={style.color}>{project.tech[0]}</span> ({project.tech.slice(1).join(', ')})
+                      </p>
                       <button
                         type="button"
-                        onClick={() => navigate(`/start-new-project/${project._id}`)}
+                        onClick={() => navigate(`/start-new-project/${project.id}`)}
                         className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl bg-slate-950 px-3 py-2 text-sm font-semibold text-white transition hover:bg-slate-800"
                       >
                         View Details
