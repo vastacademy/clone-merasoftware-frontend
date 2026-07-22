@@ -37,7 +37,7 @@ Verified project categories, product fields, customer purchase flow, admin `Webs
 Central AI handoff index containing the audited route/file/model map, real database evidence, current implementation state, pending work, and regression boundaries.
 
 ### `15_START_NEW_PROJECT_UI_HISTORY.md`
-Current `/start-new-project` UI design, named backup folders (`backup_broad_card`, `backup_long_card`) with restore instructions, rejected/reverted approaches, and the related sidebar/footer layout fix.
+Current `/start-new-project` list-row UI (now live-wired to real product data via `/api/get-product` and `/api/product-details`), the shared `CustomerWorkspaceTabs` underline-tab component now used across the customer portal, named backup folders with restore instructions, rejected/reverted approaches, and the related sidebar/footer layout fix.
 
 ## Legacy Docs
 
@@ -81,5 +81,6 @@ These files are historical snapshots. Read them only if you need old context:
 - `CustomerDashboard` is the active customer dashboard page.
 - `ProjectsAndPlans` is the active project and plan tracking list.
 - `OrderPage` is the active purchase-history list and should not be used for progress tracking.
-- The customer sidebar `Start New Project` quick link is visible and points to `/start-new-project` (`StartNewProject` list page and `StartNewProjectDetail` detail page); both are UI-only sample data with no backend wiring yet.
+- The customer sidebar `Start New Project` quick link is visible and points to `/start-new-project` (`StartNewProject` list page and `StartNewProjectDetail` detail page). `StartNewProject` is live-wired to real product data (`GET /api/get-product`, filtered to project categories only); `StartNewProjectDetail` fetches a single product via `POST /api/product-details` but remains otherwise UI-only (no "Proceed to Payment" handler). See `15_START_NEW_PROJECT_UI_HISTORY.md`.
+- `frontend/src/components/CustomerWorkspaceTabs.js` is a shared underline-style tab component (mirrors admin's `AdminWorkspaceTabs.js`) used by `StartNewProject`, `ProjectsAndPlans`, `OrderPage`, and `UserInvoices`, replacing the earlier pill-style tab buttons on all four pages.
 - `DashboardLayout` and `AdminLayout` sidebars use `sticky` positioning inside a flex row with the content column (not `position: fixed`), so the page footer runs full-width below both the sidebar and the content instead of only following content height.

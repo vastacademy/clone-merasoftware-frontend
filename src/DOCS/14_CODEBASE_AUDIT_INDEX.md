@@ -31,7 +31,7 @@ This file is the central handoff index. It records what was verified in code and
 | Customer product detail | `ProductDetails.js` | Product details, compatible features, coupon, payment handoff |
 | Customer payment | `DirectPayment.js` | Full/partial wallet or UPI payment and order creation |
 | Customer project detail | `ProjectDetails.js` | Current checkpoint-driven customer/admin read view |
-| Customer start-new-project UI | `StartNewProject.js`, `StartNewProjectDetail.js`, `data/sampleStartNewProjects.js` | Active UI-only sample project grid at `/start-new-project` (tab-filtered by category, matches `ProjectsAndPlans.js` shell) and detail subpage at `/start-new-project/:projectId`; "Proceed to Payment" has no handler yet, no backend wiring. See `15_START_NEW_PROJECT_UI_HISTORY.md` for the full design-iteration and backup history. |
+| Customer start-new-project UI | `StartNewProject.js`, `StartNewProjectDetail.js` | Live-wired list-row view at `/start-new-project` (fetches real products via `GET /api/get-product`, excludes `website_updates`/`feature_upgrades`, tab-filtered by category, matches `ProjectsAndPlans.js` list pattern) and detail subpage at `/start-new-project/:projectId` (fetches via `POST /api/product-details`); "Proceed to Payment" has no handler yet. `data/sampleStartNewProjects.js` is retired/unused. See `15_START_NEW_PROJECT_UI_HISTORY.md` for the full design-iteration and backup history. |
 | Admin shell/dashboard | `AdminDashboard.js`, `AdminLayout.js`, `AdminHeader.js` | Active admin shell and dashboard |
 | Admin client list | `AdminClientsPage.js` | Client list sorted by `latestActivityAt`; sort/refresh stay in the dark header and the full-width search row is below it |
 | Admin client workspace | `AdminClientWorkspace.js` | Active client overview, projects, plans, payments, project subpage |
@@ -179,7 +179,9 @@ Product audit also confirmed existing product records use old checkpoint templat
 - Clients-style `Website Management > Projects` list UI, nested sidebar entry, and protected route
 - Projects list search placement and compact list layout aligned with the Clients page
 - UI-only `AdminCreateProjectPage` Add Project form (no backend wiring; most inputs are unmanaged local state)
-- UI-only customer `/start-new-project` sample project grid and `/start-new-project/:projectId` detail subpage, with the sidebar quick link restored and pointed at the new route
+- Customer `/start-new-project` list page live-wired to real product data via existing `GET /api/get-product` (no backend changes needed); `/start-new-project/:projectId` detail subpage live-wired via existing `POST /api/product-details`; sidebar quick link restored and pointed at the route. `data/sampleStartNewProjects.js` is now unused/retired. See `15_START_NEW_PROJECT_UI_HISTORY.md`.
+- `StartNewProject.js` list layout changed from card-grid to list-row (matches `ProjectsAndPlans.js` list pattern); price intentionally not shown on the list row.
+- Shared `frontend/src/components/CustomerWorkspaceTabs.js` underline-style tab component added (mirrors admin's `AdminWorkspaceTabs.js`) and wired into `StartNewProject.js`, `ProjectsAndPlans.js`, `OrderPage.js`, and `UserInvoices.js`, replacing the earlier pill-style tab buttons on all four for visual consistency across the customer portal.
 - `DashboardLayout`/`AdminLayout` sidebar changed from `position: fixed` to `sticky` inside a flex row with the content column, so the page footer runs full-width below both sidebar and content instead of only following content height
 - `Footer.js` desktop content now shares the same `mx-auto max-w-[90rem] px-4 sm:px-6 lg:px-8` wrapper as `AdminWorkspaceShell`, so footer columns align with sidebar-adjacent page content instead of centering independently
 - Documentation/index update

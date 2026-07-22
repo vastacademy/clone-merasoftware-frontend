@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import SummaryApi from '../common';
 import { toast } from 'sonner';
-import CustomerWorkspaceTabs from '../components/CustomerWorkspaceTabs';
 
 const UserInvoices = () => {
     const [invoices, setInvoices] = useState([]);
@@ -96,18 +95,27 @@ const UserInvoices = () => {
                 </div>
 
                 {/* Filter Tabs */}
-                <div className="bg-white rounded-lg shadow-sm mb-6">
-                    <CustomerWorkspaceTabs
-                        tabs={['all', 'unpaid', 'paid', 'overdue', 'cancelled'].map((status) => ({
-                            id: status,
-                            label: status === 'all'
-                                ? 'All'
-                                : `${status.charAt(0).toUpperCase()}${status.slice(1)} (${invoices.filter((inv) => inv.status === status).length})`,
-                        }))}
-                        activeTab={filter}
-                        onChange={setFilter}
-                        ariaLabel="Invoice status filters"
-                    />
+                <div className="bg-white rounded-lg shadow-sm mb-6 p-4">
+                    <div className="flex flex-wrap gap-2">
+                        {['all', 'unpaid', 'paid', 'overdue', 'cancelled'].map((status) => (
+                            <button
+                                key={status}
+                                onClick={() => setFilter(status)}
+                                className={`px-4 py-2 rounded-lg font-medium transition-colors capitalize ${
+                                    filter === status
+                                        ? 'bg-purple-600 text-white'
+                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                }`}
+                            >
+                                {status}
+                                {status !== 'all' && (
+                                    <span className="ml-2 bg-white bg-opacity-30 px-2 py-0.5 rounded-full text-xs">
+                                        {invoices.filter(inv => inv.status === status).length}
+                                    </span>
+                                )}
+                            </button>
+                        ))}
+                    </div>
                 </div>
 
                 {/* Invoices List */}
