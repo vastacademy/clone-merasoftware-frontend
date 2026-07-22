@@ -39,6 +39,9 @@ Central AI handoff index containing the audited route/file/model map, real datab
 ### `15_START_NEW_PROJECT_UI_HISTORY.md`
 Current `/start-new-project` list-row UI (now live-wired to real product data via `/api/get-product` and `/api/product-details`), the shared `CustomerWorkspaceTabs` underline-tab component now used across the customer portal, named backup folders with restore instructions, rejected/reverted approaches, and the related sidebar/footer layout fix.
 
+### `16_WALLET_AND_PROJECTS_STATUS_FIX.md`
+Before/after record for the wallet page width fix (`max-w-6xl` -> `max-w-7xl`), the `ProjectsAndPlans` tab reduction (five tabs -> `All`/`Projects`/`Plans`), and the project-row status rewrite (`Booked` / `Developer Assigned` / `{progress}% Complete` / `Completed` / `Payment Rejected`), plus the confirmed evidence that no working developer-assignment backend exists yet.
+
 ## Legacy Docs
 
 These files are historical snapshots. Read them only if you need old context:
@@ -84,3 +87,5 @@ These files are historical snapshots. Read them only if you need old context:
 - The customer sidebar `Start New Project` quick link is visible and points to `/start-new-project` (`StartNewProject` list page and `StartNewProjectDetail` detail page). `StartNewProject` is live-wired to real product data (`GET /api/get-product`, filtered to project categories only); `StartNewProjectDetail` fetches a single product via `POST /api/product-details` but remains otherwise UI-only (no "Proceed to Payment" handler). See `15_START_NEW_PROJECT_UI_HISTORY.md`.
 - `frontend/src/components/CustomerWorkspaceTabs.js` is a shared underline-style tab component (mirrors admin's `AdminWorkspaceTabs.js`) used by `StartNewProject`, `ProjectsAndPlans`, `OrderPage`, and `UserInvoices`, replacing the earlier pill-style tab buttons on all four pages.
 - `DashboardLayout` and `AdminLayout` sidebars use `sticky` positioning inside a flex row with the content column (not `position: fixed`), so the page footer runs full-width below both the sidebar and the content instead of only following content height.
+- `WalletDetails` content container uses `max-w-7xl`, matching `ProjectsAndPlans` and `StartNewProject` widths.
+- `ProjectsAndPlans` has only three tabs: `All`, `Projects`, `Plans`. Project row status is now derived from real order lifecycle fields (`Booked`, `Developer Assigned`, `{progress}% Complete`, `Completed`, `Payment Rejected`) instead of a static "In progress" label; see `00_CURRENT_SYSTEM.md` for the exact condition mapping. `Developer Assigned` is a static placeholder label, not a real developer-assignment feature — no backend endpoint for assigning a developer currently exists.

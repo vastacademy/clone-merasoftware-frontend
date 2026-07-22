@@ -291,7 +291,7 @@ const WalletDetails = () => {
   return (
     <DashboardLayout user={user} activeProject={activeProject}>
       <div className="min-h-full bg-[#f7f8fa] px-3 py-4 sm:px-5 lg:px-8 lg:py-7">
-        <div className="mx-auto max-w-6xl">
+        <div className="mx-auto max-w-7xl">
           <section className="relative overflow-hidden rounded-[1.75rem] bg-slate-950 p-3 text-white shadow-xl shadow-slate-900/10 sm:p-4">
               <div className="absolute -right-16 -top-20 h-56 w-56 rounded-full bg-emerald-400/20 blur-3xl" /><div className="absolute bottom-0 right-20 h-32 w-32 rounded-full bg-cyan-400/10 blur-3xl" />
             <div className="relative grid gap-3 lg:grid-cols-[1.2fr_0.8fr]">

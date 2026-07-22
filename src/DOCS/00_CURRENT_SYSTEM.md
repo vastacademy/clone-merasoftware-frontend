@@ -106,6 +106,18 @@ This document describes the active frontend behavior as of the current codebase.
 - Wallet balance is treated as a single source of truth from `current_user` / `userDetails`; `AppContent` reads that value and the dashboard does not own a separate wallet fetch
 - Dashboard recent items use a row-based list layout with status and progress-only-at-the-far-right presentation
 
+### Projects and Plans
+
+- `ProjectsAndPlans` list tabs are `All`, `Projects`, `Plans` only; the earlier `Active` and `Completed` tabs and their filter branches/memo were removed
+- For project rows, the Status column now shows the real order lifecycle derived only from existing fields (`orderVisibility`, `projectProgress`, `currentPhase`) instead of a static "In progress" label:
+  - `orderVisibility === 'payment-rejected'` -> `Payment Rejected`
+  - `orderVisibility === 'pending-approval'` -> `Booked`
+  - `projectProgress >= 100` or `currentPhase === 'completed'` -> `Completed`
+  - approved and `projectProgress === 0` -> `Developer Assigned` (static label; no real developer-assignment backend exists yet, see `14_CODEBASE_AUDIT_INDEX.md`)
+  - approved and `0 < projectProgress < 100` -> `{progress}% Complete`
+- The percentage/developer text that used to sit separately in the "Updated" column and the far-right row slot for project rows was removed; that information now lives only inside the Status badge. Plan rows are unchanged and still show `days left` / `updates left` in those slots.
+- `WalletDetails` page content container now uses `max-w-7xl` (previously `max-w-6xl`) to match the width used by `ProjectsAndPlans` and `StartNewProject`
+
 ### Admin dashboard
 
 - `AdminDashboard` now shows dashboard summary content only

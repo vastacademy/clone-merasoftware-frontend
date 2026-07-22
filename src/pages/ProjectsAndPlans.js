@@ -63,11 +63,11 @@ const getStatusMeta = (order) => {
   }
 
   if (order.orderVisibility === 'payment-rejected') {
-    return { label: 'Payment rejected', tone: 'bg-rose-100 text-rose-700' };
+    return { label: 'Payment Rejected', tone: 'bg-rose-100 text-rose-700' };
   }
 
   if (order.orderVisibility === 'pending-approval') {
-    return { label: 'Pending approval', tone: 'bg-amber-100 text-amber-800' };
+    return { label: 'Booked', tone: 'bg-amber-100 text-amber-800' };
   }
 
   if (isProjectItem(order)) {
@@ -76,7 +76,11 @@ const getStatusMeta = (order) => {
     }
 
     if (isOrderApproved(order)) {
-      return { label: 'In progress', tone: 'bg-blue-100 text-blue-700' };
+      const progress = Math.round(order.projectProgress || 0);
+      if (progress === 0) {
+        return { label: 'Developer Assigned', tone: 'bg-blue-100 text-blue-700' };
+      }
+      return { label: `${progress}% Complete`, tone: 'bg-blue-100 text-blue-700' };
     }
   }
 
@@ -185,28 +189,11 @@ const ProjectsAndPlans = () => {
     [items]
   );
 
-  const completedItems = useMemo(
-    () =>
-      items.filter(
-        (order) =>
-          (isProjectItem(order) && (order.projectProgress >= 100 || order.currentPhase === 'completed')) ||
-          (isPlanItem(order) &&
-            (order.planStatus === 'closed' ||
-              !order.isActive ||
-              (order.productId?.isMonthlyRenewablePlan || order.productId?.isMonthlyLimitedPlan
-                ? (order.totalYearlyDaysRemaining || 0) <= 0
-                : (order.updatesUsed || 0) >= (order.productId?.updateCount || 0))))
-      ),
-    [items]
-  );
-
   const visibleItems = useMemo(() => {
     if (view === 'projects') return items.filter(isProjectItem);
     if (view === 'plans') return items.filter(isPlanItem);
-    if (view === 'active') return [...activeProjects, ...activePlans];
-    if (view === 'completed') return completedItems;
     return items;
-  }, [activePlans, activeProjects, completedItems, items, view]);
+  }, [items, view]);
 
   const activeWorkCount = activeProjects.length + activePlans.length;
   const currentWorkItem = context?.activeProject || activeProjects[0] || activePlans[0] || null;
@@ -261,10 +248,8 @@ const ProjectsAndPlans = () => {
           <CustomerWorkspaceTabs
             tabs={[
               { id: 'all', label: 'All' },
-              { id: 'active', label: 'Active' },
               { id: 'projects', label: 'Projects' },
               { id: 'plans', label: 'Plans' },
-              { id: 'completed', label: 'Completed' },
             ]}
             activeTab={view}
             onChange={setView}
@@ -289,13 +274,12 @@ const ProjectsAndPlans = () => {
                   const isProject = isProjectItem(order);
                   const isPlan = isPlanItem(order);
                   const summary = isPlan ? getSummaryText(order) : 'Project';
-                  const progress = Math.round(order?.projectProgress || 0);
                   const category = order.productId?.category?.split('_').join(' ') || 'Unknown type';
                   const currentValue = isPlan
                     ? (order.productId?.isMonthlyRenewablePlan || order.productId?.isMonthlyLimitedPlan
                       ? `${order.totalYearlyDaysRemaining || 0} day(s) left`
                       : `${Math.max(0, Number(order.productId?.updateCount || 0) - Number(order.updatesUsed || 0))} update(s) left`)
-                    : `${progress}% complete`;
+                    : null;
 
                   return (
                     <button
@@ -350,16 +334,17 @@ const ProjectsAndPlans = () => {
                       <div className="col-span-6 lg:col-span-2 lg:flex lg:items-center">
                         <div className="space-y-1">
                           <p className="text-sm font-semibold text-slate-900">{formatDate(order.updatedAt || order.createdAt)}</p>
-                          <p className="text-xs text-slate-500">{order.assignedDeveloper?.name || 'Not assigned'}</p>
-                          <p className="text-xs text-slate-400">{currentValue}</p>
+                          {isPlan && <p className="text-xs text-slate-400">{currentValue}</p>}
                         </div>
                       </div>
 
                       <div className="col-span-6 flex items-center justify-end lg:col-span-1">
                         <div className="hidden text-right lg:block">
-                          <p className="text-xs text-slate-500">
-                            {currentValue}
-                          </p>
+                          {isPlan && (
+                            <p className="text-xs text-slate-500">
+                              {currentValue}
+                            </p>
+                          )}
                         </div>
                         <ArrowRight className="h-5 w-5 text-slate-400" />
                       </div>
