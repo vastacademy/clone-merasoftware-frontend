@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useRef, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
-import { ArrowLeft, Send, Clock, User, Check, X, AlertTriangle, Sparkles } from 'lucide-react';
+import { ArrowLeft, Send, Clock, User, Check, X, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import SummaryApi from '../common';
 import Context from '../context';
 import TriangleMazeLoader from '../components/TriangleMazeLoader';
-import DashboardLayout from '../components/DashboardLayout';
 import { useSelector } from 'react-redux';
 
 const TicketDetail = ({ isAdmin = false }) => {
@@ -183,86 +182,74 @@ const TicketDetail = ({ isAdmin = false }) => {
 
   if (loading) {
     return (
-      <DashboardLayout user={userDetails}>
-        <div className="flex justify-center items-center p-12">
-          <TriangleMazeLoader />
-        </div>
-      </DashboardLayout>
+      <div className="flex justify-center items-center p-12">
+        <TriangleMazeLoader />
+      </div>
     );
   }
 
   if (error) {
     return (
-      <DashboardLayout user={userDetails}>
-        <div className="min-h-full bg-[radial-gradient(circle_at_top_right,_rgba(59,130,246,0.16),_transparent_34%),linear-gradient(180deg,_#f8fafc_0%,_#eef2ff_50%,_#f8fafc_100%)] px-4 py-5 sm:px-6 lg:px-8 lg:py-8">
-          <div className="mx-auto max-w-3xl rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm">
-            <div className="flex items-center justify-center flex-col text-center">
-              <AlertTriangle className="h-12 w-12 text-red-500 mb-4" />
-              <h3 className="text-lg font-semibold text-black mb-2">Error Loading Ticket</h3>
-              <p className="text-base text-black mb-4">{error}</p>
-              <div className="flex gap-4">
-                <button
-                  onClick={() => navigate(-1)}
-                  className="px-4 py-2 bg-gray-100 text-black rounded-md hover:bg-gray-200 transition-colors text-base font-medium"
-                >
-                  Go Back
-                </button>
-                <button
-                  onClick={fetchTicketDetails}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-base font-medium"
-                >
-                  Try Again
-                </button>
-              </div>
-            </div>
+      <div className="bg-white rounded-lg shadow-md p-6">
+        <div className="flex items-center justify-center flex-col text-center">
+          <AlertTriangle className="h-12 w-12 text-red-500 mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Error Loading Ticket</h3>
+          <p className="text-gray-500 mb-4">{error}</p>
+          <div className="flex gap-4">
+            <button
+              onClick={() => navigate(-1)}
+              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"
+            >
+              Go Back
+            </button>
+            <button
+              onClick={fetchTicketDetails}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+            >
+              Try Again
+            </button>
           </div>
         </div>
-      </DashboardLayout>
+      </div>
     );
   }
 
   if (!ticket) {
     return (
-      <DashboardLayout user={userDetails}>
-        <div className="min-h-full bg-[radial-gradient(circle_at_top_right,_rgba(59,130,246,0.16),_transparent_34%),linear-gradient(180deg,_#f8fafc_0%,_#eef2ff_50%,_#f8fafc_100%)] px-4 py-5 sm:px-6 lg:px-8 lg:py-8">
-          <div className="mx-auto max-w-3xl rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm">
-            <div className="flex items-center justify-center flex-col text-center">
-              <AlertTriangle className="h-12 w-12 text-yellow-500 mb-4" />
-              <h3 className="text-lg font-semibold text-black mb-2">Ticket Not Found</h3>
-              <p className="text-base text-black mb-4">The ticket you're looking for doesn't exist or you don't have permission to view it.</p>
-              <button
-                onClick={() => navigate(-1)}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-base font-medium"
-              >
-                Go Back
-              </button>
-            </div>
-          </div>
+      <div className="bg-white rounded-lg shadow-md p-6">
+        <div className="flex items-center justify-center flex-col text-center">
+          <AlertTriangle className="h-12 w-12 text-yellow-500 mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Ticket Not Found</h3>
+          <p className="text-gray-500 mb-4">The ticket you're looking for doesn't exist or you don't have permission to view it.</p>
+          <button
+            onClick={() => navigate(-1)}
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+          >
+            Go Back
+          </button>
         </div>
-      </DashboardLayout>
+      </div>
     );
   }
 
   return (
-    <DashboardLayout user={userDetails}>
-    <div className="min-h-full bg-[radial-gradient(circle_at_top_right,_rgba(59,130,246,0.16),_transparent_34%),linear-gradient(180deg,_#f8fafc_0%,_#eef2ff_50%,_#f8fafc_100%)] px-4 py-5 sm:px-6 lg:px-8 lg:py-8">
-    <div className="mx-auto max-w-5xl overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
+    <div className="bg-white rounded-lg shadow-md overflow-hidden">
       {/* Ticket Header */}
-      <div className="rounded-t-[2rem] bg-gradient-to-r from-slate-950 via-slate-900 to-blue-950 px-5 py-5 text-white sm:px-6 lg:px-8">
+      <div className="border-b p-4 sm:px-6">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <div className="flex items-center">
             <button
               onClick={() => navigate(-1)}
-              className="mr-3 text-white/70 hover:text-white"
+              className="mr-3 text-gray-400 hover:text-gray-600"
             >
               <ArrowLeft className="h-5 w-5" />
             </button>
             <div>
-              <h1 className="flex items-center text-2xl font-bold tracking-tight text-white">
-                Ticket: {ticket.ticketId}
+              <h1 className="flex items-center text-xl font-semibold text-gray-900">
+                Ticket: {ticket.ticketId} 
                 <span className="ml-3">{getStatusBadge(ticket.status)}</span>
               </h1>
-              <p className="text-base text-white mt-1">
+              <p className="text-sm text-gray-500 mt-1">
                 Created on {formatDateTime(ticket.createdAt)}
               </p>
             </div>
@@ -271,7 +258,7 @@ const TicketDetail = ({ isAdmin = false }) => {
             <button
               onClick={handleCloseTicket}
               disabled={closingTicket}
-              className={`px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors flex items-center text-base font-medium ${
+              className={`px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors flex items-center ${
                 closingTicket ? 'opacity-70 cursor-not-allowed' : ''
               }`}
             >
@@ -290,35 +277,35 @@ const TicketDetail = ({ isAdmin = false }) => {
           )}
         </div>
       </div>
-
+      
       {/* Ticket Details */}
       <div className="p-4 sm:p-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           <div>
-            <h2 className="text-sm font-medium text-black mb-2">Subject</h2>
-            <p className="text-base font-semibold text-black">{ticket.subject}</p>
-
-            <h2 className="text-sm font-medium text-black mt-4 mb-2">Category</h2>
-            <p className="text-base font-semibold text-black">{ticket.category}</p>
+            <h2 className="text-sm font-medium text-gray-500 mb-2">Subject</h2>
+            <p className="font-semibold text-gray-900">{ticket.subject}</p>
+            
+            <h2 className="text-sm font-medium text-gray-500 mt-4 mb-2">Category</h2>
+            <p className="font-semibold text-gray-900">{ticket.category}</p>
           </div>
-
+          
           <div>
-            <h2 className="text-sm font-medium text-black mb-2">Customer</h2>
-            <p className="text-base font-semibold text-black">{ticket.userId?.name || 'Unknown'}</p>
-
-            <h2 className="text-sm font-medium text-black mt-4 mb-2">Email</h2>
-            <p className="text-base font-semibold text-black">{ticket.userId?.email || 'Unknown'}</p>
+            <h2 className="text-sm font-medium text-gray-500 mb-2">Customer</h2>
+            <p className="font-semibold text-gray-900">{ticket.userId?.name || 'Unknown'}</p>
+            
+            <h2 className="text-sm font-medium text-gray-500 mt-4 mb-2">Email</h2>
+            <p className="font-semibold text-gray-900">{ticket.userId?.email || 'Unknown'}</p>
           </div>
         </div>
-
+        
         {/* Status History Timeline */}
         <div className="mb-8">
-          <h2 className="text-sm font-medium text-black mb-4">Status History</h2>
-
+          <h2 className="text-sm font-medium text-gray-500 mb-4">Status History</h2>
+          
           <div className="relative">
             {/* Line that connects all the timeline events */}
             <div className="absolute h-full w-0.5 bg-gray-200 left-2.5 top-0"></div>
-
+            
             {/* Timeline events */}
             <div className="space-y-6 relative">
               {ticket.statusHistory?.map((status, index) => (
@@ -330,10 +317,10 @@ const TicketDetail = ({ isAdmin = false }) => {
                     ${status.status === 'closed' ? 'bg-gray-500' : ''}
                   `}></div>
                   <div className="ml-4">
-                    <p className="text-base font-medium text-black capitalize">
+                    <p className="text-sm font-medium text-gray-900 capitalize">
                       {status.status}
                     </p>
-                    <p className="text-sm text-black">
+                    <p className="text-xs text-gray-500">
                       {formatDateTime(status.timestamp)}
                     </p>
                   </div>
@@ -342,11 +329,11 @@ const TicketDetail = ({ isAdmin = false }) => {
             </div>
           </div>
         </div>
-
+        
         {/* Conversation */}
         <div className="mb-6">
-          <h2 className="text-sm font-medium text-black mb-4">Conversation</h2>
-
+          <h2 className="text-sm font-medium text-gray-500 mb-4">Conversation</h2>
+          
           <div className="border rounded-lg overflow-hidden">
             <div className="p-4 bg-gray-50 border-b">
               <div className="flex items-start gap-3">
@@ -354,13 +341,13 @@ const TicketDetail = ({ isAdmin = false }) => {
                   <User className="h-4 w-4 text-blue-600" />
                 </div>
                 <div>
-                  <p className="text-base font-medium text-black">
-                    {ticket.userId?.name || 'Customer'} - <span className="text-black text-sm font-normal">Original Request</span>
+                  <p className="font-medium text-gray-900">
+                    {ticket.userId?.name || 'Customer'} - <span className="text-gray-500 text-sm font-normal">Original Request</span>
                   </p>
-                  <div className="mt-1 text-base text-black whitespace-pre-wrap">
+                  <div className="mt-1 text-gray-700 whitespace-pre-wrap">
                     {ticket.description}
                   </div>
-                  <p className="text-sm text-black mt-1">
+                  <p className="text-xs text-gray-500 mt-1">
                     {formatDateTime(ticket.createdAt)}
                   </p>
                 </div>
@@ -390,15 +377,15 @@ const TicketDetail = ({ isAdmin = false }) => {
                     </div>
                     
                     <div className={`max-w-[80%] ${isAdmin ? 'text-right' : ''}`}>
-                      <p className="text-base font-medium text-black">
+                      <p className="font-medium text-gray-900">
                         {isAdmin ? 'Support Team' : (ticket.userId?.name || 'Customer')}
                       </p>
-                      <div className={`mt-1 p-3 rounded-lg whitespace-pre-wrap text-base ${
-                        isAdmin ? 'bg-amber-50 text-black' : 'bg-blue-50 text-black'
+                      <div className={`mt-1 p-3 rounded-lg whitespace-pre-wrap ${
+                        isAdmin ? 'bg-amber-50 text-gray-700' : 'bg-blue-50 text-gray-700'
                       }`}>
                         {msg.message}
                       </div>
-                      <p className="text-sm text-black mt-1">
+                      <p className="text-xs text-gray-500 mt-1">
                         {formatDateTime(msg.timestamp)}
                       </p>
                     </div>
@@ -417,13 +404,13 @@ const TicketDetail = ({ isAdmin = false }) => {
                       value={replyMessage}
                       onChange={(e) => setReplyMessage(e.target.value)}
                       placeholder="Type your reply here..."
-                      className="flex-grow rounded-md border border-gray-300 p-2 text-base text-black focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="flex-grow rounded-md border border-gray-300 p-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       rows={3}
                     ></textarea>
                     <button
                       type="submit"
                       disabled={sendingReply || !replyMessage.trim()}
-                      className={`px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-base font-medium ${
+                      className={`px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors ${
                         sendingReply || !replyMessage.trim() ? 'opacity-70 cursor-not-allowed' : ''
                       }`}
                     >
@@ -444,7 +431,7 @@ const TicketDetail = ({ isAdmin = false }) => {
               </div>
             ) : (
               <div className="p-4 bg-gray-50 border-t">
-                <div className="flex items-center justify-center text-black text-base">
+                <div className="flex items-center justify-center text-gray-500">
                   <Check className="h-5 w-5 mr-2" />
                   <span>This ticket is closed. If you have further questions, please create a new ticket.</span>
                 </div>
@@ -454,8 +441,6 @@ const TicketDetail = ({ isAdmin = false }) => {
         </div>
       </div>
     </div>
-    </div>
-    </DashboardLayout>
   );
 };
 

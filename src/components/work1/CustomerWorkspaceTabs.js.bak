@@ -14,10 +14,10 @@ const CustomerWorkspaceTabs = ({ tabs, activeTab, onChange, ariaLabel = 'Workspa
               aria-selected={isActive}
               onClick={() => onChange(tab.id)}
               className={[
-                'relative -mb-px inline-flex shrink-0 cursor-pointer items-center justify-center border-b-2 px-1 py-4 text-base font-semibold transition',
+                'relative -mb-px inline-flex shrink-0 cursor-pointer items-center justify-center border-b-2 px-1 py-4 text-sm font-semibold transition',
                 isActive
                   ? 'border-emerald-500 text-emerald-700'
-                  : 'border-transparent text-black hover:border-slate-300 hover:text-black',
+                  : 'border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-900',
               ].join(' ')}
             >
               {tab.label}

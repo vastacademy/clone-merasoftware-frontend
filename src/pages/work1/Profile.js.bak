@@ -133,32 +133,32 @@ const Profile = () => {
         {(loading || saving) && <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/20 backdrop-blur-sm"><TriangleMazeLoader /></div>}
         <form onSubmit={handleSubmit} className="mx-auto max-w-3xl rounded-3xl bg-white px-6 py-8 shadow-sm sm:px-10">
           <div className="border-b border-slate-200 pb-6">
-            <p className="text-sm font-semibold uppercase text-emerald-600">Account</p>
-            <h1 className="mt-2 text-2xl font-bold tracking-tight text-black">Profile settings</h1>
-            <p className="mt-2 text-base text-black">Update your personal information.</p>
+            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-emerald-600">Account</p>
+            <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-950">Profile settings</h1>
+            <p className="mt-2 text-sm text-slate-500">Update your personal information.</p>
           </div>
 
           <div className="flex items-center gap-4 border-b border-slate-200 py-6">
-            <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-slate-100 text-2xl font-bold text-black">
+            <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-slate-100 text-2xl font-bold text-slate-500">
               {formData.profilePic ? <img src={formData.profilePic} alt={formData.name || 'Profile'} className="h-full w-full object-cover" /> : (formData.name || 'U').trim().charAt(0).toUpperCase()}
             </div>
             <div>
-              <label htmlFor="profile-picture" className="inline-flex cursor-pointer items-center gap-2 text-base font-semibold text-emerald-700 hover:text-emerald-800"><Camera size={16} /> Change profile picture</label>
+              <label htmlFor="profile-picture" className="inline-flex cursor-pointer items-center gap-2 text-sm font-semibold text-emerald-700 hover:text-emerald-800"><Camera size={16} /> Change profile picture</label>
               <input id="profile-picture" type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
-              <p className="mt-1 text-sm text-black">JPG, PNG or WEBP</p>
+              <p className="mt-1 text-xs text-slate-500">JPG, PNG or WEBP</p>
             </div>
           </div>
 
           <div className="space-y-6 py-7">
             <div className="grid gap-6 sm:grid-cols-2">
-              <label className="block"><span className="mb-2 flex items-center gap-2 text-base font-semibold text-black"><User size={16} className="text-slate-400" /> Full name</span><input name="name" value={formData.name} onChange={handleChange} required className="w-full border-0 border-b border-slate-300 bg-transparent px-0 py-2 text-base text-black outline-none transition focus:border-emerald-500 focus:ring-0" /></label>
-              <label className="block"><span className="mb-2 flex items-center gap-2 text-base font-semibold text-black"><Mail size={16} className="text-slate-400" /> Email address</span><input name="email" value={formData.email} readOnly className="w-full border-0 border-b border-slate-200 bg-transparent px-0 py-2 text-base text-black outline-none" /></label>
-              <label className="block"><span className="mb-2 flex items-center gap-2 text-base font-semibold text-black"><Phone size={16} className="text-slate-400" /> Phone number</span><input name="phone" type="tel" inputMode="numeric" pattern="[0-9]*" value={formData.phone} onChange={handleChange} className="w-full border-0 border-b border-slate-300 bg-transparent px-0 py-2 text-base text-black outline-none transition focus:border-emerald-500 focus:ring-0" /></label>
-              <label className="block"><span className="mb-2 flex items-center gap-2 text-base font-semibold text-black"><Calendar size={16} className="text-slate-400" /> Age</span><input name="age" type="text" inputMode="numeric" pattern="[0-9]*" maxLength="3" value={formData.age} onChange={handleChange} className="w-full border-0 border-b border-slate-300 bg-transparent px-0 py-2 text-base text-black outline-none transition focus:border-emerald-500 focus:ring-0" /></label>
+              <label className="block"><span className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700"><User size={16} className="text-slate-400" /> Full name</span><input name="name" value={formData.name} onChange={handleChange} required className="w-full border-0 border-b border-slate-300 bg-transparent px-0 py-2 text-sm text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-0" /></label>
+              <label className="block"><span className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700"><Mail size={16} className="text-slate-400" /> Email address</span><input name="email" value={formData.email} readOnly className="w-full border-0 border-b border-slate-200 bg-transparent px-0 py-2 text-sm text-slate-400 outline-none" /></label>
+              <label className="block"><span className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700"><Phone size={16} className="text-slate-400" /> Phone number</span><input name="phone" type="tel" inputMode="numeric" pattern="[0-9]*" value={formData.phone} onChange={handleChange} className="w-full border-0 border-b border-slate-300 bg-transparent px-0 py-2 text-sm text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-0" /></label>
+              <label className="block"><span className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700"><Calendar size={16} className="text-slate-400" /> Age</span><input name="age" type="text" inputMode="numeric" pattern="[0-9]*" maxLength="3" value={formData.age} onChange={handleChange} className="w-full border-0 border-b border-slate-300 bg-transparent px-0 py-2 text-sm text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-0" /></label>
             </div>
           </div>
 
-          <div className="flex justify-end border-t border-slate-200 pt-6"><button type="submit" disabled={!isDirty || saving} className={`rounded-xl px-6 py-3 text-base font-semibold text-white transition ${isDirty && !saving ? 'bg-emerald-600 hover:bg-emerald-700' : 'cursor-not-allowed bg-slate-300'}`}>{saving ? 'Saving...' : 'Save changes'}</button></div>
+          <div className="flex justify-end border-t border-slate-200 pt-6"><button type="submit" disabled={!isDirty || saving} className={`rounded-xl px-6 py-3 text-sm font-semibold text-white transition ${isDirty && !saving ? 'bg-emerald-600 hover:bg-emerald-700' : 'cursor-not-allowed bg-slate-300'}`}>{saving ? 'Saving...' : 'Save changes'}</button></div>
         </form>
       </div>
     </DashboardLayout>

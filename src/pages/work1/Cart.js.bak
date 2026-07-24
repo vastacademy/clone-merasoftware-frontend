@@ -1,19 +1,15 @@
 import React, { useContext, useEffect, useState } from 'react'
-import { useSelector } from 'react-redux';
 import SummaryApi from '../common'
 import Context from '../context'
 import displayINRCurrency from '../helpers/displayCurrency'
 import { MdDelete } from "react-icons/md";
-import { Sparkles } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import TriangleMazeLoader from '../components/TriangleMazeLoader';
-import DashboardLayout from '../components/DashboardLayout';
 import CookieManager from '../utils/cookieManager';
 
 const Cart = () => {
     const navigate = useNavigate();
-    const user = useSelector((state) => state?.user?.user);
     const [data,setData] = useState([])
     const [loading,setLoading] = useState(false)
     const context = useContext(Context)
@@ -237,15 +233,13 @@ const getItemTotal = (item) => {
     };
 
   return (
-    <DashboardLayout user={user}>
-    <div className="min-h-full bg-[radial-gradient(circle_at_top_right,_rgba(59,130,246,0.16),_transparent_34%),linear-gradient(180deg,_#f8fafc_0%,_#eef2ff_50%,_#f8fafc_100%)] px-4 py-5 sm:px-6 lg:px-8 lg:py-8">
-    <div className='mx-auto max-w-7xl'>
+    <div className='container mx-auto'>
         {/* Add payment loading overlay */}
         {paymentLoading && (
                 <div className="fixed inset-0 bg-black bg-opacity-10 flex items-center justify-center z-50">
                     <div className="rounded-lg p-8  flex flex-col items-center">
                         <TriangleMazeLoader />
-                        <p className="text-center mt-4 text-base text-black">Processing Payment...</p>
+                        <p className="text-center mt-4 text-gray-600">Processing Payment...</p>
                     </div>
                 </div>
             )}
@@ -259,12 +253,12 @@ const getItemTotal = (item) => {
                 </div>
             )}
 
-        <div className='text-center my-3'>
+        <div className='text-center text-lg my-3'>
             {
                 data.length === 0 && !loading && (
                     <div className="text-center py-12">
-            <p className="text-base text-black mb-4">Your Cart is Empty!</p>
-            <Link to="/" className="text-base text-blue-500 hover:text-blue-600">
+            <p className="text-gray-500 mb-4">Your Cart is Empty!</p>
+            <Link to="/" className="text-blue-500 hover:text-blue-600">
               Continue Shopping
             </Link>
           </div>
@@ -296,9 +290,9 @@ const getItemTotal = (item) => {
                                             <MdDelete/>
                                         </div>
 
-                                        <h2 className='text-lg font-semibold text-black text-ellipis line-clamp-1'>{product?.productId?.serviceName}</h2>
-                                        <p className='capitalize text-base text-black'>{product?.productId?.category?.replace(/_/g, ' ')}</p>
-
+                                        <h2 className='text-lg lg:text-xl text-ellipis line-clamp-1'>{product?.productId?.serviceName}</h2>
+                                        <p className='capitalize text-slate-400'>{product?.productId?.category?.replace(/_/g, ' ')}</p>
+                                        
                                         {/* Price section with discount if applicable */}
                                         <div className='flex items-center justify-between'>
                                             <div>
@@ -306,11 +300,11 @@ const getItemTotal = (item) => {
                                                     <div>
                                                         <p className='text-red-600 font-medium text-lg flex items-center'>
                                                             {displayINRCurrency(effectivePrice)}
-                                                            <span className='text-sm ml-2 line-through text-black'>
+                                                            <span className='text-xs ml-2 line-through text-gray-500'>
                                                                 {displayINRCurrency(product?.productId?.sellingPrice)}
                                                             </span>
                                                         </p>
-                                                        <p className='text-green-600 text-sm'>
+                                                        <p className='text-green-600 text-xs'>
                                                             Coupon: {product.couponCode} applied
                                                         </p>
                                                     </div>
@@ -320,7 +314,7 @@ const getItemTotal = (item) => {
                                                     </p>
                                                 )}
                                             </div>
-                                            <p className='text-black font-semibold text-lg'>
+                                            <p className='text-slate-600 font-semibold text-lg'>
                                                 {displayINRCurrency(getItemTotal(product))}
                                             </p>
                                         </div>
@@ -346,22 +340,22 @@ const getItemTotal = (item) => {
                         {loading ? (
                             <div className='h-36 bg-slate-200 border border-slate-300 animate-pulse'>
                             </div>
-        ) : (
-                            <div className='rounded-2xl border border-slate-200 bg-white overflow-hidden'>
-                                <h2 className='text-lg font-semibold text-white bg-slate-950 px-4 py-3'>Summary</h2>
-                                <div className='flex items-center justify-between px-4 gap-2 font-medium text-base text-black pt-3'>
+                        ) : (
+                            <div className='bg-white'>
+                                <h2 className='text-white bg-red-600 px-4 py-1'>Summary</h2>
+                                <div className='flex items-center justify-between px-4 gap-2 font-medium text-lg text-slate-600'>
                                     <p>Quantity</p>
                                     <p>{totalQty}</p>
                                 </div>
 
-                                <div className='flex items-center justify-between px-4 gap-2 font-medium text-base text-black'>
+                                <div className='flex items-center justify-between px-4 gap-2 font-medium text-lg text-slate-600'>
                                     <p>Total Price</p>
                                     <p>{displayINRCurrency(originalTotalPrice)}</p>
                                 </div>
 
                                 {/* Show discount section if any coupon applied */}
                                 {totalDiscount > 0 && (
-                                    <div className='flex items-center justify-between px-4 gap-2 font-medium text-base text-green-600'>
+                                    <div className='flex items-center justify-between px-4 gap-2 font-medium text-lg text-green-600'>
                                         <p>Discount</p>
                                         <p>-{displayINRCurrency(totalDiscount)}</p>
                                     </div>
@@ -369,14 +363,14 @@ const getItemTotal = (item) => {
 
                                 {/* Final amount to pay */}
                                 {totalDiscount > 0 && (
-                                    <div className='flex items-center justify-between px-4 gap-2 font-medium text-base text-blue-600 mt-2 pt-2 border-t border-gray-200'>
+                                    <div className='flex items-center justify-between px-4 gap-2 font-medium text-lg text-blue-600 mt-2 pt-2 border-t border-gray-200'>
                                         <p>Amount to Pay</p>
                                         <p>{displayINRCurrency(calculateTotalAmountWithDiscounts())}</p>
                                     </div>
                                 )}
 
-                                <button
-                                    className={`bg-blue-600 p-2 text-white text-base font-semibold w-full mt-2 ${paymentLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
+                                <button 
+                                    className={`bg-blue-600 p-2 text-white w-full mt-2 ${paymentLoading ? 'opacity-70 cursor-not-allowed' : ''}`} 
                                     onClick={handlePayment}
                                     disabled={paymentLoading}
                                 >
@@ -388,8 +382,6 @@ const getItemTotal = (item) => {
                 )}
             </div>
         </div>
-    </div>
-    </DashboardLayout>
     );
 };
 

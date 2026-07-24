@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ChevronLeft, Sparkles } from 'lucide-react';
+import { ChevronLeft } from 'lucide-react';
 import SummaryApi from '../common';
 import DashboardLayout from '../components/DashboardLayout';
 import TriangleMazeLoader from '../components/TriangleMazeLoader';
@@ -122,13 +122,13 @@ const OrderDetailPage = () => {
   if (!order) {
     return (
       <DashboardLayout user={user}>
-        <div className="min-h-full bg-[radial-gradient(circle_at_top_right,_rgba(59,130,246,0.16),_transparent_34%),linear-gradient(180deg,_#f8fafc_0%,_#eef2ff_50%,_#f8fafc_100%)] px-4 py-5 sm:px-6 lg:px-8 lg:py-8">
-          <div className="mx-auto max-w-3xl rounded-[2rem] border border-slate-200 bg-white p-8 text-center shadow-sm">
-            <h2 className="text-lg font-semibold text-red-600 mb-2">Order Not Found</h2>
-            <p className="text-base text-black mb-4">The order you're looking for doesn't exist or you don't have access to it.</p>
+        <div className="p-6">
+          <div className="bg-white rounded-lg p-6 text-center shadow-sm">
+            <h2 className="text-xl font-bold text-red-600 mb-2">Order Not Found</h2>
+            <p className="text-gray-600 mb-4">The order you're looking for doesn't exist or you don't have access to it.</p>
             <button
               onClick={() => navigate('/order')}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-base font-semibold"
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
             >
               Back to Orders
             </button>
@@ -152,155 +152,145 @@ const OrderDetailPage = () => {
 
   return (
     <DashboardLayout user={user}>
-      <div className="min-h-full bg-[radial-gradient(circle_at_top_right,_rgba(59,130,246,0.16),_transparent_34%),linear-gradient(180deg,_#f8fafc_0%,_#eef2ff_50%,_#f8fafc_100%)] px-4 py-5 sm:px-6 lg:px-8 lg:py-8">
-        <div className="mx-auto max-w-7xl">
-          <section className="mb-6 overflow-hidden rounded-[2rem] border border-slate-900/10 bg-slate-950 text-white shadow-2xl">
-            <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-end sm:justify-between sm:p-6">
-              <div className="max-w-xl">
-                <div className="inline-flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-sm font-semibold uppercase text-emerald-300">
-                  <Sparkles className="h-3.5 w-3.5" />
-                  Order Summary
-                </div>
-                <h1 className="mt-3 text-2xl font-bold tracking-tight text-white">
-                  Order #{orderNumber}
-                </h1>
-              </div>
-              <span className={`inline-flex w-fit rounded-full px-4 py-2 text-base font-semibold ${status.className}`}>
-                {status.text}
-              </span>
-            </div>
-          </section>
-
-          {/* Back Button */}
-          <button
-            onClick={() => navigate('/order')}
-            className="mb-6 flex items-center text-base font-semibold text-blue-600 hover:underline"
-          >
-            <ChevronLeft size={16} className="mr-1" />
-            Back to Orders
-          </button>
-
-          {/* Order Info and Actions Columns */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="p-6">
+        {/* Header Section */}
+        <div className="bg-blue-600 text-white p-6 mb-6 rounded-t-lg flex justify-between items-center">
+          <h1 className="text-2xl font-bold">Order Summary</h1>
+          <span className={`px-4 py-2 rounded-md text-sm font-medium ${status.className}`}>
+            {status.text}
+          </span>
+        </div>
+        
+        {/* Back Button */}
+        <button 
+          onClick={() => navigate('/order')}
+          className="flex items-center text-blue-600 mb-6 hover:underline"
+        >
+          <ChevronLeft size={16} className="mr-1" />
+          Back to Orders
+        </button>
+        
+        {/* Order Info and Actions Columns */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column: Order Information */}
           <div className="lg:col-span-2">
-            <div className="rounded-[2rem] border border-slate-200 bg-white shadow-sm overflow-hidden">
+            <div className="bg-white rounded-lg shadow-sm overflow-hidden">
               {/* Order Header */}
-              <div className="border-b border-slate-200 p-6">
-                <h2 className="text-lg font-semibold text-black">Order #{orderNumber}</h2>
-                <p className="text-sm text-black">Purchase Date: {formatDate(order.createdAt)}</p>
-
+              <div className="border-b p-6">
+                <h2 className="text-xl font-bold">Order #{orderNumber}</h2>
+                <p className="text-sm text-gray-500">Purchase Date: {formatDate(order.createdAt)}</p>
+                
                 <div className="mt-2">
-                  <p className="text-base font-medium text-black">{order.productId?.serviceName || 'Product'}</p>
-                  <p className="text-sm text-black">Category: {order.productId?.category?.split('_').join(' ') || 'General'}</p>
+                  <p className="font-medium">{order.productId?.serviceName || 'Product'}</p>
+                  <p className="text-gray-600">Category: {order.productId?.category?.split('_').join(' ') || 'General'}</p>
                 </div>
               </div>
-
+              
               {/* Order Summary */}
               <div className="p-6">
-                <h3 className="font-semibold text-lg text-black mb-4">Price:</h3>
-                <div className="space-y-2 text-base text-black">
+                <h3 className="font-bold text-lg mb-4">Price:</h3>
+                <div className="space-y-2">
                   <div className="flex justify-between">
                     <span>Subtotal:</span>
                     <span>₹{subtotal.toLocaleString()}</span>
                   </div>
-
+                  
                   {discount > 0 && (
                     <div className="flex justify-between text-green-600">
                       <span>Discount {order.couponApplied ? `(${order.couponApplied})` : ''}:</span>
                       <span>-₹{discount.toLocaleString()}</span>
                     </div>
                   )}
-
-                  <div className="flex justify-between font-bold border-t border-slate-200 pt-2 mt-2">
+                  
+                  <div className="flex justify-between font-bold border-t pt-2 mt-2">
                     <span>Total:</span>
                     <span>₹{total.toLocaleString()}</span>
                   </div>
                 </div>
               </div>
             </div>
-
+            
             {/* Payment Method Details */}
-            <div className="rounded-[2rem] border border-slate-200 bg-white shadow-sm mt-6 p-6">
-              <h3 className="font-semibold text-lg text-black mb-4">Payment Method</h3>
-
-              <p className="text-base text-black mb-4">{order.isPartialPayment ? 'Installment Payment (3 installments)' : 'Full Payment'}</p>
-
+            <div className="bg-white rounded-lg shadow-sm mt-6 p-6">
+              <h3 className="font-bold text-lg mb-4">Payment Method</h3>
+              
+              <p className="mb-4">{order.isPartialPayment ? 'Installment Payment (3 installments)' : 'Full Payment'}</p>
+              
               {order.isPartialPayment && order.installments && (
                 <div className="space-y-3 mt-4">
                   {order.installments.map((installment, index) => (
-                    <div
-                      key={index}
+                    <div 
+                      key={index} 
                       className={`p-4 rounded-lg ${installment.paid ? 'bg-blue-50' : 'bg-gray-50'}`}
                     >
                       <div className="flex justify-between items-center">
                         <div>
-                          <span className="text-base font-medium text-black">{index + 1}st Installment </span>
+                          <span className="font-medium">{index + 1}st Installment </span>
                           {installment.paid && (
-                            <span className="text-sm text-black">
+                            <span className="text-sm text-gray-500">
                               - Paid ({formatDate(installment.paidDate)})
                             </span>
                           )}
                           {!installment.paid && installment.dueDate && (
-                            <span className="text-sm text-black">
+                            <span className="text-sm text-gray-500">
                               - Due ({formatDate(installment.dueDate)})
                             </span>
                           )}
                         </div>
-                        <span className="text-base font-semibold text-black">₹{installment.amount.toLocaleString()}</span>
+                        <span className="font-semibold">₹{installment.amount.toLocaleString()}</span>
                       </div>
                     </div>
                   ))}
                 </div>
               )}
-
+              
               {/* Payment Summary */}
-              <div className="mt-6 pt-4 border-t border-slate-200 text-base">
+              <div className="mt-6 pt-4 border-t">
                 <div className="flex justify-between items-center mb-2">
-                  <span className="text-black">Paid:</span>
+                  <span>Paid:</span>
                   <span className="text-green-600 font-medium">₹{paidAmount.toLocaleString()}</span>
                 </div>
-
+                
                 <div className="flex justify-between items-center">
-                  <span className="text-black">Balance:</span>
-                  <span className={`font-medium ${balanceAmount > 0 ? 'text-blue-600' : 'text-black'}`}>
+                  <span>Balance:</span>
+                  <span className={`font-medium ${balanceAmount > 0 ? 'text-blue-600' : 'text-gray-600'}`}>
                     ₹{balanceAmount.toLocaleString()}
                   </span>
                 </div>
               </div>
             </div>
           </div>
-
+          
           {/* Right Column: Actions and Progress */}
           <div className="lg:col-span-1">
             {/* Action Buttons */}
-            <div className="rounded-[2rem] border border-slate-200 bg-white shadow-sm p-6 mb-6">
+            <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
               <button
                 onClick={handleDownloadInvoice}
-                disabled={!isOrderApproved(order) &&
+                disabled={!isOrderApproved(order) && 
                        !(order.projectProgress >= 100 || order.currentPhase === 'completed')}
-                className={`w-full py-3 rounded-lg text-base font-medium mb-4 transition-colors ${
-                  isOrderApproved(order) ||
-                  order.projectProgress >= 100 ||
+                className={`w-full py-3 rounded-lg font-medium mb-4 transition-colors ${
+                  isOrderApproved(order) || 
+                  order.projectProgress >= 100 || 
                   order.currentPhase === 'completed'
-                    ? 'bg-blue-600 text-white hover:bg-blue-700'
+                    ? 'bg-blue-600 text-white hover:bg-blue-700' 
                     : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 }`}
               >
                 Download Invoice
               </button>
-
+              
               <button
                 onClick={handleTrackProject}
-                className="w-full py-3 border border-blue-600 text-blue-600 rounded-lg text-base font-medium hover:bg-blue-50 transition-colors mb-4"
+                className="w-full py-3 border border-blue-600 text-blue-600 rounded-lg font-medium hover:bg-blue-50 transition-colors mb-4"
               >
                 Track Project
               </button>
-
+              
               {/* Show Pay Now button for remaining installments */}
-              {order.isPartialPayment &&
-              order.installments &&
-              order.installments.some(i => !i.paid) &&
+              {order.isPartialPayment && 
+              order.installments && 
+              order.installments.some(i => !i.paid) && 
               isOrderApproved(order) && (
                 <button
                   onClick={() => {
@@ -318,17 +308,17 @@ const OrderDetailPage = () => {
                       });
                     }
                   }}
-                  className="w-full py-3 bg-green-600 text-white rounded-lg text-base font-medium hover:bg-green-700 transition-colors"
+                  className="w-full py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors"
                 >
                   Pay Next Installment
                 </button>
               )}
-
+              
               {/* Retry Payment button for rejected orders */}
               {order.orderVisibility === 'payment-rejected' && (
                 <button
                   onClick={() => navigate(`/direct-payment`, {
-                    state: {
+                    state: { 
                       retryPaymentId: order._id,
                       productId: order.productId?._id,
                       paymentData: {
@@ -345,44 +335,44 @@ const OrderDetailPage = () => {
                       }
                     }
                   })}
-                  className="w-full py-3 bg-red-600 text-white rounded-lg text-base font-medium hover:bg-red-700 transition-colors"
+                  className="w-full py-3 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors"
                 >
                   Retry Payment
                 </button>
               )}
             </div>
-
+            
             {/* Order Progress */}
-            <div className="rounded-[2rem] border border-slate-200 bg-white shadow-sm p-6">
-              <h3 className="font-semibold text-lg text-black mb-6">Order Progress</h3>
-
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <h3 className="font-bold text-lg mb-6">Order Progress</h3>
+              
               <div className="relative flex justify-between mb-6">
                 <div className="w-full absolute top-1/2 h-1 bg-gray-200 -translate-y-1/2"></div>
-
+                
                 {['Processing', 'Approved', 'In Progress', 'Completed'].map((step, i) => {
                   let active = false;
-
+                  
                   if (status.text === 'Processing' && i === 0) active = true;
                   else if (status.text === 'Rejected' && i === 0) active = true;
                   else if (status.text === 'In Progress' && i <= 2) active = true;
                   else if (status.text === 'Approved' && i <= 1) active = true;
                   else if (status.text === 'Completed' && i <= 3) active = true;
-
+                  
                   // Special handling for rejected orders
                   const isRejected = status.text === 'Rejected';
-
+                  
                   return (
                     <div key={i} className="relative z-10 flex flex-col items-center">
                       <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
-                        active
-                          ? (isRejected && i === 0 ? 'bg-red-500' : i === 3 ? 'bg-green-500' : 'bg-blue-500')
+                        active 
+                          ? (isRejected && i === 0 ? 'bg-red-500' : i === 3 ? 'bg-green-500' : 'bg-blue-500') 
                           : 'bg-gray-200'
                       }`}>
                         {active && (
                           <div className="w-2 h-2 rounded-full bg-white"></div>
                         )}
                       </div>
-                      <span className={`text-sm mt-1 ${active ? 'font-medium text-black' : 'text-black'}`}>
+                      <span className={`text-xs mt-1 ${active ? 'font-medium' : 'text-gray-500'}`}>
                         {isRejected && i === 0 ? 'Rejected' : step}
                       </span>
                     </div>
@@ -391,7 +381,6 @@ const OrderDetailPage = () => {
               </div>
             </div>
           </div>
-        </div>
         </div>
       </div>
     </DashboardLayout>
