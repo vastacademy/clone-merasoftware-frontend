@@ -16,6 +16,8 @@ import CompleteProfile from "../pages/CompleteProfile";
 import ProjectsAndPlans from "../pages/ProjectsAndPlans";
 import StartNewProject from "../pages/StartNewProject";
 import StartNewProjectDetail from "../pages/StartNewProjectDetail";
+import GamesListPage from "../chess/GamesListPage";
+import ChessPage from "../chess/ChessPage";
 
 const CustomerProtectedRoute = ({ children }) => (
   <ProtectedRoute requireRole={['customer']}>
@@ -157,6 +159,22 @@ export const customerRoutes = [
     element: (
       <CustomerProtectedRoute>
         <CompleteProfile/>
+      </CustomerProtectedRoute>
+    )
+  },
+  {
+    path: "games",
+    element: (
+      <CustomerProtectedRoute>
+        <GamesListPage/>
+      </CustomerProtectedRoute>
+    )
+  },
+  {
+    path: "games/chess",
+    element: (
+      <CustomerProtectedRoute>
+        <ChessPage/>
       </CustomerProtectedRoute>
     )
   }

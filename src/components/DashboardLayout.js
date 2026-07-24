@@ -5,7 +5,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'sonner';
 import {
   Home, ShoppingBag, UserCircle, Wallet, MessageSquare, LogOut,
-  FileText, X, PlusCircle
+  FileText, X, PlusCircle, Gamepad2
 } from 'lucide-react';
 import SummaryApi from '../common';
 import { logout } from '../store/userSlice';
@@ -52,6 +52,7 @@ const DashboardLayout = ({ children, user, walletBalance, cartCount, isLoading, 
     if (currentPath.startsWith('/installment-payment')) return 'Installment Payment';
     if (currentPath.startsWith('/cart')) return 'Cart';
     if (currentPath.startsWith('/complete-profile')) return 'Complete Profile';
+    if (currentPath.startsWith('/games')) return 'Games';
     return 'Dashboard';
   };
 
@@ -85,6 +86,7 @@ const DashboardLayout = ({ children, user, walletBalance, cartCount, isLoading, 
 
   const secondaryLinks = [
     { to: '/order', label: 'Orders', icon: ShoppingBag, active: currentPath.startsWith('/order') },
+    { to: '/games', label: 'Games', icon: Gamepad2, active: currentPath.startsWith('/games') },
     { to: '/profile', label: 'Profile', icon: UserCircle, active: currentPath.startsWith('/profile') },
     { to: '/support', label: 'Support', icon: MessageSquare, active: currentPath.startsWith('/support') },
   ];
