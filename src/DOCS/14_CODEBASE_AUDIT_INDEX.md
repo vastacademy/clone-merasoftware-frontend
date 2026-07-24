@@ -31,7 +31,7 @@ This file is the central handoff index. It records what was verified in code and
 | Customer product detail | `ProductDetails.js` | Product details, compatible features, coupon, payment handoff |
 | Customer payment | `DirectPayment.js` | Full/partial wallet or UPI payment and order creation |
 | Customer project detail | `ProjectDetails.js` | Current checkpoint-driven customer/admin read view |
-| Customer start-new-project UI | `StartNewProject.js`, `StartNewProjectDetail.js` | Live-wired list-row view at `/start-new-project` (fetches real products via `GET /api/get-product`, excludes `website_updates`/`feature_upgrades`, tab-filtered by category, matches `ProjectsAndPlans.js` list pattern) and detail subpage at `/start-new-project/:projectId` (fetches via `POST /api/product-details`); "Proceed to Payment" has no handler yet. `data/sampleStartNewProjects.js` is retired/unused. See `15_START_NEW_PROJECT_UI_HISTORY.md` for the full design-iteration and backup history. |
+| Customer start-new-project UI | `StartNewProject.js`, `StartNewProjectDetail.js`, `components/ProjectDetailView.js` | Live-wired list-row view at `/start-new-project` (fetches real products via `GET /api/get-product`, excludes `website_updates`/`feature_upgrades`, tab-filtered by category, dark-gradient-banner header) and detail subpage at `/start-new-project/:projectId` (fetches via `POST /api/product-details`, renders the new shared `ProjectDetailView.js` component: description -> what's included -> add-on feature checkboxes -> who is it for -> two proceed buttons, no price shown). Both proceed buttons (with/without payment) are UI-only no-ops. `data/sampleStartNewProjects.js` is retired/unused. See `15_START_NEW_PROJECT_UI_HISTORY.md` for the original design-iteration/backup history and `18_PROJECT_DETAIL_PAGE_AND_HEADER_REWORK.md` for the detail-page rebuild and header unification. |
 | Admin shell/dashboard | `AdminDashboard.js`, `AdminLayout.js`, `AdminHeader.js` | Active admin shell and dashboard |
 | Admin client list | `AdminClientsPage.js` | Client list sorted by `latestActivityAt`; sort/refresh stay in the dark header and the full-width search row is below it |
 | Admin client workspace | `AdminClientWorkspace.js` | Active client overview, projects, plans, payments, project subpage |
@@ -186,6 +186,9 @@ Product audit also confirmed existing product records use old checkpoint templat
 - `DashboardLayout`/`AdminLayout` sidebar changed from `position: fixed` to `sticky` inside a flex row with the content column, so the page footer runs full-width below both sidebar and content instead of only following content height
 - `Footer.js` desktop content now shares the same `mx-auto max-w-[90rem] px-4 sm:px-6 lg:px-8` wrapper as `AdminWorkspaceShell`, so footer columns align with sidebar-adjacent page content instead of centering independently
 - Documentation/index update
+- New shared `frontend/src/components/ProjectDetailView.js` component built and wired into `StartNewProjectDetail.js`, replacing its previous inline detail markup. Section order (final, explicit): description -> what's included -> add-on feature checkboxes -> who is it for -> two proceed buttons ("Add to Cart & Proceed to Payment" / "Submit Project Request (Without Payment)", both UI-only no-ops). No price is shown anywhere on this page. `?` info-tooltips added for secondary detail on two section headings to keep visible text minimal without dropping information.
+- Dark-gradient-banner header (matching the pre-existing `ProjectDetails.js` header) now also used by `StartNewProjectDetail.js` (via `ProjectDetailView.js`), `ProjectsAndPlans.js`, and `StartNewProject.js` — an explicit, scoped user decision to unify these four pages' header styling. Admin list pages (`AdminClientsPage.js`, `AdminProjectProductsPage.js`) were not touched and intentionally still use their own separate header pattern.
+- A first admin-panel project detail page (`AdminProjectDetailPage.js`, dummy data) was built, then explicitly rejected and fully reverted (file deleted, route removed, `AdminProjectProductsPage.js`'s `handleProjectOpen` restored to its original toast-only placeholder) after the user redirected the approach: perfect the customer detail page first, reuse it for admin later. See `18_PROJECT_DETAIL_PAGE_AND_HEADER_REWORK.md` for the full history, rationale, and the confirmed reuse pattern for the next attempt.
 
 ### Pending next
 
@@ -199,6 +202,8 @@ Product audit also confirmed existing product records use old checkpoint templat
 8. Connect customer ProjectDetails to canonical visible timeline fields.
 9. Run migration dry-run for existing completed and zero-progress orders.
 10. Execute controlled migration only after new-project flow passes verification.
+11. Build the admin-panel project detail/manage page: a thin new admin route/page that reuses `components/ProjectDetailView.js` (not a duplicate/branch) inside `AdminLayout`, wrapped with an admin action bar (Edit -> navigate to `AdminCreateProjectPage.js` in edit mode, Delete). Requires explicit scoping/approval before coding, per this project's standing rules. See `18_PROJECT_DETAIL_PAGE_AND_HEADER_REWORK.md`.
+12. Decide and wire the real business logic behind `ProjectDetailView.js`'s two proceed buttons ("Add to Cart & Proceed to Payment", "Submit Project Request (Without Payment)") — currently both are UI-only no-ops; the exact meaning of "without payment" (booking vs. enquiry-only vs. something else) is explicitly undecided.
 
 ## 9. Regression boundaries
 
@@ -221,6 +226,7 @@ Product audit also confirmed existing product records use old checkpoint templat
 - `05_QUICK_REFERENCE.md` — file/route lookup
 - `12_CLIENT_ACTIVITY_SORT_AUDIT.md` — activity sorting and node write-path history
 - `13_PROJECT_CREATION_AND_APPROVAL_PLAN.md` — approved new project-product and approval plan
+- `18_PROJECT_DETAIL_PAGE_AND_HEADER_REWORK.md` — customer project detail page rebuild on the new shared `ProjectDetailView.js` component, its style-iteration history, the dark-banner header unification across four customer pages, and the reverted admin-detail-page attempt/confirmed reuse plan
 - `admin-nodes.md` — dynamic node requirements, rules, and implementation phases
 - `admin-plan.md` — admin strategy and project creation sequence
 - `AdminProjectProductsPage.js` — current UI-only Projects list screen; no API or database writes
