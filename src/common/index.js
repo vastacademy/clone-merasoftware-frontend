@@ -61,6 +61,18 @@ const SummaryApi = {
       url : `${backendDomain}/api/all-products`,
       method : "get"
     },
+    perfectForSuggestionsSearch : {
+        url : `${backendDomain}/api/perfect-for-suggestions`,
+        method : "get"
+    },
+    perfectForSuggestionSaveOrIncrement : {
+        url : `${backendDomain}/api/perfect-for-suggestions/save-or-increment`,
+        method : "post"
+    },
+    perfectForSuggestionDelete : {
+        url : `${backendDomain}/api/perfect-for-suggestions`,
+        method : "delete"
+    },
     updateProduct : {
         url : `${backendDomain}/api/update-product`,
         method : "post"

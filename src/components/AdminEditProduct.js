@@ -528,7 +528,8 @@ const AdminEditProduct = ({
             <PackageSelect
               options={perfectForOptions}
               value={data.perfectFor.map(value => {
-                const option = perfectForOptions.find(opt => opt.value === value);
+                const text = value && typeof value === 'object' ? value.text : value;
+                const option = perfectForOptions.find(opt => opt.value === text);
                 return option;
               })}
               name='perfectFor'

@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import {  Check } from 'lucide-react';
 import packageOptions from '../helpers/packageOptions';
 import perfectForOptions from '../helpers/perfectForOptions';
+import { resolvePerfectForIcon } from '../helpers/perfectForIconSet';
 import SummaryApi from '../common';
 import Context from '../context';
 import CartPopup from '../components/CartPopup';
@@ -170,14 +171,21 @@ const isInitialized = useSelector((state) => state.user.initialized);
     return option?.icon || packageOptions[0].icon;
   };
 
-  // Get icon from perfectForOptions
-  const getPerfectForIcon = (itemName) => {
-    const option = perfectForOptions.find(opt => 
-      opt.value.toLowerCase() === itemName.toLowerCase() ||
-      opt.label.toLowerCase() === itemName.toLowerCase()
+  // Get icon for a perfectFor entry. New projects store { text, icon } directly (icon resolved
+  // via the fixed icon-set); legacy projects still store plain strings, looked up in the old
+  // perfectForOptions.js dictionary as before.
+  const getPerfectForIcon = (item) => {
+    if (item && typeof item === 'object') {
+      return resolvePerfectForIcon(item.icon);
+    }
+    const option = perfectForOptions.find(opt =>
+      opt.value.toLowerCase() === item.toLowerCase() ||
+      opt.label.toLowerCase() === item.toLowerCase()
     );
     return option?.icon;
   };
+
+  const getPerfectForText = (item) => (item && typeof item === 'object' ? item.text : item);
 
   const handleFeatureToggle = (featureId) => {
     setSelectedFeatures(prev => 
@@ -732,7 +740,7 @@ const isInitialized = useSelector((state) => state.user.initialized);
                           {Icon && React.createElement(Icon, { 
                             className: "w-5 h-5 text-blue-600"
                           })}
-                          <span className="capitalize">{item}</span>
+                          <span className="capitalize">{getPerfectForText(item)}</span>
                         </button>
                       );
                     })}

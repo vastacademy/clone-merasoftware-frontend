@@ -211,32 +211,32 @@ const ProjectsAndPlans = () => {
     >
       <div className="min-h-full bg-[radial-gradient(circle_at_top_right,_rgba(16,185,129,0.12),_transparent_30%),linear-gradient(180deg,_#f8fafc_0%,_#eef2ff_100%)] px-4 py-5 sm:px-6 lg:px-8 lg:py-8">
         <section className="mx-auto max-w-7xl rounded-[2rem] border border-slate-200 bg-white/95 shadow-[0_25px_80px_-35px_rgba(15,23,42,0.35)] backdrop-blur">
-          <div className="border-b border-slate-200 px-5 py-5 sm:px-6">
+          <div className="rounded-t-[2rem] bg-gradient-to-r from-slate-950 via-slate-900 to-blue-950 px-5 py-5 text-white sm:px-6 lg:px-8">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
               <div className="max-w-3xl">
-                <div className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-700">
+                <div className="inline-flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-300">
                   <Sparkles className="h-3.5 w-3.5" />
                   Projects and Plans
                 </div>
-                <h1 className="mt-3 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
+                <h1 className="mt-3 text-3xl font-black tracking-tight text-white sm:text-4xl">
                   Projects and Plans
                 </h1>
-                <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
                   Compact list of all project and plan records with status, type, progress, and ownership in one view.
                 </p>
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700">
+                <div className="rounded-2xl border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-white">
                   Total: {items.length}
                 </div>
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700">
+                <div className="rounded-2xl border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-white">
                   Active: {activeWorkCount}
                 </div>
                 <button
                   type="button"
                   onClick={fetchData}
-                  className="inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+                  className="inline-flex items-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/15"
                 >
                   <RefreshCw size={16} />
                   Refresh
