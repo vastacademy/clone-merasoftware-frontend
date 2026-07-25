@@ -68,6 +68,7 @@ const AdminPaymentRecordDetail = () => {
   const [customMessage, setCustomMessage] = useState(reminderTemplates.gentle);
   const [markPaidMethod, setMarkPaidMethod] = useState("upi");
   const [markPaidReference, setMarkPaidReference] = useState("");
+  const [markPaidNote, setMarkPaidNote] = useState("");
   const [rejectionReason, setRejectionReason] = useState("");
 
   const transaction = record?.transaction || null;
@@ -127,6 +128,7 @@ const AdminPaymentRecordDetail = () => {
     if (!invoice) return;
     setMarkPaidMethod(invoice.paymentMethod || "upi");
     setMarkPaidReference(invoice.transactionReference || "");
+    setMarkPaidNote(invoice.internalNote || "");
   }, [invoice]);
 
   const handleDownloadInvoice = async () => {
@@ -268,6 +270,7 @@ const AdminPaymentRecordDetail = () => {
         body: JSON.stringify({
           paymentMethod: markPaidMethod,
           transactionReference: markPaidReference.trim(),
+          internalNote: markPaidNote.trim(),
         }),
       });
       const result = await response.json();
@@ -407,6 +410,7 @@ const AdminPaymentRecordDetail = () => {
                         <InfoLine label="Paid Date" value={formatDateTime(invoice.paidDate)} />
                         <InfoLine label="Reminders Sent" value={invoice.remindersSent ?? 0} />
                         <InfoLine label="Last Reminder" value={formatDateTime(invoice.lastReminderDate)} />
+                        <InfoLine label="Admin Note (internal only)" value={invoice.internalNote} />
                       </div>
                     ) : (
                       <p className="mt-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
@@ -496,8 +500,19 @@ const AdminPaymentRecordDetail = () => {
                             value={markPaidReference}
                             onChange={(event) => setMarkPaidReference(event.target.value)}
                             disabled={Boolean(actionLoading)}
-                            placeholder="UPI ID, bank reference, or admin note"
+                            placeholder="UPI ID or bank reference"
                             className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-emerald-400 disabled:cursor-not-allowed disabled:opacity-60"
+                          />
+                        </label>
+                        <label className="block">
+                          <span className="text-sm font-semibold text-slate-700">Admin note (internal only, not shown to customer)</span>
+                          <textarea
+                            value={markPaidNote}
+                            onChange={(event) => setMarkPaidNote(event.target.value)}
+                            disabled={Boolean(actionLoading)}
+                            rows={3}
+                            placeholder="e.g. Collected cash in person, verified by phone"
+                            className="mt-2 w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-emerald-400 disabled:cursor-not-allowed disabled:opacity-60"
                           />
                         </label>
                         <button
@@ -506,7 +521,7 @@ const AdminPaymentRecordDetail = () => {
                           disabled={Boolean(actionLoading)}
                           className="inline-flex w-full items-center justify-center rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
                         >
-                          {actionLoading === "markPaid" ? "Saving..." : "Mark Invoice Paid"}
+                          {actionLoading === "markPaid" ? "Saving..." : "Record Payment"}
                         </button>
                       </div>
                     ) : (

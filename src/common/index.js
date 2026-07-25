@@ -669,6 +669,10 @@ const SummaryApi = {
         url: `${backendDomain}/api/admin/user-workspace`,
         method: "get"
     },
+    myPaymentWorkspace: {
+        url: `${backendDomain}/api/my-payment-workspace`,
+        method: "get"
+    },
     adminPaymentRecord: {
         url: `${backendDomain}/api/admin/clients`,
         method: "get"
