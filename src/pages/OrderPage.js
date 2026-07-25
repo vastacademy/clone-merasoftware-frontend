@@ -17,6 +17,7 @@ import CustomerWorkspaceTabs from '../components/CustomerWorkspaceTabs';
 import TriangleMazeLoader from '../components/TriangleMazeLoader';
 import displayINRCurrency from '../helpers/displayCurrency';
 import { isOrderApproved } from '../helpers/orderVisibility';
+import PaymentStatusChip from '../components/PaymentStatusChip';
 
 const PROJECT_CATEGORIES = new Set([
   'standard_websites',
@@ -172,6 +173,9 @@ const OrderRow = ({ order, navigate, formatDate, index }) => {
         <div className="text-right">
           <p className="text-base font-semibold text-black">{price}</p>
           <p className="text-sm text-black">Price</p>
+          <div className="mt-1 flex lg:justify-end">
+            <PaymentStatusChip order={order} />
+          </div>
         </div>
         <ArrowRight className="h-5 w-5 text-slate-400" />
       </div>
