@@ -13,16 +13,6 @@ export default function ChessPage() {
   const autoJoinAttempted = useRef(false);
   const currentUser = useSelector((state) => state?.user?.user);
 
-  // TEMP DEBUG ONLY — remove after iPhone console check is done
-  useEffect(() => {
-    if (window.__erudaLoaded) return;
-    window.__erudaLoaded = true;
-    const script = document.createElement('script');
-    script.src = 'https://cdn.jsdelivr.net/npm/eruda';
-    script.onload = () => window.eruda && window.eruda.init();
-    document.body.appendChild(script);
-  }, []);
-
   const {
     connected,
     roomCode,
