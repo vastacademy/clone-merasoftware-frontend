@@ -5,13 +5,14 @@ import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'sonner';
 import {
   Home, ShoppingBag, UserCircle, Wallet, MessageSquare, LogOut,
-  FileText, X, PlusCircle, Gamepad2
+  FileText, X, PlusCircle, Gamepad2, Menu
 } from 'lucide-react';
 import SummaryApi from '../common';
 import { logout } from '../store/userSlice';
 import CookieManager from '../utils/cookieManager';
 import StorageService from '../utils/storageService';
 import { useOnlineStatus } from '../App';
+import MobileSidebarDrawer from './MobileSidebarDrawer';
 
 const DashboardLayout = ({ children, user, walletBalance, cartCount, isLoading, activeProject }) => {
   const location = useLocation();
@@ -27,6 +28,7 @@ const DashboardLayout = ({ children, user, walletBalance, cartCount, isLoading, 
   // State for logout confirmation popup
   const [showLogoutConfirmation, setShowLogoutConfirmation] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
   // If user is null/undefined, redirect to login
   useEffect(() => {
@@ -184,102 +186,125 @@ const DashboardLayout = ({ children, user, walletBalance, cartCount, isLoading, 
     );
   }
 
+  const sidebarContent = (
+    <div className="flex h-full w-full flex-col">
+      <div className="border-b border-white/10 px-5 pt-8 pb-5">
+        <div className="flex items-center gap-3">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-300 ring-1 ring-emerald-400/20">
+            {currentUser?.profilePic ? (
+              <img
+                src={currentUser.profilePic}
+                alt={currentUser?.name || 'User'}
+                className="h-full w-full rounded-2xl object-cover"
+              />
+            ) : (
+              <span className="text-lg font-bold">
+                {(currentUser?.name || 'U').trim().charAt(0).toUpperCase()}
+              </span>
+            )}
+          </div>
+          <div className="min-w-0">
+            <p className="truncate text-base font-semibold text-white">
+              {currentUser?.name || 'User'}
+            </p>
+            <p className="truncate text-sm text-white">
+              {currentUser?.email || 'Customer Portal'}
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-6 inline-flex rounded-full border border-emerald-400/30 bg-emerald-500/10 px-3 py-1 text-sm font-semibold uppercase text-emerald-300">
+          {getPageTitle()}
+        </div>
+      </div>
+
+      <div className="flex-1 px-3 py-4">
+        <p className="px-3 text-sm font-semibold uppercase text-white">
+          Quick Links
+        </p>
+
+        <div className="mt-3 space-y-2">
+          {quickLinks.map(({ to, label, icon: Icon, active }) => (
+            <Link
+              key={label}
+              to={to}
+              onClick={() => setMobileMenuOpen(false)}
+              className={[
+                "group flex items-center gap-3 rounded-2xl px-4 py-3 text-base font-semibold transition-all",
+                active
+                  ? 'bg-emerald-500 text-black shadow-lg shadow-emerald-950/30'
+                  : 'bg-slate-900/70 text-white hover:bg-slate-800',
+              ].join(' ')}
+            >
+              <Icon size={18} className="shrink-0" />
+              <span className="flex-1">{label}</span>
+            </Link>
+          ))}
+        </div>
+
+        <div className="mt-6 border-t border-white/10 pt-4">
+          <p className="px-3 text-sm font-semibold uppercase text-white">
+            More
+          </p>
+          <div className="mt-3 space-y-2">
+            {secondaryLinks.map(({ to, label, icon: Icon, active }) => (
+              <Link
+                key={label}
+                to={to}
+                onClick={() => setMobileMenuOpen(false)}
+                className={[
+                  "group flex items-center gap-3 rounded-2xl px-4 py-2.5 text-base font-medium transition-all",
+                  active
+                    ? 'bg-slate-800 text-white'
+                    : 'bg-slate-900/40 text-white hover:bg-slate-800',
+                ].join(' ')}
+              >
+                <Icon size={16} className="shrink-0" />
+                <span className="flex-1">{label}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="border-t border-white/10 p-4">
+        <button
+          onClick={handleLogoutClick}
+          className="flex w-full items-center gap-3 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-left text-base font-semibold text-red-200 transition hover:bg-red-500/20"
+          disabled={isLoggingOut}
+        >
+          <LogOut size={18} className="shrink-0" />
+          <span className="flex-1">
+            {isLoggingOut ? 'Logging out...' : 'Logout'}
+          </span>
+        </button>
+      </div>
+    </div>
+  );
+
   return (
     <>
       <div className="flex min-h-full items-stretch bg-slate-100">
         <aside className="sticky top-16 z-40 hidden h-[calc(100vh-4rem)] w-72 shrink-0 flex-col self-start overflow-y-auto border-r border-slate-800 bg-slate-950 text-white shadow-2xl lg:flex">
-          <div className="border-b border-white/10 px-5 pt-8 pb-5">
-            <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-300 ring-1 ring-emerald-400/20">
-                {currentUser?.profilePic ? (
-                  <img
-                    src={currentUser.profilePic}
-                    alt={currentUser?.name || 'User'}
-                    className="h-full w-full rounded-2xl object-cover"
-                  />
-                ) : (
-                  <span className="text-lg font-bold">
-                    {(currentUser?.name || 'U').trim().charAt(0).toUpperCase()}
-                  </span>
-                )}
-              </div>
-              <div className="min-w-0">
-                <p className="truncate text-base font-semibold text-white">
-                  {currentUser?.name || 'User'}
-                </p>
-                <p className="truncate text-sm text-white">
-                  {currentUser?.email || 'Customer Portal'}
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-6 inline-flex rounded-full border border-emerald-400/30 bg-emerald-500/10 px-3 py-1 text-sm font-semibold uppercase text-emerald-300">
-              {getPageTitle()}
-            </div>
-          </div>
-
-          <div className="flex-1 px-3 py-4">
-            <p className="px-3 text-sm font-semibold uppercase text-white">
-              Quick Links
-            </p>
-
-            <div className="mt-3 space-y-2">
-              {quickLinks.map(({ to, label, icon: Icon, active }) => (
-                <Link
-                  key={label}
-                  to={to}
-                  className={[
-                    "group flex items-center gap-3 rounded-2xl px-4 py-3 text-base font-semibold transition-all",
-                    active
-                      ? 'bg-emerald-500 text-black shadow-lg shadow-emerald-950/30'
-                      : 'bg-slate-900/70 text-white hover:bg-slate-800',
-                  ].join(' ')}
-                >
-                  <Icon size={18} className="shrink-0" />
-                  <span className="flex-1">{label}</span>
-                </Link>
-              ))}
-            </div>
-
-            <div className="mt-6 border-t border-white/10 pt-4">
-              <p className="px-3 text-sm font-semibold uppercase text-white">
-                More
-              </p>
-              <div className="mt-3 space-y-2">
-                {secondaryLinks.map(({ to, label, icon: Icon, active }) => (
-                  <Link
-                    key={label}
-                    to={to}
-                    className={[
-                      "group flex items-center gap-3 rounded-2xl px-4 py-2.5 text-base font-medium transition-all",
-                      active
-                        ? 'bg-slate-800 text-white'
-                        : 'bg-slate-900/40 text-white hover:bg-slate-800',
-                    ].join(' ')}
-                  >
-                    <Icon size={16} className="shrink-0" />
-                    <span className="flex-1">{label}</span>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div className="border-t border-white/10 p-4">
-            <button
-              onClick={handleLogoutClick}
-              className="flex w-full items-center gap-3 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-left text-base font-semibold text-red-200 transition hover:bg-red-500/20"
-              disabled={isLoggingOut}
-            >
-              <LogOut size={18} className="shrink-0" />
-              <span className="flex-1">
-                {isLoggingOut ? 'Logging out...' : 'Logout'}
-              </span>
-            </button>
-          </div>
+          {sidebarContent}
         </aside>
 
+        <MobileSidebarDrawer isOpen={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)}>
+          {sidebarContent}
+        </MobileSidebarDrawer>
+
         <div className="min-w-0 flex-1">
+          <div className="sticky top-16 z-30 flex items-center gap-3 border-b border-slate-200 bg-white px-4 py-3 lg:hidden">
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen(true)}
+              aria-label="Open menu"
+              className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-100"
+            >
+              <Menu size={18} />
+            </button>
+            <span className="text-sm font-semibold text-slate-900">{getPageTitle()}</span>
+          </div>
           <main className="min-h-full bg-slate-100">
             {children}
           </main>
