@@ -14,6 +14,8 @@ export default function useChessSocket() {
   const [paletteKey, setPaletteKey] = useState('classicGreen');
   const [gameStatus, setGameStatus] = useState('active');
   const [resetRequestedBy, setResetRequestedBy] = useState(null);
+  const [endRequestedBy, setEndRequestedBy] = useState(null);
+  const [gameEnded, setGameEnded] = useState(false);
   const [myGames, setMyGames] = useState([]);
   const [errorMessage, setErrorMessage] = useState(null);
 
@@ -36,6 +38,7 @@ export default function useChessSocket() {
       setTurn(payload.turn);
       setGameStatus(payload.status || 'active');
       setResetRequestedBy(payload.resetRequestedBy || null);
+      setEndRequestedBy(payload.endRequestedBy || null);
       if (payload.paletteKey) setPaletteKey(payload.paletteKey);
     };
 
@@ -68,6 +71,10 @@ export default function useChessSocket() {
 
     socket.on('chess:opponentLeft', () => {
       setStatus('opponent-left');
+    });
+
+    socket.on('chess:gameEnded', () => {
+      setGameEnded(true);
     });
 
     socket.on('chess:myGames', ({ games }) => {
@@ -116,8 +123,28 @@ export default function useChessSocket() {
     socketRef.current?.emit('chess:respondReset', { roomCode, accept });
   }, [roomCode]);
 
+  const requestEnd = useCallback(() => {
+    if (!roomCode) return;
+    socketRef.current?.emit('chess:requestEnd', { roomCode });
+  }, [roomCode]);
+
+  const respondEnd = useCallback((accept) => {
+    if (!roomCode) return;
+    socketRef.current?.emit('chess:respondEnd', { roomCode, accept });
+  }, [roomCode]);
+
   const fetchMyGames = useCallback(() => {
     socketRef.current?.emit('chess:getMyGames');
+  }, []);
+
+  const leaveRoomView = useCallback(() => {
+    setRoomCode(null);
+    setAssignedColor(null);
+    setBoard(null);
+    setStatus('idle');
+    setGameStatus('active');
+    setResetRequestedBy(null);
+    setEndRequestedBy(null);
   }, []);
 
   return {
@@ -130,6 +157,8 @@ export default function useChessSocket() {
     paletteKey,
     gameStatus,
     resetRequestedBy,
+    endRequestedBy,
+    gameEnded,
     myGames,
     errorMessage,
     createRoom,
@@ -139,6 +168,9 @@ export default function useChessSocket() {
     undoMove,
     requestReset,
     respondReset,
-    fetchMyGames
+    requestEnd,
+    respondEnd,
+    fetchMyGames,
+    leaveRoomView
   };
 }

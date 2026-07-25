@@ -273,7 +273,7 @@ const CustomerDashboard = () => {
       return { label: `${activePlans.length} Active Plans`, to: '/projects-and-plans' };
     }
 
-    return { label: 'Start New Project', to: '/home' };
+    return { label: 'Start New Project', to: '/start-new-project' };
   })();
 
   useEffect(() => {

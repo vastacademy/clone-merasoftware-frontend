@@ -34,7 +34,8 @@ This document describes the active frontend behavior as of the current codebase.
 - `/dashboard` - `CustomerDashboard`
 - `/order` - `OrderPage`
 - `/order-detail/:orderId` - `OrderDetailPage`
-- `/project-details/:orderId` - `ProjectDetails`
+- `/project-details/:orderId` - `ProjectDetails` (project orders only)
+- `/plan-details/:orderId` - `PlanDetails` (plan/`website_updates` orders; new page, live-wired to `GET /api/order-details/:orderId` + `GET /api/get-update-requests`; see `20_PLAN_SYSTEM_AND_PLAN_DETAILS_PAGE.md`)
 - `/wallet`
 - `/my-updates`
 - `/my-invoices`
@@ -117,6 +118,10 @@ This document describes the active frontend behavior as of the current codebase.
   - approved and `0 < projectProgress < 100` -> `{progress}% Complete`
 - The percentage/developer text that used to sit separately in the "Updated" column and the far-right row slot for project rows was removed; that information now lives only inside the Status badge. Plan rows are unchanged and still show `days left` / `updates left` in those slots.
 - `WalletDetails` page content container now uses `max-w-7xl` (previously `max-w-6xl`) to match the width used by `ProjectsAndPlans` and `StartNewProject`
+- Clicking a row in `ProjectsAndPlans` now routes by type (`openDetails()`, using the file's own `isPlanItem(order)` helper): project rows still open `/project-details/:orderId` (`ProjectDetails`, unchanged); plan rows now open `/plan-details/:orderId` (`PlanDetails`, new page) instead of also going to `ProjectDetails`. `PlanDetails` copies `ProjectDetails`'s 3-column layout skeleton but shows a donut of updates-consumed-of-total, a plan snapshot (days left or resets-on date, total updates granted, file limit), an update-request history list, and a selected-request detail panel with per-file name/size/type — live-wired to `GET /api/order-details/:orderId` and `GET /api/get-update-requests` (the latter returns all of a user's requests across all plans; `PlanDetails` filters client-side by `updatePlanId._id`). See `20_PLAN_SYSTEM_AND_PLAN_DETAILS_PAGE.md`.
+- `getOrderDetails.js`'s `productId` populate field-list was extended to include `isMonthlyLimitedPlan`, `isMonthlyRenewablePlan`, `monthlyUpdateLimit`, `yearlyPlanDuration`, `monthlyRenewalPrice`, `monthlyRenewalCost` — without these, recurring-plan detection silently failed for any order fetched through this endpoint. See `20_PLAN_SYSTEM_AND_PLAN_DETAILS_PAGE.md`.
+- `UserUpdateDashboard` (`/my-updates`) card status logic was rebuilt to branch by plan type; the previous version only read simple-plan fields and could show a live-looking "Request Update" button on an already-expired recurring plan. See `20_PLAN_SYSTEM_AND_PLAN_DETAILS_PAGE.md`.
+- Confirmed, not-yet-fixed: admin marking one overdue invoice "paid" (`invoiceLifecycle.js`'s `resumeOrderForPaidInvoice()`) resumes the whole order/plan without checking whether the same order has a different, still-overdue invoice. Also confirmed: no admin capability exists anywhere to activate/close a customer's plan directly (absent from `backend/routes/index.js`, not merely undocumented). See `20_PLAN_SYSTEM_AND_PLAN_DETAILS_PAGE.md` Section 5.
 
 ### Admin dashboard
 

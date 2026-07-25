@@ -4,7 +4,6 @@ import Cart from "../pages/Cart";
 import OrderPage from "../pages/OrderPage";
 import OrderDetailPage from "../pages/OrderDetailPage";
 import ProjectDetails from "../pages/ProjectDetails";
-import PlanDetails from "../pages/PlanDetails";
 import WalletDetails from "../pages/WalletDetails";
 import UserUpdateDashboard from "../pages/UserUpdateDashboard";
 import UserInvoices from "../pages/UserInvoices";
@@ -88,14 +87,6 @@ export const customerRoutes = [
     element: (
       <CustomerProtectedRoute>
         <ProjectDetails/>
-      </CustomerProtectedRoute>
-    )
-  },
-  {
-    path: "plan-details/:orderId",
-    element: (
-      <CustomerProtectedRoute>
-        <PlanDetails/>
       </CustomerProtectedRoute>
     )
   },

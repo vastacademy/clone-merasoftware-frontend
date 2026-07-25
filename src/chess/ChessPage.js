@@ -1,13 +1,15 @@
 import { useEffect, useRef } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
+import { ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import useChessSocket from './useChessSocket';
 import ChessLobby from './ChessLobby';
-import ChessBoard3D from './ChessBoard3D';
+import ChessBoardFlat from './ChessBoardFlat';
 
 export default function ChessPage() {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const autoJoinAttempted = useRef(false);
   const currentUser = useSelector((state) => state?.user?.user);
 
@@ -21,6 +23,8 @@ export default function ChessPage() {
     paletteKey,
     gameStatus,
     resetRequestedBy,
+    endRequestedBy,
+    gameEnded,
     myGames,
     errorMessage,
     createRoom,
@@ -30,8 +34,18 @@ export default function ChessPage() {
     undoMove,
     requestReset,
     respondReset,
-    fetchMyGames
+    requestEnd,
+    respondEnd,
+    fetchMyGames,
+    leaveRoomView
   } = useChessSocket();
+
+  useEffect(() => {
+    if (gameEnded) {
+      toast.success('Game ended and removed for both players.');
+      navigate('/games');
+    }
+  }, [gameEnded, navigate]);
 
   useEffect(() => {
     const roomFromLink = searchParams.get('room');
@@ -65,6 +79,15 @@ export default function ChessPage() {
   if (inLobby) {
     return (
       <div className="max-w-md mx-auto p-6 space-y-8">
+        <button
+          type="button"
+          onClick={() => navigate('/games', { replace: true })}
+          className="inline-flex items-center gap-1 text-sm font-semibold text-black hover:underline"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back
+        </button>
+
         {myGames.length > 0 && (
           <div className="space-y-3 border border-black p-4">
             <p className="font-semibold text-black">Resume a game</p>
@@ -96,8 +119,25 @@ export default function ChessPage() {
   const isResetRequestedByMe = resetRequestedBy && currentUser?._id && String(resetRequestedBy) === String(currentUser._id);
   const isResetRequestedByOpponent = gameStatus === 'reset-pending' && !isResetRequestedByMe;
 
+  const isEndRequestedByMe = endRequestedBy && currentUser?._id && String(endRequestedBy) === String(currentUser._id);
+  const isEndRequestedByOpponent = gameStatus === 'end-pending' && !isEndRequestedByMe;
+
   return (
     <div className="max-w-2xl mx-auto p-6 space-y-4">
+      <div className="flex items-center justify-between">
+        <button
+          type="button"
+          onClick={() => {
+            leaveRoomView();
+            navigate('/games/chess', { replace: true });
+          }}
+          className="inline-flex items-center gap-1 text-sm font-semibold text-black hover:underline"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back
+        </button>
+      </div>
+
       <h1 className="text-2xl font-bold text-black text-center">Chess</h1>
 
       {errorMessage && (
@@ -164,10 +204,34 @@ export default function ChessPage() {
         </div>
       )}
 
+      {isEndRequestedByMe && (
+        <p className="text-center text-black">End request sent. If the other player doesn't respond within 12 hours, this game will be removed automatically.</p>
+      )}
+
+      {isEndRequestedByOpponent && (
+        <div className="text-center space-y-2 border border-red-600 p-3">
+          <p className="text-black">The other player wants to end and delete this game.</p>
+          <div className="flex justify-center gap-3">
+            <button
+              onClick={() => respondEnd(true)}
+              className="px-4 py-2 bg-red-600 text-white"
+            >
+              Accept
+            </button>
+            <button
+              onClick={() => respondEnd(false)}
+              className="px-4 py-2 border border-black text-black"
+            >
+              Reject
+            </button>
+          </div>
+        </div>
+      )}
+
       {board && (
         <div className="flex flex-col items-center gap-4">
           <p className="text-black">Turn: <span className="font-bold capitalize">{turn}</span></p>
-          <ChessBoard3D
+          <ChessBoardFlat
             board={board}
             turn={turn}
             assignedColor={assignedColor}
@@ -183,10 +247,17 @@ export default function ChessPage() {
             </button>
             <button
               onClick={requestReset}
-              disabled={gameStatus === 'reset-pending'}
+              disabled={gameStatus !== 'active'}
               className="px-4 py-2 border border-black text-black disabled:opacity-50"
             >
               Reset Game
+            </button>
+            <button
+              onClick={requestEnd}
+              disabled={gameStatus !== 'active'}
+              className="px-4 py-2 border border-red-600 text-red-600 disabled:opacity-50"
+            >
+              End Game
             </button>
           </div>
         </div>

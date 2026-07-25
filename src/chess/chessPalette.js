@@ -10,16 +10,7 @@ const WHITE_PIECE_COLOR = '#f5f5f0';
 export function getPieceColorSet(paletteKey) {
   const palette = BOARD_PALETTES[paletteKey] || BOARD_PALETTES.classicGreen;
   return {
-    white: { body: WHITE_PIECE_COLOR },
-    black: { body: palette.pieceDark }
+    white: WHITE_PIECE_COLOR,
+    black: palette.pieceDark
   };
 }
-
-export const PIECE_HEIGHTS = {
-  pawn: 0.45,
-  rook: 0.55,
-  bishop: 0.7,
-  knight: 0.65,
-  queen: 0.8,
-  king: 0.9
-};

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { BOARD_PALETTES } from './chessPieces3d';
+import { BOARD_PALETTES } from './chessPalette';
 
 export default function ChessLobby({ onCreateRoom, onJoinByCode, onFindRandomMatch, status }) {
   const [chosenColor, setChosenColor] = useState('white');

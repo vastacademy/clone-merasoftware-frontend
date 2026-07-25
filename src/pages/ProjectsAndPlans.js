@@ -199,7 +199,11 @@ const ProjectsAndPlans = () => {
   const currentWorkItem = context?.activeProject || activeProjects[0] || activePlans[0] || null;
 
   const openDetails = (order) => {
-    navigate(`/project-details/${order._id}`);
+    if (isPlanItem(order)) {
+      navigate(`/plan-details/${order._id}`);
+    } else {
+      navigate(`/project-details/${order._id}`);
+    }
   };
 
   return (
