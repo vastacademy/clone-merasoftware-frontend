@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import { ArrowRight, Cloud, Database, Globe, Smartphone, Sparkles } from 'lucide-react';
+import { ArrowRight, Cloud, Database, Globe, Layers3, Smartphone, Sparkles } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
 import CustomerWorkspaceTabs from '../components/CustomerWorkspaceTabs';
 import SummaryApi from '../common';
@@ -11,22 +11,25 @@ const CATEGORY_STYLE = {
   dynamic_websites: { icon: Database, color: 'text-emerald-600' },
   cloud_software_development: { icon: Cloud, color: 'text-purple-600' },
   app_development: { icon: Smartphone, color: 'text-orange-600' },
+  website_updates: { icon: Layers3, color: 'text-teal-600' },
 };
 
 const BASE_TABS = [
   { id: 'websites', label: 'Websites' },
   { id: 'cloud', label: 'Cloud Software' },
   { id: 'app', label: 'App Development' },
+  { id: 'plans', label: 'Plans' },
 ];
 
 const TAB_CATEGORIES = {
   websites: ['standard_websites', 'dynamic_websites'],
   cloud: ['cloud_software_development'],
   app: ['app_development'],
+  plans: ['website_updates'],
 };
 
-// Categories that are plans/add-ons, not standalone projects.
-const EXCLUDED_CATEGORIES = ['website_updates', 'feature_upgrades'];
+// Categories that are add-ons, not standalone projects/plans.
+const EXCLUDED_CATEGORIES = ['feature_upgrades'];
 
 const MAPPED_CATEGORIES = new Set(Object.values(TAB_CATEGORIES).flat());
 
@@ -111,9 +114,8 @@ const StartNewProject = () => {
 
           <div className="border-t border-slate-200">
             <div className="grid grid-cols-12 gap-3 border-b border-slate-200 px-5 py-3 text-sm font-semibold text-black sm:px-6">
-              <div className="col-span-12 lg:col-span-5">Project</div>
-              <div className="col-span-6 lg:col-span-5">Who is it for?</div>
-              <div className="col-span-6 lg:col-span-2 text-right">Open</div>
+              <div className="col-span-8 lg:col-span-10">Project</div>
+              <div className="col-span-4 lg:col-span-2 text-right">Open</div>
             </div>
 
             {visibleProjects.length > 0 ? (
@@ -123,7 +125,6 @@ const StartNewProject = () => {
                   const Icon = style.icon;
 
                   const description = stripHtml(project.formattedDescriptions?.[0]?.content || '');
-                  const perfectFor = project.perfectFor || [];
 
                   return (
                     <button
@@ -135,7 +136,7 @@ const StartNewProject = () => {
                         index % 2 === 0 ? 'bg-white' : 'bg-slate-50',
                       ].join(' ')}
                     >
-                      <div className="col-span-12 lg:col-span-5">
+                      <div className="col-span-8 lg:col-span-10">
                         <div className="flex items-start gap-3">
                           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-slate-100">
                             <Icon className={`h-5 w-5 ${style.color}`} />
@@ -149,24 +150,7 @@ const StartNewProject = () => {
                         </div>
                       </div>
 
-                      <div className="col-span-6 lg:col-span-5 lg:flex lg:items-center">
-                        <div className="flex max-h-[4.5rem] flex-wrap gap-x-3 gap-y-1 overflow-hidden">
-                          {perfectFor.map((item, index) => {
-                            const text = item && typeof item === 'object' ? item.text : item;
-                            return (
-                              <span
-                                key={text || index}
-                                className="flex shrink-0 items-center gap-1.5 whitespace-nowrap text-sm text-black"
-                              >
-                                <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-slate-400" />
-                                {text}
-                              </span>
-                            );
-                          })}
-                        </div>
-                      </div>
-
-                      <div className="col-span-6 flex items-center justify-end gap-2 lg:col-span-2">
+                      <div className="col-span-4 flex items-center justify-end gap-2 lg:col-span-2">
                         <span className="text-base font-semibold text-black">View Details</span>
                         <ArrowRight className="h-4 w-4 text-slate-400" />
                       </div>

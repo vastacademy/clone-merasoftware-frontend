@@ -1,21 +1,60 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ChevronLeft, Sparkles } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Clock3, XCircle, CalendarClock, ChevronRight } from 'lucide-react';
 import SummaryApi from '../common';
 import DashboardLayout from '../components/DashboardLayout';
 import TriangleMazeLoader from '../components/TriangleMazeLoader';
 import { isOrderApproved } from '../helpers/orderVisibility';
 
+const formatDate = (date) => {
+  if (!date) return 'N/A';
+  return new Date(date).toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+};
+
+const INSTALLMENT_LABELS = { 1: 'First Installment', 2: 'Second Installment', 3: 'Final Installment' };
+
+const getInstallmentStatus = (installment) => {
+  if (installment.paid) {
+    return { label: 'Paid', tone: 'bg-emerald-100 text-emerald-700', Icon: CheckCircle2 };
+  }
+  if (installment.paymentStatus === 'pending-approval') {
+    return { label: 'Verification Pending', tone: 'bg-blue-100 text-blue-700', Icon: Clock3 };
+  }
+  if (installment.paymentStatus === 'rejected') {
+    return { label: 'Rejected', tone: 'bg-rose-100 text-rose-700', Icon: XCircle };
+  }
+  return { label: 'Due', tone: 'bg-amber-100 text-amber-800', Icon: CalendarClock };
+};
+
+const INVOICE_STATUS_META = {
+  paid: { label: 'Paid', tone: 'bg-emerald-100 text-emerald-700', Icon: CheckCircle2 },
+  unpaid: { label: 'Due', tone: 'bg-amber-100 text-amber-800', Icon: CalendarClock },
+  overdue: { label: 'Overdue', tone: 'bg-rose-100 text-rose-700', Icon: XCircle },
+  cancelled: { label: 'Cancelled', tone: 'bg-slate-200 text-slate-600', Icon: XCircle },
+};
+
+// TEMP UI-preview only — real invoice-generation backend doesn't exist for every order yet.
+// Remove this once the backend creates a real invoice per order.
+const DUMMY_INVOICES = [
+  { _id: 'dummy-1', invoiceNumber: 'INV-202604-0001', amount: 3000, status: 'paid', paidDate: '2026-05-21', dueDate: '2026-05-01' },
+  { _id: 'dummy-2', invoiceNumber: 'INV-202605-0002', amount: 3000, status: 'unpaid', dueDate: '2026-06-01' },
+  { _id: 'dummy-3', invoiceNumber: 'INV-202606-0003', amount: 3000, status: 'overdue', dueDate: '2026-06-01' },
+];
+
 const OrderDetailPage = () => {
   const { orderId } = useParams();
   const navigate = useNavigate();
   const [order, setOrder] = useState(null);
+  const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
 
   useEffect(() => {
     fetchOrderDetails();
-    // Get user data
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
       setUser(JSON.parse(storedUser));
@@ -28,10 +67,11 @@ const OrderDetailPage = () => {
       const response = await fetch(`${SummaryApi.orderDetails.url}/${orderId}`, {
         credentials: 'include',
       });
-      
+
       const data = await response.json();
       if (data.success) {
         setOrder(data.data);
+        fetchInvoices();
       }
     } catch (error) {
       console.error("Error fetching order details:", error);
@@ -40,73 +80,55 @@ const OrderDetailPage = () => {
     }
   };
 
-  const formatDate = (date) => {
-    return new Date(date).toLocaleDateString('en-GB', {
-      day: 'numeric',
-      month: 'numeric',
-      year: 'numeric'
+  const fetchInvoices = async () => {
+    try {
+      const response = await fetch(SummaryApi.myPaymentWorkspace.url, {
+        method: SummaryApi.myPaymentWorkspace.method,
+        credentials: 'include',
+      });
+      const data = await response.json();
+      if (data.success) {
+        const orderInvoices = (data.data.invoices || []).filter(
+          (inv) => String(inv.orderId?._id || inv.orderId) === String(orderId)
+        );
+        setInvoices(orderInvoices.length > 0 ? orderInvoices : DUMMY_INVOICES);
+      }
+    } catch (error) {
+      console.error("Error fetching invoices:", error);
+    }
+  };
+
+  const handlePayInstallment = (installment) => {
+    navigate(`/direct-payment`, {
+      state: {
+        installmentPayment: true,
+        orderId: order._id,
+        installmentNumber: installment.installmentNumber,
+        installmentAmount: installment.amount,
+        productName: order.productId?.serviceName || 'Product',
+      },
     });
   };
 
-  const getOrderStatus = (order) => {
-    if (!order) return {};
-    
-    // Check for rejected status first
-    if (order.orderVisibility === 'payment-rejected') {
-      return { text: 'Rejected', className: 'bg-red-500 text-white' };
-    }
-    
-    // Check for pending approval (Processing)
-    if (order.orderVisibility === 'pending-approval') {
-      return { text: 'Processing', className: 'bg-gray-500 text-white' };
-    }
-    
-    // Check for completed
-    if (order.projectProgress >= 100 || order.currentPhase === 'completed') {
-      return { text: 'Completed', className: 'bg-green-500 text-white' };
-    }
-    
-    // If not rejected, pending approval, or completed, then it's in progress
-    if (isOrderApproved(order)) {
-      return { text: 'In Progress', className: 'bg-blue-500 text-white' };
-    }
-    
-    // Fallback (shouldn't reach here often)
-    return { text: 'Processing', className: 'bg-gray-500 text-white' };
-  };
-
-  const handleDownloadInvoice = async () => {
-    try {
-      // Only proceed if order is approved or completed
-      if (!isOrderApproved(order) && 
-          !(order.projectProgress >= 100 || order.currentPhase === 'completed')) {
-        return;
-      }
-      
-      // Download invoice API call
-      const response = await fetch(`${SummaryApi.downloadInvoice.url}/${orderId}`, {
-        method: SummaryApi.downloadInvoice.method,
-        credentials: 'include',
-      });
-      
-      if (response.ok) {
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.style.display = 'none';
-        a.href = url;
-        a.download = `invoice-${orderId}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-      }
-    } catch (error) {
-      console.error("Error downloading invoice:", error);
-    }
-  };
-
-  const handleTrackProject = () => {
-    navigate(`/project-details/${orderId}`);
+  const handleRetryPayment = () => {
+    navigate(`/direct-payment`, {
+      state: {
+        retryPaymentId: order._id,
+        productId: order.productId?._id,
+        paymentData: {
+          product: order.productId,
+          selectedFeatures: order.orderItems?.filter(item => item.type === 'feature').map(item => ({
+            id: item.id,
+            name: item.name,
+            quantity: item.quantity || 1,
+            sellingPrice: item.originalPrice || 0,
+            totalPrice: item.finalPrice || 0,
+          })) || [],
+          totalPrice: order.price,
+          originalTotalPrice: order.originalPrice || order.price,
+        },
+      },
+    });
   };
 
   if (loading) {
@@ -122,7 +144,7 @@ const OrderDetailPage = () => {
   if (!order) {
     return (
       <DashboardLayout user={user}>
-        <div className="min-h-full bg-[radial-gradient(circle_at_top_right,_rgba(59,130,246,0.16),_transparent_34%),linear-gradient(180deg,_#f8fafc_0%,_#eef2ff_50%,_#f8fafc_100%)] px-4 py-5 sm:px-6 lg:px-8 lg:py-8">
+        <div className="min-h-full bg-slate-50 px-4 py-5 sm:px-6 lg:px-8 lg:py-8">
           <div className="mx-auto max-w-3xl rounded-[2rem] border border-slate-200 bg-white p-8 text-center shadow-sm">
             <h2 className="text-lg font-semibold text-red-600 mb-2">Order Not Found</h2>
             <p className="text-base text-black mb-4">The order you're looking for doesn't exist or you don't have access to it.</p>
@@ -138,265 +160,180 @@ const OrderDetailPage = () => {
     );
   }
 
-  const status = getOrderStatus(order);
-  const orderNumber = `ORD-${order._id.substr(-4)}`;
-  
-  // Calculate totals
-  const subtotal = order.orderItems ? 
-    order.orderItems.reduce((sum, item) => sum + (item.originalPrice * (item.quantity || 1)), 0) : 0;
-  
-  const discount = order.discountAmount || 0;
-  const total = order.price || 0;
-  const paidAmount = order.paidAmount || 0;
-  const balanceAmount = Math.max(0, total - paidAmount);
+  const isRecurringPlan = order.productId?.category === 'website_updates';
+
+  const startDate = new Date(order.createdAt);
+  let endDate = null;
+  if (isRecurringPlan) {
+    const durationDays = order.productId?.yearlyPlanDuration || 365;
+    endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() + durationDays);
+  }
 
   return (
     <DashboardLayout user={user}>
-      <div className="min-h-full bg-[radial-gradient(circle_at_top_right,_rgba(59,130,246,0.16),_transparent_34%),linear-gradient(180deg,_#f8fafc_0%,_#eef2ff_50%,_#f8fafc_100%)] px-4 py-5 sm:px-6 lg:px-8 lg:py-8">
-        <div className="mx-auto max-w-7xl">
-          <section className="mb-6 overflow-hidden rounded-[2rem] border border-slate-900/10 bg-slate-950 text-white shadow-2xl">
-            <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-end sm:justify-between sm:p-6">
-              <div className="max-w-xl">
-                <div className="inline-flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-sm font-semibold uppercase text-emerald-300">
-                  <Sparkles className="h-3.5 w-3.5" />
-                  Order Summary
-                </div>
-                <h1 className="mt-3 text-2xl font-bold tracking-tight text-white">
-                  Order #{orderNumber}
+      <div className="min-h-full bg-slate-50 px-4 py-4 pb-8 sm:px-6 lg:px-8 lg:pb-10">
+        <div className="mx-auto flex w-full max-w-7xl flex-col gap-4">
+
+          <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
+            {/* Header banner */}
+            <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-blue-950 px-5 py-5 text-white sm:px-6 lg:px-8">
+              <button
+                type="button"
+                onClick={() => navigate('/order')}
+                className="inline-flex items-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-3 py-2 text-sm font-semibold text-white transition hover:bg-white/15"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Back
+              </button>
+              <div className="mt-4 max-w-xl">
+                <h1 className="text-2xl font-bold tracking-tight text-white">
+                  {order.productId?.serviceName || 'Plan'}
                 </h1>
+                <p className="mt-1 text-sm text-slate-300">
+                  {order.productId?.category?.split('_').join(' ') || 'General'}
+                </p>
               </div>
-              <span className={`inline-flex w-fit rounded-full px-4 py-2 text-base font-semibold ${status.className}`}>
-                {status.text}
-              </span>
             </div>
-          </section>
 
-          {/* Back Button */}
-          <button
-            onClick={() => navigate('/order')}
-            className="mb-6 flex items-center text-base font-semibold text-blue-600 hover:underline"
-          >
-            <ChevronLeft size={16} className="mr-1" />
-            Back to Orders
-          </button>
+            <div className="px-5 py-5 sm:px-6 lg:px-8">
+              <div className="flex flex-col gap-5 lg:flex-row lg:items-start">
 
-          {/* Order Info and Actions Columns */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column: Order Information */}
-          <div className="lg:col-span-2">
-            <div className="rounded-[2rem] border border-slate-200 bg-white shadow-sm overflow-hidden">
-              {/* Order Header */}
-              <div className="border-b border-slate-200 p-6">
-                <h2 className="text-lg font-semibold text-black">Order #{orderNumber}</h2>
-                <p className="text-sm text-black">Purchase Date: {formatDate(order.createdAt)}</p>
+                <div className="grid w-full grid-cols-1 gap-5 lg:grid-cols-2">
 
-                <div className="mt-2">
-                  <p className="text-base font-medium text-black">{order.productId?.serviceName || 'Product'}</p>
-                  <p className="text-sm text-black">Category: {order.productId?.category?.split('_').join(' ') || 'General'}</p>
-                </div>
-              </div>
+                  {/* Snapshot card */}
+                  <div className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm">
+                    <h3 className="mb-3 text-lg font-semibold text-black">Plan Snapshot</h3>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-2.5 text-base">
+                        <span className="text-black">Start Date</span>
+                        <span className="font-medium text-black">{formatDate(startDate)}</span>
+                      </div>
 
-              {/* Order Summary */}
-              <div className="p-6">
-                <h3 className="font-semibold text-lg text-black mb-4">Price:</h3>
-                <div className="space-y-2 text-base text-black">
-                  <div className="flex justify-between">
-                    <span>Subtotal:</span>
-                    <span>₹{subtotal.toLocaleString()}</span>
+                      {isRecurringPlan ? (
+                        <>
+                          <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-2.5 text-base">
+                            <span className="text-black">End Date</span>
+                            <span className="font-medium text-black">{formatDate(endDate)}</span>
+                          </div>
+                          <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-2.5 text-base">
+                            <span className="text-black">Payment Due Date</span>
+                            <span className="font-medium text-black">
+                              {formatDate(order.monthlyLimitResetDate || order.currentMonthExpiryDate)}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-2.5 text-base">
+                            <span className="text-black">Payment Cycle</span>
+                            <span className="font-medium text-black">Monthly</span>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-2.5 text-base">
+                          <span className="text-black">Payment Method</span>
+                          <span className="font-medium text-black">
+                            {order.isPartialPayment ? 'Installments (3)' : 'Full Payment'}
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
-                  {discount > 0 && (
-                    <div className="flex justify-between text-green-600">
-                      <span>Discount {order.couponApplied ? `(${order.couponApplied})` : ''}:</span>
-                      <span>-₹{discount.toLocaleString()}</span>
+                  {/* Installments list — only for installment orders (not recurring plans) */}
+                  {!isRecurringPlan && order.isPartialPayment && order.installments?.length > 0 && (
+                    <div className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm">
+                      <h3 className="mb-3 text-lg font-semibold text-black">Installments</h3>
+                      <div className="space-y-3">
+                        {order.installments.map((installment) => {
+                          const st = getInstallmentStatus(installment);
+                          const label = INSTALLMENT_LABELS[installment.installmentNumber] || `Installment #${installment.installmentNumber}`;
+                          const canPay = !installment.paid && installment.paymentStatus !== 'pending-approval' && isOrderApproved(order);
+                          return (
+                            <div
+                              key={installment.installmentNumber}
+                              onClick={canPay ? () => handlePayInstallment(installment) : undefined}
+                              className={`flex flex-col gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between ${canPay ? 'cursor-pointer hover:border-slate-300 hover:bg-slate-100' : ''}`}
+                            >
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-base font-medium text-black">{label}</span>
+                                  <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-sm font-semibold ${st.tone}`}>
+                                    <st.Icon className="h-3.5 w-3.5" />
+                                    {st.label}
+                                  </span>
+                                </div>
+                                <p className="mt-1 text-sm text-black">
+                                  {installment.paid
+                                    ? `Paid on ${formatDate(installment.paidDate)}`
+                                    : `Due on ${formatDate(installment.dueDate)}`}
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-base font-semibold text-black">₹{installment.amount.toLocaleString()}</span>
+                                {canPay && <ChevronRight className="h-4 w-4 text-black" />}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
 
-                  <div className="flex justify-between font-bold border-t border-slate-200 pt-2 mt-2">
-                    <span>Total:</span>
-                    <span>₹{total.toLocaleString()}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Payment Method Details */}
-            <div className="rounded-[2rem] border border-slate-200 bg-white shadow-sm mt-6 p-6">
-              <h3 className="font-semibold text-lg text-black mb-4">Payment Method</h3>
-
-              <p className="text-base text-black mb-4">{order.isPartialPayment ? 'Installment Payment (3 installments)' : 'Full Payment'}</p>
-
-              {order.isPartialPayment && order.installments && (
-                <div className="space-y-3 mt-4">
-                  {order.installments.map((installment, index) => (
-                    <div
-                      key={index}
-                      className={`p-4 rounded-lg ${installment.paid ? 'bg-blue-50' : 'bg-gray-50'}`}
-                    >
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <span className="text-base font-medium text-black">{index + 1}st Installment </span>
-                          {installment.paid && (
-                            <span className="text-sm text-black">
-                              - Paid ({formatDate(installment.paidDate)})
-                            </span>
-                          )}
-                          {!installment.paid && installment.dueDate && (
-                            <span className="text-sm text-black">
-                              - Due ({formatDate(installment.dueDate)})
-                            </span>
-                          )}
-                        </div>
-                        <span className="text-base font-semibold text-black">₹{installment.amount.toLocaleString()}</span>
+                  {/* Invoice history — shown whenever this order has any invoice records */}
+                  {invoices.length > 0 && (
+                    <div className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm">
+                      <h3 className="mb-3 text-lg font-semibold text-black">Invoice History</h3>
+                      <div className="space-y-3">
+                        {invoices.map((invoice) => {
+                          const meta = INVOICE_STATUS_META[invoice.status] || INVOICE_STATUS_META.unpaid;
+                          return (
+                            <div
+                              key={invoice._id}
+                              onClick={() => navigate(`/invoice-detail/${invoice._id}`)}
+                              className="flex cursor-pointer items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm hover:border-slate-300 hover:shadow-md"
+                            >
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-base font-medium text-black">{invoice.invoiceNumber}</span>
+                                  <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-sm font-semibold ${meta.tone}`}>
+                                    <meta.Icon className="h-3.5 w-3.5" />
+                                    {meta.label}
+                                  </span>
+                                </div>
+                                <p className="mt-1 text-sm text-black">
+                                  {invoice.status === 'paid'
+                                    ? `Paid on ${formatDate(invoice.paidDate)}`
+                                    : `Due on ${formatDate(invoice.dueDate)}`}
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-base font-semibold text-black">₹{invoice.amount.toLocaleString()}</span>
+                                <ChevronRight className="h-4 w-4 shrink-0 text-black" />
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Payment Summary */}
-              <div className="mt-6 pt-4 border-t border-slate-200 text-base">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-black">Paid:</span>
-                  <span className="text-green-600 font-medium">₹{paidAmount.toLocaleString()}</span>
-                </div>
-
-                <div className="flex justify-between items-center">
-                  <span className="text-black">Balance:</span>
-                  <span className={`font-medium ${balanceAmount > 0 ? 'text-blue-600' : 'text-black'}`}>
-                    ₹{balanceAmount.toLocaleString()}
-                  </span>
+                  )}
                 </div>
               </div>
-            </div>
-          </div>
 
-          {/* Right Column: Actions and Progress */}
-          <div className="lg:col-span-1">
-            {/* Action Buttons */}
-            <div className="rounded-[2rem] border border-slate-200 bg-white shadow-sm p-6 mb-6">
-              <button
-                onClick={handleDownloadInvoice}
-                disabled={!isOrderApproved(order) &&
-                       !(order.projectProgress >= 100 || order.currentPhase === 'completed')}
-                className={`w-full py-3 rounded-lg text-base font-medium mb-4 transition-colors ${
-                  isOrderApproved(order) ||
-                  order.projectProgress >= 100 ||
-                  order.currentPhase === 'completed'
-                    ? 'bg-blue-600 text-white hover:bg-blue-700'
-                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                }`}
-              >
-                Download Invoice
-              </button>
-
-              <button
-                onClick={handleTrackProject}
-                className="w-full py-3 border border-blue-600 text-blue-600 rounded-lg text-base font-medium hover:bg-blue-50 transition-colors mb-4"
-              >
-                Track Project
-              </button>
-
-              {/* Show Pay Now button for remaining installments */}
-              {order.isPartialPayment &&
-              order.installments &&
-              order.installments.some(i => !i.paid) &&
-              isOrderApproved(order) && (
-                <button
-                  onClick={() => {
-                    // Find next unpaid installment
-                    const nextInstallment = order.installments.find(i => !i.paid);
-                    if (nextInstallment) {
-                      navigate(`/direct-payment`, {
-                        state: {
-                          installmentPayment: true,
-                          orderId: order._id,
-                          installmentNumber: nextInstallment.installmentNumber,
-                          installmentAmount: nextInstallment.amount,
-                          productName: order.productId?.serviceName || 'Product'
-                        }
-                      });
-                    }
-                  }}
-                  className="w-full py-3 bg-green-600 text-white rounded-lg text-base font-medium hover:bg-green-700 transition-colors"
-                >
-                  Pay Next Installment
-                </button>
-              )}
-
-              {/* Retry Payment button for rejected orders */}
               {order.orderVisibility === 'payment-rejected' && (
-                <button
-                  onClick={() => navigate(`/direct-payment`, {
-                    state: {
-                      retryPaymentId: order._id,
-                      productId: order.productId?._id,
-                      paymentData: {
-                        product: order.productId,
-                        selectedFeatures: order.orderItems?.filter(item => item.type === 'feature').map(item => ({
-                          id: item.id,
-                          name: item.name,
-                          quantity: item.quantity || 1,
-                          sellingPrice: item.originalPrice || 0,
-                          totalPrice: item.finalPrice || 0
-                        })) || [],
-                        totalPrice: order.price,
-                        originalTotalPrice: order.originalPrice || order.price
-                      }
-                    }
-                  })}
-                  className="w-full py-3 bg-red-600 text-white rounded-lg text-base font-medium hover:bg-red-700 transition-colors"
-                >
-                  Retry Payment
-                </button>
+                <div className="mt-5 rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm">
+                  <button
+                    onClick={handleRetryPayment}
+                    className="w-full rounded-lg bg-red-600 py-3 text-base font-medium text-white transition-colors hover:bg-red-700 sm:w-auto sm:px-8"
+                  >
+                    Retry Payment
+                  </button>
+                </div>
               )}
             </div>
-
-            {/* Order Progress */}
-            <div className="rounded-[2rem] border border-slate-200 bg-white shadow-sm p-6">
-              <h3 className="font-semibold text-lg text-black mb-6">Order Progress</h3>
-
-              <div className="relative flex justify-between mb-6">
-                <div className="w-full absolute top-1/2 h-1 bg-gray-200 -translate-y-1/2"></div>
-
-                {['Processing', 'Approved', 'In Progress', 'Completed'].map((step, i) => {
-                  let active = false;
-
-                  if (status.text === 'Processing' && i === 0) active = true;
-                  else if (status.text === 'Rejected' && i === 0) active = true;
-                  else if (status.text === 'In Progress' && i <= 2) active = true;
-                  else if (status.text === 'Approved' && i <= 1) active = true;
-                  else if (status.text === 'Completed' && i <= 3) active = true;
-
-                  // Special handling for rejected orders
-                  const isRejected = status.text === 'Rejected';
-
-                  return (
-                    <div key={i} className="relative z-10 flex flex-col items-center">
-                      <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
-                        active
-                          ? (isRejected && i === 0 ? 'bg-red-500' : i === 3 ? 'bg-green-500' : 'bg-blue-500')
-                          : 'bg-gray-200'
-                      }`}>
-                        {active && (
-                          <div className="w-2 h-2 rounded-full bg-white"></div>
-                        )}
-                      </div>
-                      <span className={`text-sm mt-1 ${active ? 'font-medium text-black' : 'text-black'}`}>
-                        {isRejected && i === 0 ? 'Rejected' : step}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
           </div>
-        </div>
         </div>
       </div>
     </DashboardLayout>
   );
-
 };
 
 export default OrderDetailPage;

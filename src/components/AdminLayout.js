@@ -21,6 +21,7 @@ export const adminSidebarModules = [
     group: true,
     children: [
       { id: "projects", label: "Projects", icon: BriefcaseBusiness, live: true, to: "/admin-panel/website-management/projects" },
+      { id: "plans", label: "Plans", icon: Layers3, live: true, to: "/admin-panel/website-management/plans" },
     ],
   },
   { id: "upcoming-orders", label: "Upcoming Orders", icon: Layers3, soon: true },

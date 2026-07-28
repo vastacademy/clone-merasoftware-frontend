@@ -3,6 +3,7 @@ import CustomerDashboard from "../pages/CustomerDashboard";
 import Cart from "../pages/Cart";
 import OrderPage from "../pages/OrderPage";
 import OrderDetailPage from "../pages/OrderDetailPage";
+import InvoiceDetailPage from "../pages/InvoiceDetailPage";
 import ProjectDetails from "../pages/ProjectDetails";
 import PlanDetails from "../pages/PlanDetails";
 import WalletDetails from "../pages/WalletDetails";
@@ -80,6 +81,14 @@ export const customerRoutes = [
     element: (
       <CustomerProtectedRoute>
         <OrderDetailPage/>
+      </CustomerProtectedRoute>
+    )
+  },
+  {
+    path: "invoice-detail/:invoiceId",
+    element: (
+      <CustomerProtectedRoute>
+        <InvoiceDetailPage/>
       </CustomerProtectedRoute>
     )
   },

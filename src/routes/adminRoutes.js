@@ -6,6 +6,8 @@ import AdminPaymentRecordDetail from "../pages/AdminPaymentRecordDetail";
 import ProjectDetails from "../pages/ProjectDetails";
 import AdminProjectProductsPage from "../pages/AdminProjectProductsPage";
 import AdminCreateProjectPage from "../pages/AdminCreateProjectPage";
+import AdminPlanProductsPage from "../pages/AdminPlanProductsPage";
+import AdminCreatePlanPage from "../pages/AdminCreatePlanPage";
 
 export const adminRoutes = [
   {
@@ -53,6 +55,22 @@ export const adminRoutes = [
     element: (
       <ProtectedRoute requireRole={['admin']}>
         <AdminProjectProductsPage/>
+      </ProtectedRoute>
+    )
+  },
+  {
+    path: "admin-panel/website-management/plans/add",
+    element: (
+      <ProtectedRoute requireRole={['admin']}>
+        <AdminCreatePlanPage />
+      </ProtectedRoute>
+    )
+  },
+  {
+    path: "admin-panel/website-management/plans",
+    element: (
+      <ProtectedRoute requireRole={['admin']}>
+        <AdminPlanProductsPage/>
       </ProtectedRoute>
     )
   },

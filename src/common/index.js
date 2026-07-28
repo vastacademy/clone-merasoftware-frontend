@@ -45,6 +45,10 @@ const SummaryApi = {
         url : `${backendDomain}/api/admin/project-products`,
         method : "get"
     },
+    adminPlanProducts : {
+        url : `${backendDomain}/api/admin/plan-products`,
+        method : "get"
+    },
     updateUser : {
         url : `${backendDomain}/api/update-user`,
         method : "post"

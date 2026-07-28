@@ -10,6 +10,7 @@ import {
   LayoutGrid,
   Layers3,
   RefreshCw,
+  Sparkles,
 } from 'lucide-react';
 import SummaryApi from '../common';
 import DashboardLayout from '../components/DashboardLayout';
@@ -323,26 +324,35 @@ const OrdersPage = () => {
     >
       <div className="min-h-full bg-[radial-gradient(circle_at_top_right,_rgba(59,130,246,0.16),_transparent_34%),linear-gradient(180deg,_#f8fafc_0%,_#eef2ff_50%,_#f8fafc_100%)] px-4 py-5 sm:px-6 lg:px-8 lg:py-8">
         <section className="mx-auto max-w-7xl overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
-          <div className="p-5 sm:p-6">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <p className="text-sm font-semibold uppercase text-black">Orders</p>
-                <h1 className="mt-2 text-2xl font-bold text-black">Purchase history</h1>
-                <p className="mt-2 max-w-2xl text-base leading-6 text-black">
+          <div className="rounded-t-[2rem] bg-gradient-to-r from-slate-950 via-slate-900 to-blue-950 px-5 py-5 text-white sm:px-6 lg:px-8">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+              <div className="max-w-3xl">
+                <div className="inline-flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-sm font-semibold uppercase text-emerald-300">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  Orders
+                </div>
+                <h1 className="mt-3 text-2xl font-bold tracking-tight text-white">
+                  Purchase history
+                </h1>
+                <p className="mt-2 max-w-2xl text-base leading-6 text-white">
                   Clean order records with price, purchase date, type, and current status. Detail pages stay unchanged.
                 </p>
               </div>
 
-              <button
-                type="button"
-                onClick={fetchOrders}
-                className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-base font-semibold text-black transition hover:bg-slate-100"
-              >
-                <RefreshCw className="h-4 w-4" />
-                Refresh
-              </button>
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="rounded-2xl border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-white">
+                  Total: {orders.length}
+                </div>
+                <button
+                  type="button"
+                  onClick={fetchOrders}
+                  className="inline-flex items-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/15"
+                >
+                  <RefreshCw size={16} />
+                  Refresh
+                </button>
+              </div>
             </div>
-
           </div>
 
           <CustomerWorkspaceTabs

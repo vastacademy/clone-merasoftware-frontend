@@ -83,7 +83,27 @@ const ProjectDetailView = ({ project, onBack, onProceedWithPayment, onProceedWit
           </section>
         )}
 
-        {/* 2. What's included */}
+        {/* 2. Who is it for */}
+        {perfectFor.length > 0 && (
+          <section>
+            <SectionHeading>Who Is This For?</SectionHeading>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {perfectFor.map((item, index) => {
+                const text = item && typeof item === 'object' ? item.text : item;
+                return (
+                  <span
+                    key={text || index}
+                    className="rounded-full bg-slate-100 px-3.5 py-1.5 text-sm font-medium text-black"
+                  >
+                    {text}
+                  </span>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        {/* 3. What's included */}
         {packageIncludes.length > 0 && (
           <section>
             <div className="flex items-center">
@@ -101,7 +121,7 @@ const ProjectDetailView = ({ project, onBack, onProceedWithPayment, onProceedWit
           </section>
         )}
 
-        {/* 3. Add-on features (customize) */}
+        {/* 4. Add-on features (customize) */}
         {additionalFeatures.length > 0 && (
           <section>
             <div className="flex items-center">
@@ -126,26 +146,6 @@ const ProjectDetailView = ({ project, onBack, onProceedWithPayment, onProceedWit
                       className="h-5 w-5 rounded border-slate-400 text-emerald-600 focus:ring-emerald-500"
                     />
                   </label>
-                );
-              })}
-            </div>
-          </section>
-        )}
-
-        {/* 4. Who is it for */}
-        {perfectFor.length > 0 && (
-          <section>
-            <SectionHeading>Who Is This For?</SectionHeading>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {perfectFor.map((item, index) => {
-                const text = item && typeof item === 'object' ? item.text : item;
-                return (
-                  <span
-                    key={text || index}
-                    className="rounded-full bg-slate-100 px-3.5 py-1.5 text-sm font-medium text-black"
-                  >
-                    {text}
-                  </span>
                 );
               })}
             </div>
