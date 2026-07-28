@@ -1,49 +1,118 @@
 import React, { useCallback, useRef, useState } from "react";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Save, UploadCloud } from "lucide-react";
+import { ArrowLeft, Save } from "lucide-react";
 import AdminLayout from "../components/AdminLayout";
 import AdminWorkspaceShell, { AdminWorkspaceHeader } from "../components/admin/AdminWorkspaceShell";
 import RichTextEditor from "../helpers/richTextEditor";
 
 const PLAN_TYPES = [
-  { value: "simple", label: "Simple" },
-  { value: "monthlyRenewable", label: "Monthly Renewable" },
-  { value: "monthlyLimited", label: "Monthly Limited" },
+  { value: "website_updates", label: "Website Update" },
+  { value: "digital_marketing", label: "Digital Marketing" },
+  { value: "google_business_setup", label: "Google Business Setup" },
+  { value: "social_media_marketing", label: "Social Media Marketing" },
+  { value: "other", label: "Other" },
 ];
+
+const FILES_LIMIT_OPTIONS = [1, 2, 3, 4, 5, 10, 15, 20, 25];
+
+const LIMIT_SCOPES = [
+  { value: "per_day", label: "Per Day" },
+  { value: "per_week", label: "Per Week" },
+  { value: "per_month", label: "Per Month" },
+  { value: "per_plan", label: "Per Plan" },
+  { value: "unlimited", label: "Unlimited" },
+  { value: "manual", label: "Manual" },
+];
+
+const MANUAL_UNITS = [
+  { value: "day", label: "Day" },
+  { value: "week", label: "Week" },
+  { value: "month", label: "Month" },
+  { value: "year", label: "Year" },
+];
+
+const VALIDITY_UNITS = [
+  { value: "day", label: "Days" },
+  { value: "week", label: "Weeks" },
+  { value: "month", label: "Months" },
+  { value: "year", label: "Years" },
+];
+
+const MANUAL_COUNT_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+
+const BILLING_CYCLES = [
+  { value: "weekly", label: "Weekly", months: null },
+  { value: "monthly", label: "Monthly", months: 1 },
+  { value: "quarterly", label: "Quarterly", months: 3 },
+  { value: "half_yearly", label: "Every 6 Months", months: 6 },
+  { value: "yearly", label: "Yearly", months: 12 },
+];
+
+const TOTAL_CYCLES_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+
+const VALIDITY_VALUE_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
 const inputClassName = "w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-base text-black outline-none transition placeholder:text-slate-400 focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100";
 const labelClassName = "mb-1.5 block text-base font-semibold text-slate-700";
+const sectionTitleClassName = "text-sm font-bold uppercase tracking-wide text-slate-500";
 
 const AdminCreatePlanPage = () => {
   const user = useSelector((state) => state?.user?.user);
   const navigate = useNavigate();
 
+  // Basic details
   const [serviceName, setServiceName] = useState("");
+  const [planType, setPlanType] = useState("");
   const [price, setPrice] = useState("");
   const [sellingPrice, setSellingPrice] = useState("");
-  const [planImage, setPlanImage] = useState([]);
   const [visibility, setVisibility] = useState("visible");
-  const [planType, setPlanType] = useState("");
 
-  const [validityPeriod, setValidityPeriod] = useState("");
-  const [updateCount, setUpdateCount] = useState("");
-  const [yearlyPlanDuration, setYearlyPlanDuration] = useState("");
-  const [monthlyRenewalCost, setMonthlyRenewalCost] = useState("");
-  const [monthlyUpdateLimit, setMonthlyUpdateLimit] = useState("");
-  const [monthlyRenewalPrice, setMonthlyRenewalPrice] = useState("");
+  // Plan validity — overall plan lifespan
+  const [validityUnit, setValidityUnit] = useState("");
+  const [validityValue, setValidityValue] = useState("");
+  const [validityValueCustom, setValidityValueCustom] = useState("");
+  const [billingCycle, setBillingCycle] = useState("");
+
+  const resolvedValidityValue = validityValue === "manual" ? Number(validityValueCustom) : Number(validityValue);
+
+  const validityInDays = validityUnit && resolvedValidityValue
+    ? resolvedValidityValue * { day: 1, week: 7, month: 30, year: 365 }[validityUnit]
+    : 0;
+  // Month-based validity is compared in whole months so quarterly/half-yearly/yearly
+  // only appear when they divide the plan's duration evenly (no partial cycle left over).
+  const validityInMonths = validityUnit === "month" ? resolvedValidityValue
+    : validityUnit === "year" ? resolvedValidityValue * 12
+    : null;
+
+  const availableBillingCycles = !validityUnit || !resolvedValidityValue
+    ? []
+    : BILLING_CYCLES.filter((option) => {
+        if (option.value === "weekly") {
+          return validityInDays >= 7;
+        }
+        return validityInMonths !== null && validityInMonths % option.months === 0;
+      });
+
+  // Portal access — how much/how often the customer can use the portal
+  const [limitScope, setLimitScope] = useState("");
+  const [totalCycles, setTotalCycles] = useState("");
+  const [totalCyclesValue, setTotalCyclesValue] = useState("");
+
+  // Manual scope — custom unit + count (with its own manual override)
+  const [manualUnit, setManualUnit] = useState("");
+  const [manualCount, setManualCount] = useState("");
+  const [manualCountValue, setManualCountValue] = useState("");
+
+  // Files limit — per-upload file count, independent of portal access
+  const [filesLimitCount, setFilesLimitCount] = useState("");
+  const [filesLimitCountValue, setFilesLimitCountValue] = useState("");
 
   const descriptionRef = useRef("");
 
   const handleDescriptionChange = useCallback((content) => {
     descriptionRef.current = content;
   }, []);
-
-  const handleImageChange = (event) => {
-    const files = Array.from(event.target.files || []);
-    if (files.length === 0) return;
-    setPlanImage((current) => [...current, ...files.map((file) => file.name)]);
-  };
 
   const handleFormSubmit = (event) => {
     event.preventDefault();
@@ -69,6 +138,8 @@ const AdminCreatePlanPage = () => {
 
         <div className="p-3 sm:p-4">
           <form className="w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm sm:p-5" onSubmit={handleFormSubmit}>
+
+            {/* Plan name & type */}
             <div className="grid gap-x-4 gap-y-4 md:grid-cols-2">
               <label>
                 <span className={labelClassName}>Plan Name</span>
@@ -90,6 +161,178 @@ const AdminCreatePlanPage = () => {
                   ))}
                 </select>
               </label>
+            </div>
+
+            {/* Plan power */}
+            <div className="mt-6 border-t border-slate-200 pt-4">
+              <span className={sectionTitleClassName}>Plan Power</span>
+              <div className="mt-3 grid gap-x-4 gap-y-4 md:grid-cols-2">
+                <label>
+                  <span className={labelClassName}>Limit Scope</span>
+                  <select className={inputClassName} value={limitScope} onChange={(event) => setLimitScope(event.target.value)}>
+                    <option value="">Select scope limit</option>
+                    {LIMIT_SCOPES.map((option) => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
+                  </select>
+                </label>
+
+                {limitScope === "manual" && (
+                  <>
+                    <label>
+                      <span className={labelClassName}>Manual Unit</span>
+                      <select className={inputClassName} value={manualUnit} onChange={(event) => setManualUnit(event.target.value)}>
+                        <option value="">Select unit</option>
+                        {MANUAL_UNITS.map((option) => (
+                          <option key={option.value} value={option.value}>{option.label}</option>
+                        ))}
+                      </select>
+                    </label>
+
+                    <label>
+                      <span className={labelClassName}>Manual Count</span>
+                      <select className={inputClassName} value={manualCount} onChange={(event) => setManualCount(event.target.value)}>
+                        <option value="">Select count</option>
+                        {MANUAL_COUNT_OPTIONS.map((count) => (
+                          <option key={count} value={count}>{count}</option>
+                        ))}
+                        <option value="manual">Manual</option>
+                      </select>
+                    </label>
+
+                    {manualCount === "manual" && (
+                      <label>
+                        <span className={labelClassName}>Enter Count</span>
+                        <input
+                          className={inputClassName}
+                          type="number"
+                          min="1"
+                          placeholder="e.g. 45"
+                          value={manualCountValue}
+                          onChange={(event) => setManualCountValue(event.target.value)}
+                        />
+                      </label>
+                    )}
+                  </>
+                )}
+
+                {limitScope && limitScope !== "unlimited" && (
+                  <label>
+                    <span className={labelClassName}>Portal Access</span>
+                    <select className={inputClassName} value={totalCycles} onChange={(event) => setTotalCycles(event.target.value)}>
+                      <option value="">Select portal access</option>
+                      {TOTAL_CYCLES_OPTIONS.map((count) => (
+                        <option key={count} value={count}>{count}</option>
+                      ))}
+                      <option value="manual">Manual</option>
+                    </select>
+                  </label>
+                )}
+
+                {limitScope && limitScope !== "unlimited" && totalCycles === "manual" && (
+                  <label>
+                    <span className={labelClassName}>Enter Portal Access</span>
+                    <input
+                      className={inputClassName}
+                      type="number"
+                      min="1"
+                      placeholder="e.g. 15"
+                      value={totalCyclesValue}
+                      onChange={(event) => setTotalCyclesValue(event.target.value)}
+                    />
+                  </label>
+                )}
+
+                <label>
+                  <span className={labelClassName}>Files Limit</span>
+                  <select className={inputClassName} value={filesLimitCount} onChange={(event) => setFilesLimitCount(event.target.value)}>
+                    <option value="">Select files limit count</option>
+                    {FILES_LIMIT_OPTIONS.map((count) => (
+                      <option key={count} value={count}>{count}</option>
+                    ))}
+                    <option value="manual">Manual</option>
+                  </select>
+                </label>
+
+                {filesLimitCount === "manual" && (
+                  <label>
+                    <span className={labelClassName}>Enter Files Limit</span>
+                    <input
+                      className={inputClassName}
+                      type="number"
+                      min="1"
+                      placeholder="e.g. 30"
+                      value={filesLimitCountValue}
+                      onChange={(event) => setFilesLimitCountValue(event.target.value)}
+                    />
+                  </label>
+                )}
+              </div>
+            </div>
+
+            {/* Plan validity */}
+            <div className="mt-6 border-t border-slate-200 pt-4">
+              <span className={sectionTitleClassName}>Plan Validity</span>
+              <div className="mt-3 grid gap-x-4 gap-y-4 md:grid-cols-2">
+                <label>
+                  <span className={labelClassName}>Validity Unit</span>
+                  <select className={inputClassName} value={validityUnit} onChange={(event) => setValidityUnit(event.target.value)}>
+                    <option value="">Select validity unit</option>
+                    {VALIDITY_UNITS.map((option) => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
+                  </select>
+                </label>
+
+                <label>
+                  <span className={labelClassName}>Validity Value</span>
+                  <select className={inputClassName} value={validityValue} onChange={(event) => setValidityValue(event.target.value)}>
+                    <option value="">Select validity value</option>
+                    {VALIDITY_VALUE_OPTIONS.map((count) => (
+                      <option key={count} value={count}>{count}</option>
+                    ))}
+                    <option value="manual">Manual</option>
+                  </select>
+                </label>
+
+                {validityValue === "manual" && (
+                  <label>
+                    <span className={labelClassName}>Enter Validity Value</span>
+                    <input
+                      className={inputClassName}
+                      type="number"
+                      min="1"
+                      placeholder="e.g. 18"
+                      value={validityValueCustom}
+                      onChange={(event) => setValidityValueCustom(event.target.value)}
+                    />
+                  </label>
+                )}
+
+                {availableBillingCycles.length > 0 && (
+                  <label>
+                    <span className={labelClassName}>Billing Cycle</span>
+                    <select className={inputClassName} value={billingCycle} onChange={(event) => setBillingCycle(event.target.value)}>
+                      <option value="">Select billing cycle</option>
+                      {availableBillingCycles.map((option) => (
+                        <option key={option.value} value={option.value}>{option.label}</option>
+                      ))}
+                    </select>
+                  </label>
+                )}
+              </div>
+            </div>
+
+            {/* Description, image, visibility */}
+            <div className="mt-6 grid gap-x-4 gap-y-4 border-t border-slate-200 pt-4 md:grid-cols-2">
+              <div className="md:col-span-2">
+                <span className={labelClassName}>Description / Specifications</span>
+                <RichTextEditor
+                  onChange={handleDescriptionChange}
+                  placeholder="Describe the plan"
+                  wrapperClassName="bg-white"
+                />
+              </div>
 
               <label>
                 <span className={labelClassName}>Base Price</span>
@@ -114,125 +357,6 @@ const AdminCreatePlanPage = () => {
                   onChange={(event) => setSellingPrice(event.target.value)}
                 />
               </label>
-
-              {planType === "simple" && (
-                <>
-                  <label>
-                    <span className={labelClassName}>Validity Period (days)</span>
-                    <input
-                      className={inputClassName}
-                      type="number"
-                      min="1"
-                      max="365"
-                      placeholder="e.g. 7"
-                      value={validityPeriod}
-                      onChange={(event) => setValidityPeriod(event.target.value)}
-                    />
-                  </label>
-
-                  <label>
-                    <span className={labelClassName}>Update Count</span>
-                    <input
-                      className={inputClassName}
-                      type="number"
-                      min="1"
-                      placeholder="e.g. 1"
-                      value={updateCount}
-                      onChange={(event) => setUpdateCount(event.target.value)}
-                    />
-                  </label>
-                </>
-              )}
-
-              {planType === "monthlyRenewable" && (
-                <>
-                  <label>
-                    <span className={labelClassName}>Yearly Plan Duration (days)</span>
-                    <input
-                      className={inputClassName}
-                      type="number"
-                      min="1"
-                      max="365"
-                      placeholder="e.g. 365"
-                      value={yearlyPlanDuration}
-                      onChange={(event) => setYearlyPlanDuration(event.target.value)}
-                    />
-                  </label>
-
-                  <label>
-                    <span className={labelClassName}>Monthly Renewal Cost</span>
-                    <input
-                      className={inputClassName}
-                      type="number"
-                      min="0"
-                      placeholder="e.g. 8000"
-                      value={monthlyRenewalCost}
-                      onChange={(event) => setMonthlyRenewalCost(event.target.value)}
-                    />
-                  </label>
-                </>
-              )}
-
-              {planType === "monthlyLimited" && (
-                <>
-                  <label>
-                    <span className={labelClassName}>Yearly Plan Duration (days)</span>
-                    <input
-                      className={inputClassName}
-                      type="number"
-                      min="1"
-                      max="365"
-                      placeholder="e.g. 365"
-                      value={yearlyPlanDuration}
-                      onChange={(event) => setYearlyPlanDuration(event.target.value)}
-                    />
-                  </label>
-
-                  <label>
-                    <span className={labelClassName}>Monthly Update Limit</span>
-                    <input
-                      className={inputClassName}
-                      type="number"
-                      min="1"
-                      placeholder="e.g. 2"
-                      value={monthlyUpdateLimit}
-                      onChange={(event) => setMonthlyUpdateLimit(event.target.value)}
-                    />
-                  </label>
-
-                  <label>
-                    <span className={labelClassName}>Monthly Renewal Price</span>
-                    <input
-                      className={inputClassName}
-                      type="number"
-                      min="0"
-                      placeholder="e.g. 3000"
-                      value={monthlyRenewalPrice}
-                      onChange={(event) => setMonthlyRenewalPrice(event.target.value)}
-                    />
-                  </label>
-                </>
-              )}
-
-              <div className="md:col-span-2">
-                <span className={labelClassName}>Description / Specifications</span>
-                <RichTextEditor
-                  onChange={handleDescriptionChange}
-                  placeholder="Describe the plan"
-                  wrapperClassName="bg-white"
-                />
-              </div>
-
-              <div>
-                <span className={labelClassName}>Plan Image <span className="font-normal normal-case tracking-normal text-slate-400">(optional)</span></span>
-                <label className="flex h-[52px] cursor-pointer items-center gap-3 rounded-xl border border-dashed border-slate-300 bg-white px-4 transition hover:border-emerald-400 hover:bg-emerald-50">
-                  <UploadCloud className="text-slate-400" size={22} />
-                  <span className="text-base font-semibold text-black">
-                    {planImage.length > 0 ? `${planImage.length} file(s) selected` : "Upload image"}
-                  </span>
-                  <input type="file" multiple className="hidden" onChange={handleImageChange} />
-                </label>
-              </div>
 
               <label>
                 <span className={labelClassName}>Visibility</span>
