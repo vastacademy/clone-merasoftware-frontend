@@ -6,6 +6,7 @@ import SummaryApi from '../common';
 import { setUserDetails } from '../store/userSlice';
 import TriangleMazeLoader from '../components/TriangleMazeLoader';
 import DashboardLayout from '../components/DashboardLayout';
+import backgroundImage from '../assets/BG.png';
 import StorageService from '../utils/storageService';
 import CookieManager from '../utils/cookieManager';
 import uploadImage from '../helpers/uploadImage';
@@ -129,36 +130,53 @@ const Profile = () => {
 
   return (
     <DashboardLayout user={user} activeProject={null}>
-      <div className="min-h-screen bg-slate-100 px-4 py-8 sm:px-6 lg:px-8">
+      <div
+        className="relative min-h-[calc(100vh-4rem)] overflow-hidden bg-slate-950 bg-cover bg-center px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
+        style={{ backgroundImage: `url(${backgroundImage})` }}
+      >
+        <div className="pointer-events-none absolute inset-0 bg-slate-950/40" />
         {(loading || saving) && <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/20 backdrop-blur-sm"><TriangleMazeLoader /></div>}
-        <form onSubmit={handleSubmit} className="mx-auto max-w-3xl rounded-3xl bg-white px-6 py-8 shadow-sm sm:px-10">
-          <div className="border-b border-slate-200 pb-6">
-            <p className="text-sm font-semibold uppercase text-emerald-600">Account</p>
-            <h1 className="mt-2 text-2xl font-bold tracking-tight text-black">Profile settings</h1>
-            <p className="mt-2 text-base text-black">Update your personal information.</p>
+
+        <form onSubmit={handleSubmit} className="relative mx-auto max-w-3xl">
+          <div className="text-center">
+            <span className="inline-flex items-center rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-sm font-medium text-white shadow-[0_8px_32px_rgba(0,0,0,0.35)] backdrop-blur-2xl">
+              Account
+            </span>
+            <h1 className="mt-5 text-2xl font-bold tracking-tight text-white sm:text-3xl lg:text-4xl">
+              Profile settings
+            </h1>
+            <p className="mx-auto mt-3 max-w-2xl text-base text-slate-300 sm:text-lg">
+              Update your personal information.
+            </p>
           </div>
 
-          <div className="flex items-center gap-4 border-b border-slate-200 py-6">
-            <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-slate-100 text-2xl font-bold text-black">
-              {formData.profilePic ? <img src={formData.profilePic} alt={formData.name || 'Profile'} className="h-full w-full object-cover" /> : (formData.name || 'U').trim().charAt(0).toUpperCase()}
+          <div className="mt-10 space-y-6">
+            <div className="relative overflow-hidden rounded-3xl border border-white/20 bg-white/10 p-6 shadow-[0_8px_32px_rgba(0,0,0,0.25)] backdrop-blur-2xl backdrop-saturate-150 sm:p-7">
+              <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/[0.12] to-transparent" />
+              <div className="relative flex items-center gap-4">
+                <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border border-white/20 bg-white/10 text-2xl font-bold text-white backdrop-blur-md">
+                  {formData.profilePic ? <img src={formData.profilePic} alt={formData.name || 'Profile'} className="h-full w-full object-cover" /> : (formData.name || 'U').trim().charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <label htmlFor="profile-picture" className="inline-flex cursor-pointer items-center gap-2 text-base font-semibold text-emerald-400 hover:text-emerald-300"><Camera size={16} /> Change profile picture</label>
+                  <input id="profile-picture" type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
+                  <p className="mt-1 text-sm text-slate-300">JPG, PNG or WEBP</p>
+                </div>
+              </div>
             </div>
-            <div>
-              <label htmlFor="profile-picture" className="inline-flex cursor-pointer items-center gap-2 text-base font-semibold text-emerald-700 hover:text-emerald-800"><Camera size={16} /> Change profile picture</label>
-              <input id="profile-picture" type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
-              <p className="mt-1 text-sm text-black">JPG, PNG or WEBP</p>
-            </div>
-          </div>
 
-          <div className="space-y-6 py-7">
-            <div className="grid gap-6 sm:grid-cols-2">
-              <label className="block"><span className="mb-2 flex items-center gap-2 text-base font-semibold text-black"><User size={16} className="text-slate-400" /> Full name</span><input name="name" value={formData.name} onChange={handleChange} required className="w-full border-0 border-b border-slate-300 bg-transparent px-0 py-2 text-base text-black outline-none transition focus:border-emerald-500 focus:ring-0" /></label>
-              <label className="block"><span className="mb-2 flex items-center gap-2 text-base font-semibold text-black"><Mail size={16} className="text-slate-400" /> Email address</span><input name="email" value={formData.email} readOnly className="w-full border-0 border-b border-slate-200 bg-transparent px-0 py-2 text-base text-black outline-none" /></label>
-              <label className="block"><span className="mb-2 flex items-center gap-2 text-base font-semibold text-black"><Phone size={16} className="text-slate-400" /> Phone number</span><input name="phone" type="tel" inputMode="numeric" pattern="[0-9]*" value={formData.phone} onChange={handleChange} className="w-full border-0 border-b border-slate-300 bg-transparent px-0 py-2 text-base text-black outline-none transition focus:border-emerald-500 focus:ring-0" /></label>
-              <label className="block"><span className="mb-2 flex items-center gap-2 text-base font-semibold text-black"><Calendar size={16} className="text-slate-400" /> Age</span><input name="age" type="text" inputMode="numeric" pattern="[0-9]*" maxLength="3" value={formData.age} onChange={handleChange} className="w-full border-0 border-b border-slate-300 bg-transparent px-0 py-2 text-base text-black outline-none transition focus:border-emerald-500 focus:ring-0" /></label>
+            <div className="relative overflow-hidden rounded-3xl border border-white/20 bg-white/10 p-6 shadow-[0_8px_32px_rgba(0,0,0,0.25)] backdrop-blur-2xl backdrop-saturate-150 sm:p-7">
+              <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/[0.12] to-transparent" />
+              <div className="relative grid gap-6 sm:grid-cols-2">
+                <label className="block"><span className="mb-2 flex items-center gap-2 text-base font-semibold text-white"><User size={16} className="text-slate-400" /> Full name</span><input name="name" value={formData.name} onChange={handleChange} required className="w-full border-0 border-b border-white/20 bg-transparent px-0 py-2 text-base text-white outline-none transition focus:border-emerald-400 focus:ring-0" /></label>
+                <label className="block"><span className="mb-2 flex items-center gap-2 text-base font-semibold text-white"><Mail size={16} className="text-slate-400" /> Email address</span><input name="email" value={formData.email} readOnly className="w-full border-0 border-b border-white/10 bg-transparent px-0 py-2 text-base text-white outline-none" /></label>
+                <label className="block"><span className="mb-2 flex items-center gap-2 text-base font-semibold text-white"><Phone size={16} className="text-slate-400" /> Phone number</span><input name="phone" type="tel" inputMode="numeric" pattern="[0-9]*" value={formData.phone} onChange={handleChange} className="w-full border-0 border-b border-white/20 bg-transparent px-0 py-2 text-base text-white outline-none transition focus:border-emerald-400 focus:ring-0" /></label>
+                <label className="block"><span className="mb-2 flex items-center gap-2 text-base font-semibold text-white"><Calendar size={16} className="text-slate-400" /> Age</span><input name="age" type="text" inputMode="numeric" pattern="[0-9]*" maxLength="3" value={formData.age} onChange={handleChange} className="w-full border-0 border-b border-white/20 bg-transparent px-0 py-2 text-base text-white outline-none transition focus:border-emerald-400 focus:ring-0" /></label>
+              </div>
             </div>
-          </div>
 
-          <div className="flex justify-end border-t border-slate-200 pt-6"><button type="submit" disabled={!isDirty || saving} className={`rounded-xl px-6 py-3 text-base font-semibold text-white transition ${isDirty && !saving ? 'bg-emerald-600 hover:bg-emerald-700' : 'cursor-not-allowed bg-slate-300'}`}>{saving ? 'Saving...' : 'Save changes'}</button></div>
+            <div className="flex justify-end"><button type="submit" disabled={!isDirty || saving} className={`rounded-xl border px-6 py-3 text-base font-semibold backdrop-blur-md transition ${isDirty && !saving ? 'border-emerald-400/40 bg-emerald-500/20 text-white hover:bg-emerald-500/35' : 'cursor-not-allowed border-white/10 bg-white/5 text-slate-400'}`}>{saving ? 'Saving...' : 'Save changes'}</button></div>
+          </div>
         </form>
       </div>
     </DashboardLayout>

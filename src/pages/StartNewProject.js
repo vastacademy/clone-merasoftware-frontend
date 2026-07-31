@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { ArrowRight, Cloud, Database, Globe, Layers3, Smartphone, Sparkles } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
+import backgroundImage from '../assets/BG.png';
 import CustomerWorkspaceTabs from '../components/CustomerWorkspaceTabs';
 import SummaryApi from '../common';
 
@@ -12,20 +13,21 @@ const CATEGORY_STYLE = {
   cloud_software_development: { icon: Cloud, color: 'text-purple-600' },
   app_development: { icon: Smartphone, color: 'text-orange-600' },
   website_updates: { icon: Layers3, color: 'text-teal-600' },
+  service_plan: { icon: Layers3, color: 'text-teal-600' },
 };
 
 const BASE_TABS = [
   { id: 'websites', label: 'Websites' },
   { id: 'cloud', label: 'Cloud Software' },
   { id: 'app', label: 'App Development' },
-  { id: 'plans', label: 'Plans' },
+  { id: 'plans', label: 'Service Plans' },
 ];
 
 const TAB_CATEGORIES = {
   websites: ['standard_websites', 'dynamic_websites'],
   cloud: ['cloud_software_development'],
   app: ['app_development'],
-  plans: ['website_updates'],
+  plans: ['website_updates', 'service_plan'],
 };
 
 // Categories that are add-ons, not standalone projects/plans.
@@ -80,7 +82,10 @@ const StartNewProject = () => {
 
   return (
     <DashboardLayout user={user}>
-      <div className="min-h-full bg-[radial-gradient(circle_at_top_right,_rgba(16,185,129,0.12),_transparent_30%),linear-gradient(180deg,_#f8fafc_0%,_#eef2ff_100%)] px-4 py-5 sm:px-6 lg:px-8 lg:py-8">
+      <div
+        className="min-h-full bg-slate-950 bg-cover bg-center px-4 py-5 sm:px-6 lg:px-8 lg:py-8"
+        style={{ backgroundImage: `url(${backgroundImage})` }}
+      >
         <section className="mx-auto max-w-7xl rounded-[2rem] border border-slate-200 bg-white/95 shadow-[0_25px_80px_-35px_rgba(15,23,42,0.35)] backdrop-blur">
           <div className="rounded-t-[2rem] bg-gradient-to-r from-slate-950 via-slate-900 to-blue-950 px-5 py-5 text-white sm:px-6 lg:px-8">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -130,7 +135,13 @@ const StartNewProject = () => {
                     <button
                       key={project._id}
                       type="button"
-                      onClick={() => navigate(`/start-new-project/${project._id}`)}
+                      onClick={() =>
+                        navigate(
+                          project.category === 'service_plan'
+                            ? `/service-plan-detail/${project._id}`
+                            : `/start-new-project/${project._id}`
+                        )
+                      }
                       className={[
                         'grid w-full grid-cols-12 gap-3 px-5 py-4 text-left transition hover:bg-slate-100 sm:px-6',
                         index % 2 === 0 ? 'bg-white' : 'bg-slate-50',
@@ -144,7 +155,17 @@ const StartNewProject = () => {
                           <div className="min-w-0">
                             <h3 className="truncate text-lg font-semibold text-black">
                               {project.serviceName}
+                              {['standard_websites', 'dynamic_websites'].includes(project.category) && project.totalPages > 0 && (
+                                <span className="ml-2 text-sm font-medium text-slate-500">
+                                  ({project.totalPages} pages)
+                                </span>
+                              )}
                             </h3>
+                            {project.category === 'dynamic_websites' && project.packageIncludes?.[0] && (
+                              <p className="mt-0.5 text-sm font-medium text-emerald-700">
+                                {project.packageIncludes[0]}
+                              </p>
+                            )}
                             <p className="mt-1 line-clamp-2 text-sm text-black">{description}</p>
                           </div>
                         </div>

@@ -5,6 +5,7 @@ import SummaryApi from '../common';
 import imageTobase64 from '../helpers/imageTobase64';
 import { toast } from 'sonner';
 import DashboardLayout from '../components/DashboardLayout';
+import backgroundImage from '../assets/BG.png';
 import {
   CheckCircle,
   ArrowRight,
@@ -561,7 +562,10 @@ const renderCurrentStep = () => {
   // ====== Render ======
   return (
     <DashboardLayout user={currentUser}>
-      <div className="min-h-full bg-[radial-gradient(circle_at_top_right,_rgba(59,130,246,0.16),_transparent_34%),linear-gradient(180deg,_#f8fafc_0%,_#eef2ff_50%,_#f8fafc_100%)] px-4 py-5 sm:px-6 lg:px-8 lg:py-8">
+      <div
+        className="min-h-full bg-slate-950 bg-cover bg-center px-4 py-5 sm:px-6 lg:px-8 lg:py-8"
+        style={{ backgroundImage: `url(${backgroundImage})` }}
+      >
         <div className="mx-auto max-w-4xl">
                 <section className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
                     <div className="rounded-t-[2rem] bg-gradient-to-r from-slate-950 via-slate-900 to-blue-950 px-5 py-5 text-center text-white sm:px-6 lg:px-8">

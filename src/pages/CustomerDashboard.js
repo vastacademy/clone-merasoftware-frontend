@@ -7,13 +7,13 @@ import {
   LayoutGrid,
   PlusCircle,
   RefreshCw,
-  Sparkles,
   Wallet,
   TriangleAlert,
   Layers3,
   BadgeCheck,
 } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
+import backgroundImage from '../assets/BG.png';
 import SummaryApi from '../common';
 import Context from '../context';
 import displayINRCurrency from '../helpers/displayCurrency';
@@ -125,16 +125,26 @@ const MetricCard = ({ icon: Icon, label, value, helper, tone = 'slate' }) => {
     violet: 'from-violet-600 to-fuchsia-500 text-white',
   };
 
+  const glowMap = {
+    slate: 'bg-slate-400/25',
+    blue: 'bg-blue-400/30',
+    emerald: 'bg-emerald-400/30',
+    violet: 'bg-violet-400/30',
+  };
+
   return (
-    <div className={`rounded-[1.75rem] border border-white/10 bg-gradient-to-br ${toneMap[tone]} p-5 shadow-xl`}>
-      <div className="flex items-start justify-between gap-4">
+    <div className="group relative overflow-hidden rounded-[1.75rem] border border-white/15 bg-slate-950/60 p-5 shadow-[0_8px_32px_rgba(0,0,0,0.35)] backdrop-blur-xl backdrop-saturate-150 transition-all duration-300 hover:border-white/25 hover:bg-slate-950/70">
+      <div className={`pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full ${glowMap[tone]} blur-3xl`} />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/10 to-transparent" />
+
+      <div className="relative flex items-start justify-between gap-4">
         <div>
           <p className="text-base font-semibold uppercase text-white">{label}</p>
           <p className="mt-2 text-2xl font-bold text-white">{value}</p>
-          {helper ? <p className="mt-2 text-sm text-white">{helper}</p> : null}
+          {helper ? <p className="mt-2 text-sm text-slate-200">{helper}</p> : null}
         </div>
-        <div className="rounded-2xl bg-white/10 p-3">
-          <Icon className="h-5 w-5" />
+        <div className="rounded-2xl border border-white/20 bg-white/10 p-3 backdrop-blur-md">
+          <Icon className="h-5 w-5 text-white" />
         </div>
       </div>
     </div>
@@ -307,61 +317,41 @@ const CustomerDashboard = () => {
 
   return (
       <DashboardLayout user={user} activeProject={activeProject}>
-      <div className="min-h-full bg-[radial-gradient(circle_at_top_right,_rgba(59,130,246,0.16),_transparent_34%),linear-gradient(180deg,_#f8fafc_0%,_#eef2ff_50%,_#f8fafc_100%)] px-4 py-5 sm:px-6 lg:px-8 lg:py-8">
-        <div className="mx-auto flex max-w-7xl flex-col gap-6">
-          <section className="overflow-hidden rounded-[2rem] border border-slate-900/10 bg-slate-950 text-white shadow-2xl">
-            <div className="grid gap-5 p-5 lg:grid-cols-[1.15fr,0.85fr] lg:p-6">
-              <div className="flex flex-col justify-between gap-5">
-                <div>
-                  <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-sm font-semibold uppercase text-white">
-                    <Sparkles className="h-3.5 w-3.5" />
-                    Live overview
-                  </div>
-                  <h1 className="mt-3 max-w-xl text-2xl font-bold tracking-tight text-white">
-                    What is active now
-                  </h1>
-                  <p className="mt-3 max-w-xl text-base leading-6 text-white">
-                    Open the live project, check wallet balance, or start new work from here.
-                  </p>
-                </div>
+      <div
+        className="relative min-h-[calc(100vh-4rem)] overflow-hidden bg-slate-950 bg-cover bg-center px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
+        style={{ backgroundImage: `url(${backgroundImage})` }}
+      >
+        <div className="pointer-events-none absolute inset-0 bg-slate-950/40" />
 
-                <div className="flex flex-wrap gap-2.5">
-                  <Link
-                    to={primaryAction.to}
-                    className="inline-flex items-center gap-2 rounded-2xl bg-white px-4 py-2.5 text-base font-semibold text-black transition hover:bg-slate-100"
-                  >
-                    {primaryAction.label}
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={fetchDashboardData}
-                    className="inline-flex items-center gap-2 rounded-2xl border border-white/15 bg-white/5 px-4 py-2.5 text-base font-semibold text-white transition hover:bg-white/10"
-                  >
-                    <RefreshCw className="h-4 w-4" />
-                    Refresh
-                  </button>
-                </div>
-              </div>
+        <div className="relative mx-auto max-w-7xl">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl lg:text-4xl">
+              What is active now
+            </h1>
+            <p className="mx-auto mt-3 max-w-2xl text-base text-slate-300 sm:text-lg">
+              Open the live project, check wallet balance, or start new work from here.
+            </p>
 
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
-                <div className="rounded-[1.35rem] border border-white/10 bg-white/5 p-4">
-                  <p className="text-sm font-semibold uppercase text-white">Current work</p>
-                  <p className="mt-2 text-lg font-bold text-white">
-                    {primaryWorkItem
-                      ? primaryWorkItem.productId?.serviceName || 'Active work'
-                      : 'No active project'}
-                  </p>
-                </div>
-                <div className="rounded-[1.35rem] border border-white/10 bg-emerald-500/15 p-4">
-                  <p className="text-sm font-semibold uppercase text-white">Wallet</p>
-                  <p className="mt-2 text-lg font-bold text-white">{displayINRCurrency(context?.walletBalance || 0)}</p>
-                </div>
-              </div>
+            <div className="mt-5 flex flex-wrap items-center justify-center gap-2.5">
+              <Link
+                to={primaryAction.to}
+                className="inline-flex items-center gap-2 rounded-2xl bg-white px-4 py-2.5 text-base font-semibold text-slate-900 transition hover:bg-slate-100"
+              >
+                {primaryAction.label}
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+              <button
+                type="button"
+                onClick={fetchDashboardData}
+                className="inline-flex items-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-4 py-2.5 text-base font-semibold text-white backdrop-blur-md transition hover:bg-white/15"
+              >
+                <RefreshCw className="h-4 w-4" />
+                Refresh
+              </button>
             </div>
-          </section>
+          </div>
 
-          <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <div className="mt-10 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <MetricCard
               icon={LayoutDashboard}
               label="Live project"
@@ -396,142 +386,142 @@ const CustomerDashboard = () => {
               helper="Pending approvals and rejected payments"
               tone="violet"
             />
-          </section>
+          </div>
 
-          <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="text-sm font-semibold uppercase text-black">Recent projects & plans</p>
-                <h2 className="mt-2 text-xl font-bold text-black">Latest 5 items</h2>
-              </div>
+          <div className="relative mt-10 overflow-hidden rounded-3xl border border-white/20 bg-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.25)] backdrop-blur-2xl backdrop-saturate-150">
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/[0.12] to-transparent" />
+
+            <div className="relative flex flex-col gap-3 border-b border-white/15 p-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+              <h2 className="flex items-center text-xl font-semibold text-white">
+                <Layers3 className="mr-2 h-5 w-5" />
+                Recent projects & plans
+              </h2>
               <Link
                 to="/order"
-                className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-base font-semibold text-black transition hover:bg-slate-100"
+                className="inline-flex items-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white backdrop-blur-md transition hover:bg-white/15"
               >
                 View all orders
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
 
-            <div className="mt-5">
-              {dashboardItems.length > 0 ? (
-                <div className="border-t border-slate-200">
-                  <div className="grid grid-cols-12 gap-3 border-b border-slate-200 px-5 py-3 text-sm font-semibold uppercase text-black sm:px-6">
-                    <div className="col-span-12 lg:col-span-5">Item</div>
-                    <div className="col-span-6 lg:col-span-2">Type</div>
-                    <div className="col-span-6 lg:col-span-2">Status</div>
-                    <div className="col-span-6 lg:col-span-2">Updated</div>
-                    <div className="col-span-6 lg:col-span-1 text-right">Open</div>
-                  </div>
+            {dashboardItems.length > 0 ? (
+              <>
+                <div className="relative grid grid-cols-12 gap-3 border-b border-white/15 bg-white/5 px-5 py-3 text-sm font-semibold uppercase text-slate-300 sm:px-6">
+                  <div className="col-span-12 lg:col-span-5">Item</div>
+                  <div className="col-span-6 lg:col-span-2">Type</div>
+                  <div className="col-span-6 lg:col-span-2">Status</div>
+                  <div className="col-span-6 lg:col-span-2">Updated</div>
+                  <div className="col-span-6 lg:col-span-1 text-right">Open</div>
+                </div>
 
-                  <div className="divide-y divide-slate-200">
-                    {dashboardItems.map((order, index) => {
-                      const status = getItemStatus(order);
-                      const isProject = isProjectItem(order);
-                      const isPlan = isPlanItem(order);
-                      const summary = isPlan ? getItemSummary(order) : 'Project';
-                      const progress = Math.round(order?.projectProgress || 0);
-                      const remainingDays = getRemainingDays(order);
-                      const category = order.productId?.category?.split('_').join(' ') || 'Unknown type';
-                      const currentValue = isPlan
-                        ? (order.productId?.isMonthlyRenewablePlan || order.productId?.isMonthlyLimitedPlan
-                          ? `${order.totalYearlyDaysRemaining || 0} day(s) left`
-                          : `${Math.max(0, Number(order.productId?.updateCount || 0) - Number(order.updatesUsed || 0))} update(s) left`)
-                        : `${progress}% complete`;
+                <div className="relative divide-y divide-white/10">
+                  {dashboardItems.map((order, index) => {
+                    const status = getItemStatus(order);
+                    const isProject = isProjectItem(order);
+                    const isPlan = isPlanItem(order);
+                    const summary = isPlan ? getItemSummary(order) : 'Project';
+                    const progress = Math.round(order?.projectProgress || 0);
+                    const remainingDays = getRemainingDays(order);
+                    const category = order.productId?.category?.split('_').join(' ') || 'Unknown type';
+                    const currentValue = isPlan
+                      ? (order.productId?.isMonthlyRenewablePlan || order.productId?.isMonthlyLimitedPlan
+                        ? `${order.totalYearlyDaysRemaining || 0} day(s) left`
+                        : `${Math.max(0, Number(order.productId?.updateCount || 0) - Number(order.updatesUsed || 0))} update(s) left`)
+                      : `${progress}% complete`;
 
-                      return (
-                        <button
-                          key={order._id}
-                          type="button"
-                          onClick={() => openItem(order)}
-                          className={[
-                            'grid w-full grid-cols-12 gap-3 px-5 py-4 text-left transition hover:bg-slate-100 sm:px-6',
-                            index % 2 === 0 ? 'bg-white' : 'bg-slate-50',
-                          ].join(' ')}
-                        >
-                          <div className="col-span-12 lg:col-span-5">
-                            <div className="flex items-start gap-3">
-                              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-700">
-                                {isProject ? <LayoutGrid className="h-5 w-5" /> : <Layers3 className="h-5 w-5" />}
-                              </div>
-                              <div className="min-w-0">
-                                <div className="flex flex-wrap items-center gap-2">
-                                  <span className="rounded-full bg-slate-950 px-2.5 py-1 text-sm font-semibold uppercase text-white">
-                                    {getItemType(order)}
-                                  </span>
-                                  <span className="rounded-full bg-slate-100 px-2.5 py-1 text-sm font-semibold uppercase text-black">
-                                    {summary}
-                                  </span>
-                                </div>
-                                <h3 className="mt-2 truncate text-lg font-semibold text-black">
-                                  {order.productId?.serviceName || 'Untitled'}
-                                </h3>
-                                <p className="mt-1 truncate text-sm text-black">{category}</p>
-                                <p className="mt-2 text-sm text-black sm:hidden">
-                                  Updated {new Date(order.updatedAt || order.createdAt).toLocaleDateString('en-GB')}
-                                </p>
-                              </div>
+                    return (
+                      <button
+                        key={order._id}
+                        type="button"
+                        onClick={() => openItem(order)}
+                        className={[
+                          'grid w-full grid-cols-12 gap-3 px-5 py-4 text-left transition hover:bg-white/[0.1] sm:px-6',
+                          index % 2 === 0 ? 'bg-white/[0.02]' : 'bg-white/[0.06]',
+                        ].join(' ')}
+                      >
+                        <div className="col-span-12 lg:col-span-5">
+                          <div className="flex items-start gap-3">
+                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/20 bg-white/10 text-white backdrop-blur-md">
+                              {isProject ? <LayoutGrid className="h-5 w-5" /> : <Layers3 className="h-5 w-5" />}
                             </div>
-                          </div>
-
-                          <div className="col-span-6 lg:col-span-2 lg:flex lg:items-center">
-                            <div className="space-y-1">
-                              <p className="text-base font-semibold text-black">{isPlan ? 'Plan' : 'Project'}</p>
-                              <p className="text-sm text-black">
-                                {isPlan ? (order.productId?.isMonthlyRenewablePlan || order.productId?.isMonthlyLimitedPlan ? 'Monthly' : 'Update based') : 'Work item'}
+                            <div className="min-w-0">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="rounded-full bg-white px-2.5 py-1 text-sm font-semibold uppercase text-slate-900">
+                                  {getItemType(order)}
+                                </span>
+                                <span className="rounded-full border border-white/20 bg-white/10 px-2.5 py-1 text-sm font-semibold uppercase text-slate-200">
+                                  {summary}
+                                </span>
+                              </div>
+                              <h3 className="mt-2 truncate text-lg font-semibold text-white">
+                                {order.productId?.serviceName || 'Untitled'}
+                              </h3>
+                              <p className="mt-1 truncate text-sm text-slate-300">{category}</p>
+                              <p className="mt-2 text-sm text-slate-300 sm:hidden">
+                                Updated {new Date(order.updatedAt || order.createdAt).toLocaleDateString('en-GB')}
                               </p>
                             </div>
                           </div>
+                        </div>
 
-                          <div className="col-span-6 lg:col-span-2 lg:flex lg:items-center">
-                            <span className={`inline-flex w-fit rounded-full px-3 py-1 text-sm font-semibold ${status.tone}`}>
-                              {status.label}
-                            </span>
-                          </div>
-
-                          <div className="col-span-6 lg:col-span-2 lg:flex lg:items-center">
-                            <div className="space-y-1">
-                              <p className="text-base font-semibold text-black">{new Date(order.updatedAt || order.createdAt).toLocaleDateString('en-GB')}</p>
-                              <p className="text-sm text-black">{order.assignedDeveloper?.name || 'Not assigned'}</p>
-                              <p className="text-sm text-black">{currentValue}</p>
-                            </div>
-                          </div>
-
-                          <div className="col-span-6 flex items-center justify-between lg:col-span-1 lg:justify-end">
-                          <div className="hidden text-right lg:block">
-                            <p className="text-sm text-black">
-                              {isPlan ? `${remainingDays} day(s) left` : `${progress}%`}
+                        <div className="col-span-6 lg:col-span-2 lg:flex lg:items-center">
+                          <div className="space-y-1">
+                            <p className="text-base font-semibold text-white">{isPlan ? 'Plan' : 'Project'}</p>
+                            <p className="text-sm text-slate-300">
+                              {isPlan ? (order.productId?.isMonthlyRenewablePlan || order.productId?.isMonthlyLimitedPlan ? 'Monthly' : 'Update based') : 'Work item'}
                             </p>
                           </div>
-                            <ArrowRight className="h-5 w-5 text-slate-400" />
+                        </div>
+
+                        <div className="col-span-6 lg:col-span-2 lg:flex lg:items-center">
+                          <span className={`inline-flex w-fit rounded-full px-3 py-1 text-sm font-semibold ${status.tone}`}>
+                            {status.label}
+                          </span>
+                        </div>
+
+                        <div className="col-span-6 lg:col-span-2 lg:flex lg:items-center">
+                          <div className="space-y-1">
+                            <p className="text-base font-semibold text-white">{new Date(order.updatedAt || order.createdAt).toLocaleDateString('en-GB')}</p>
+                            <p className="text-sm text-slate-300">{order.assignedDeveloper?.name || 'Not assigned'}</p>
+                            <p className="text-sm text-slate-300">{currentValue}</p>
                           </div>
-                        </button>
-                      );
-                    })}
-                  </div>
+                        </div>
+
+                        <div className="col-span-6 flex items-center justify-between lg:col-span-1 lg:justify-end">
+                        <div className="hidden text-right lg:block">
+                          <p className="text-sm text-slate-300">
+                            {isPlan ? `${remainingDays} day(s) left` : `${progress}%`}
+                          </p>
+                        </div>
+                          <ArrowRight className="h-5 w-5 text-slate-400" />
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
-              ) : (
-                <div className="rounded-[1.5rem] border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
-                  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-900 text-white">
-                    <Layers3 className="h-6 w-6" />
-                  </div>
-                  <h3 className="mt-4 text-lg font-semibold text-black">No projects or plans yet</h3>
-                  <p className="mt-2 text-base text-black">
-                    Start a new project from the dashboard and the latest tracking info will show here.
-                  </p>
-                  <div className="mt-5">
-                    <Link
-                      to="/home"
-                      className="inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-4 py-3 text-base font-semibold text-white transition hover:bg-slate-800"
-                    >
-                      <PlusCircle className="h-4 w-4" />
-                      Start New Project
-                    </Link>
-                  </div>
+              </>
+            ) : (
+              <div className="relative px-5 py-12 text-center sm:px-6">
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-white/20 bg-white/10 text-white backdrop-blur-md">
+                  <Layers3 className="h-6 w-6" />
                 </div>
-              )}
-            </div>
-          </section>
+                <h3 className="mt-4 text-lg font-semibold text-white">No projects or plans yet</h3>
+                <p className="mt-2 text-base text-slate-300">
+                  Start a new project from the dashboard and the latest tracking info will show here.
+                </p>
+                <div className="mt-5">
+                  <Link
+                    to="/home"
+                    className="inline-flex items-center gap-2 rounded-2xl bg-white px-4 py-3 text-base font-semibold text-slate-900 transition hover:bg-slate-100"
+                  >
+                    <PlusCircle className="h-4 w-4" />
+                    Start New Project
+                  </Link>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </DashboardLayout>

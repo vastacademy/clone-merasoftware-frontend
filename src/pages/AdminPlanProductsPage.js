@@ -12,10 +12,29 @@ import AdminWorkspaceShell, { AdminWorkspaceHeader } from "../components/admin/A
 import AdminWorkspaceList from "../components/admin/AdminWorkspaceList";
 import AdminFilterDropdown from "../components/admin/AdminFilterDropdown";
 
+const SERVICE_PLAN_TYPE_LABELS = {
+  website_updates: "Website Update",
+  digital_marketing: "Digital Marketing",
+  google_business_setup: "Google Business Setup",
+  social_media_marketing: "Social Media Marketing",
+  other: "Other",
+};
+
 const getPlanTypeLabel = (plan) => {
+  if (plan.isServicePlan) {
+    return SERVICE_PLAN_TYPE_LABELS[plan.servicePlan?.planType] || "Service Plan";
+  }
   if (plan.isMonthlyRenewablePlan) return "Monthly Renewable";
   if (plan.isMonthlyLimitedPlan) return "Monthly Limited";
   return "Simple";
+};
+
+const getPlanValidityLabel = (plan) => {
+  if (plan.isServicePlan) {
+    const days = plan.servicePlan?.validityInDays;
+    return days ? `${days} day(s)` : "N/A";
+  }
+  return plan.validityPeriod ? `${plan.validityPeriod} day(s)` : "N/A";
 };
 
 const sortOptions = [
@@ -293,7 +312,7 @@ const AdminPlanProductsPage = () => {
                   <p className="text-sm font-semibold text-slate-900">{getPlanTypeLabel(plan)}</p>
                 </div>
                 <div className="col-span-6 lg:col-span-2 lg:flex lg:items-center">
-                  <p className="text-sm font-semibold text-slate-900">{plan.validityPeriod ? `${plan.validityPeriod} day(s)` : "N/A"}</p>
+                  <p className="text-sm font-semibold text-slate-900">{getPlanValidityLabel(plan)}</p>
                 </div>
                 <div className="col-span-6 lg:col-span-2 lg:flex lg:items-center">
                   <span className="inline-flex rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-800">{plan.isHidden ? "Hidden" : "Visible"}</span>

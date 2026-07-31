@@ -5,6 +5,8 @@ import { useOnlineStatus } from './App';
 import { setUserDetails, updateWalletBalance, logout } from './store/userSlice';
 import Header from './components/Header';
 import Footer from './components/Footer';
+import DraftOrderSavedDrawer from './components/DraftOrderSavedDrawer';
+import FloatingCartButton from './components/FloatingCartButton';
 import SummaryApi from './common';
 import Context from './context';
 import CookieManager from './utils/cookieManager';
@@ -314,6 +316,8 @@ useEffect(() => {
             <Outlet />
           </main>
           <Footer />
+          <DraftOrderSavedDrawer />
+          <FloatingCartButton />
         </div>
       </Context.Provider>
   )

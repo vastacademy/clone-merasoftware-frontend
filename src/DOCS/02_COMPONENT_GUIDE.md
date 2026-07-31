@@ -94,8 +94,8 @@ This guide focuses on the active components that matter most in the current code
 
 ### `NotificationBell.js`
 
-- Used in the customer header
-- Keeps notifications separate from the account dropdown
+- No longer rendered in `SharedHeader.js` (removed at explicit user request; backend notification APIs/models untouched, component file still exists unused)
+- Was previously used in the customer header, kept notifications separate from the account dropdown
 
 ### `LoginPopup.js`
 

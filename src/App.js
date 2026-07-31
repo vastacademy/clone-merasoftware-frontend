@@ -3,6 +3,7 @@ import './App.css';
 import AppContent from './AppContent';
 import { Toaster } from 'sonner';
 import { createContext, useContext, useState, useEffect } from 'react';
+import { DraftOrdersProvider } from './context/DraftOrdersContext';
 
 // Create a simple context for online status
 export const OnlineStatusContext = createContext();
@@ -36,8 +37,10 @@ function App() {
 
   return (
     <OnlineStatusContext.Provider value={{ isOnline, isInitialized }}>
-      <Toaster position="top-center" richColors />
-      <AppContent />
+      <DraftOrdersProvider>
+        <Toaster position="top-center" richColors />
+        <AppContent />
+      </DraftOrdersProvider>
     </OnlineStatusContext.Provider>
   );
 }

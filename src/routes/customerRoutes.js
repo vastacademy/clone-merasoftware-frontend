@@ -1,6 +1,5 @@
 import ProtectedRoute from "../components/ProtectedRoute";
 import CustomerDashboard from "../pages/CustomerDashboard";
-import Cart from "../pages/Cart";
 import OrderPage from "../pages/OrderPage";
 import OrderDetailPage from "../pages/OrderDetailPage";
 import InvoiceDetailPage from "../pages/InvoiceDetailPage";
@@ -17,7 +16,9 @@ import TicketDetail from "../pages/TicketDetail";
 import CompleteProfile from "../pages/CompleteProfile";
 import ProjectsAndPlans from "../pages/ProjectsAndPlans";
 import StartNewProject from "../pages/StartNewProject";
+import StartProject from "../pages/startproject";
 import StartNewProjectDetail from "../pages/StartNewProjectDetail";
+import ServicePlanDetail from "../pages/ServicePlanDetail";
 import GamesListPage from "../chess/GamesListPage";
 import ChessPage from "../chess/ChessPage";
 
@@ -48,7 +49,7 @@ export const customerRoutes = [
     path: "start-new-project",
     element: (
       <CustomerProtectedRoute>
-        <StartNewProject/>
+        <StartProject/>
       </CustomerProtectedRoute>
     )
   },
@@ -57,14 +58,6 @@ export const customerRoutes = [
     element: (
       <CustomerProtectedRoute>
         <StartNewProjectDetail/>
-      </CustomerProtectedRoute>
-    )
-  },
-  {
-    path: "cart",
-    element: (
-      <CustomerProtectedRoute>
-        <Cart/>
       </CustomerProtectedRoute>
     )
   },
@@ -105,6 +98,14 @@ export const customerRoutes = [
     element: (
       <CustomerProtectedRoute>
         <PlanDetails/>
+      </CustomerProtectedRoute>
+    )
+  },
+  {
+    path: "service-plan-detail/:planId",
+    element: (
+      <CustomerProtectedRoute>
+        <ServicePlanDetail/>
       </CustomerProtectedRoute>
     )
   },

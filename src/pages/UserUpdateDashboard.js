@@ -4,6 +4,7 @@ import SummaryApi from '../common';
 import { Clock, RefreshCw, Sparkles, CalendarClock, AlertTriangle, Lock } from 'lucide-react';
 import TriangleMazeLoader from '../components/TriangleMazeLoader';
 import DashboardLayout from '../components/DashboardLayout';
+import backgroundImage from '../assets/BG.png';
 import UpdateRequestModal from '../components/UpdateRequestModal'
 
 // ---------------------------------------------------------------------------
@@ -264,7 +265,10 @@ const UserUpdateDashboard = () => {
 
   return (
     <DashboardLayout user={user}>
-      <div className="min-h-full bg-[radial-gradient(circle_at_top_right,_rgba(59,130,246,0.16),_transparent_34%),linear-gradient(180deg,_#f8fafc_0%,_#eef2ff_50%,_#f8fafc_100%)] px-4 py-5 sm:px-6 lg:px-8 lg:py-8">
+      <div
+        className="min-h-full bg-slate-950 bg-cover bg-center px-4 py-5 sm:px-6 lg:px-8 lg:py-8"
+        style={{ backgroundImage: `url(${backgroundImage})` }}
+      >
         <section className="mx-auto max-w-7xl overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
           <div className="rounded-t-[2rem] bg-gradient-to-r from-slate-950 via-slate-900 to-blue-950 px-5 py-5 text-white sm:px-6 lg:px-8">
             <div className="inline-flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-sm font-semibold uppercase text-emerald-300">

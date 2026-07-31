@@ -13,6 +13,7 @@ import CookieManager from '../utils/cookieManager';
 import StorageService from '../utils/storageService';
 import { useOnlineStatus } from '../App';
 import MobileSidebarDrawer from './MobileSidebarDrawer';
+import backgroundImage from '../assets/BG.png';
 
 const DashboardLayout = ({ children, user, walletBalance, cartCount, isLoading, activeProject }) => {
   const location = useLocation();
@@ -284,9 +285,14 @@ const DashboardLayout = ({ children, user, walletBalance, cartCount, isLoading, 
 
   return (
     <>
-      <div className="flex min-h-full items-stretch bg-slate-100">
-        <aside className="sticky top-16 z-40 hidden h-[calc(100vh-4rem)] w-72 shrink-0 flex-col self-start overflow-y-auto border-r border-slate-800 bg-slate-950 text-white shadow-2xl lg:flex">
-          {sidebarContent}
+      <div className="flex min-h-full items-stretch bg-slate-950">
+        <aside
+          className="sticky top-16 z-40 hidden h-[calc(100vh-4rem)] w-72 shrink-0 flex-col self-start overflow-y-auto border-r border-slate-800 bg-slate-950 bg-cover bg-center text-white shadow-2xl lg:flex"
+          style={{ backgroundImage: `url(${backgroundImage})` }}
+        >
+          <div className="flex h-full w-full flex-col bg-slate-950/55">
+            {sidebarContent}
+          </div>
         </aside>
 
         <MobileSidebarDrawer isOpen={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)}>
@@ -305,7 +311,10 @@ const DashboardLayout = ({ children, user, walletBalance, cartCount, isLoading, 
             </button>
             <span className="text-sm font-semibold text-slate-900">{getPageTitle()}</span>
           </div>
-          <main className="min-h-full bg-slate-100">
+          <main
+            className="min-h-full bg-slate-950 bg-cover bg-center"
+            style={{ backgroundImage: `url(${backgroundImage})` }}
+          >
             {children}
           </main>
         </div>

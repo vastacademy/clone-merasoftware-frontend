@@ -4,11 +4,13 @@ import { useSelector } from 'react-redux';
 import DashboardLayout from '../components/DashboardLayout';
 import ProjectDetailView from '../components/ProjectDetailView';
 import SummaryApi from '../common';
+import { useDraftOrders } from '../context/DraftOrdersContext';
 
 const StartNewProjectDetail = () => {
   const user = useSelector((state) => state?.user?.user);
   const navigate = useNavigate();
   const { projectId } = useParams();
+  const { saveDraftOrder, openCartDrawer } = useDraftOrders();
   const [project, setProject] = useState(null);
   const [loaded, setLoaded] = useState(false);
 
@@ -27,6 +29,40 @@ const StartNewProjectDetail = () => {
   }, [projectId]);
 
   const handleBack = () => navigate('/start-new-project');
+
+  const handleProceedWithPayment = (selectedFeatureIds, pageSelection) => {
+    const additionalFeatures = project.additionalFeaturesData || [];
+    const availableFeatures = additionalFeatures
+      .filter((feature) => !pageSelection || (feature._id || feature.text) !== pageSelection.featureId)
+      .map((feature) => ({
+        id: feature && typeof feature === 'object' ? feature._id || feature.text : feature,
+        name: feature && typeof feature === 'object' ? feature.serviceName || feature.text : feature,
+        sellingPrice: feature && typeof feature === 'object' ? feature.sellingPrice || 0 : 0,
+      }));
+
+    const featuresPrice = availableFeatures
+      .filter((feature) => selectedFeatureIds.includes(feature.id))
+      .reduce((sum, feature) => sum + feature.sellingPrice, 0);
+
+    const draftOrder = {
+      draftOrderId: `project-${project._id}`,
+      productId: project._id,
+      type: 'project',
+      typeLabel: 'Project',
+      category: project.category,
+      name: project.serviceName,
+      basePrice: project.sellingPrice,
+      price: project.sellingPrice + featuresPrice + (pageSelection?.extraCost || 0),
+      availableFeatures,
+      selectedFeatureIds,
+      pageSelection,
+      totalPages: project.totalPages,
+      sourceProduct: project,
+    };
+
+    saveDraftOrder(draftOrder);
+    openCartDrawer();
+  };
 
   return (
     <DashboardLayout user={user}>
@@ -47,7 +83,7 @@ const StartNewProjectDetail = () => {
             <ProjectDetailView
               project={project}
               onBack={handleBack}
-              onProceedWithPayment={() => {}}
+              onProceedWithPayment={handleProceedWithPayment}
               onProceedWithoutPayment={() => {}}
             />
           )}

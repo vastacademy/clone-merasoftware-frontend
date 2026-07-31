@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import SummaryApi from '../common';
 import DashboardLayout from '../components/DashboardLayout';
+import backgroundImage from '../assets/BG.png';
 import CustomerWorkspaceTabs from '../components/CustomerWorkspaceTabs';
 import TriangleMazeLoader from '../components/TriangleMazeLoader';
 import displayINRCurrency from '../helpers/displayCurrency';
@@ -71,7 +72,7 @@ const OrderStatusBadge = ({ status }) => {
       icon: <AlertCircle size={14} className="mr-1" />,
     },
     Completed: {
-      color: 'bg-green-500 text-white',
+      color: 'border border-emerald-400/40 bg-emerald-500/20 text-emerald-800 backdrop-blur-md',
       icon: <CheckCircle size={14} className="mr-1" />,
     },
     Processing: {
@@ -121,8 +122,8 @@ const OrderRow = ({ order, navigate, formatDate, index }) => {
       onClick={handleClick}
       type="button"
       className={[
-        'grid w-full grid-cols-12 gap-3 px-5 py-4 text-left transition hover:bg-slate-100 sm:px-6',
-        index % 2 === 0 ? 'bg-white' : 'bg-slate-50',
+        'grid w-full grid-cols-12 gap-3 px-5 py-4 text-left transition hover:bg-white/50 sm:px-6',
+        index % 2 === 0 ? 'bg-white/20' : 'bg-white/35',
       ].join(' ')}
     >
       <div className="col-span-12 lg:col-span-5">
@@ -322,10 +323,15 @@ const OrdersPage = () => {
       user={user}
       activeProject={activeProject}
     >
-      <div className="min-h-full bg-[radial-gradient(circle_at_top_right,_rgba(59,130,246,0.16),_transparent_34%),linear-gradient(180deg,_#f8fafc_0%,_#eef2ff_50%,_#f8fafc_100%)] px-4 py-5 sm:px-6 lg:px-8 lg:py-8">
-        <section className="mx-auto max-w-7xl overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
-          <div className="rounded-t-[2rem] bg-gradient-to-r from-slate-950 via-slate-900 to-blue-950 px-5 py-5 text-white sm:px-6 lg:px-8">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+      <div
+        className="min-h-full bg-slate-950 bg-cover bg-center px-4 py-5 sm:px-6 lg:px-8 lg:py-8"
+        style={{ backgroundImage: `url(${backgroundImage})` }}
+      >
+        <section className="mx-auto max-w-7xl overflow-hidden rounded-[2rem] shadow-[0_25px_80px_-35px_rgba(15,23,42,0.35)] bg-slate-950/10">
+          <div className="relative overflow-hidden rounded-t-[2rem] border-b border-white/15 bg-slate-950/60 px-5 py-5 text-white backdrop-blur-xl backdrop-saturate-150 sm:px-6 lg:px-8">
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/10 to-transparent" />
+            <div className="pointer-events-none absolute -right-10 -top-10 h-56 w-56 rounded-full bg-emerald-400/20 blur-3xl" />
+            <div className="relative flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
               <div className="max-w-3xl">
                 <div className="inline-flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-sm font-semibold uppercase text-emerald-300">
                   <Sparkles className="h-3.5 w-3.5" />
@@ -362,8 +368,8 @@ const OrdersPage = () => {
             ariaLabel="Order status filters"
           />
 
-          <div className="border-t border-slate-200">
-            <div className="border-b border-slate-200 px-5 py-3 text-sm font-semibold uppercase text-black sm:px-6">
+          <div className="border-t border-white/40 bg-white/55 backdrop-blur-xl backdrop-saturate-150">
+            <div className="border-b border-white/40 px-5 py-3 text-sm font-semibold uppercase text-black sm:px-6">
               <div className="grid grid-cols-12 gap-3">
                 <div className="col-span-12 lg:col-span-5">Order</div>
                 <div className="col-span-6 lg:col-span-2">Type</div>
@@ -374,7 +380,7 @@ const OrdersPage = () => {
             </div>
 
             {filteredOrders.length > 0 ? (
-              <div className="divide-y divide-slate-200">
+              <div className="divide-y divide-white/40">
                 {filteredOrders.map((order, index) => (
                   <OrderRow
                     key={order._id}
@@ -386,7 +392,7 @@ const OrdersPage = () => {
                 ))}
               </div>
             ) : (
-              <div className="px-5 py-12 text-center sm:px-6">
+              <div className="px-5 py-12 text-center backdrop-blur-md sm:px-6">
                 <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-950 text-white">
                   <FileText className="h-6 w-6" />
                 </div>
@@ -403,7 +409,7 @@ const OrdersPage = () => {
                   <button
                     type="button"
                     onClick={fetchOrders}
-                    className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base font-semibold text-black transition hover:bg-slate-100"
+                    className="inline-flex items-center gap-2 rounded-2xl border border-white/50 bg-white/40 px-4 py-3 text-base font-semibold text-black backdrop-blur-md transition hover:bg-white/60"
                   >
                     Refresh Orders
                   </button>

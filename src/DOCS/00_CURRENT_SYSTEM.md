@@ -45,8 +45,8 @@ This document describes the active frontend behavior as of the current codebase.
 - `/profile`
 - `/support-tickets/:ticketId`
 - `/complete-profile`
-- `/start-new-project` - `StartNewProject` (UI-only sample project grid; no backend wiring)
-- `/start-new-project/:projectId` - `StartNewProjectDetail` (UI-only project detail with a non-functional "Proceed to Payment" button; no backend wiring)
+- `/start-new-project` - `StartNewProject` (live-wired project/plan list, `GET /api/get-product`)
+- `/start-new-project/:projectId` - `StartNewProjectDetail` (project detail; "Add to Cart" adds to the customer Cart drawer — see `28_CART_SYSTEM_AND_ADD_MORE_PAGES.md`; no order/payment backend wiring yet)
 - `/project-details/:orderId` now opens a timeline-driven project view where the selected checkpoint shows only its own linked textual details below, and the latest active checkpoint is selected by default
 - `/project-details/:orderId` desktop layout now uses three aligned cards with shared row height, inner scroll areas, and no runtime size measuring; the main page bottom spacing is handled on the page container so the footer follows naturally after content
 

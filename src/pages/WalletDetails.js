@@ -20,6 +20,7 @@ import SummaryApi from '../common';
 import displayINRCurrency from '../helpers/displayCurrency';
 import TriangleMazeLoader from '../components/TriangleMazeLoader';
 import DashboardLayout from '../components/DashboardLayout';
+import backgroundImage from '../assets/BG.png';
 import { isOrderApproved } from '../helpers/orderVisibility';
 
 const WalletDetails = () => {
@@ -269,7 +270,7 @@ const WalletDetails = () => {
     const formattedTime = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const upiReference = transaction.upiTransactionId ? ` · UPI ref: ${transaction.upiTransactionId.slice(-4)}` : '';
     return (
-      <div key={transaction._id || transaction.id || `${transaction.date}-${transaction.amount}`} className="grid grid-cols-[5.25rem_minmax(0,1fr)] items-center gap-x-3 gap-y-2 px-5 py-4 transition hover:bg-slate-50 sm:grid-cols-[5.25rem_minmax(0,1fr)_7.5rem_5.5rem] sm:px-6">
+      <div key={transaction._id || transaction.id || `${transaction.date}-${transaction.amount}`} className="grid grid-cols-[5.25rem_minmax(0,1fr)] items-center gap-x-3 gap-y-2 px-5 py-4 transition hover:bg-white/40 sm:grid-cols-[5.25rem_minmax(0,1fr)_7.5rem_5.5rem] sm:px-6">
         <p className={`w-[5.25rem] shrink-0 text-base font-bold ${display.color}`}>{display.sign}{displayINRCurrency(Math.abs(Number(transaction.amount) || 0))}</p>
         <div className="flex min-w-0 items-center gap-2.5">
           <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${display.iconBg}`}>{React.cloneElement(display.icon, { size: 15 })}</div>
@@ -290,9 +291,13 @@ const WalletDetails = () => {
 
   return (
     <DashboardLayout user={user} activeProject={activeProject}>
-      <div className="min-h-full bg-[#f7f8fa] px-3 py-4 sm:px-5 lg:px-8 lg:py-7">
+      <div
+        className="min-h-full bg-slate-950 bg-cover bg-center px-3 py-4 sm:px-5 lg:px-8 lg:py-7"
+        style={{ backgroundImage: `url(${backgroundImage})` }}
+      >
         <div className="mx-auto max-w-7xl">
-          <section className="relative overflow-hidden rounded-[1.75rem] bg-slate-950 p-3 text-white shadow-xl shadow-slate-900/10 sm:p-4">
+          <section className="relative overflow-hidden rounded-[1.75rem] border border-white/15 bg-slate-950/60 p-3 text-white shadow-xl shadow-slate-900/10 backdrop-blur-xl backdrop-saturate-150 sm:p-4">
+              <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/10 to-transparent" />
               <div className="absolute -right-16 -top-20 h-56 w-56 rounded-full bg-emerald-400/20 blur-3xl" /><div className="absolute bottom-0 right-20 h-32 w-32 rounded-full bg-cyan-400/10 blur-3xl" />
             <div className="relative grid gap-3 lg:grid-cols-[1.2fr_0.8fr]">
               <div className="rounded-[1.35rem] border border-white/10 bg-white/[0.03] p-5 sm:p-6"><p className="text-sm font-bold uppercase text-emerald-300">{getGreeting()}, {user?.name || 'User'}</p><h1 className="mt-2 text-2xl font-bold tracking-tight text-white">Your wallet</h1><p className="mt-1 text-base text-white">Keep your balance ready for your next project.</p><div className="mt-6 flex items-center justify-between"><span className="text-sm font-bold uppercase text-white">Available balance</span><WalletIcon /></div><p className="mt-4 text-2xl font-bold tracking-tight text-white">{displayINRCurrency(context?.walletBalance || 0)}</p><p className="mt-2 max-w-sm text-sm text-white">Use your wallet balance for approved services and payments.</p><div className="mt-5 flex flex-wrap gap-2"><button onClick={() => setShowRechargePanel(true)} className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-base font-bold text-black hover:bg-emerald-50"><Plus size={15} /> Recharge wallet</button><button onClick={refreshWallet} className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-3 py-2.5 text-base font-bold text-white hover:bg-white/10"><RefreshCw size={14} /> Refresh</button></div></div>
@@ -305,16 +310,16 @@ const WalletDetails = () => {
           </section>
 
           <div className="mt-5 grid items-start gap-5 lg:grid-cols-[1.35fr_0.65fr]">
-          <section className="overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-sm lg:order-2">
-            <div className="border-b border-slate-100 p-5 sm:px-6"><div className="flex items-center gap-2"><ShieldCheck size={17} className="text-emerald-600" /><h2 className="text-lg font-semibold text-black">Payment approval</h2></div><p className="mt-1 text-sm text-black">Recharge requests are credited after admin verification.</p><span className="mt-3 inline-flex w-fit rounded-full bg-emerald-50 px-3 py-1.5 text-sm font-bold text-emerald-700">{pendingCount ? `${pendingCount} pending` : 'All clear'}</span></div>
+          <section className="overflow-hidden rounded-[1.75rem] border border-white/40 bg-white/55 shadow-[0_8px_32px_rgba(15,23,42,0.15)] backdrop-blur-xl backdrop-saturate-150 lg:order-2">
+            <div className="border-b border-white/40 p-5 sm:px-6"><div className="flex items-center gap-2"><ShieldCheck size={17} className="text-emerald-600" /><h2 className="text-lg font-semibold text-black">Payment approval</h2></div><p className="mt-1 text-sm text-black">Recharge requests are credited after admin verification.</p><span className="mt-3 inline-flex w-fit rounded-full bg-emerald-50 px-3 py-1.5 text-sm font-bold text-emerald-700">{pendingCount ? `${pendingCount} pending` : 'All clear'}</span></div>
             <div className="grid gap-3 p-4 sm:p-5"><ApprovalItem icon={<CheckCircle2 size={17} />} label="Approved" value={walletHistory.filter(transaction => transaction.status === 'completed').length} tone="emerald" /><ApprovalItem icon={<Clock3 size={17} />} label="Waiting" value={pendingCount} tone="amber" /><ApprovalItem icon={<AlertCircle size={17} />} label="Rejected" value={walletHistory.filter(transaction => transaction.status === 'failed').length} tone="red" /></div>
           </section>
 
-          <section className="overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-sm lg:order-1">
-            <div className="border-b border-slate-100 p-5 sm:p-6"><div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between"><div><h2 className="text-lg font-semibold text-black">Transaction history</h2><p className="mt-1 text-sm text-black">Your deposits, payments and refunds in one place.</p></div><div className="flex flex-col gap-2 sm:flex-row"><div className="relative"><Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" /><input type="search" value={historySearch} onChange={event => { setHistorySearch(event.target.value); setShowAllHistory(false); }} placeholder="Search history" className="w-full rounded-xl border border-slate-200 py-2.5 pl-9 pr-3 text-base outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-50 sm:w-52" /></div><div className="flex rounded-xl bg-slate-100 p-1">{['all', 'credit', 'debit', 'pending'].map(filter => <button key={filter} onClick={() => { setHistoryFilter(filter); setShowAllHistory(false); }} className={`rounded-lg px-2.5 py-2 text-sm font-bold capitalize transition ${historyFilter === filter ? 'bg-white text-black shadow-sm' : 'text-black hover:text-slate-700'}`}>{filter}</button>)}</div></div></div></div>
-            <div className="divide-y divide-slate-100">{visibleHistory.map(transactionRow)}{filteredHistory.length === 0 && <div className="px-5 py-14 text-center"><div className="mx-auto flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-slate-400"><Search size={18} /></div><p className="mt-3 text-base font-bold text-black">No transactions found</p><p className="mt-1 text-sm text-black">Try a different filter or search term.</p></div>}</div>
-            {filteredHistory.length > 5 && !showAllHistory && <button type="button" onClick={() => setShowAllHistory(true)} className="w-full border-t border-slate-100 px-5 py-4 text-base font-bold text-black transition hover:bg-slate-50 hover:text-emerald-700 sm:px-6">Show more transactions <span className="ml-1 text-black">({filteredHistory.length - 5} more)</span></button>}
-            {filteredHistory.length > 5 && showAllHistory && <button type="button" onClick={() => setShowAllHistory(false)} className="w-full border-t border-slate-100 px-5 py-4 text-base font-bold text-black transition hover:bg-slate-50 hover:text-emerald-700 sm:px-6">Show less transactions</button>}
+          <section className="overflow-hidden rounded-[1.75rem] border border-white/40 bg-white/55 shadow-[0_8px_32px_rgba(15,23,42,0.15)] backdrop-blur-xl backdrop-saturate-150 lg:order-1">
+            <div className="border-b border-white/40 p-5 sm:p-6"><div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between"><div><h2 className="text-lg font-semibold text-black">Transaction history</h2><p className="mt-1 text-sm text-black">Your deposits, payments and refunds in one place.</p></div><div className="flex flex-col gap-2 sm:flex-row"><div className="relative"><Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" /><input type="search" value={historySearch} onChange={event => { setHistorySearch(event.target.value); setShowAllHistory(false); }} placeholder="Search history" className="w-full rounded-xl border border-white/50 bg-white/40 py-2.5 pl-9 pr-3 text-base text-black outline-none backdrop-blur-md focus:border-emerald-500 focus:ring-4 focus:ring-emerald-50 sm:w-52" /></div><div className="flex rounded-xl bg-white/30 p-1 backdrop-blur-md">{['all', 'credit', 'debit', 'pending'].map(filter => <button key={filter} onClick={() => { setHistoryFilter(filter); setShowAllHistory(false); }} className={`rounded-lg px-2.5 py-2 text-sm font-bold capitalize transition ${historyFilter === filter ? 'bg-white/80 text-black shadow-sm' : 'text-black hover:text-slate-700'}`}>{filter}</button>)}</div></div></div></div>
+            <div className="divide-y divide-white/40">{visibleHistory.map(transactionRow)}{filteredHistory.length === 0 && <div className="px-5 py-14 text-center"><div className="mx-auto flex h-11 w-11 items-center justify-center rounded-2xl bg-white/40 text-slate-500 backdrop-blur-md"><Search size={18} /></div><p className="mt-3 text-base font-bold text-black">No transactions found</p><p className="mt-1 text-sm text-black">Try a different filter or search term.</p></div>}</div>
+            {filteredHistory.length > 5 && !showAllHistory && <button type="button" onClick={() => setShowAllHistory(true)} className="w-full border-t border-white/40 px-5 py-4 text-base font-bold text-black transition hover:bg-white/40 hover:text-emerald-700 sm:px-6">Show more transactions <span className="ml-1 text-black">({filteredHistory.length - 5} more)</span></button>}
+            {filteredHistory.length > 5 && showAllHistory && <button type="button" onClick={() => setShowAllHistory(false)} className="w-full border-t border-white/40 px-5 py-4 text-base font-bold text-black transition hover:bg-white/40 hover:text-emerald-700 sm:px-6">Show less transactions</button>}
           </section>
           </div>
         </div>
@@ -334,7 +339,7 @@ const DarkMetricCard = ({ label, value, tone, helper }) => {
 
 const ApprovalItem = ({ icon, label, value, tone }) => {
   const toneStyles = { emerald: 'bg-emerald-50 text-emerald-600', amber: 'bg-amber-50 text-amber-600', red: 'bg-red-50 text-red-600' };
-  return <div className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50/70 p-3"><div className={`flex h-9 w-9 items-center justify-center rounded-xl ${toneStyles[tone]}`}>{icon}</div><div><p className="text-sm font-semibold text-black">{label}</p><p className="mt-0.5 text-lg font-semibold text-black">{value}</p></div></div>;
+  return <div className="flex items-center gap-3 rounded-2xl border border-white/40 bg-white/30 p-3 backdrop-blur-md"><div className={`flex h-9 w-9 items-center justify-center rounded-xl ${toneStyles[tone]}`}>{icon}</div><div><p className="text-sm font-semibold text-black">{label}</p><p className="mt-0.5 text-lg font-semibold text-black">{value}</p></div></div>;
 };
 
 export default WalletDetails;

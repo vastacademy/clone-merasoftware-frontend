@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import SummaryApi from '../common';
 import { toast } from 'sonner';
 import CustomerWorkspaceTabs from '../components/CustomerWorkspaceTabs';
+import backgroundImage from '../assets/BG.png';
 
 const UserInvoices = () => {
     const [invoices, setInvoices] = useState([]);
@@ -77,17 +78,23 @@ const UserInvoices = () => {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gray-50 p-8 flex items-center justify-center">
+            <div
+                className="min-h-screen bg-slate-950 bg-cover bg-center p-8 flex items-center justify-center"
+                style={{ backgroundImage: `url(${backgroundImage})` }}
+            >
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
-                    <p className="mt-4 text-base text-black">Loading invoices...</p>
+                    <p className="mt-4 text-base text-white">Loading invoices...</p>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 p-4 md:p-8">
+        <div
+            className="min-h-screen bg-slate-950 bg-cover bg-center p-4 md:p-8"
+            style={{ backgroundImage: `url(${backgroundImage})` }}
+        >
             <div className="max-w-7xl mx-auto">
                 {/* Header */}
                 <div className="mb-8">

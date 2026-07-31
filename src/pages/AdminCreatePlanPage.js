@@ -1,10 +1,12 @@
 import React, { useCallback, useRef, useState } from "react";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import { ArrowLeft, Save } from "lucide-react";
 import AdminLayout from "../components/AdminLayout";
 import AdminWorkspaceShell, { AdminWorkspaceHeader } from "../components/admin/AdminWorkspaceShell";
 import RichTextEditor from "../helpers/richTextEditor";
+import SummaryApi from "../common";
 
 const PLAN_TYPES = [
   { value: "website_updates", label: "Website Update" },
@@ -20,6 +22,9 @@ const LIMIT_SCOPES = [
   { value: "per_day", label: "Per Day" },
   { value: "per_week", label: "Per Week" },
   { value: "per_month", label: "Per Month" },
+  { value: "per_quarter", label: "Per Quarter" },
+  { value: "per_6_month", label: "Per 6 Month" },
+  { value: "per_year", label: "Per Year" },
   { value: "per_plan", label: "Per Plan" },
   { value: "unlimited", label: "Unlimited" },
   { value: "manual", label: "Manual" },
@@ -29,8 +34,13 @@ const MANUAL_UNITS = [
   { value: "day", label: "Day" },
   { value: "week", label: "Week" },
   { value: "month", label: "Month" },
-  { value: "year", label: "Year" },
 ];
+
+const MANUAL_COUNT_RANGES = {
+  day: Array.from({ length: 31 }, (_, index) => index + 1),
+  week: Array.from({ length: 8 }, (_, index) => index + 1),
+  month: Array.from({ length: 12 }, (_, index) => index + 1),
+};
 
 const VALIDITY_UNITS = [
   { value: "day", label: "Days" },
@@ -99,14 +109,15 @@ const AdminCreatePlanPage = () => {
   const [totalCycles, setTotalCycles] = useState("");
   const [totalCyclesValue, setTotalCyclesValue] = useState("");
 
-  // Manual scope — custom unit + count (with its own manual override)
+  // Manual scope — custom unit + count, both from a bounded range
   const [manualUnit, setManualUnit] = useState("");
   const [manualCount, setManualCount] = useState("");
-  const [manualCountValue, setManualCountValue] = useState("");
 
   // Files limit — per-upload file count, independent of portal access
   const [filesLimitCount, setFilesLimitCount] = useState("");
   const [filesLimitCountValue, setFilesLimitCountValue] = useState("");
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const descriptionRef = useRef("");
 
@@ -114,8 +125,81 @@ const AdminCreatePlanPage = () => {
     descriptionRef.current = content;
   }, []);
 
-  const handleFormSubmit = (event) => {
+  const handleFormSubmit = async (event) => {
     event.preventDefault();
+
+    if (!serviceName.trim()) {
+      toast.error("Plan name is required");
+      return;
+    }
+    if (!planType) {
+      toast.error("Plan type is required");
+      return;
+    }
+    if (!limitScope) {
+      toast.error("Limit scope is required");
+      return;
+    }
+    if (limitScope === "manual" && (!manualUnit || !manualCount)) {
+      toast.error("Manual unit and count are required for manual scope");
+      return;
+    }
+    if (limitScope !== "unlimited" && !totalCycles) {
+      toast.error("Portal access is required");
+      return;
+    }
+    if (!filesLimitCount) {
+      toast.error("Files limit is required");
+      return;
+    }
+    if (!validityUnit || !validityValue) {
+      toast.error("Plan validity is required");
+      return;
+    }
+
+    const resolvedPortalAccessCount = totalCycles === "manual" ? totalCyclesValue : totalCycles;
+    const resolvedFilesLimit = filesLimitCount === "manual" ? filesLimitCountValue : filesLimitCount;
+    const resolvedValidity = validityValue === "manual" ? validityValueCustom : validityValue;
+
+    const submissionData = {
+      serviceName,
+      planType,
+      limitScope,
+      manualUnit: limitScope === "manual" ? manualUnit : undefined,
+      manualCount: limitScope === "manual" ? Number(manualCount) : undefined,
+      portalAccessCount: limitScope === "unlimited" ? undefined : Number(resolvedPortalAccessCount),
+      filesLimit: Number(resolvedFilesLimit),
+      validityUnit,
+      validityValue: Number(resolvedValidity),
+      billingCycle: billingCycle || undefined,
+      price: price !== "" ? Number(price) : undefined,
+      sellingPrice: sellingPrice !== "" ? Number(sellingPrice) : undefined,
+      description: descriptionRef.current,
+      visibility,
+    };
+
+    setIsSubmitting(true);
+    try {
+      const response = await fetch(SummaryApi.createServicePlan.url, {
+        method: SummaryApi.createServicePlan.method,
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(submissionData),
+      });
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.message || "Failed to save plan");
+      }
+
+      toast.success("Plan created successfully");
+      navigate("/admin-panel/website-management/plans");
+    } catch (error) {
+      console.error("Error saving plan:", error);
+      toast.error(error.message || "Failed to save plan. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -168,6 +252,31 @@ const AdminCreatePlanPage = () => {
               <span className={sectionTitleClassName}>Plan Power</span>
               <div className="mt-3 grid gap-x-4 gap-y-4 md:grid-cols-2">
                 <label>
+                  <span className={labelClassName}>Portal Access</span>
+                  <select className={inputClassName} value={totalCycles} onChange={(event) => setTotalCycles(event.target.value)}>
+                    <option value="">Select portal access</option>
+                    {TOTAL_CYCLES_OPTIONS.map((count) => (
+                      <option key={count} value={count}>{count}</option>
+                    ))}
+                    <option value="manual">Manual</option>
+                  </select>
+                </label>
+
+                {totalCycles === "manual" && (
+                  <label>
+                    <span className={labelClassName}>Enter Portal Access</span>
+                    <input
+                      className={inputClassName}
+                      type="number"
+                      min="1"
+                      placeholder="e.g. 15"
+                      value={totalCyclesValue}
+                      onChange={(event) => setTotalCyclesValue(event.target.value)}
+                    />
+                  </label>
+                )}
+
+                <label>
                   <span className={labelClassName}>Limit Scope</span>
                   <select className={inputClassName} value={limitScope} onChange={(event) => setLimitScope(event.target.value)}>
                     <option value="">Select scope limit</option>
@@ -181,7 +290,14 @@ const AdminCreatePlanPage = () => {
                   <>
                     <label>
                       <span className={labelClassName}>Manual Unit</span>
-                      <select className={inputClassName} value={manualUnit} onChange={(event) => setManualUnit(event.target.value)}>
+                      <select
+                        className={inputClassName}
+                        value={manualUnit}
+                        onChange={(event) => {
+                          setManualUnit(event.target.value);
+                          setManualCount("");
+                        }}
+                      >
                         <option value="">Select unit</option>
                         {MANUAL_UNITS.map((option) => (
                           <option key={option.value} value={option.value}>{option.label}</option>
@@ -189,58 +305,18 @@ const AdminCreatePlanPage = () => {
                       </select>
                     </label>
 
-                    <label>
-                      <span className={labelClassName}>Manual Count</span>
-                      <select className={inputClassName} value={manualCount} onChange={(event) => setManualCount(event.target.value)}>
-                        <option value="">Select count</option>
-                        {MANUAL_COUNT_OPTIONS.map((count) => (
-                          <option key={count} value={count}>{count}</option>
-                        ))}
-                        <option value="manual">Manual</option>
-                      </select>
-                    </label>
-
-                    {manualCount === "manual" && (
+                    {manualUnit && (
                       <label>
-                        <span className={labelClassName}>Enter Count</span>
-                        <input
-                          className={inputClassName}
-                          type="number"
-                          min="1"
-                          placeholder="e.g. 45"
-                          value={manualCountValue}
-                          onChange={(event) => setManualCountValue(event.target.value)}
-                        />
+                        <span className={labelClassName}>Manual Count</span>
+                        <select className={inputClassName} value={manualCount} onChange={(event) => setManualCount(event.target.value)}>
+                          <option value="">Select count</option>
+                          {MANUAL_COUNT_RANGES[manualUnit].map((count) => (
+                            <option key={count} value={count}>{count}</option>
+                          ))}
+                        </select>
                       </label>
                     )}
                   </>
-                )}
-
-                {limitScope && limitScope !== "unlimited" && (
-                  <label>
-                    <span className={labelClassName}>Portal Access</span>
-                    <select className={inputClassName} value={totalCycles} onChange={(event) => setTotalCycles(event.target.value)}>
-                      <option value="">Select portal access</option>
-                      {TOTAL_CYCLES_OPTIONS.map((count) => (
-                        <option key={count} value={count}>{count}</option>
-                      ))}
-                      <option value="manual">Manual</option>
-                    </select>
-                  </label>
-                )}
-
-                {limitScope && limitScope !== "unlimited" && totalCycles === "manual" && (
-                  <label>
-                    <span className={labelClassName}>Enter Portal Access</span>
-                    <input
-                      className={inputClassName}
-                      type="number"
-                      min="1"
-                      placeholder="e.g. 15"
-                      value={totalCyclesValue}
-                      onChange={(event) => setTotalCyclesValue(event.target.value)}
-                    />
-                  </label>
                 )}
 
                 <label>
@@ -377,10 +453,11 @@ const AdminCreatePlanPage = () => {
               </button>
               <button
                 type="submit"
-                className="inline-flex items-center gap-2 rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-bold text-slate-950 transition hover:bg-emerald-400"
+                disabled={isSubmitting}
+                className="inline-flex items-center gap-2 rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-bold text-slate-950 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <Save size={16} />
-                Save Plan
+                {isSubmitting ? "Saving..." : "Save Plan"}
               </button>
             </div>
           </form>

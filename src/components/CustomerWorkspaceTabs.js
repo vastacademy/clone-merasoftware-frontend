@@ -1,9 +1,21 @@
 import React from 'react';
 
-const CustomerWorkspaceTabs = ({ tabs, activeTab, onChange, ariaLabel = 'Workspace sections' }) => {
+const CustomerWorkspaceTabs = ({ tabs, activeTab, onChange, ariaLabel = 'Workspace sections', variant = 'default' }) => {
+  const isInline = variant === 'inline';
+
   return (
-    <div className="border-b border-slate-200 px-5 sm:px-6">
-      <div role="tablist" aria-label={ariaLabel} className="flex gap-6 overflow-x-auto">
+    <div
+      className={
+        isInline
+          ? ''
+          : 'border-b border-white/40 bg-white/40 px-5 backdrop-blur-xl backdrop-saturate-150 sm:px-6'
+      }
+    >
+      <div
+        role="tablist"
+        aria-label={ariaLabel}
+        className="flex gap-6 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
           return (
@@ -17,7 +29,9 @@ const CustomerWorkspaceTabs = ({ tabs, activeTab, onChange, ariaLabel = 'Workspa
                 'relative -mb-px inline-flex shrink-0 cursor-pointer items-center justify-center border-b-2 px-1 py-4 text-base font-semibold transition',
                 isActive
                   ? 'border-emerald-500 text-emerald-700'
-                  : 'border-transparent text-black hover:border-slate-300 hover:text-black',
+                  : isInline
+                    ? 'border-transparent text-slate-300 hover:border-white/40 hover:text-white'
+                    : 'border-transparent text-black hover:border-slate-300 hover:text-black',
               ].join(' ')}
             >
               {tab.label}

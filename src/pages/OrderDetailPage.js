@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, CheckCircle2, Clock3, XCircle, CalendarClock, ChevronRight } from 'lucide-react';
 import SummaryApi from '../common';
 import DashboardLayout from '../components/DashboardLayout';
+import backgroundImage from '../assets/BG.png';
 import TriangleMazeLoader from '../components/TriangleMazeLoader';
 import { isOrderApproved } from '../helpers/orderVisibility';
 
@@ -144,7 +145,10 @@ const OrderDetailPage = () => {
   if (!order) {
     return (
       <DashboardLayout user={user}>
-        <div className="min-h-full bg-slate-50 px-4 py-5 sm:px-6 lg:px-8 lg:py-8">
+        <div
+          className="min-h-full bg-slate-950 bg-cover bg-center px-4 py-5 sm:px-6 lg:px-8 lg:py-8"
+          style={{ backgroundImage: `url(${backgroundImage})` }}
+        >
           <div className="mx-auto max-w-3xl rounded-[2rem] border border-slate-200 bg-white p-8 text-center shadow-sm">
             <h2 className="text-lg font-semibold text-red-600 mb-2">Order Not Found</h2>
             <p className="text-base text-black mb-4">The order you're looking for doesn't exist or you don't have access to it.</p>
@@ -172,7 +176,10 @@ const OrderDetailPage = () => {
 
   return (
     <DashboardLayout user={user}>
-      <div className="min-h-full bg-slate-50 px-4 py-4 pb-8 sm:px-6 lg:px-8 lg:pb-10">
+      <div
+        className="min-h-full bg-slate-950 bg-cover bg-center px-4 py-4 pb-8 sm:px-6 lg:px-8 lg:pb-10"
+        style={{ backgroundImage: `url(${backgroundImage})` }}
+      >
         <div className="mx-auto flex w-full max-w-7xl flex-col gap-4">
 
           <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">

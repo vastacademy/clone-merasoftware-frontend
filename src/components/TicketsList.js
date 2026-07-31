@@ -119,10 +119,10 @@ const TicketsList = () => {
         key="prev"
         onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
         disabled={currentPage === 1}
-        className={`relative inline-flex items-center px-2 py-2 rounded-l-md border ${
-          currentPage === 1 
-            ? 'border-gray-300 bg-gray-100 text-gray-400 cursor-not-allowed' 
-            : 'border-gray-300 bg-white text-gray-500 hover:bg-gray-50'
+        className={`relative inline-flex items-center rounded-l-xl border px-2 py-2 backdrop-blur-md ${
+          currentPage === 1
+            ? 'cursor-not-allowed border-white/10 bg-white/5 text-slate-500'
+            : 'border-white/20 bg-white/10 text-slate-200 hover:bg-white/20'
         }`}
       >
         <span className="sr-only">Previous</span>
@@ -141,10 +141,10 @@ const TicketsList = () => {
         <button
           key={i}
           onClick={() => handlePageChange(i)}
-          className={`relative inline-flex items-center px-4 py-2 border ${
+          className={`relative inline-flex items-center border px-4 py-2 backdrop-blur-md ${
             i === currentPage
-              ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
-              : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+              ? 'z-10 border-emerald-400/50 bg-emerald-500/25 text-white'
+              : 'border-white/20 bg-white/10 text-slate-200 hover:bg-white/20'
           }`}
         >
           {i}
@@ -158,10 +158,10 @@ const TicketsList = () => {
         key="next"
         onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
         disabled={currentPage === totalPages}
-        className={`relative inline-flex items-center px-2 py-2 rounded-r-md border ${
+        className={`relative inline-flex items-center rounded-r-xl border px-2 py-2 backdrop-blur-md ${
           currentPage === totalPages
-            ? 'border-gray-300 bg-gray-100 text-gray-400 cursor-not-allowed'
-            : 'border-gray-300 bg-white text-gray-500 hover:bg-gray-50'
+            ? 'cursor-not-allowed border-white/10 bg-white/5 text-slate-500'
+            : 'border-white/20 bg-white/10 text-slate-200 hover:bg-white/20'
         }`}
       >
         <span className="sr-only">Next</span>
@@ -189,10 +189,11 @@ const TicketsList = () => {
   }, [currentPage, statusFilter, userDetails, isInitialized]);
   
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden">
-      <div className="flex justify-between items-center p-4 sm:px-6 border-b">
-        <h2 className="text-lg font-semibold text-gray-800 flex items-center">
-          <Ticket className="h-5 w-5 mr-2" />
+    <div className="relative overflow-hidden rounded-3xl border border-white/20 bg-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.25)] backdrop-blur-2xl backdrop-saturate-150">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/[0.12] to-transparent" />
+      <div className="relative flex items-center justify-between gap-3 border-b border-white/15 p-4 sm:px-6">
+        <h2 className="flex items-center text-xl font-semibold text-white">
+          <Ticket className="mr-2 h-5 w-5" />
           My Support Tickets
         </h2>
         <div className="flex items-center gap-2">
@@ -203,109 +204,109 @@ const TicketsList = () => {
                 setStatusFilter(e.target.value);
                 setCurrentPage(1);
               }}
-              className="border border-gray-300 rounded-md pl-9 pr-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="rounded-xl border border-white/20 bg-white/10 py-1.5 pl-9 pr-3 text-sm text-white backdrop-blur-md focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/40"
             >
-              <option value="">All Tickets</option>
-              <option value="pending">Pending</option>
-              <option value="open">Open</option>
-              <option value="closed">Closed</option>
+              <option className="bg-slate-900 text-white" value="">All Tickets</option>
+              <option className="bg-slate-900 text-white" value="pending">Pending</option>
+              <option className="bg-slate-900 text-white" value="open">Open</option>
+              <option className="bg-slate-900 text-white" value="closed">Closed</option>
             </select>
-            <Filter className="absolute left-3 top-2 h-4 w-4 text-gray-400" />
+            <Filter className="absolute left-3 top-2 h-4 w-4 text-slate-400" />
           </div>
           <button
             onClick={() => setShowCreateForm(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-3 sm:px-4 py-1.5 rounded-md text-sm font-medium flex items-center transition-colors"
+            className="flex items-center rounded-xl border border-emerald-400/40 bg-emerald-500/20 px-3 py-1.5 text-sm font-medium text-white backdrop-blur-md transition-colors hover:bg-emerald-500/35 sm:px-4"
           >
-            <Plus className="h-4 w-4 mr-1" />
+            <Plus className="mr-1 h-4 w-4" />
             <span className="hidden sm:inline">Create Ticket</span>
             <span className="sm:hidden">New</span>
           </button>
         </div>
       </div>
-      
+
       {loading ? (
-        <div className="flex justify-center items-center p-12">
+        <div className="relative flex items-center justify-center p-12">
           <TriangleMazeLoader />
         </div>
       ) : error ? (
-        <div className="p-6 text-center">
-          <p className="text-red-500">{error}</p>
+        <div className="relative p-6 text-center">
+          <p className="text-rose-400">{error}</p>
           <button
             onClick={fetchTickets}
-            className="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm"
+            className="mt-4 rounded-xl border border-emerald-400/40 bg-emerald-500/20 px-4 py-2 text-sm text-white backdrop-blur-md hover:bg-emerald-500/35"
           >
             Try Again
           </button>
         </div>
       ) : tickets.length === 0 ? (
-        <div className="p-12 text-center">
-          <div className="flex justify-center mb-4">
-            <Ticket className="h-12 w-12 text-gray-300" />
+        <div className="relative p-12 text-center">
+          <div className="mb-4 flex justify-center">
+            <Ticket className="h-12 w-12 text-white/30" />
           </div>
-          <h3 className="text-lg font-medium text-gray-800 mb-2">No tickets found</h3>
-          <p className="text-gray-500 mb-6">You haven't created any support tickets yet.</p>
+          <h3 className="mb-2 text-lg font-medium text-white">No tickets found</h3>
+          <p className="mb-6 text-slate-300">You haven't created any support tickets yet.</p>
           <button
             onClick={() => setShowCreateForm(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md flex items-center mx-auto"
+            className="mx-auto flex items-center rounded-xl border border-emerald-400/40 bg-emerald-500/20 px-4 py-2 text-white backdrop-blur-md hover:bg-emerald-500/35"
           >
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="mr-2 h-4 w-4" />
             Create Your First Ticket
           </button>
         </div>
       ) : (
         <>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+          <div className="relative overflow-x-auto">
+            <table className="min-w-full divide-y divide-white/15">
+              <thead className="bg-white/5">
                 <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-300">
                     Ticket ID
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-300">
                     Category
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-300">
                     Subject
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-300">
                     Status
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-300">
                     Created
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-300">
                     Last Updated
                   </th>
-                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-slate-300">
                     Action
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="divide-y divide-white/10">
                 {tickets.map((ticket) => (
-                  <tr key={ticket.ticketId} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                  <tr key={ticket.ticketId} className="hover:bg-white/[0.06]">
+                    <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-white">
                       {ticket.ticketId}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-300">
                       {ticket.category}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 truncate max-w-[200px]">
+                    <td className="max-w-[200px] truncate whitespace-nowrap px-6 py-4 text-sm text-slate-300">
                       {ticket.subject}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-300">
                       {getStatusBadge(ticket.status)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-300">
                       {formatDate(ticket.createdAt)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-300">
                       {formatDate(ticket.updatedAt)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
+                    <td className="whitespace-nowrap px-6 py-4 text-right text-sm">
                       <a
                         href={`/support-tickets/${ticket.ticketId}`}
-                        className="text-blue-600 hover:text-blue-800 font-medium flex items-center justify-end gap-1"
+                        className="flex items-center justify-end gap-1 font-medium text-emerald-400 hover:text-emerald-300"
                       >
                         View <ArrowRight className="h-4 w-4" />
                       </a>
@@ -315,7 +316,7 @@ const TicketsList = () => {
               </tbody>
             </table>
           </div>
-          
+
           {renderPagination()}
         </>
       )}
