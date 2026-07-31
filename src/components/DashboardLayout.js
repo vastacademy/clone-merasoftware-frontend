@@ -80,15 +80,15 @@ const DashboardLayout = ({ children, user, walletBalance, cartCount, isLoading, 
       active: currentPath.startsWith('/start-new-project'),
     },
     {
-      to: '/wallet',
-      label: 'Wallet',
-      icon: Wallet,
-      active: currentPath.startsWith('/wallet'),
+      to: '/order',
+      label: 'Orders',
+      icon: ShoppingBag,
+      active: currentPath.startsWith('/order'),
     },
   ];
 
   const secondaryLinks = [
-    { to: '/order', label: 'Orders', icon: ShoppingBag, active: currentPath.startsWith('/order') },
+    { to: '/wallet', label: 'Wallet', icon: Wallet, active: currentPath.startsWith('/wallet') },
     { to: '/games', label: 'Games', icon: Gamepad2, active: currentPath.startsWith('/games') },
     { to: '/profile', label: 'Profile', icon: UserCircle, active: currentPath.startsWith('/profile') },
     { to: '/support', label: 'Support', icon: MessageSquare, active: currentPath.startsWith('/support') },

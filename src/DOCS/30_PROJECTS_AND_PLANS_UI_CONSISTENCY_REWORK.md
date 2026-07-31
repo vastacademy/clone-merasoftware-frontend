@@ -1,8 +1,8 @@
-# Projects and Plans — Wrapper Removal + TicketsList-Style Banding
+# Customer Portal UI Consistency — Wrapper Removal + TicketsList-Style Banding (ProjectsAndPlans, then Dashboard)
 
 **Session date**: 2026-07-31
-**Scope**: UI-only rework of `frontend/src/pages/ProjectsAndPlans.js` and a backward-compatible addition to the shared `frontend/src/components/CustomerWorkspaceTabs.js`. No data/logic/API change anywhere in this session.
-**Read this before touching**: `frontend/src/pages/ProjectsAndPlans.js`, `frontend/src/components/CustomerWorkspaceTabs.js` (also used by `OrderPage.js`, `StartNewProject.js`, `UserInvoices.js` — see the `variant` prop note below).
+**Scope**: UI-only rework of `frontend/src/pages/ProjectsAndPlans.js` and `frontend/src/pages/CustomerDashboard.js`, a backward-compatible addition to the shared `frontend/src/components/CustomerWorkspaceTabs.js`, a sidebar nav-order swap in `frontend/src/components/DashboardLayout.js`, and one dead-code/white-flash fix on `CustomerDashboard.js`. No backend/data/API change anywhere in this session.
+**Read this before touching**: `frontend/src/pages/ProjectsAndPlans.js`, `frontend/src/pages/CustomerDashboard.js`, `frontend/src/components/CustomerWorkspaceTabs.js` (also used by `OrderPage.js`, `StartNewProject.js`, `UserInvoices.js` — see the `variant` prop note below), `frontend/src/components/DashboardLayout.js`.
 
 ## 1. Why
 
@@ -63,8 +63,31 @@ Implemented by merging the Tabs and Table back into **one single dark-glass card
 </DashboardLayout>
 ```
 
-## 6. Explicitly not done / out of scope this session
+## 6. `CustomerDashboard.js` — same pattern applied (this session, after `ProjectsAndPlans.js`)
 
-- `CustomerDashboard.js`, `OrderPage.js` still use their older contained/boxed-section structure (separate banner card + separate metrics/table sections) — user has said Dashboard will get the same treatment next, not yet started.
-- No backend/data/API change.
+**File**: `frontend/src/pages/CustomerDashboard.js`.
+
+### 6.1 Before
+Three separate boxed `<section>`s inside `mx-auto max-w-7xl`: (1) a dark-glass banner `<section>` with an eyebrow badge ("Live overview"), `<h1>What is active now</h1>`, subtext, two duplicate mini-stat cards ("Current work", "Wallet" — showing the same data as cards in section 2), a primary-action button (`Track Project` / `Start New Project` / etc., from the pre-existing `primaryAction` logic) and a Refresh button; (2) a `<section>` grid of 4 `MetricCard`s (Live project / Wallet balance / Completed items / Open alerts); (3) a light-glass table `<section>` ("Recent projects & plans", `bg-white/55`, black text, `index % 2` alternating row shading, its own "View all orders" link).
+
+### 6.2 Changes (each step user-approved before coding)
+1. **Open heading block** (matching `ProjectsAndPlans.js`'s Section 3.2 pattern): eyebrow badge removed, `<h1>` text changed from "What is active now" to **"Dashboard"** (explicit user request), only heading + subtext remain, no bounding card.
+2. **Duplicate mini-cards removed**: the banner's "Current work"/"Wallet" mini-cards were dropped entirely (user-confirmed, not assumed) since they duplicated the "Live project"/"Wallet balance" `MetricCard`s below — content/data scope change, not purely visual.
+3. **4 `MetricCard`s ungrouped**: their wrapping `<section>` removed, now sit in an open `grid` directly on the page background (no bounding card), matching the "MetricCards float free" decision made for this page specifically (`ProjectsAndPlans.js` has no equivalent grid, so this was a new decision, confirmed via `AskUserQuestion` before coding).
+4. **Table converted to the `TicketsList.js`-style single dark-glass card**, identical structure to `ProjectsAndPlans.js`'s Section 3.3: header row (`Layers3` icon + "Recent projects & plans" title, `border-b border-white/15`), table-header row `bg-white/5`, body/empty-state recolored white/slate.
+5. **"Live project" `MetricCard` made dynamic/clickable** (user: make it behave like the old "Start New Project" button — if there's an active project/plan, clicking it should navigate there; if not, it should become "Start New Project"). Implemented by adding an optional `to` prop to the shared `MetricCard` component (`CustomerDashboard.js`'s internal component, not the shared `frontend/src/components/` one) — when `to` is passed the card renders as a `<Link>` (whole card clickable, trailing icon becomes `ArrowRight` instead of the metric's icon) reusing the pre-existing `primaryAction` value (`primaryAction.to`/`primaryAction.label`, unchanged logic — already correctly branched between "Track Project" / "Request Website Update" / "N Active Services" / "Start New Project"). The other 3 `MetricCard`s don't pass `to`, so they render exactly as before (plain `<div>`).
+6. **Standalone action button + Refresh removed from the heading block** (superseded by #5's dynamic card and by #7 below) — the heading block now only has `<h1>` + subtext, nothing else.
+7. **Refresh moved into the table-card's header row**, alongside "View all orders" (both wrapped in the same row, `flex-wrap`), same placement pattern as `ProjectsAndPlans.js`'s Total/Active/Refresh row.
+8. **Row alternating shading restored on both pages** (`CustomerDashboard.js` and `ProjectsAndPlans.js`): the dark-glass conversion had dropped the earlier `index % 2` alternating-background classes on table rows, leaving all rows visually identical except on hover (user flagged this with a screenshot showing `TicketsList.js`'s hover-lighter-row as the desired look, but without hover). Re-added `index % 2 === 0 ? 'bg-white/[0.02]' : 'bg-white/[0.06]'` to both files' row buttons so alternating rows are visible without needing hover; hover state itself brightened slightly (`hover:bg-white/[0.06]` → `hover:bg-white/[0.1]`) so it still reads as an extra state above the shaded rows.
+9. **Sidebar nav swap** (`frontend/src/components/DashboardLayout.js`, shared, affects entire customer portal): `Wallet` moved from the primary `quickLinks` group into the `secondaryLinks` ("More") group; `Orders` moved from `secondaryLinks` into `quickLinks` in Wallet's old slot. Final `quickLinks` order: Dashboard, Projects and Plans, Start New Project, Orders. Final `secondaryLinks` order: Wallet, Games, Profile, Support.
+
+### 6.3 White-screen-on-load root cause (found and fixed)
+User reported a white/light flash specifically on `/dashboard` (not on `/projects-and-plans` or other pages) before content appears. Root-caused by direct comparison, not assumed: `CustomerDashboard.js` had its own **page-level `if (loading) return (...)`** early-return (separate from `DashboardLayout.js`'s shared `!currentUser` auth-loading fallback, which affects all pages equally). That dashboard-only block rendered a **hardcoded light-theme skeleton** — `bg-[radial-gradient(...#f8fafc...#eef2ff...)]` page background plus `bg-white/80` pulse blocks — left over from before the portal-wide dark-glass redesign (`29_STARTPROJECT_INTAKE_PAGE_AND_PORTAL_GLASSMORPHISM.md`) and never updated. `ProjectsAndPlans.js` has no equivalent page-level loading branch — its `loading` flag only swaps a small inline text string inside the already-dark table card — which is why the flash was Dashboard-specific.
+
+**Fix** (explicit user instruction: "hata do", after being told the tradeoff — removing it entirely is crash-safe since `orders` initializes as `[]` so all derived `useMemo` values degrade gracefully to empty/zero, but the real page will briefly show genuine empty-state values like "0" / "No active project running" until the fetch resolves, rather than a generic skeleton): the entire `if (loading) {...}` block was deleted, and the now-unused `loading`/`setLoading` state (and its `setLoading(true/false)` calls inside `fetchDashboardData`) were also removed as dead code. Confirmed working by the user ("ab perfect hai koi speed issue nahi hai") — the underlying fetch time didn't change, only the now-consistent dark-theme rendering while data loads.
+
+## 7. Explicitly not done / out of scope this session
+
+- `OrderPage.js` still uses its older contained/boxed-section structure — user's next request is to bring it to the same `ProjectsAndPlans.js`/`CustomerDashboard.js` pattern (see the entry after this one in `README.md`, once written).
+- No backend/data/API change anywhere in this doc's scope.
 - `npm run build` not run, per standing user instruction.

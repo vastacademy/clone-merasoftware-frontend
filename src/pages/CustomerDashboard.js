@@ -117,14 +117,7 @@ const getItemSummary = (order) => {
 
 const getItemLink = (order) => `/project-details/${order._id}`;
 
-const MetricCard = ({ icon: Icon, label, value, helper, tone = 'slate' }) => {
-  const toneMap = {
-    slate: 'from-slate-900 to-slate-700 text-white',
-    blue: 'from-blue-600 to-cyan-500 text-white',
-    emerald: 'from-emerald-600 to-teal-500 text-white',
-    violet: 'from-violet-600 to-fuchsia-500 text-white',
-  };
-
+const MetricCard = ({ icon: Icon, label, value, helper, tone = 'slate', to }) => {
   const glowMap = {
     slate: 'bg-slate-400/25',
     blue: 'bg-blue-400/30',
@@ -132,8 +125,17 @@ const MetricCard = ({ icon: Icon, label, value, helper, tone = 'slate' }) => {
     violet: 'bg-violet-400/30',
   };
 
+  const Wrapper = to ? Link : 'div';
+  const wrapperProps = to ? { to } : {};
+
   return (
-    <div className="group relative overflow-hidden rounded-[1.75rem] border border-white/15 bg-slate-950/60 p-5 shadow-[0_8px_32px_rgba(0,0,0,0.35)] backdrop-blur-xl backdrop-saturate-150 transition-all duration-300 hover:border-white/25 hover:bg-slate-950/70">
+    <Wrapper
+      {...wrapperProps}
+      className={[
+        'group relative overflow-hidden rounded-[1.75rem] border border-white/15 bg-slate-950/60 p-5 shadow-[0_8px_32px_rgba(0,0,0,0.35)] backdrop-blur-xl backdrop-saturate-150 transition-all duration-300 hover:border-white/25 hover:bg-slate-950/70',
+        to ? 'block' : '',
+      ].join(' ')}
+    >
       <div className={`pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full ${glowMap[tone]} blur-3xl`} />
       <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/10 to-transparent" />
 
@@ -144,10 +146,10 @@ const MetricCard = ({ icon: Icon, label, value, helper, tone = 'slate' }) => {
           {helper ? <p className="mt-2 text-sm text-slate-200">{helper}</p> : null}
         </div>
         <div className="rounded-2xl border border-white/20 bg-white/10 p-3 backdrop-blur-md">
-          <Icon className="h-5 w-5 text-white" />
+          {to ? <ArrowRight className="h-5 w-5 text-white transition-transform group-hover:translate-x-0.5" /> : <Icon className="h-5 w-5 text-white" />}
         </div>
       </div>
-    </div>
+    </Wrapper>
   );
 };
 
@@ -157,11 +159,9 @@ const CustomerDashboard = () => {
   const context = useContext(Context);
 
   const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
 
   const fetchDashboardData = async () => {
     try {
-      setLoading(true);
       const response = await fetch(SummaryApi.ordersList.url, {
         method: SummaryApi.ordersList.method,
         credentials: 'include',
@@ -175,8 +175,6 @@ const CustomerDashboard = () => {
       }
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -296,25 +294,6 @@ const CustomerDashboard = () => {
     navigate(getItemLink(order));
   };
 
-  if (loading) {
-    return (
-      <DashboardLayout user={user} activeProject={activeProject}>
-        <div className="min-h-[60vh] bg-[radial-gradient(circle_at_top_right,_rgba(59,130,246,0.16),_transparent_34%),linear-gradient(180deg,_#f8fafc_0%,_#eef2ff_50%,_#f8fafc_100%)] px-4 py-8 sm:px-6 lg:px-8">
-          <div className="mx-auto flex max-w-7xl flex-col gap-6">
-            <div className="h-56 animate-pulse rounded-[2rem] bg-white/80 shadow-sm" />
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              <div className="h-32 animate-pulse rounded-[1.75rem] bg-white/80 shadow-sm" />
-              <div className="h-32 animate-pulse rounded-[1.75rem] bg-white/80 shadow-sm" />
-              <div className="h-32 animate-pulse rounded-[1.75rem] bg-white/80 shadow-sm" />
-              <div className="h-32 animate-pulse rounded-[1.75rem] bg-white/80 shadow-sm" />
-            </div>
-            <div className="h-72 animate-pulse rounded-[2rem] bg-white/80 shadow-sm" />
-          </div>
-        </div>
-      </DashboardLayout>
-    );
-  }
-
   return (
       <DashboardLayout user={user} activeProject={activeProject}>
       <div
@@ -326,44 +305,31 @@ const CustomerDashboard = () => {
         <div className="relative mx-auto max-w-7xl">
           <div className="text-center">
             <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl lg:text-4xl">
-              What is active now
+              Dashboard
             </h1>
             <p className="mx-auto mt-3 max-w-2xl text-base text-slate-300 sm:text-lg">
               Open the live project, check wallet balance, or start new work from here.
             </p>
-
-            <div className="mt-5 flex flex-wrap items-center justify-center gap-2.5">
-              <Link
-                to={primaryAction.to}
-                className="inline-flex items-center gap-2 rounded-2xl bg-white px-4 py-2.5 text-base font-semibold text-slate-900 transition hover:bg-slate-100"
-              >
-                {primaryAction.label}
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-              <button
-                type="button"
-                onClick={fetchDashboardData}
-                className="inline-flex items-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-4 py-2.5 text-base font-semibold text-white backdrop-blur-md transition hover:bg-white/15"
-              >
-                <RefreshCw className="h-4 w-4" />
-                Refresh
-              </button>
-            </div>
           </div>
 
           <div className="mt-10 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <MetricCard
               icon={LayoutDashboard}
-              label="Live project"
-              value={String(activeWorkItemsCount)}
+              label={primaryWorkItem ? 'Live project' : 'Start New Project'}
+              value={
+                primaryWorkItem
+                  ? primaryWorkItem.productId?.serviceName || 'Active work'
+                  : primaryAction.label
+              }
               helper={
-                activeWorkItemsCount > 1
-                  ? `${activeWorkItemsCount} active items`
-                  : primaryWorkItem
-                    ? primaryWorkItem.productId?.serviceName || 'Active work'
-                    : 'No active project running'
+                primaryWorkItem
+                  ? activeWorkItemsCount > 1
+                    ? `${activeWorkItemsCount} active items`
+                    : primaryAction.label
+                  : 'No active project running'
               }
               tone="slate"
+              to={primaryAction.to}
             />
             <MetricCard
               icon={Wallet}
@@ -391,18 +357,28 @@ const CustomerDashboard = () => {
           <div className="relative mt-10 overflow-hidden rounded-3xl border border-white/20 bg-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.25)] backdrop-blur-2xl backdrop-saturate-150">
             <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/[0.12] to-transparent" />
 
-            <div className="relative flex flex-col gap-3 border-b border-white/15 p-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+            <div className="relative flex flex-col gap-3 border-b border-white/15 p-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:px-6">
               <h2 className="flex items-center text-xl font-semibold text-white">
                 <Layers3 className="mr-2 h-5 w-5" />
                 Recent projects & plans
               </h2>
-              <Link
-                to="/order"
-                className="inline-flex items-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white backdrop-blur-md transition hover:bg-white/15"
-              >
-                View all orders
-                <ArrowRight className="h-4 w-4" />
-              </Link>
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <Link
+                  to="/order"
+                  className="inline-flex items-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white backdrop-blur-md transition hover:bg-white/15"
+                >
+                  View all orders
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+                <button
+                  type="button"
+                  onClick={fetchDashboardData}
+                  className="inline-flex items-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white backdrop-blur-md transition hover:bg-white/15"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  Refresh
+                </button>
+              </div>
             </div>
 
             {dashboardItems.length > 0 ? (
