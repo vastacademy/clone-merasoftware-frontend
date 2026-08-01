@@ -70,7 +70,7 @@ const OrderStatusBadge = ({ status }) => {
       icon: <AlertCircle size={14} className="mr-1" />,
     },
     Completed: {
-      color: 'border border-emerald-400/40 bg-emerald-500/20 text-emerald-800 backdrop-blur-md',
+      color: 'border border-emerald-400/40 bg-emerald-500/20 text-emerald-300 backdrop-blur-md',
       icon: <CheckCircle size={14} className="mr-1" />,
     },
     Processing: {
@@ -82,7 +82,7 @@ const OrderStatusBadge = ({ status }) => {
   const config = statusConfig[status] || statusConfig.Processing;
 
   return (
-    <span className={`flex items-center px-3 py-1 rounded-full text-sm font-medium ${config.color}`}>
+    <span className={`flex items-center px-3 py-1 rounded-full text-sm font-semibold ${config.color}`}>
       {config.icon}
       {status}
     </span>

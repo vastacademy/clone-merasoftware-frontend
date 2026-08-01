@@ -9,6 +9,7 @@ import DashboardLayout from '../components/DashboardLayout';
 import TriangleMazeLoader from '../components/TriangleMazeLoader';
 import UpdateRequestModal from '../components/UpdateRequestModal';
 import SummaryApi from '../common';
+import backgroundImage from '../assets/BG.png';
 
 const formatDate = (date) => {
   if (!date) return 'N/A';
@@ -91,18 +92,18 @@ const getPlanVisualStatus = (plan) => {
 };
 
 const BADGE_TONE_CLASSES = {
-  active: 'bg-emerald-100 text-emerald-700',
-  used_up: 'bg-amber-100 text-amber-800',
-  expired: 'bg-slate-200 text-slate-700',
-  paused: 'bg-rose-100 text-rose-700',
-  closed: 'bg-slate-800 text-white',
+  active: 'border border-emerald-400/40 bg-emerald-500/20 text-emerald-300',
+  used_up: 'border border-amber-400/40 bg-amber-500/20 text-amber-300',
+  expired: 'border border-white/25 bg-white/15 text-white',
+  paused: 'border border-rose-400/40 bg-rose-500/20 text-rose-300',
+  closed: 'border border-white/25 bg-white/15 text-white',
 };
 
 const REQUEST_STATUS_META = {
-  pending: { label: 'Pending', tone: 'border-amber-200 bg-amber-50 text-amber-700' },
-  in_progress: { label: 'In Progress', tone: 'border-blue-200 bg-blue-50 text-blue-700' },
-  completed: { label: 'Completed', tone: 'border-emerald-200 bg-emerald-50 text-emerald-700' },
-  rejected: { label: 'Rejected', tone: 'border-rose-200 bg-rose-50 text-rose-700' },
+  pending: { label: 'Pending', tone: 'border-amber-400/40 bg-amber-500/20 text-amber-300' },
+  in_progress: { label: 'In Progress', tone: 'border-white/25 bg-white/15 text-white' },
+  completed: { label: 'Completed', tone: 'border-emerald-400/40 bg-emerald-500/20 text-emerald-300' },
+  rejected: { label: 'Rejected', tone: 'border-rose-400/40 bg-rose-500/20 text-rose-300' },
 };
 
 const RequestHistoryItem = ({ request, isSelected, onSelect }) => {
@@ -114,33 +115,33 @@ const RequestHistoryItem = ({ request, isSelected, onSelect }) => {
       type="button"
       onClick={onSelect}
       className={[
-        'relative flex w-full items-start gap-3 rounded-[1.25rem] border p-3 text-left transition',
+        'relative flex w-full items-start gap-3 rounded-[1.25rem] border p-3 text-left transition backdrop-blur-md',
         isSelected
-          ? 'border-blue-300 bg-white shadow-md ring-2 ring-blue-100'
-          : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50',
+          ? 'border-white/40 bg-white/[0.1] shadow-md ring-2 ring-white/20'
+          : 'border-white/10 bg-white/[0.03] hover:border-white/20 hover:bg-white/[0.07]',
       ].join(' ')}
     >
       <div
         className={[
           'flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2',
-          isSelected ? 'border-blue-500 bg-blue-50' : 'border-slate-300 bg-white',
+          isSelected ? 'border-white/40 bg-white/15' : 'border-white/15 bg-white/10',
         ].join(' ')}
       >
         {request.status === 'completed' ? (
-          <Check className="h-4 w-4 text-emerald-500" />
+          <Check className="h-4 w-4 text-emerald-400" />
         ) : (
-          <Upload className="h-4 w-4 text-slate-500" />
+          <Upload className="h-4 w-4 text-white" />
         )}
       </div>
 
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
-          <h3 className="truncate text-base font-semibold text-black">{formatDate(request.createdAt)}</h3>
+          <h3 className="truncate text-base font-semibold text-white">{formatDate(request.createdAt)}</h3>
           <span className={['rounded-full border px-2 py-0.5 text-sm font-semibold', meta.tone].join(' ')}>
             {meta.label}
           </span>
         </div>
-        <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-sm text-black">
+        <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-sm text-slate-300">
           <span>{fileCount} file{fileCount === 1 ? '' : 's'}</span>
           <span>{request.instructions?.length || 0} note{(request.instructions?.length || 0) === 1 ? '' : 's'}</span>
         </div>
@@ -228,7 +229,7 @@ const PlanDetails = () => {
             <p className="text-base text-black mb-4">The plan you're looking for doesn't exist or you don't have access to it.</p>
             <button
               onClick={handleBack}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-base font-semibold"
+              className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-base font-semibold"
             >
               Back to Projects and Plans
             </button>
@@ -252,46 +253,55 @@ const PlanDetails = () => {
 
   return (
     <DashboardLayout user={user}>
-      <div className="w-full bg-slate-50 px-4 py-4 pb-8 sm:px-6 lg:px-8 lg:pb-10">
-        <div className="mx-auto flex w-full max-w-7xl flex-col gap-4">
-          <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
-            <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-blue-950 px-5 py-5 text-white sm:px-6 lg:px-8">
-              <button
-                type="button"
-                onClick={handleBack}
-                className="inline-flex items-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-3 py-2 text-sm font-semibold text-white transition hover:bg-white/15"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                Back
-              </button>
-              <div className="mt-4 flex flex-wrap items-center gap-3">
-                <h1 className="text-2xl font-bold tracking-tight text-white">
+      <div
+        className="relative min-h-[calc(100vh-4rem)] overflow-hidden bg-slate-950 bg-cover bg-center px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
+        style={{ backgroundImage: `url(${backgroundImage})` }}
+      >
+        <div className="pointer-events-none absolute inset-0 bg-slate-950/40" />
+
+        <div className="relative mx-auto flex w-full max-w-7xl flex-col gap-4">
+          <div className="relative flex items-center justify-center">
+            <button
+              type="button"
+              onClick={handleBack}
+              className="absolute left-0 inline-flex w-fit shrink-0 items-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-5 py-3 text-lg font-semibold text-white backdrop-blur-md transition hover:bg-white/15"
+            >
+              <ArrowLeft className="h-5 w-5" />
+              Back
+            </button>
+
+            <div className="text-center">
+              <div className="flex flex-wrap items-center justify-center gap-3">
+                <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl lg:text-4xl">
                   {product.serviceName}
                 </h1>
                 <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${BADGE_TONE_CLASSES[status.tone]}`}>
                   {status.badge}
                 </span>
               </div>
-              <p className="mt-2 text-base font-medium text-white">
+              <p className="mt-1 text-base text-slate-300 sm:text-lg">
                 {product.category?.split('_').join(' ') || 'Plan'}
               </p>
             </div>
+          </div>
 
-            <div className="px-5 py-5 sm:px-6 lg:px-8">
-              {/* Desktop 3-column layout, same skeleton as ProjectDetails.js */}
-              <div className="hidden gap-5 lg:grid lg:grid-cols-[280px_minmax(0,1fr)_360px] lg:items-stretch">
-                <aside className="grid h-[470px] grid-rows-[minmax(0,1fr)_minmax(0,1fr)] gap-4">
-                  <div className="flex h-full min-h-0 flex-col rounded-[1.75rem] border border-slate-200 bg-slate-50 p-4 shadow-sm">
-                    <div className="flex items-center justify-center">
+          <div className="relative overflow-hidden rounded-[1.75rem] border border-white/20 bg-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.25)] backdrop-blur-2xl backdrop-saturate-150">
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/[0.12] to-transparent" />
+
+            {/* Desktop 3-column layout, same skeleton as ProjectDetails.js */}
+            <div className="relative hidden lg:grid lg:grid-cols-[280px_minmax(0,1fr)_360px] lg:items-stretch">
+              <aside className="relative h-[620px] border-r border-white/15">
+                <div className="flex h-full min-h-0 flex-col p-4">
+                  <div className="flex items-center justify-center">
                       <div className="relative flex h-40 w-40 items-center justify-center">
-                        <div className="absolute inset-0 rounded-full border-[12px] border-slate-200"></div>
+                        <div className="absolute inset-0 rounded-full border-[12px] border-white/15"></div>
                         <svg className="absolute inset-0 h-full w-full" viewBox="0 0 100 100">
                           <circle
                             cx="50"
                             cy="50"
                             r="46"
                             fill="none"
-                            stroke={status.tone === 'active' ? '#2563EB' : '#94A3B8'}
+                            stroke={status.tone === 'active' ? '#10B981' : '#94A3B8'}
                             strokeWidth="8"
                             strokeDasharray={`${donutPercentage * 2.89} 1000`}
                             strokeLinecap="round"
@@ -299,8 +309,8 @@ const PlanDetails = () => {
                           />
                         </svg>
                         <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-                          <span className="text-2xl font-bold text-black">{usedUpdates} / {totalUpdates}</span>
-                          <span className="mt-1 text-sm font-medium text-black">Updates Used</span>
+                          <span className="text-2xl font-bold text-white">{usedUpdates} / {totalUpdates}</span>
+                          <span className="mt-1 text-sm font-medium text-slate-300">Updates Used</span>
                         </div>
                       </div>
                     </div>
@@ -311,8 +321,8 @@ const PlanDetails = () => {
                       disabled={!status.canRequest}
                       className={`mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-2.5 text-base font-semibold transition ${
                         status.canRequest
-                          ? 'bg-blue-600 text-white hover:bg-blue-700'
-                          : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                          ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+                          : 'bg-white/10 text-slate-400 cursor-not-allowed'
                       }`}
                     >
                       <Upload className="h-4 w-4" />
@@ -320,185 +330,186 @@ const PlanDetails = () => {
                     </button>
 
                     {status.tone === 'used_up' && (
-                      <p className="mt-2 text-center text-sm text-amber-600">
+                      <p className="mt-2 text-center text-sm text-amber-300">
                         {status.isRecurring
                           ? `Resets on ${formatDate(plan.monthlyLimitResetDate || plan.currentMonthExpiryDate)}.`
                           : "All updates used. Purchase a new plan."}
                       </p>
                     )}
                     {status.tone === 'expired' && (
-                      <p className="mt-2 text-center text-sm text-slate-600">
+                      <p className="mt-2 text-center text-sm text-slate-300">
                         {status.isRecurring ? 'Yearly plan has ended.' : 'Plan validity has expired.'}
                       </p>
                     )}
                     {status.tone === 'paused' && (
-                      <p className="mt-2 flex items-start gap-1.5 text-center text-sm text-rose-600">
+                      <p className="mt-2 flex items-start gap-1.5 text-center text-sm text-rose-300">
                         <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                         Payment overdue — clear invoice to continue.
                       </p>
                     )}
                     {status.tone === 'closed' && (
-                      <p className="mt-2 flex items-start gap-1.5 text-center text-sm text-slate-600">
+                      <p className="mt-2 flex items-start gap-1.5 text-center text-sm text-slate-300">
                         <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                         This plan was closed.
                       </p>
                     )}
-                  </div>
 
-                  <section className="flex h-full min-h-0 flex-col rounded-[1.75rem] border border-slate-200 bg-white p-4 shadow-sm">
-                    <p className="text-lg font-semibold text-black">Plan Snapshot</p>
-                    <div className="mt-3 space-y-2.5">
-                      <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-2.5">
-                        <span className="text-sm text-black">{status.isRecurring ? 'Resets on' : 'Days left'}</span>
-                        <span className="flex items-center gap-1 text-base font-semibold text-black">
-                          {status.isRecurring ? (
-                            <>
-                              <CalendarClock className="h-3.5 w-3.5" />
-                              {formatDate(plan.monthlyLimitResetDate || plan.currentMonthExpiryDate)}
-                            </>
-                          ) : (
-                            <>
-                              <Clock className="h-3.5 w-3.5" />
-                              {status.daysLeft} days
-                            </>
-                          )}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-2.5">
-                        <span className="text-sm text-black">Total updates granted</span>
-                        <span className="text-base font-semibold text-black">{totalUpdates}</span>
-                      </div>
-                      <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-2.5">
-                        <span className="text-sm text-black">File limit per request</span>
-                        <span className="text-base font-semibold text-black">Up to 20 files, 5MB each</span>
-                      </div>
-                    </div>
-                  </section>
-                </aside>
-
-                <section className="min-w-0 h-full lg:h-[470px]">
-                  <div className="flex h-full min-h-0 flex-col rounded-[1.75rem] border border-slate-200 bg-slate-50 p-4 shadow-sm">
-                    <div className="flex flex-col gap-2 border-b border-slate-200 pb-4 sm:flex-row sm:items-center sm:justify-between">
-                      <div>
-                        <p className="text-sm font-medium text-black">Update History</p>
-                        <h2 className="mt-1 text-xl font-bold text-black">Click any request to inspect its files</h2>
-                      </div>
-                      <span className="rounded-full bg-white px-3 py-1 text-sm font-semibold text-black">
-                        {requests.length} request{requests.length === 1 ? '' : 's'}
-                      </span>
-                    </div>
-
-                    <div className="mt-3 flex-1 min-h-0 overflow-auto pr-1">
-                      {requests.length > 0 ? (
-                        <div className="space-y-2">
-                          {requests.map((request) => (
-                            <RequestHistoryItem
-                              key={request._id}
-                              request={request}
-                              isSelected={selectedRequestId === request._id}
-                              onSelect={() => setSelectedRequestId(request._id)}
-                            />
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="rounded-[1.25rem] border border-slate-200 bg-white p-4 text-base text-black">
-                          No updates requested yet.
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </section>
-
-                <aside className="h-full min-w-0 lg:h-[470px]">
-                  <div className="sticky top-6 flex h-full flex-col">
-                    <section className="flex h-full min-h-0 flex-col rounded-[1.75rem] border border-slate-200 bg-white p-4 shadow-sm">
-                      <div className="flex items-start justify-between gap-4 border-b border-slate-200 pb-3">
-                        <div>
-                          <p className="text-sm font-medium text-black">Request Details</p>
-                          <h2 className="mt-1 text-xl font-bold text-black">
-                            {selectedRequest ? formatDate(selectedRequest.createdAt) : 'No request selected'}
-                          </h2>
-                        </div>
-                        {selectedRequest ? (
-                          <span className={[
-                            'rounded-full border px-3 py-1 text-sm font-semibold',
-                            (REQUEST_STATUS_META[selectedRequest.status] || REQUEST_STATUS_META.pending).tone,
-                          ].join(' ')}>
-                            {(REQUEST_STATUS_META[selectedRequest.status] || REQUEST_STATUS_META.pending).label}
+                    <div className="mt-4 border-t border-white/15 pt-4">
+                      <p className="text-lg font-semibold text-white">Plan Snapshot</p>
+                      <div className="mt-3 space-y-2.5">
+                        <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/10 px-4 py-2.5">
+                          <span className="text-sm text-slate-300">{status.isRecurring ? 'Resets on' : 'Days left'}</span>
+                          <span className="flex items-center gap-1 text-base font-semibold text-white">
+                            {status.isRecurring ? (
+                              <>
+                                <CalendarClock className="h-3.5 w-3.5" />
+                                {formatDate(plan.monthlyLimitResetDate || plan.currentMonthExpiryDate)}
+                              </>
+                            ) : (
+                              <>
+                                <Clock className="h-3.5 w-3.5" />
+                                {status.daysLeft} days
+                              </>
+                            )}
                           </span>
-                        ) : null}
+                        </div>
+                        <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/10 px-4 py-2.5">
+                          <span className="text-sm text-slate-300">Total updates granted</span>
+                          <span className="text-base font-semibold text-white">{totalUpdates}</span>
+                        </div>
+                        <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/10 px-4 py-2.5">
+                          <span className="text-sm text-slate-300">File limit per request</span>
+                          <span className="text-base font-semibold text-white">Up to 20 files, 5MB each</span>
+                        </div>
                       </div>
+                    </div>
+                </div>
+              </aside>
 
-                      {selectedRequest ? (
-                        <div className="mt-3 flex-1 min-h-0 space-y-3 overflow-auto pr-1">
-                          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
-                            <p className="text-sm font-semibold uppercase text-black">Submitted</p>
-                            <p className="mt-1 text-base font-semibold text-black">{formatDateTime(selectedRequest.createdAt)}</p>
-                          </div>
-
-                          {selectedRequest.instructions?.length > 0 ? (
-                            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
-                              <p className="text-sm font-semibold uppercase text-black">Instructions</p>
-                              {selectedRequest.instructions.map((note, index) => (
-                                <p key={index} className="mt-1 whitespace-pre-line text-base text-black">{note.text}</p>
-                              ))}
-                            </div>
-                          ) : null}
-
-                          <div className="flex min-h-0 flex-1 flex-col rounded-[1.25rem] border border-slate-200 bg-slate-50 p-3.5">
-                            <div className="flex items-center justify-between gap-3">
-                              <p className="text-base font-semibold text-black">Files</p>
-                              <span className="rounded-full bg-white px-2.5 py-1 text-sm font-semibold text-black">
-                                {selectedRequest.files?.length || 0} file{(selectedRequest.files?.length || 0) === 1 ? '' : 's'}
-                              </span>
-                            </div>
-                            <div className="mt-3 flex-1 min-h-0 space-y-2 overflow-auto pr-1">
-                              {selectedRequest.files?.length > 0 ? (
-                                selectedRequest.files.map((file, index) => (
-                                  <div
-                                    key={index}
-                                    className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3"
-                                  >
-                                    {getFileIcon(file.type)}
-                                    <div className="min-w-0 flex-1">
-                                      <p className="truncate text-sm font-medium text-black">{file.originalName}</p>
-                                      <p className="text-xs text-black">{formatFileSize(file.size)} • {(file.type || '').split('/')[1] || 'file'}</p>
-                                    </div>
-                                  </div>
-                                ))
-                              ) : (
-                                <p className="text-base text-black">No files attached to this request.</p>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="mt-4 rounded-[1.25rem] border border-slate-200 bg-slate-50 p-4 text-base text-black">
-                          Select a request from the history to view its files.
-                        </div>
-                      )}
-                    </section>
+              <section className="relative min-w-0 h-[620px] border-r border-white/15">
+                <div className="flex h-full min-h-0 flex-col p-4">
+                  <div className="flex flex-col gap-2 border-b border-white/15 pb-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-slate-300">Update History</p>
+                      <h2 className="mt-1 text-xl font-bold text-white">Click any request to inspect its files</h2>
+                    </div>
+                    <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-sm font-semibold text-white backdrop-blur-md">
+                      {requests.length} request{requests.length === 1 ? '' : 's'}
+                    </span>
                   </div>
-                </aside>
-              </div>
+
+                  <div className="mt-3 flex-1 min-h-0 overflow-auto pr-1">
+                    {requests.length > 0 ? (
+                      <div className="space-y-2">
+                        {requests.map((request) => (
+                          <RequestHistoryItem
+                            key={request._id}
+                            request={request}
+                            isSelected={selectedRequestId === request._id}
+                            onSelect={() => setSelectedRequestId(request._id)}
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="rounded-[1.25rem] border border-white/10 bg-white/10 p-4 text-base text-slate-300">
+                        No updates requested yet.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </section>
+
+              <aside className="h-[620px] min-w-0">
+                <div className="flex h-full flex-col p-4">
+                  <section className="flex h-full min-h-0 flex-col">
+                    <div className="flex items-start justify-between gap-4 border-b border-white/15 pb-3">
+                      <div>
+                        <p className="text-sm font-medium text-slate-300">Request Details</p>
+                        <h2 className="mt-1 text-xl font-bold text-white">
+                          {selectedRequest ? formatDate(selectedRequest.createdAt) : 'No request selected'}
+                        </h2>
+                      </div>
+                      {selectedRequest ? (
+                        <span className={[
+                          'rounded-full border px-3 py-1 text-sm font-semibold',
+                          (REQUEST_STATUS_META[selectedRequest.status] || REQUEST_STATUS_META.pending).tone,
+                        ].join(' ')}>
+                          {(REQUEST_STATUS_META[selectedRequest.status] || REQUEST_STATUS_META.pending).label}
+                        </span>
+                      ) : null}
+                    </div>
+
+                    {selectedRequest ? (
+                      <div className="mt-3 flex-1 min-h-0 space-y-3 overflow-auto pr-1">
+                        <div className="rounded-2xl border border-white/10 bg-white/10 p-3">
+                          <p className="text-sm font-semibold uppercase text-slate-300">Submitted</p>
+                          <p className="mt-1 text-base font-semibold text-white">{formatDateTime(selectedRequest.createdAt)}</p>
+                        </div>
+
+                        {selectedRequest.instructions?.length > 0 ? (
+                          <div className="rounded-2xl border border-white/10 bg-white/10 p-3">
+                            <p className="text-sm font-semibold uppercase text-slate-300">Instructions</p>
+                            {selectedRequest.instructions.map((note, index) => (
+                              <p key={index} className="mt-1 whitespace-pre-line text-base text-white">{note.text}</p>
+                            ))}
+                          </div>
+                        ) : null}
+
+                        <div className="flex min-h-0 flex-1 flex-col rounded-[1.25rem] border border-white/10 bg-white/10 p-3.5">
+                          <div className="flex items-center justify-between gap-3">
+                            <p className="text-base font-semibold text-white">Files</p>
+                            <span className="rounded-full border border-white/15 bg-white/10 px-2.5 py-1 text-sm font-semibold text-white">
+                              {selectedRequest.files?.length || 0} file{(selectedRequest.files?.length || 0) === 1 ? '' : 's'}
+                            </span>
+                          </div>
+                          <div className="mt-3 flex-1 min-h-0 space-y-2 overflow-auto pr-1">
+                            {selectedRequest.files?.length > 0 ? (
+                              selectedRequest.files.map((file, index) => (
+                                <div
+                                  key={index}
+                                  className="flex items-center gap-3 rounded-2xl border border-white/15 bg-white/10 p-3"
+                                >
+                                  {getFileIcon(file.type)}
+                                  <div className="min-w-0 flex-1">
+                                    <p className="truncate text-sm font-medium text-white">{file.originalName}</p>
+                                    <p className="text-xs text-slate-300">{formatFileSize(file.size)} • {(file.type || '').split('/')[1] || 'file'}</p>
+                                  </div>
+                                </div>
+                              ))
+                            ) : (
+                              <p className="text-base text-slate-300">No files attached to this request.</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="mt-4 rounded-[1.25rem] border border-white/10 bg-white/10 p-4 text-base text-slate-300">
+                        Select a request from the history to view its files.
+                      </div>
+                    )}
+                  </section>
+                </div>
+              </aside>
+            </div>
 
               {/* Mobile stacked layout */}
-              <div className="space-y-4 lg:hidden">
-                <section className="rounded-[1.75rem] border border-slate-200 bg-slate-50 p-5 shadow-sm">
-                  <div className="flex items-center justify-between gap-4">
+              <div className="relative space-y-4 p-5 lg:hidden">
+                <section className="relative overflow-hidden rounded-[1.75rem] border border-white/20 bg-white/10 p-5 shadow-[0_8px_32px_rgba(0,0,0,0.25)] backdrop-blur-2xl backdrop-saturate-150">
+                  <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/[0.12] to-transparent" />
+                  <div className="relative flex items-center justify-between gap-4">
                     <div>
-                      <p className="text-sm font-medium text-black">Plan Status</p>
-                      <h2 className="mt-1 text-xl font-bold text-black">{status.badge}</h2>
+                      <p className="text-sm font-medium text-slate-300">Plan Status</p>
+                      <h2 className="mt-1 text-xl font-bold text-white">{status.badge}</h2>
                     </div>
                     <div className="relative flex h-24 w-24 items-center justify-center">
-                      <div className="absolute inset-0 rounded-full border-8 border-slate-200"></div>
+                      <div className="absolute inset-0 rounded-full border-8 border-white/15"></div>
                       <svg className="absolute inset-0 h-full w-full" viewBox="0 0 100 100">
                         <circle
                           cx="50"
                           cy="50"
                           r="46"
                           fill="none"
-                          stroke={status.tone === 'active' ? '#2563EB' : '#94A3B8'}
+                          stroke={status.tone === 'active' ? '#10B981' : '#94A3B8'}
                           strokeWidth="8"
                           strokeDasharray={`${donutPercentage * 2.89} 1000`}
                           strokeLinecap="round"
@@ -506,34 +517,34 @@ const PlanDetails = () => {
                         />
                       </svg>
                       <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-                        <span className="text-lg font-bold text-black">{usedUpdates}/{totalUpdates}</span>
-                        <span className="text-sm font-medium text-black">Used</span>
+                        <span className="text-lg font-bold text-white">{usedUpdates}/{totalUpdates}</span>
+                        <span className="text-sm font-medium text-slate-300">Used</span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="mt-4 grid grid-cols-2 gap-3">
-                    <div className="rounded-2xl border border-slate-200 bg-white p-3">
-                      <p className="text-sm uppercase text-black">{status.isRecurring ? 'Resets' : 'Days left'}</p>
-                      <p className="mt-1 text-base font-semibold text-black">
+                  <div className="relative mt-4 grid grid-cols-2 gap-3">
+                    <div className="rounded-2xl border border-white/10 bg-white/10 p-3">
+                      <p className="text-sm uppercase text-slate-300">{status.isRecurring ? 'Resets' : 'Days left'}</p>
+                      <p className="mt-1 text-base font-semibold text-white">
                         {status.isRecurring ? formatDate(plan.monthlyLimitResetDate || plan.currentMonthExpiryDate) : `${status.daysLeft} days`}
                       </p>
                     </div>
-                    <div className="rounded-2xl border border-slate-200 bg-white p-3">
-                      <p className="text-sm uppercase text-black">Requests</p>
-                      <p className="mt-1 text-base font-semibold text-black">{requests.length}</p>
+                    <div className="rounded-2xl border border-white/10 bg-white/10 p-3">
+                      <p className="text-sm uppercase text-slate-300">Requests</p>
+                      <p className="mt-1 text-base font-semibold text-white">{requests.length}</p>
                     </div>
                   </div>
 
-                  <div className="mt-4">
+                  <div className="relative mt-4">
                     <button
                       type="button"
                       onClick={() => setShowRequestModal(true)}
                       disabled={!status.canRequest}
                       className={`inline-flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-base font-semibold transition ${
                         status.canRequest
-                          ? 'bg-blue-600 text-white hover:bg-blue-700'
-                          : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                          ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+                          : 'bg-white/10 text-slate-400 cursor-not-allowed'
                       }`}
                     >
                       <Upload className="h-4 w-4" />
@@ -542,15 +553,16 @@ const PlanDetails = () => {
                   </div>
                 </section>
 
-                <section className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm">
-                  <div className="flex items-center justify-between gap-3">
+                <section className="relative overflow-hidden rounded-[1.75rem] border border-white/20 bg-white/10 p-5 shadow-[0_8px_32px_rgba(0,0,0,0.25)] backdrop-blur-2xl backdrop-saturate-150">
+                  <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/[0.12] to-transparent" />
+                  <div className="relative flex items-center justify-between gap-3">
                     <div>
-                      <p className="text-sm font-medium text-black">Update History</p>
-                      <h2 className="mt-1 text-lg font-semibold text-black">{requests.length} request{requests.length === 1 ? '' : 's'}</h2>
+                      <p className="text-sm font-medium text-slate-300">Update History</p>
+                      <h2 className="mt-1 text-lg font-semibold text-white">{requests.length} request{requests.length === 1 ? '' : 's'}</h2>
                     </div>
                     <button
                       onClick={() => setTimelineExpanded(!timelineExpanded)}
-                      className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-base font-semibold text-black transition hover:bg-slate-100"
+                      className="inline-flex items-center justify-center rounded-2xl border border-white/15 bg-white/10 px-3 py-2 text-base font-semibold text-white backdrop-blur-md transition hover:bg-white/15"
                     >
                       {timelineExpanded ? (
                         <>
@@ -567,7 +579,7 @@ const PlanDetails = () => {
                   </div>
 
                   {timelineExpanded ? (
-                    <div className="mt-4 max-h-[318px] overflow-auto pr-1">
+                    <div className="relative mt-4 max-h-[318px] overflow-auto pr-1">
                       <div className="space-y-2.5">
                         {requests.map((request) => (
                           <RequestHistoryItem
@@ -580,17 +592,18 @@ const PlanDetails = () => {
                       </div>
                     </div>
                   ) : (
-                    <div className="mt-4 rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4 text-base text-black">
+                    <div className="relative mt-4 rounded-2xl border border-dashed border-white/15 bg-white/10 p-4 text-base text-slate-300">
                       Open history to select a request.
                     </div>
                   )}
                 </section>
 
-                <section className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm">
-                  <div className="flex items-start justify-between gap-4 border-b border-slate-200 pb-4">
+                <section className="relative overflow-hidden rounded-[1.75rem] border border-white/20 bg-white/10 p-5 shadow-[0_8px_32px_rgba(0,0,0,0.25)] backdrop-blur-2xl backdrop-saturate-150">
+                  <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/[0.12] to-transparent" />
+                  <div className="relative flex items-start justify-between gap-4 border-b border-white/15 pb-4">
                     <div>
-                      <p className="text-sm font-medium text-black">Request Details</p>
-                      <h2 className="mt-1 text-lg font-semibold text-black">
+                      <p className="text-sm font-medium text-slate-300">Request Details</p>
+                      <h2 className="mt-1 text-lg font-semibold text-white">
                         {selectedRequest ? formatDate(selectedRequest.createdAt) : 'No request selected'}
                       </h2>
                     </div>
@@ -605,37 +618,37 @@ const PlanDetails = () => {
                   </div>
 
                   {selectedRequest ? (
-                    <div className="mt-4 space-y-4">
+                    <div className="relative mt-4 space-y-4">
                       {selectedRequest.instructions?.length > 0 ? (
-                        <div className="rounded-[1.25rem] border border-slate-200 bg-slate-50 p-4">
-                          <p className="text-base font-semibold text-black">Instructions</p>
+                        <div className="rounded-[1.25rem] border border-white/10 bg-white/10 p-4">
+                          <p className="text-base font-semibold text-white">Instructions</p>
                           {selectedRequest.instructions.map((note, index) => (
-                            <p key={index} className="mt-2 whitespace-pre-line text-base text-black">{note.text}</p>
+                            <p key={index} className="mt-2 whitespace-pre-line text-base text-slate-200">{note.text}</p>
                           ))}
                         </div>
                       ) : null}
 
-                      <div className="rounded-[1.25rem] border border-slate-200 bg-slate-50 p-4">
-                        <p className="text-base font-semibold text-black">Files ({selectedRequest.files?.length || 0})</p>
+                      <div className="rounded-[1.25rem] border border-white/10 bg-white/10 p-4">
+                        <p className="text-base font-semibold text-white">Files ({selectedRequest.files?.length || 0})</p>
                         <div className="mt-3 space-y-2">
                           {selectedRequest.files?.length > 0 ? (
                             selectedRequest.files.map((file, index) => (
-                              <div key={index} className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3">
+                              <div key={index} className="flex items-center gap-3 rounded-2xl border border-white/15 bg-white/10 p-3">
                                 {getFileIcon(file.type)}
                                 <div className="min-w-0 flex-1">
-                                  <p className="truncate text-sm font-medium text-black">{file.originalName}</p>
-                                  <p className="text-xs text-black">{formatFileSize(file.size)} • {(file.type || '').split('/')[1] || 'file'}</p>
+                                  <p className="truncate text-sm font-medium text-white">{file.originalName}</p>
+                                  <p className="text-xs text-slate-300">{formatFileSize(file.size)} • {(file.type || '').split('/')[1] || 'file'}</p>
                                 </div>
                               </div>
                             ))
                           ) : (
-                            <p className="text-base text-black">No files attached.</p>
+                            <p className="text-base text-slate-300">No files attached.</p>
                           )}
                         </div>
                       </div>
                     </div>
                   ) : (
-                    <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-base text-black">
+                    <div className="relative mt-4 rounded-2xl border border-white/10 bg-white/10 p-4 text-base text-slate-300">
                       Select a request from history to view details.
                     </div>
                   )}
@@ -644,8 +657,6 @@ const PlanDetails = () => {
             </div>
           </div>
         </div>
-      </div>
-
       {showRequestModal && (
         <UpdateRequestModal
           plan={plan}

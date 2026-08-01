@@ -10,6 +10,7 @@ import SummaryApi from '../common';
 import TriangleMazeLoader from '../components/TriangleMazeLoader';
 import DashboardLayout from '../components/DashboardLayout';
 import AdminLayout from '../components/AdminLayout';
+import backgroundImage from '../assets/BG.png';
 import UpdateRequestModal from '../components/UpdateRequestModal';
 import PaymentAlert from '../components/PaymentAlert';
 import { logout } from '../store/userSlice';
@@ -71,6 +72,7 @@ const TimelineCheckpointItem = ({
   formatDate,
   onSelect,
   compact = false,
+  isGlass = false,
 }) => {
   const statusLabel = compact
     ? isCompleted
@@ -84,11 +86,45 @@ const TimelineCheckpointItem = ({
         ? 'In Progress'
         : 'Upcoming';
 
-  const statusTone = isCompleted
-    ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-    : isInProgress
-      ? 'border-blue-200 bg-blue-50 text-blue-700'
-      : 'border-slate-200 bg-white text-slate-600';
+  const statusTone = isGlass
+    ? isCompleted
+      ? 'border-emerald-400/40 bg-emerald-500/20 text-emerald-300'
+      : isInProgress
+        ? 'border-white/25 bg-white/15 text-white'
+        : 'border-white/15 bg-white/10 text-slate-300'
+    : isCompleted
+      ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+      : isInProgress
+        ? 'border-slate-300 bg-slate-100 text-slate-700'
+        : 'border-slate-200 bg-white text-slate-600';
+
+  const cardTone = isGlass
+    ? isSelected
+      ? compact
+        ? 'border-white/40 bg-white/[0.1] ring-2 ring-white/20'
+        : 'border-white/40 bg-white/[0.1] shadow-md ring-2 ring-white/20'
+      : 'border-white/10 bg-white/[0.03] hover:border-white/20 hover:bg-white/[0.07]'
+    : isSelected
+      ? compact
+        ? 'border-slate-300 bg-slate-50 ring-2 ring-slate-200'
+        : 'border-slate-300 bg-white shadow-md ring-2 ring-slate-200'
+      : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50';
+
+  const badgeTone = isGlass
+    ? isSelected
+      ? 'border-white/40 bg-white/15'
+      : isCompleted
+        ? 'border-emerald-400/60 bg-emerald-500/20'
+        : isInProgress
+          ? 'border-white/30 bg-white/15'
+          : 'border-white/15 bg-white/10'
+    : isSelected
+      ? 'border-slate-400 bg-slate-100'
+      : isCompleted
+        ? 'border-emerald-500 bg-emerald-50'
+        : isInProgress
+          ? 'border-slate-400 bg-slate-100'
+          : 'border-slate-300 bg-white';
 
   return (
     <button
@@ -97,46 +133,36 @@ const TimelineCheckpointItem = ({
       onClick={onSelect}
       className={[
         compact
-          ? 'flex w-full items-start gap-3 rounded-[1.25rem] border p-3.5 text-left transition'
-          : 'relative flex w-full items-start gap-3 rounded-[1.25rem] border p-3 text-left transition',
-        isSelected
-          ? compact
-            ? 'border-blue-300 bg-slate-50 ring-2 ring-blue-100'
-            : 'border-blue-300 bg-white shadow-md ring-2 ring-blue-100'
-          : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50',
+          ? 'flex w-full items-start gap-3 rounded-[1.25rem] border p-3.5 text-left transition backdrop-blur-md'
+          : 'relative flex w-full items-start gap-3 rounded-[1.25rem] border p-3 text-left transition backdrop-blur-md',
+        cardTone,
       ].join(' ')}
     >
       <div
         className={[
           'flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2',
-          isSelected
-            ? 'border-blue-500 bg-blue-50'
-            : isCompleted
-              ? 'border-emerald-500 bg-emerald-50'
-              : isInProgress
-                ? 'border-blue-500 bg-blue-50'
-                : 'border-slate-300 bg-white',
+          badgeTone,
         ].join(' ')}
       >
         {isCompleted ? (
-          <Check className="h-4 w-4 text-emerald-500" />
+          <Check className={isGlass ? 'h-4 w-4 text-emerald-400' : 'h-4 w-4 text-emerald-500'} />
         ) : isInProgress ? (
-          <Clock className="h-4 w-4 text-blue-500" />
+          <Clock className={isGlass ? 'h-4 w-4 text-white' : 'h-4 w-4 text-slate-600'} />
         ) : (
-          <span className="h-3 w-3 rounded-full bg-slate-300"></span>
+          <span className={isGlass ? 'h-3 w-3 rounded-full bg-white/30' : 'h-3 w-3 rounded-full bg-slate-300'}></span>
         )}
       </div>
 
       <div className="min-w-0 flex-1">
         <div className={compact ? 'flex items-center justify-between gap-2' : 'flex flex-wrap items-center gap-2'}>
-          <h3 className="truncate text-base font-semibold text-black">
+          <h3 className={isGlass ? 'truncate text-base font-semibold text-white' : 'truncate text-base font-semibold text-black'}>
             {checkpoint.name}
           </h3>
           <span className={["rounded-full border px-2 py-0.5 text-sm font-semibold", statusTone].join(' ')}>
             {statusLabel}
           </span>
         </div>
-        <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-sm text-black">
+        <div className={isGlass ? 'mt-2 flex flex-wrap gap-x-3 gap-y-1 text-sm text-slate-300' : 'mt-2 flex flex-wrap gap-x-3 gap-y-1 text-sm text-black'}>
           <span>{messageCount} updates</span>
           <span>{checkpoint.completedAt ? formatDate(checkpoint.completedAt) : 'Upcoming'}</span>
         </div>
@@ -159,6 +185,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
   const [updateModalOpen, setUpdateModalOpen] = useState(false);
   const [isProjectPaused, setIsProjectPaused] = useState(false);
   const [timelineExpanded, setTimelineExpanded] = useState(false);
+  const g = (adminClass, customerClass) => (isAdminView ? adminClass : customerClass);
   const [selectedCheckpointId, setSelectedCheckpointId] = useState('');
 
   const handleLogout = async () => {
@@ -499,23 +526,23 @@ const ProjectDetails = ({ isAdminView = false }) => {
     return (
       <Shell {...shellProps}>
         <div className="p-6">
-          <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-lg shadow-sm">
+          <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r-lg shadow-sm">
             <div className="flex">
               <div className="flex-shrink-0">
-                <svg className="h-5 w-5 text-blue-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <svg className="h-5 w-5 text-amber-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
                 </svg>
               </div>
               <div className="ml-3">
-                <h3 className="text-lg font-semibold text-blue-800">Payment Processing</h3>
-                <div className="mt-2 text-base text-blue-700">
+                <h3 className="text-lg font-semibold text-amber-800">Payment Processing</h3>
+                <div className="mt-2 text-base text-amber-700">
                   <p>{order.pendingMessage}</p>
                   <p className="mt-2">This process usually takes 1-4 hours. You'll receive a notification once your payment is approved.</p>
                 </div>
                 <div className="mt-4">
                   <button
                     onClick={handleBack}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-base font-semibold"
+                    className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-base font-semibold"
                   >
                     Back to Dashboard
                   </button>
@@ -594,7 +621,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
             <p className="text-base text-black mb-4">The project you're looking for doesn't exist or you don't have access to it.</p>
             <button
                     onClick={handleBack}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-base font-semibold"
+              className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-base font-semibold"
             >
               Back to Dashboard
             </button>
@@ -611,51 +638,65 @@ const ProjectDetails = ({ isAdminView = false }) => {
 
   return (
     <Shell {...shellProps}>
-      <div className="w-full bg-slate-50 px-4 py-4 pb-8 sm:px-6 lg:px-8 lg:pb-10">
-        <div className="mx-auto flex w-full max-w-7xl flex-col gap-4">
-          <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
-            <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-blue-950 px-5 py-5 text-white sm:px-6 lg:px-8">
-              <button
-                type="button"
-                onClick={handleBack}
-                className="inline-flex items-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-3 py-2 text-sm font-semibold text-white transition hover:bg-white/15"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                Back
-              </button>
-              <h1 className="mt-4 text-2xl font-bold tracking-tight text-white">
+      <div
+        className={
+          isAdminView
+            ? 'w-full bg-slate-50 px-4 py-4 pb-8 sm:px-6 lg:px-8 lg:pb-10'
+            : 'relative min-h-[calc(100vh-4rem)] overflow-hidden bg-slate-950 bg-cover bg-center px-4 py-10 sm:px-6 lg:px-8 lg:py-14'
+        }
+        style={isAdminView ? undefined : { backgroundImage: `url(${backgroundImage})` }}
+      >
+        {!isAdminView && <div className="pointer-events-none absolute inset-0 bg-slate-950/40" />}
+
+        <div className="relative mx-auto flex w-full max-w-7xl flex-col gap-4">
+          <div className="relative flex items-center justify-center">
+            <button
+              type="button"
+              onClick={handleBack}
+              className={g(
+                'absolute left-0 inline-flex w-fit shrink-0 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3 text-lg font-semibold text-black transition hover:bg-slate-50',
+                'absolute left-0 inline-flex w-fit shrink-0 items-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-5 py-3 text-lg font-semibold text-white backdrop-blur-md transition hover:bg-white/15'
+              )}
+            >
+              <ArrowLeft className="h-5 w-5" />
+              Back
+            </button>
+
+            <div className="text-center">
+              <h1 className={g('text-2xl font-bold tracking-tight text-black sm:text-3xl', 'text-2xl font-bold tracking-tight text-white sm:text-3xl lg:text-4xl')}>
                 {order.productId?.serviceName}
               </h1>
-              <p className="mt-2 text-base font-medium text-white">
+              <p className={g('mt-1 text-base text-black', 'mt-1 text-base text-slate-300 sm:text-lg')}>
                 {order.productId?.category?.split('_').join(' ') || 'Project'}
               </p>
             </div>
+          </div>
 
-            {!isAdminView && shouldShowPaymentAlert && currentInstallment && (
-              <PaymentAlert
-                installmentNumber={currentInstallment.installmentNumber}
-                amount={currentInstallment.amount}
-                projectId={orderId}
-                progress={Math.round(order.projectProgress)}
-                paymentStatus={currentInstallment.paymentStatus || 'none'}
-                onClick={handleMakePayment}
-              />
-            )}
+          {!isAdminView && shouldShowPaymentAlert && currentInstallment && (
+            <PaymentAlert
+              installmentNumber={currentInstallment.installmentNumber}
+              amount={currentInstallment.amount}
+              projectId={orderId}
+              progress={Math.round(order.projectProgress)}
+              paymentStatus={currentInstallment.paymentStatus || 'none'}
+              onClick={handleMakePayment}
+            />
+          )}
 
-            <div className="px-5 py-5 sm:px-6 lg:px-8">
-              <div className="hidden gap-5 lg:grid lg:grid-cols-[280px_minmax(0,1fr)_360px] lg:items-stretch">
-                <aside className="grid h-[470px] grid-rows-[minmax(0,1fr)_minmax(0,1fr)] gap-4">
-                  <div className="flex h-full min-h-0 flex-col rounded-[1.75rem] border border-slate-200 bg-slate-50 p-4 shadow-sm">
+          <div className={g('hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-sm lg:grid lg:grid-cols-[280px_minmax(0,1fr)_360px] lg:items-stretch', 'relative hidden overflow-hidden rounded-[1.75rem] border border-white/20 bg-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.25)] backdrop-blur-2xl backdrop-saturate-150 lg:grid lg:grid-cols-[280px_minmax(0,1fr)_360px] lg:items-stretch')}>
+                {!isAdminView && <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/[0.12] to-transparent" />}
+                <aside className={g('h-[620px] border-r border-slate-200', 'relative h-[620px] border-r border-white/15')}>
+                  <div className="flex h-full min-h-0 flex-col p-4">
                       <div className="flex items-center justify-center">
                         <div className="relative flex h-40 w-40 items-center justify-center">
-                          <div className="absolute inset-0 rounded-full border-[12px] border-slate-200"></div>
+                          <div className={g('absolute inset-0 rounded-full border-[12px] border-slate-200', 'absolute inset-0 rounded-full border-[12px] border-white/15')}></div>
                           <svg className="absolute inset-0 h-full w-full" viewBox="0 0 100 100">
                             <circle
                               cx="50"
                               cy="50"
                               r="46"
                               fill="none"
-                              stroke={isProjectPaused ? "#EF4444" : "#2563EB"}
+                              stroke={isProjectPaused ? "#EF4444" : "#10B981"}
                               strokeWidth="8"
                               strokeDasharray={`${progressPercentage * 2.89} 1000`}
                               strokeLinecap="round"
@@ -663,8 +704,8 @@ const ProjectDetails = ({ isAdminView = false }) => {
                             />
                           </svg>
                           <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-                            <span className="text-2xl font-bold text-black">{progressPercentage}%</span>
-                            <span className="mt-1 text-sm font-medium text-black">Complete</span>
+                            <span className={g('text-2xl font-bold text-black', 'text-2xl font-bold text-white')}>{progressPercentage}%</span>
+                            <span className={g('mt-1 text-sm font-medium text-black', 'mt-1 text-sm font-medium text-slate-300')}>Complete</span>
                           </div>
                         </div>
                       </div>
@@ -673,7 +714,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
                         <button
                           type="button"
                           onClick={() => setUpdateModalOpen(true)}
-                          className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 py-2.5 text-base font-semibold text-white transition hover:bg-blue-700"
+                          className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-2.5 text-base font-semibold text-white transition hover:bg-emerald-700"
                         >
                           <Upload className="h-4 w-4" />
                           Request Update
@@ -685,49 +726,50 @@ const ProjectDetails = ({ isAdminView = false }) => {
                           href={order.projectLink}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-base font-semibold text-emerald-700 transition hover:bg-emerald-100"
+                          className={g(
+                            'mt-3 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-base font-semibold text-emerald-700 transition hover:bg-emerald-100',
+                            'mt-3 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-4 py-2.5 text-base font-semibold text-white backdrop-blur-md transition hover:bg-white/15'
+                          )}
                         >
                           <ExternalLink className="h-4 w-4" />
                           View Project
                         </a>
                       ) : null}
-                  </div>
 
-                  <section className="flex h-full min-h-0 flex-col rounded-[1.75rem] border border-slate-200 bg-white p-4 shadow-sm">
-                      <p className="text-lg font-semibold text-black">Snapshot</p>
-                      <div className="mt-3 space-y-2.5">
-                        <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-2.5">
-                          <span className="text-sm text-black">Last update</span>
-                          <span className="text-base font-semibold text-black">{formatDateTime(order.updatedAt || order.createdAt)}</span>
-                        </div>
-                        <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-2.5">
-                          <span className="text-sm text-black">Updates linked</span>
-                          <span className="text-base font-semibold text-black">{totalUpdates}</span>
-                        </div>
-                        <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-2.5">
-                          <span className="text-sm text-black">Current phase</span>
-                          <span className="text-base font-semibold text-black">{order.currentPhase || 'N/A'}</span>
+                      <div className={g('mt-4 border-t border-slate-200 pt-4', 'mt-4 border-t border-white/15 pt-4')}>
+                        <p className={g('text-lg font-semibold text-black', 'text-lg font-semibold text-white')}>Snapshot</p>
+                        <div className="mt-3 space-y-2.5">
+                          <div className={g('flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-2.5', 'flex items-center justify-between rounded-2xl border border-white/10 bg-white/10 px-4 py-2.5')}>
+                            <span className={g('text-sm text-black', 'text-sm text-slate-300')}>Last update</span>
+                            <span className={g('text-base font-semibold text-black', 'text-base font-semibold text-white')}>{formatDateTime(order.updatedAt || order.createdAt)}</span>
+                          </div>
+                          <div className={g('flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-2.5', 'flex items-center justify-between rounded-2xl border border-white/10 bg-white/10 px-4 py-2.5')}>
+                            <span className={g('text-sm text-black', 'text-sm text-slate-300')}>Updates linked</span>
+                            <span className={g('text-base font-semibold text-black', 'text-base font-semibold text-white')}>{totalUpdates}</span>
+                          </div>
+                          <div className={g('flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-2.5', 'flex items-center justify-between rounded-2xl border border-white/10 bg-white/10 px-4 py-2.5')}>
+                            <span className={g('text-sm text-black', 'text-sm text-slate-300')}>Current phase</span>
+                            <span className={g('text-base font-semibold text-black', 'text-base font-semibold text-white')}>{order.currentPhase || 'N/A'}</span>
+                          </div>
                         </div>
                       </div>
-                    </section>
-
+                  </div>
                 </aside>
 
-                <section className="min-w-0 h-full lg:h-[470px]">
-                  <div className="flex h-full min-h-0 flex-col rounded-[1.75rem] border border-slate-200 bg-slate-50 p-4 shadow-sm">
-                    <div className="flex flex-col gap-2 border-b border-slate-200 pb-4 sm:flex-row sm:items-center sm:justify-between">
+                <section className={g('min-w-0 h-[620px] border-r border-slate-200', 'relative min-w-0 h-[620px] border-r border-white/15')}>
+                  <div className="flex h-full min-h-0 flex-col p-4">
+                    <div className={g('flex flex-col gap-2 border-b border-slate-200 pb-4 sm:flex-row sm:items-center sm:justify-between', 'flex flex-col gap-2 border-b border-white/15 pb-4 sm:flex-row sm:items-center sm:justify-between')}>
                       <div>
-                        <p className="text-sm font-medium text-black">Progress Timeline</p>
-                        <h2 className="mt-1 text-xl font-bold text-black">Click any checkpoint to inspect its record</h2>
+                        <p className={g('text-sm font-medium text-black', 'text-sm font-medium text-slate-300')}>Progress Timeline</p>
+                        <h2 className={g('mt-1 text-xl font-bold text-black', 'mt-1 text-xl font-bold text-white')}>Click any checkpoint to inspect its record</h2>
                       </div>
-                      <span className="rounded-full bg-white px-3 py-1 text-sm font-semibold text-black">
+                      <span className={g('rounded-full bg-white px-3 py-1 text-sm font-semibold text-black', 'rounded-full border border-white/15 bg-white/10 px-3 py-1 text-sm font-semibold text-white backdrop-blur-md')}>
                         {timelineNodes.length} stages
                       </span>
                     </div>
 
                     <div ref={timelineRef} className="mt-3 flex-1 min-h-0 overflow-auto pr-1">
                       <div className="relative pl-2">
-                        <div className="absolute left-[22px] top-2 bottom-2 w-px bg-slate-200"></div>
                         <div className="space-y-2">
                           {timelineNodes.map((checkpoint) => {
                             const isCompleted = checkpoint.completed;
@@ -744,6 +786,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
                               messageCount={checkpointMessageCounts[checkpoint.timelineKey] || 0}
                               formatDate={formatDate}
                               onSelect={() => setSelectedCheckpointId(checkpoint.timelineKey)}
+                              isGlass={!isAdminView}
                             />
                             );
                           })}
@@ -753,22 +796,24 @@ const ProjectDetails = ({ isAdminView = false }) => {
                   </div>
                 </section>
 
-                <aside className="h-full min-w-0 lg:h-[470px]">
-                  <div className="sticky top-6 flex h-full flex-col">
+                <aside className="h-[620px] min-w-0">
+                  <div className="flex h-full flex-col p-4">
                     <section
-                      className="flex h-full min-h-0 flex-col rounded-[1.75rem] border border-slate-200 bg-white p-4 shadow-sm"
+                      className="flex h-full min-h-0 flex-col"
                     >
-                      <div className="flex items-start justify-between gap-4 border-b border-slate-200 pb-3">
+                      <div className={g('flex items-start justify-between gap-4 border-b border-slate-200 pb-3', 'flex items-start justify-between gap-4 border-b border-white/15 pb-3')}>
                         <div>
-                          <p className="text-sm font-medium text-black">Checkpoint Details</p>
-                          <h2 className="mt-1 text-xl font-bold text-black">
+                          <p className={g('text-sm font-medium text-black', 'text-sm font-medium text-slate-300')}>Checkpoint Details</p>
+                          <h2 className={g('mt-1 text-xl font-bold text-black', 'mt-1 text-xl font-bold text-white')}>
                             {selectedCheckpoint ? selectedCheckpoint.name : 'No checkpoint selected'}
                           </h2>
                         </div>
                         {selectedCheckpoint ? (
                           <span className={[
                             "rounded-full px-3 py-1 text-sm font-semibold",
-                            selectedCheckpoint.completed ? "bg-emerald-100 text-emerald-700" : "bg-blue-100 text-blue-700",
+                            selectedCheckpoint.completed
+                              ? g('bg-emerald-100 text-emerald-700', 'border border-emerald-400/40 bg-emerald-500/20 text-emerald-300')
+                              : g('bg-slate-100 text-slate-700', 'border border-white/25 bg-white/15 text-white'),
                           ].join(" ")}>
                             {selectedCheckpoint.completed ? 'Completed' : 'Active'}
                           </span>
@@ -778,30 +823,30 @@ const ProjectDetails = ({ isAdminView = false }) => {
                       {selectedCheckpoint ? (
                         <div className="mt-3 flex-1 min-h-0 space-y-3 overflow-auto pr-1">
                           <div className="grid grid-cols-2 gap-2.5">
-                            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-2.5">
-                              <p className="text-sm font-semibold uppercase text-black">Checkpoint</p>
-                              <p className="mt-1 text-base font-semibold text-black">{selectedCheckpoint.name}</p>
+                            <div className={g('rounded-2xl border border-slate-200 bg-slate-50 p-2.5', 'rounded-2xl border border-white/10 bg-white/10 p-2.5')}>
+                              <p className={g('text-sm font-semibold uppercase text-black', 'text-sm font-semibold uppercase text-slate-300')}>Checkpoint</p>
+                              <p className={g('mt-1 text-base font-semibold text-black', 'mt-1 text-base font-semibold text-white')}>{selectedCheckpoint.name}</p>
                             </div>
-                            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-2.5">
-                              <p className="text-sm font-semibold uppercase text-black">Date</p>
-                              <p className="mt-1 text-base font-semibold text-black">
+                            <div className={g('rounded-2xl border border-slate-200 bg-slate-50 p-2.5', 'rounded-2xl border border-white/10 bg-white/10 p-2.5')}>
+                              <p className={g('text-sm font-semibold uppercase text-black', 'text-sm font-semibold uppercase text-slate-300')}>Date</p>
+                              <p className={g('mt-1 text-base font-semibold text-black', 'mt-1 text-base font-semibold text-white')}>
                                 {selectedCheckpoint.completedAt ? formatDate(selectedCheckpoint.completedAt) : 'Upcoming'}
                               </p>
                             </div>
-                            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-2.5">
-                              <p className="text-sm font-semibold uppercase text-black">Updates</p>
-                              <p className="mt-1 text-base font-semibold text-black">{selectedCheckpointMessages.length}</p>
+                            <div className={g('rounded-2xl border border-slate-200 bg-slate-50 p-2.5', 'rounded-2xl border border-white/10 bg-white/10 p-2.5')}>
+                              <p className={g('text-sm font-semibold uppercase text-black', 'text-sm font-semibold uppercase text-slate-300')}>Updates</p>
+                              <p className={g('mt-1 text-base font-semibold text-black', 'mt-1 text-base font-semibold text-white')}>{selectedCheckpointMessages.length}</p>
                             </div>
-                            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-2.5">
-                              <p className="text-sm font-semibold uppercase text-black">Timeline</p>
-                              <p className="mt-1 text-base font-semibold text-black">{selectedCheckpoint.timelineKey || 'N/A'}</p>
+                            <div className={g('rounded-2xl border border-slate-200 bg-slate-50 p-2.5', 'rounded-2xl border border-white/10 bg-white/10 p-2.5')}>
+                              <p className={g('text-sm font-semibold uppercase text-black', 'text-sm font-semibold uppercase text-slate-300')}>Timeline</p>
+                              <p className={g('mt-1 text-base font-semibold text-black', 'mt-1 text-base font-semibold text-white')}>{selectedCheckpoint.timelineKey || 'N/A'}</p>
                             </div>
                           </div>
 
-                          <div className="flex min-h-0 flex-1 flex-col rounded-[1.25rem] border border-slate-200 bg-slate-50 p-3.5">
+                          <div className={g('flex min-h-0 flex-1 flex-col rounded-[1.25rem] border border-slate-200 bg-slate-50 p-3.5', 'flex min-h-0 flex-1 flex-col rounded-[1.25rem] border border-white/10 bg-white/10 p-3.5')}>
                             <div className="flex items-center justify-between gap-3">
-                              <p className="text-base font-semibold text-black">Textual Record</p>
-                              <span className="rounded-full bg-white px-2.5 py-1 text-sm font-semibold text-black">
+                              <p className={g('text-base font-semibold text-black', 'text-base font-semibold text-white')}>Textual Record</p>
+                              <span className={g('rounded-full bg-white px-2.5 py-1 text-sm font-semibold text-black', 'rounded-full border border-white/15 bg-white/10 px-2.5 py-1 text-sm font-semibold text-white')}>
                                 {selectedCheckpointMessages.length} note{selectedCheckpointMessages.length === 1 ? '' : 's'}
                               </span>
                             </div>
@@ -810,21 +855,21 @@ const ProjectDetails = ({ isAdminView = false }) => {
                                 selectedCheckpointMessages.map((message, index) => (
                                   <div
                                     key={message._id || message.id || `${selectedCheckpoint.timelineKey}-message-${index}`}
-                                    className="rounded-2xl border border-slate-200 bg-white p-3"
+                                    className={g('rounded-2xl border border-slate-200 bg-white p-3', 'rounded-2xl border border-white/15 bg-white/10 p-3')}
                                   >
                                     <div className="flex items-center justify-between gap-3">
-                                      <p className="text-base font-semibold text-black">
+                                      <p className={g('text-base font-semibold text-black', 'text-base font-semibold text-white')}>
                                         {message.checkpointName || selectedCheckpoint.name}
                                       </p>
-                                      <p className="text-sm text-black">
+                                      <p className={g('text-sm text-black', 'text-sm text-slate-300')}>
                                         {message.timestamp ? formatDateTime(message.timestamp) : 'No date'}
                                       </p>
                                     </div>
-                                    <p className="mt-2 whitespace-pre-line text-base leading-6 text-black">
+                                    <p className={g('mt-2 whitespace-pre-line text-base leading-6 text-black', 'mt-2 whitespace-pre-line text-base leading-6 text-slate-200')}>
                                       {message.message || message.remark || message.notes || 'No textual details available.'}
                                     </p>
                                     {(message.fileSize || message.fileName) ? (
-                                      <p className="mt-2 text-sm text-black">
+                                      <p className={g('mt-2 text-sm text-black', 'mt-2 text-sm text-slate-300')}>
                                         {message.fileName ? `File: ${message.fileName}` : 'Attachment'}
                                         {message.fileSize ? ` | Size: ${message.fileSize}` : ''}
                                       </p>
@@ -832,7 +877,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
                                   </div>
                                 ))
                               ) : (
-                                <p className="text-base text-black">
+                                <p className={g('text-base text-black', 'text-base text-slate-300')}>
                                   No textual record is linked to this checkpoint yet.
                                 </p>
                               )}
@@ -840,7 +885,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
                           </div>
                         </div>
                       ) : (
-                        <div className="mt-4 rounded-[1.25rem] border border-slate-200 bg-slate-50 p-4 text-base text-black">
+                        <div className={g('mt-4 rounded-[1.25rem] border border-slate-200 bg-slate-50 p-4 text-base text-black', 'mt-4 rounded-[1.25rem] border border-white/10 bg-white/10 p-4 text-base text-slate-300')}>
                           Timeline data is not available yet.
                         </div>
                       )}
@@ -850,21 +895,22 @@ const ProjectDetails = ({ isAdminView = false }) => {
               </div>
 
               <div className="space-y-4 lg:hidden">
-                <section className="rounded-[1.75rem] border border-slate-200 bg-slate-50 p-5 shadow-sm">
-                  <div className="flex items-center justify-between gap-4">
+                <section className={g('rounded-[1.75rem] border border-slate-200 bg-slate-50 p-5 shadow-sm', 'relative overflow-hidden rounded-[1.75rem] border border-white/20 bg-white/10 p-5 shadow-[0_8px_32px_rgba(0,0,0,0.25)] backdrop-blur-2xl backdrop-saturate-150')}>
+                  {!isAdminView && <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/[0.12] to-transparent" />}
+                  <div className="relative flex items-center justify-between gap-4">
                     <div>
-                      <p className="text-sm font-medium text-black">Current Stage</p>
-                      <h2 className="mt-1 text-xl font-bold text-black">{currentStageLabel}</h2>
+                      <p className={g('text-sm font-medium text-black', 'text-sm font-medium text-slate-300')}>Current Stage</p>
+                      <h2 className={g('mt-1 text-xl font-bold text-black', 'mt-1 text-xl font-bold text-white')}>{currentStageLabel}</h2>
                     </div>
                     <div className="relative flex h-24 w-24 items-center justify-center">
-                      <div className="absolute inset-0 rounded-full border-8 border-slate-200"></div>
+                      <div className={g('absolute inset-0 rounded-full border-8 border-slate-200', 'absolute inset-0 rounded-full border-8 border-white/15')}></div>
                       <svg className="absolute inset-0 h-full w-full" viewBox="0 0 100 100">
                         <circle
                           cx="50"
                           cy="50"
                           r="46"
                           fill="none"
-                          stroke={isProjectPaused ? "#EF4444" : "#2563EB"}
+                          stroke={isProjectPaused ? "#EF4444" : "#10B981"}
                           strokeWidth="8"
                           strokeDasharray={`${progressPercentage * 2.89} 1000`}
                           strokeLinecap="round"
@@ -872,29 +918,29 @@ const ProjectDetails = ({ isAdminView = false }) => {
                         />
                       </svg>
                       <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-                        <span className="text-lg font-bold text-black">{progressPercentage}%</span>
-                        <span className="text-sm font-medium text-black">Complete</span>
+                        <span className={g('text-lg font-bold text-black', 'text-lg font-bold text-white')}>{progressPercentage}%</span>
+                        <span className={g('text-sm font-medium text-black', 'text-sm font-medium text-slate-300')}>Complete</span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="mt-4 grid grid-cols-2 gap-3">
-                    <div className="rounded-2xl border border-slate-200 bg-white p-3">
-                      <p className="text-sm uppercase text-black">Updates</p>
-                      <p className="mt-1 text-base font-semibold text-black">{totalUpdates}</p>
+                  <div className="relative mt-4 grid grid-cols-2 gap-3">
+                    <div className={g('rounded-2xl border border-slate-200 bg-white p-3', 'rounded-2xl border border-white/10 bg-white/10 p-3')}>
+                      <p className={g('text-sm uppercase text-black', 'text-sm uppercase text-slate-300')}>Updates</p>
+                      <p className={g('mt-1 text-base font-semibold text-black', 'mt-1 text-base font-semibold text-white')}>{totalUpdates}</p>
                     </div>
-                    <div className="rounded-2xl border border-slate-200 bg-white p-3">
-                      <p className="text-sm uppercase text-black">Checkpoints</p>
-                      <p className="mt-1 text-base font-semibold text-black">{timelineNodes.length}</p>
+                    <div className={g('rounded-2xl border border-slate-200 bg-white p-3', 'rounded-2xl border border-white/10 bg-white/10 p-3')}>
+                      <p className={g('text-sm uppercase text-black', 'text-sm uppercase text-slate-300')}>Checkpoints</p>
+                      <p className={g('mt-1 text-base font-semibold text-black', 'mt-1 text-base font-semibold text-white')}>{timelineNodes.length}</p>
                     </div>
                   </div>
 
                   {!isAdminView ? (
-                    <div className="mt-4 space-y-3">
+                    <div className="relative mt-4 space-y-3">
                       <button
                         type="button"
                         onClick={() => setUpdateModalOpen(true)}
-                        className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 py-3 text-base font-semibold text-white transition hover:bg-blue-700"
+                        className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-3 text-base font-semibold text-white transition hover:bg-emerald-700"
                       >
                         <Upload className="h-4 w-4" />
                         Request Update
@@ -904,7 +950,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
                           href={order.projectLink}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-base font-semibold text-emerald-700 transition hover:bg-emerald-100"
+                          className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-base font-semibold text-white backdrop-blur-md transition hover:bg-white/15"
                         >
                           <ExternalLink className="h-4 w-4" />
                           View Project
@@ -914,15 +960,16 @@ const ProjectDetails = ({ isAdminView = false }) => {
                   ) : null}
                 </section>
 
-                <section className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm">
-                  <div className="flex items-center justify-between gap-3">
+                <section className={g('rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm', 'relative overflow-hidden rounded-[1.75rem] border border-white/20 bg-white/10 p-5 shadow-[0_8px_32px_rgba(0,0,0,0.25)] backdrop-blur-2xl backdrop-saturate-150')}>
+                  {!isAdminView && <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/[0.12] to-transparent" />}
+                  <div className="relative flex items-center justify-between gap-3">
                     <div>
-                      <p className="text-sm font-medium text-black">Progress Timeline</p>
-                      <h2 className="mt-1 text-lg font-semibold text-black">Timeline</h2>
+                      <p className={g('text-sm font-medium text-black', 'text-sm font-medium text-slate-300')}>Progress Timeline</p>
+                      <h2 className={g('mt-1 text-lg font-semibold text-black', 'mt-1 text-lg font-semibold text-white')}>Timeline</h2>
                     </div>
                     <button
                       onClick={() => setTimelineExpanded(!timelineExpanded)}
-                      className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-base font-semibold text-black transition hover:bg-slate-100"
+                      className={g('inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-base font-semibold text-black transition hover:bg-slate-100', 'inline-flex items-center justify-center rounded-2xl border border-white/15 bg-white/10 px-3 py-2 text-base font-semibold text-white backdrop-blur-md transition hover:bg-white/15')}
                     >
                       {timelineExpanded ? (
                         <>
@@ -941,7 +988,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
                   {timelineExpanded ? (
                     <div
                       ref={timelineRef}
-                      className="mt-4 max-h-[318px] overflow-auto pr-1"
+                      className="relative mt-4 max-h-[318px] overflow-auto pr-1"
                     >
                       <div className="space-y-2.5">
                         {timelineNodes.map((checkpoint) => {
@@ -960,30 +1007,34 @@ const ProjectDetails = ({ isAdminView = false }) => {
                               formatDate={formatDate}
                               onSelect={() => setSelectedCheckpointId(checkpoint.timelineKey)}
                               compact
+                              isGlass={!isAdminView}
                             />
                           );
                         })}
                       </div>
                     </div>
                   ) : (
-                    <div className="mt-4 rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4 text-base text-black">
+                    <div className={g('mt-4 rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4 text-base text-black', 'relative mt-4 rounded-2xl border border-dashed border-white/15 bg-white/10 p-4 text-base text-slate-300')}>
                       Open the timeline to select a checkpoint.
                     </div>
                   )}
                 </section>
 
-                <section className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm">
-                  <div className="flex items-start justify-between gap-4 border-b border-slate-200 pb-4">
+                <section className={g('rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm', 'relative overflow-hidden rounded-[1.75rem] border border-white/20 bg-white/10 p-5 shadow-[0_8px_32px_rgba(0,0,0,0.25)] backdrop-blur-2xl backdrop-saturate-150')}>
+                  {!isAdminView && <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/[0.12] to-transparent" />}
+                  <div className={g('flex items-start justify-between gap-4 border-b border-slate-200 pb-4', 'relative flex items-start justify-between gap-4 border-b border-white/15 pb-4')}>
                     <div>
-                      <p className="text-sm font-medium text-black">Checkpoint Details</p>
-                      <h2 className="mt-1 text-lg font-semibold text-black">
+                      <p className={g('text-sm font-medium text-black', 'text-sm font-medium text-slate-300')}>Checkpoint Details</p>
+                      <h2 className={g('mt-1 text-lg font-semibold text-black', 'mt-1 text-lg font-semibold text-white')}>
                         {selectedCheckpoint ? selectedCheckpoint.name : 'No checkpoint selected'}
                       </h2>
                     </div>
                     {selectedCheckpoint ? (
                       <span className={[
                         "rounded-full px-3 py-1 text-sm font-semibold",
-                        selectedCheckpoint.completed ? "bg-emerald-100 text-emerald-700" : "bg-blue-100 text-blue-700",
+                        selectedCheckpoint.completed
+                          ? g('bg-emerald-100 text-emerald-700', 'border border-emerald-400/40 bg-emerald-500/20 text-emerald-300')
+                          : g('bg-slate-100 text-slate-700', 'border border-white/25 bg-white/15 text-white'),
                       ].join(" ")}>
                         {selectedCheckpoint.completed ? 'Completed' : 'Active'}
                       </span>
@@ -991,59 +1042,58 @@ const ProjectDetails = ({ isAdminView = false }) => {
                   </div>
 
                   {selectedCheckpoint ? (
-                    <div className="mt-4 space-y-4">
+                    <div className="relative mt-4 space-y-4">
                       <div className="grid grid-cols-2 gap-3">
-                        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
-                          <p className="text-sm uppercase text-black">Date</p>
-                          <p className="mt-1 text-base font-semibold text-black">
+                        <div className={g('rounded-2xl border border-slate-200 bg-slate-50 p-3', 'rounded-2xl border border-white/10 bg-white/10 p-3')}>
+                          <p className={g('text-sm uppercase text-black', 'text-sm uppercase text-slate-300')}>Date</p>
+                          <p className={g('mt-1 text-base font-semibold text-black', 'mt-1 text-base font-semibold text-white')}>
                             {selectedCheckpoint.completedAt ? formatDate(selectedCheckpoint.completedAt) : 'Upcoming'}
                           </p>
                         </div>
-                        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
-                          <p className="text-sm uppercase text-black">Updates</p>
-                          <p className="mt-1 text-base font-semibold text-black">{selectedCheckpointMessages.length}</p>
+                        <div className={g('rounded-2xl border border-slate-200 bg-slate-50 p-3', 'rounded-2xl border border-white/10 bg-white/10 p-3')}>
+                          <p className={g('text-sm uppercase text-black', 'text-sm uppercase text-slate-300')}>Updates</p>
+                          <p className={g('mt-1 text-base font-semibold text-black', 'mt-1 text-base font-semibold text-white')}>{selectedCheckpointMessages.length}</p>
                         </div>
                       </div>
 
-                      <div className="rounded-[1.25rem] border border-slate-200 bg-slate-50 p-4">
-                        <p className="text-base font-semibold text-black">Textual Record</p>
+                      <div className={g('rounded-[1.25rem] border border-slate-200 bg-slate-50 p-4', 'rounded-[1.25rem] border border-white/10 bg-white/10 p-4')}>
+                        <p className={g('text-base font-semibold text-black', 'text-base font-semibold text-white')}>Textual Record</p>
                         <div className="mt-3 space-y-3">
                           {selectedCheckpointMessages.length > 0 ? (
                             selectedCheckpointMessages.map((message, index) => (
-                              <div key={message._id || message.id || `${selectedCheckpoint.timelineKey}-message-${index}`} className="rounded-2xl border border-slate-200 bg-white p-3">
+                              <div key={message._id || message.id || `${selectedCheckpoint.timelineKey}-message-${index}`} className={g('rounded-2xl border border-slate-200 bg-white p-3', 'rounded-2xl border border-white/15 bg-white/10 p-3')}>
                                 <div className="flex items-center justify-between gap-3">
-                                  <p className="text-base font-semibold text-black">
+                                  <p className={g('text-base font-semibold text-black', 'text-base font-semibold text-white')}>
                                     {message.checkpointName || selectedCheckpoint.name}
                                   </p>
-                                  <p className="text-sm text-black">
+                                  <p className={g('text-sm text-black', 'text-sm text-slate-300')}>
                                     {message.timestamp ? formatDateTime(message.timestamp) : 'No date'}
                                   </p>
                                 </div>
-                                <p className="mt-2 whitespace-pre-line text-base text-black">
+                                <p className={g('mt-2 whitespace-pre-line text-base text-black', 'mt-2 whitespace-pre-line text-base text-slate-200')}>
                                   {message.message || message.remark || message.notes || 'No textual details available.'}
                                 </p>
                               </div>
                             ))
                           ) : (
-                            <p className="text-base text-black">No textual record is linked to this checkpoint yet.</p>
+                            <p className={g('text-base text-black', 'text-base text-slate-300')}>No textual record is linked to this checkpoint yet.</p>
                           )}
                         </div>
                       </div>
                     </div>
                   ) : (
-                    <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-base text-black">
+                    <div className={g('mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-base text-black', 'relative mt-4 rounded-2xl border border-white/10 bg-white/10 p-4 text-base text-slate-300')}>
                       Timeline data is not available yet.
                     </div>
                   )}
                 </section>
               </div>
-            </div>
           </div>
         </div>
 
         {/* Update Request Modal */}
         {updateModalOpen && !isAdminView && (
-          <UpdateRequestModal 
+          <UpdateRequestModal
             plan={order}
             onClose={() => setUpdateModalOpen(false)}
             onSubmitSuccess={() => {
@@ -1052,9 +1102,9 @@ const ProjectDetails = ({ isAdminView = false }) => {
             }}
           />
         )}
-      </div>
     </Shell>
   );
 };
+
 
 export default ProjectDetails;

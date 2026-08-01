@@ -1,13 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Globe,
   Rocket,
   Sparkles,
-  Wrench,
-  FileEdit,
-  Palette,
   ArrowRight,
+  Clock,
+  X,
 } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
 import { useSelector } from 'react-redux';
@@ -29,40 +28,26 @@ const CATEGORIES = [
     icon: Rocket,
   },
   {
-    id: 'feature_upgrades',
-    title: 'Add New Feature',
-    description: 'Add new functionality to an existing project.',
+    id: 'feature_update',
+    title: 'Features & Updates',
+    description: 'Add a new feature, fix issues, update content, or change design.',
     action: 'Continue',
     icon: Sparkles,
   },
-  {
-    id: 'maintenance',
-    title: 'Maintenance & Bug Fix',
-    description: 'Fix issues or improve performance.',
-    action: 'Continue',
-    icon: Wrench,
-  },
-  {
-    id: 'content_update',
-    title: 'Content Update',
-    description: 'Update text, images, products or pages.',
-    action: 'Continue',
-    icon: FileEdit,
-  },
-  {
-    id: 'design_update',
-    title: 'Design & UI Changes',
-    description: 'Improve layout, colors or user experience.',
-    action: 'Continue',
-    icon: Palette,
-  },
 ];
+
+const COMING_SOON_IDS = ['new_project', 'feature_update'];
 
 const StartProject = () => {
   const navigate = useNavigate();
   const user = useSelector((state) => state?.user?.user);
+  const [comingSoonOpen, setComingSoonOpen] = useState(false);
 
   const handleSelect = (categoryId) => {
+    if (COMING_SOON_IDS.includes(categoryId)) {
+      setComingSoonOpen(true);
+      return;
+    }
     navigate(`/start-new-project/build/${categoryId}`);
   };
 
@@ -124,6 +109,45 @@ const StartProject = () => {
           </div>
         </div>
       </div>
+
+      {comingSoonOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div
+            className="absolute inset-0 bg-slate-950/70 backdrop-blur-sm"
+            onClick={() => setComingSoonOpen(false)}
+          />
+          <div className="relative w-full max-w-sm animate-[fadeSlideUp_0.3s_ease-out_both] overflow-hidden rounded-3xl border border-white/20 bg-white/10 p-7 text-center shadow-[0_24px_64px_rgba(0,0,0,0.5)] backdrop-blur-2xl backdrop-saturate-150">
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/[0.15] to-transparent" />
+
+            <button
+              type="button"
+              onClick={() => setComingSoonOpen(false)}
+              className="absolute right-4 top-4 rounded-lg border border-white/20 bg-white/10 p-1.5 text-white transition-colors duration-200 hover:border-emerald-300/60 hover:bg-white/[0.16]"
+            >
+              <X className="h-4 w-4" strokeWidth={2} />
+            </button>
+
+            <div className="relative mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-emerald-400/40 bg-emerald-500/15 backdrop-blur-md">
+              <Clock className="h-7 w-7 text-emerald-400" strokeWidth={1.75} />
+            </div>
+
+            <h3 className="relative mt-5 text-xl font-semibold text-white">
+              Coming Soon
+            </h3>
+            <p className="relative mt-2 text-base leading-relaxed text-slate-300">
+              This is on its way. We&apos;re working on it and it&apos;ll be available soon.
+            </p>
+
+            <button
+              type="button"
+              onClick={() => setComingSoonOpen(false)}
+              className="relative mt-6 inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-400/40 bg-emerald-500/20 px-5 py-2.5 text-base font-medium text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.25)] backdrop-blur-md transition-all duration-300 hover:border-emerald-300/60 hover:bg-emerald-500/35"
+            >
+              Got it
+            </button>
+          </div>
+        </div>
+      )}
 
       <style>{`
         @keyframes fadeSlideUp {
