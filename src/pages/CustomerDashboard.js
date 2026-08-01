@@ -117,7 +117,7 @@ const getItemSummary = (order) => {
 
 const getItemLink = (order) => `/project-details/${order._id}`;
 
-const MetricCard = ({ icon: Icon, label, value, helper, tone = 'slate', to }) => {
+const MetricCard = ({ icon: Icon, label, value, helper, tone = 'slate', to, highlight = false }) => {
   const glowMap = {
     slate: 'bg-slate-400/25',
     blue: 'bg-blue-400/30',
@@ -132,11 +132,14 @@ const MetricCard = ({ icon: Icon, label, value, helper, tone = 'slate', to }) =>
     <Wrapper
       {...wrapperProps}
       className={[
-        'group relative overflow-hidden rounded-[1.75rem] border border-white/15 bg-slate-950/60 p-5 shadow-[0_8px_32px_rgba(0,0,0,0.35)] backdrop-blur-xl backdrop-saturate-150 transition-all duration-300 hover:border-white/25 hover:bg-slate-950/70',
+        'group relative overflow-hidden rounded-[1.75rem] border p-5 shadow-[0_8px_32px_rgba(0,0,0,0.35)] backdrop-blur-xl backdrop-saturate-150 transition-all duration-300',
+        highlight
+          ? 'border-emerald-400/50 bg-emerald-500/20 hover:-translate-y-1 hover:border-emerald-300/70 hover:bg-emerald-500/30 hover:shadow-[0_16px_40px_rgba(16,185,129,0.3)]'
+          : 'border-white/15 bg-slate-950/60 hover:border-white/25 hover:bg-slate-950/70',
         to ? 'block' : '',
       ].join(' ')}
     >
-      <div className={`pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full ${glowMap[tone]} blur-3xl`} />
+      <div className={`pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full ${highlight ? 'bg-emerald-300/30' : glowMap[tone]} blur-3xl`} />
       <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/10 to-transparent" />
 
       <div className="relative flex items-start justify-between gap-4">
@@ -145,7 +148,7 @@ const MetricCard = ({ icon: Icon, label, value, helper, tone = 'slate', to }) =>
           <p className="mt-2 text-2xl font-bold text-white">{value}</p>
           {helper ? <p className="mt-2 text-sm text-slate-200">{helper}</p> : null}
         </div>
-        <div className="rounded-2xl border border-white/20 bg-white/10 p-3 backdrop-blur-md">
+        <div className={`rounded-2xl border p-3 backdrop-blur-md ${highlight ? 'border-emerald-300/50 bg-emerald-400/25' : 'border-white/20 bg-white/10'}`}>
           {to ? <ArrowRight className="h-5 w-5 text-white transition-transform group-hover:translate-x-0.5" /> : <Icon className="h-5 w-5 text-white" />}
         </div>
       </div>
@@ -328,8 +331,9 @@ const CustomerDashboard = () => {
                     : primaryAction.label
                   : 'No active project running'
               }
-              tone="slate"
+              tone="emerald"
               to={primaryAction.to}
+              highlight={!primaryWorkItem}
             />
             <MetricCard
               icon={Wallet}
