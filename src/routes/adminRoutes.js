@@ -8,6 +8,8 @@ import AdminProjectProductsPage from "../pages/AdminProjectProductsPage";
 import AdminCreateProjectPage from "../pages/AdminCreateProjectPage";
 import AdminPlanProductsPage from "../pages/AdminPlanProductsPage";
 import AdminCreatePlanPage from "../pages/AdminCreatePlanPage";
+import AdminCategoryBasePricePage from "../pages/AdminCategoryBasePricePage";
+import AdminFeatureProductsPage from "../pages/AdminFeatureProductsPage";
 
 export const adminRoutes = [
   {
@@ -71,6 +73,22 @@ export const adminRoutes = [
     element: (
       <ProtectedRoute requireRole={['admin']}>
         <AdminPlanProductsPage/>
+      </ProtectedRoute>
+    )
+  },
+  {
+    path: "admin-panel/project-setup/base-price",
+    element: (
+      <ProtectedRoute requireRole={['admin']}>
+        <AdminCategoryBasePricePage/>
+      </ProtectedRoute>
+    )
+  },
+  {
+    path: "admin-panel/project-setup/features",
+    element: (
+      <ProtectedRoute requireRole={['admin']}>
+        <AdminFeatureProductsPage/>
       </ProtectedRoute>
     )
   },

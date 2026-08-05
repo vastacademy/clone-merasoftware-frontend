@@ -1,7 +1,6 @@
 import React from 'react';
 import { CheckCircle, AlertCircle, Clock, PieChart } from 'lucide-react';
-
-const isPlanItem = (order) => order?.productId?.category?.toLowerCase() === 'website_updates';
+import { isPlanItem } from '../helpers/orderType';
 
 const getPaymentStatus = (order) => {
   if (isPlanItem(order)) {

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 // import { format } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
 import { Ticket, Plus, ArrowRight, Filter } from 'lucide-react';
 import { toast } from 'sonner';
 import SummaryApi from '../common';
@@ -9,6 +10,7 @@ import TriangleMazeLoader from '../components/TriangleMazeLoader';
 import { useSelector } from 'react-redux';
 
 const TicketsList = () => {
+  const navigate = useNavigate();
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -284,7 +286,11 @@ const TicketsList = () => {
               </thead>
               <tbody className="divide-y divide-white/10">
                 {tickets.map((ticket) => (
-                  <tr key={ticket.ticketId} className="hover:bg-white/[0.06]">
+                  <tr
+                    key={ticket.ticketId}
+                    onClick={() => navigate(`/support-tickets/${ticket.ticketId}`)}
+                    className="cursor-pointer hover:bg-white/[0.06]"
+                  >
                     <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-white">
                       {ticket.ticketId}
                     </td>
@@ -304,12 +310,9 @@ const TicketsList = () => {
                       {formatDate(ticket.updatedAt)}
                     </td>
                     <td className="whitespace-nowrap px-6 py-4 text-right text-sm">
-                      <a
-                        href={`/support-tickets/${ticket.ticketId}`}
-                        className="flex items-center justify-end gap-1 font-medium text-emerald-400 hover:text-emerald-300"
-                      >
+                      <span className="flex items-center justify-end gap-1 font-medium text-emerald-400">
                         View <ArrowRight className="h-4 w-4" />
-                      </a>
+                      </span>
                     </td>
                   </tr>
                 ))}

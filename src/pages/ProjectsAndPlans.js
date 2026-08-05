@@ -14,20 +14,7 @@ import backgroundImage from '../assets/BG.png';
 import CustomerWorkspaceTabs from '../components/CustomerWorkspaceTabs';
 import Context from '../context';
 import { isOrderApproved } from '../helpers/orderVisibility';
-
-const PROJECT_CATEGORIES = new Set([
-  'standard_websites',
-  'dynamic_websites',
-  'cloud_software_development',
-  'app_development',
-  'web_applications',
-  'mobile_apps',
-]);
-
-const PLAN_CATEGORY = 'website_updates';
-
-const isProjectItem = (order) => PROJECT_CATEGORIES.has(order?.productId?.category?.toLowerCase());
-const isPlanItem = (order) => order?.productId?.category?.toLowerCase() === PLAN_CATEGORY;
+import { isProjectItem, isPlanItem } from '../helpers/orderType';
 
 const getRemainingDays = (order) => {
   if (!order) return 0;

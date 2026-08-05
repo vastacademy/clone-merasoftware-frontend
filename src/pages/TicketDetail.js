@@ -139,28 +139,28 @@ const TicketDetail = ({ isAdmin = false }) => {
     switch (status) {
       case 'pending':
         return (
-          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
+          <span className="inline-flex items-center px-3 py-1 rounded-full border border-amber-400/40 bg-amber-500/20 text-sm font-medium text-amber-300 backdrop-blur-md">
             <Clock className="h-4 w-4 mr-1" />
             Pending
           </span>
         );
       case 'open':
         return (
-          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+          <span className="inline-flex items-center px-3 py-1 rounded-full border border-white/25 bg-white/15 text-sm font-medium text-white backdrop-blur-md">
             <User className="h-4 w-4 mr-1" />
             Open
           </span>
         );
       case 'closed':
         return (
-          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800">
+          <span className="inline-flex items-center px-3 py-1 rounded-full border border-emerald-400/40 bg-emerald-500/20 text-sm font-medium text-emerald-300 backdrop-blur-md">
             <Check className="h-4 w-4 mr-1" />
             Closed
           </span>
         );
       default:
         return (
-          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800">
+          <span className="inline-flex items-center px-3 py-1 rounded-full border border-white/15 bg-white/10 text-sm font-medium text-slate-300 backdrop-blur-md">
             Unknown
           </span>
         );
@@ -195,23 +195,24 @@ const TicketDetail = ({ isAdmin = false }) => {
   if (error) {
     return (
       <DashboardLayout user={userDetails}>
-        <div className="min-h-full bg-slate-950 bg-cover bg-center px-4 py-5 sm:px-6 lg:px-8 lg:py-8"
+        <div className="relative min-h-[calc(100vh-4rem)] overflow-hidden bg-slate-950 bg-cover bg-center px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
         style={{ backgroundImage: `url(${backgroundImage})` }}>
-          <div className="mx-auto max-w-3xl rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm">
+          <div className="pointer-events-none absolute inset-0 bg-slate-950/40" />
+          <div className="relative mx-auto max-w-3xl rounded-[1.75rem] border border-white/20 bg-white/10 p-8 backdrop-blur-2xl backdrop-saturate-150 shadow-[0_8px_32px_rgba(0,0,0,0.25)]">
             <div className="flex items-center justify-center flex-col text-center">
-              <AlertTriangle className="h-12 w-12 text-red-500 mb-4" />
-              <h3 className="text-lg font-semibold text-black mb-2">Error Loading Ticket</h3>
-              <p className="text-base text-black mb-4">{error}</p>
+              <AlertTriangle className="h-12 w-12 text-red-400 mb-4" />
+              <h3 className="text-lg font-semibold text-white mb-2">Error Loading Ticket</h3>
+              <p className="text-base text-slate-300 mb-4">{error}</p>
               <div className="flex gap-4">
                 <button
                   onClick={() => navigate(-1)}
-                  className="px-4 py-2 bg-gray-100 text-black rounded-md hover:bg-gray-200 transition-colors text-base font-medium"
+                  className="px-4 py-2 rounded-xl border border-white/15 bg-white/[0.03] text-white hover:bg-white/[0.07] transition-colors text-base font-medium"
                 >
                   Go Back
                 </button>
                 <button
                   onClick={fetchTicketDetails}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-base font-medium"
+                  className="px-4 py-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors text-base font-medium"
                 >
                   Try Again
                 </button>
@@ -226,16 +227,17 @@ const TicketDetail = ({ isAdmin = false }) => {
   if (!ticket) {
     return (
       <DashboardLayout user={userDetails}>
-        <div className="min-h-full bg-slate-950 bg-cover bg-center px-4 py-5 sm:px-6 lg:px-8 lg:py-8"
+        <div className="relative min-h-[calc(100vh-4rem)] overflow-hidden bg-slate-950 bg-cover bg-center px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
         style={{ backgroundImage: `url(${backgroundImage})` }}>
-          <div className="mx-auto max-w-3xl rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm">
+          <div className="pointer-events-none absolute inset-0 bg-slate-950/40" />
+          <div className="relative mx-auto max-w-3xl rounded-[1.75rem] border border-white/20 bg-white/10 p-8 backdrop-blur-2xl backdrop-saturate-150 shadow-[0_8px_32px_rgba(0,0,0,0.25)]">
             <div className="flex items-center justify-center flex-col text-center">
-              <AlertTriangle className="h-12 w-12 text-yellow-500 mb-4" />
-              <h3 className="text-lg font-semibold text-black mb-2">Ticket Not Found</h3>
-              <p className="text-base text-black mb-4">The ticket you're looking for doesn't exist or you don't have permission to view it.</p>
+              <AlertTriangle className="h-12 w-12 text-amber-400 mb-4" />
+              <h3 className="text-lg font-semibold text-white mb-2">Ticket Not Found</h3>
+              <p className="text-base text-slate-300 mb-4">The ticket you're looking for doesn't exist or you don't have permission to view it.</p>
               <button
                 onClick={() => navigate(-1)}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-base font-medium"
+                className="px-4 py-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors text-base font-medium"
               >
                 Go Back
               </button>
@@ -248,96 +250,101 @@ const TicketDetail = ({ isAdmin = false }) => {
 
   return (
     <DashboardLayout user={userDetails}>
-    <div className="min-h-full bg-slate-950 bg-cover bg-center px-4 py-5 sm:px-6 lg:px-8 lg:py-8"
+    <div className="relative min-h-[calc(100vh-4rem)] overflow-hidden bg-slate-950 bg-cover bg-center px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
         style={{ backgroundImage: `url(${backgroundImage})` }}>
-    <div className="mx-auto max-w-5xl overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
+    <div className="pointer-events-none absolute inset-0 bg-slate-950/40" />
+    <div className="relative mx-auto flex w-full max-w-5xl flex-col gap-4">
       {/* Ticket Header */}
-      <div className="rounded-t-[2rem] bg-gradient-to-r from-slate-950 via-slate-900 to-blue-950 px-5 py-5 text-white sm:px-6 lg:px-8">
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-          <div className="flex items-center">
-            <button
-              onClick={() => navigate(-1)}
-              className="mr-3 text-white/70 hover:text-white"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </button>
-            <div>
-              <h1 className="flex items-center text-2xl font-bold tracking-tight text-white">
-                Ticket: {ticket.ticketId}
-                <span className="ml-3">{getStatusBadge(ticket.status)}</span>
-              </h1>
-              <p className="text-base text-white mt-1">
-                Created on {formatDateTime(ticket.createdAt)}
-              </p>
-            </div>
-          </div>
-          {isAdmin && ticket.status !== 'closed' && (
-            <button
-              onClick={handleCloseTicket}
-              disabled={closingTicket}
-              className={`px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors flex items-center text-base font-medium ${
-                closingTicket ? 'opacity-70 cursor-not-allowed' : ''
-              }`}
-            >
-              {closingTicket ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                  <span>Closing...</span>
-                </>
-              ) : (
-                <>
-                  <X className="h-4 w-4 mr-1" />
-                  <span>Close Ticket</span>
-                </>
-              )}
-            </button>
-          )}
+      <div className="relative flex items-center justify-center">
+        <button
+          type="button"
+          onClick={() => navigate(-1)}
+          className="absolute left-0 inline-flex w-fit shrink-0 items-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-5 py-3 text-lg font-semibold text-white backdrop-blur-md transition hover:bg-white/15"
+        >
+          <ArrowLeft className="h-5 w-5" />
+          Back
+        </button>
+
+        <div className="text-center">
+          <h1 className="flex flex-wrap items-center justify-center gap-3 text-2xl font-bold tracking-tight text-white sm:text-3xl">
+            Ticket: {ticket.ticketId}
+            {getStatusBadge(ticket.status)}
+          </h1>
+          <p className="mt-1 text-base text-slate-300">
+            Created on {formatDateTime(ticket.createdAt)}
+          </p>
         </div>
       </div>
 
-      {/* Ticket Details */}
-      <div className="p-4 sm:p-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          <div>
-            <h2 className="text-sm font-medium text-black mb-2">Subject</h2>
-            <p className="text-base font-semibold text-black">{ticket.subject}</p>
+      {isAdmin && ticket.status !== 'closed' && (
+        <div className="flex justify-center">
+          <button
+            onClick={handleCloseTicket}
+            disabled={closingTicket}
+            className={`px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors flex items-center text-base font-medium ${
+              closingTicket ? 'opacity-70 cursor-not-allowed' : ''
+            }`}
+          >
+            {closingTicket ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                <span>Closing...</span>
+              </>
+            ) : (
+              <>
+                <X className="h-4 w-4 mr-1" />
+                <span>Close Ticket</span>
+              </>
+            )}
+          </button>
+        </div>
+      )}
 
-            <h2 className="text-sm font-medium text-black mt-4 mb-2">Category</h2>
-            <p className="text-base font-semibold text-black">{ticket.category}</p>
+      {/* Ticket Details */}
+      <div className="relative overflow-hidden rounded-[1.75rem] border border-white/20 bg-white/10 p-5 backdrop-blur-2xl backdrop-saturate-150 shadow-[0_8px_32px_rgba(0,0,0,0.25)] sm:p-6">
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/[0.12] to-transparent" />
+
+        <div className="relative grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div>
+            <h2 className="text-sm font-medium text-slate-400 mb-2">Subject</h2>
+            <p className="text-base font-semibold text-white">{ticket.subject}</p>
+
+            <h2 className="text-sm font-medium text-slate-400 mt-4 mb-2">Category</h2>
+            <p className="text-base font-semibold text-white">{ticket.category}</p>
           </div>
 
           <div>
-            <h2 className="text-sm font-medium text-black mb-2">Customer</h2>
-            <p className="text-base font-semibold text-black">{ticket.userId?.name || 'Unknown'}</p>
+            <h2 className="text-sm font-medium text-slate-400 mb-2">Customer</h2>
+            <p className="text-base font-semibold text-white">{ticket.userId?.name || 'Unknown'}</p>
 
-            <h2 className="text-sm font-medium text-black mt-4 mb-2">Email</h2>
-            <p className="text-base font-semibold text-black">{ticket.userId?.email || 'Unknown'}</p>
+            <h2 className="text-sm font-medium text-slate-400 mt-4 mb-2">Email</h2>
+            <p className="text-base font-semibold text-white">{ticket.userId?.email || 'Unknown'}</p>
           </div>
         </div>
 
         {/* Status History Timeline */}
-        <div className="mb-8">
-          <h2 className="text-sm font-medium text-black mb-4">Status History</h2>
+        <div className="relative mb-8">
+          <h2 className="text-sm font-medium text-slate-400 mb-4">Status History</h2>
 
           <div className="relative">
             {/* Line that connects all the timeline events */}
-            <div className="absolute h-full w-0.5 bg-gray-200 left-2.5 top-0"></div>
+            <div className="absolute h-full w-0.5 bg-white/15 left-2.5 top-0"></div>
 
             {/* Timeline events */}
             <div className="space-y-6 relative">
               {ticket.statusHistory?.map((status, index) => (
                 <div key={index} className="flex items-start">
                   <div className={`
-                    w-5 h-5 rounded-full flex-shrink-0 z-10
-                    ${status.status === 'pending' ? 'bg-yellow-500' : ''}
-                    ${status.status === 'open' ? 'bg-blue-500' : ''}
-                    ${status.status === 'closed' ? 'bg-gray-500' : ''}
+                    w-5 h-5 rounded-full flex-shrink-0 z-10 border
+                    ${status.status === 'pending' ? 'border-amber-400/40 bg-amber-500/60' : ''}
+                    ${status.status === 'open' ? 'border-white/40 bg-white/60' : ''}
+                    ${status.status === 'closed' ? 'border-emerald-400/40 bg-emerald-500/60' : ''}
                   `}></div>
                   <div className="ml-4">
-                    <p className="text-base font-medium text-black capitalize">
+                    <p className="text-base font-medium text-white capitalize">
                       {status.status}
                     </p>
-                    <p className="text-sm text-black">
+                    <p className="text-sm text-slate-300">
                       {formatDateTime(status.timestamp)}
                     </p>
                   </div>
@@ -348,61 +355,61 @@ const TicketDetail = ({ isAdmin = false }) => {
         </div>
 
         {/* Conversation */}
-        <div className="mb-6">
-          <h2 className="text-sm font-medium text-black mb-4">Conversation</h2>
+        <div className="relative mb-2">
+          <h2 className="text-sm font-medium text-slate-400 mb-4">Conversation</h2>
 
-          <div className="border rounded-lg overflow-hidden">
-            <div className="p-4 bg-gray-50 border-b">
+          <div className="rounded-2xl border border-white/15 bg-white/[0.03] overflow-hidden">
+            <div className="p-4 bg-white/5 border-b border-white/10">
               <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                  <User className="h-4 w-4 text-blue-600" />
+                <div className="w-8 h-8 rounded-full border border-white/20 bg-white/10 flex items-center justify-center flex-shrink-0">
+                  <User className="h-4 w-4 text-white" />
                 </div>
                 <div>
-                  <p className="text-base font-medium text-black">
-                    {ticket.userId?.name || 'Customer'} - <span className="text-black text-sm font-normal">Original Request</span>
+                  <p className="text-base font-medium text-white">
+                    {ticket.userId?.name || 'Customer'} - <span className="text-slate-300 text-sm font-normal">Original Request</span>
                   </p>
-                  <div className="mt-1 text-base text-black whitespace-pre-wrap">
+                  <div className="mt-1 text-base text-slate-200 whitespace-pre-wrap">
                     {ticket.description}
                   </div>
-                  <p className="text-sm text-black mt-1">
+                  <p className="text-sm text-slate-400 mt-1">
                     {formatDateTime(ticket.createdAt)}
                   </p>
                 </div>
               </div>
             </div>
-            
+
             {/* Message list with scrollable container */}
             <div className="max-h-96 overflow-y-auto p-4 space-y-4">
               {ticket.messages?.map((msg, index) => {
                 // Skip the first message (it's the original request)
                 if (index === 0) return null;
-                
+
                 const isAdmin = msg.sender === 'admin';
-                
+
                 return (
                   <div key={index} className={`flex items-start gap-3 ${isAdmin ? 'flex-row-reverse' : ''}`}>
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                      isAdmin ? 'bg-amber-100' : 'bg-blue-100'
+                    <div className={`w-8 h-8 rounded-full border flex items-center justify-center flex-shrink-0 ${
+                      isAdmin ? 'border-amber-400/40 bg-amber-500/20' : 'border-white/20 bg-white/10'
                     }`}>
                       {isAdmin ? (
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-amber-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                         </svg>
                       ) : (
-                        <User className="h-4 w-4 text-blue-600" />
+                        <User className="h-4 w-4 text-white" />
                       )}
                     </div>
-                    
+
                     <div className={`max-w-[80%] ${isAdmin ? 'text-right' : ''}`}>
-                      <p className="text-base font-medium text-black">
+                      <p className="text-base font-medium text-white">
                         {isAdmin ? 'Support Team' : (ticket.userId?.name || 'Customer')}
                       </p>
-                      <div className={`mt-1 p-3 rounded-lg whitespace-pre-wrap text-base ${
-                        isAdmin ? 'bg-amber-50 text-black' : 'bg-blue-50 text-black'
+                      <div className={`mt-1 p-3 rounded-lg whitespace-pre-wrap text-base border ${
+                        isAdmin ? 'border-amber-400/30 bg-amber-500/10 text-white' : 'border-white/15 bg-white/[0.05] text-white'
                       }`}>
                         {msg.message}
                       </div>
-                      <p className="text-sm text-black mt-1">
+                      <p className="text-sm text-slate-400 mt-1">
                         {formatDateTime(msg.timestamp)}
                       </p>
                     </div>
@@ -411,23 +418,23 @@ const TicketDetail = ({ isAdmin = false }) => {
               })}
               <div ref={messagesEndRef} />
             </div>
-            
+
             {/* Reply form */}
             {ticket.status !== 'closed' ? (
-              <div className="p-4 border-t">
+              <div className="p-4 border-t border-white/10">
                 <form onSubmit={handleReply}>
                   <div className="flex items-start gap-2">
                     <textarea
                       value={replyMessage}
                       onChange={(e) => setReplyMessage(e.target.value)}
                       placeholder="Type your reply here..."
-                      className="flex-grow rounded-md border border-gray-300 p-2 text-base text-black focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="flex-grow rounded-xl border border-white/15 bg-white/[0.03] p-2 text-base text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 focus:border-emerald-400/50"
                       rows={3}
                     ></textarea>
                     <button
                       type="submit"
                       disabled={sendingReply || !replyMessage.trim()}
-                      className={`px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-base font-medium ${
+                      className={`px-4 py-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors text-base font-medium ${
                         sendingReply || !replyMessage.trim() ? 'opacity-70 cursor-not-allowed' : ''
                       }`}
                     >
@@ -447,9 +454,9 @@ const TicketDetail = ({ isAdmin = false }) => {
                 </form>
               </div>
             ) : (
-              <div className="p-4 bg-gray-50 border-t">
-                <div className="flex items-center justify-center text-black text-base">
-                  <Check className="h-5 w-5 mr-2" />
+              <div className="p-4 bg-white/5 border-t border-white/10">
+                <div className="flex items-center justify-center text-slate-300 text-base">
+                  <Check className="h-5 w-5 mr-2 text-emerald-400" />
                   <span>This ticket is closed. If you have further questions, please create a new ticket.</span>
                 </div>
               </div>

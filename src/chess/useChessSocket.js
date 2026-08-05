@@ -9,6 +9,7 @@ export default function useChessSocket() {
   const [roomCode, setRoomCode] = useState(null);
   const [assignedColor, setAssignedColor] = useState(null);
   const [board, setBoard] = useState(null);
+  const [players, setPlayers] = useState(null);
   const [turn, setTurn] = useState('white');
   const [status, setStatus] = useState('idle');
   const [paletteKey, setPaletteKey] = useState('classicGreen');
@@ -35,6 +36,7 @@ export default function useChessSocket() {
 
     const applyGameState = (payload) => {
       setBoard(payload.board);
+      setPlayers(payload.players || null);
       setTurn(payload.turn);
       setGameStatus(payload.status || 'active');
       setResetRequestedBy(payload.resetRequestedBy || null);
@@ -141,6 +143,7 @@ export default function useChessSocket() {
     setRoomCode(null);
     setAssignedColor(null);
     setBoard(null);
+    setPlayers(null);
     setStatus('idle');
     setGameStatus('active');
     setResetRequestedBy(null);
@@ -152,6 +155,7 @@ export default function useChessSocket() {
     roomCode,
     assignedColor,
     board,
+    players,
     turn,
     status,
     paletteKey,

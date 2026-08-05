@@ -3,10 +3,13 @@ import { Link, useLocation } from "react-router-dom";
 import {
   BarChart3,
   BriefcaseBusiness,
+  IndianRupee,
   Layers3,
+  ListChecks,
   LogOut,
   Menu,
   PanelsTopLeft,
+  Settings2,
   Users2,
 } from "lucide-react";
 import MobileSidebarDrawer from "./MobileSidebarDrawer";
@@ -22,6 +25,16 @@ export const adminSidebarModules = [
     children: [
       { id: "projects", label: "Projects", icon: BriefcaseBusiness, live: true, to: "/admin-panel/website-management/projects" },
       { id: "plans", label: "Plans", icon: Layers3, live: true, to: "/admin-panel/website-management/plans" },
+    ],
+  },
+  {
+    id: "project-setup",
+    label: "Project Setup",
+    icon: Settings2,
+    group: true,
+    children: [
+      { id: "base-price", label: "Category Base Price", icon: IndianRupee, live: true, to: "/admin-panel/project-setup/base-price" },
+      { id: "features", label: "Features", icon: ListChecks, live: true, to: "/admin-panel/project-setup/features" },
     ],
   },
   { id: "upcoming-orders", label: "Upcoming Orders", icon: Layers3, soon: true },

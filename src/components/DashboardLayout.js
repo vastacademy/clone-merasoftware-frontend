@@ -13,6 +13,7 @@ import CookieManager from '../utils/cookieManager';
 import StorageService from '../utils/storageService';
 import { useOnlineStatus } from '../App';
 import MobileSidebarDrawer from './MobileSidebarDrawer';
+import MobileBottomNav from './MobileBottomNav';
 import backgroundImage from '../assets/BG.png';
 
 const DashboardLayout = ({ children, user, walletBalance, cartCount, isLoading, activeProject }) => {
@@ -79,19 +80,22 @@ const DashboardLayout = ({ children, user, walletBalance, cartCount, isLoading, 
       icon: PlusCircle,
       active: currentPath.startsWith('/start-new-project'),
     },
-    {
-      to: '/order',
-      label: 'Orders',
-      icon: ShoppingBag,
-      active: currentPath.startsWith('/order'),
-    },
   ];
 
+  const gamesActive = currentPath.startsWith('/games');
   const secondaryLinks = [
+    { to: '/order', label: 'Orders', icon: ShoppingBag, active: currentPath.startsWith('/order') },
     { to: '/wallet', label: 'Wallet', icon: Wallet, active: currentPath.startsWith('/wallet') },
-    { to: '/games', label: 'Games', icon: Gamepad2, active: currentPath.startsWith('/games') },
+    { to: '/games', label: 'Games', icon: Gamepad2, active: gamesActive },
     { to: '/profile', label: 'Profile', icon: UserCircle, active: currentPath.startsWith('/profile') },
     { to: '/support', label: 'Support', icon: MessageSquare, active: currentPath.startsWith('/support') },
+  ];
+
+  const bottomNavTabs = [
+    { to: '/dashboard', label: 'Dashboard', icon: Home, active: currentPath === '/dashboard' },
+    { to: '/projects-and-plans', label: 'Projects', icon: FileText, active: projectsAndPlansActive },
+    { to: '/start-new-project', label: 'Start', icon: PlusCircle, active: currentPath.startsWith('/start-new-project') },
+    { to: '/games', label: 'Games', icon: Gamepad2, active: gamesActive },
   ];
 
   // Handle logout confirmation
@@ -312,13 +316,15 @@ const DashboardLayout = ({ children, user, walletBalance, cartCount, isLoading, 
             <span className="text-sm font-semibold text-slate-900">{getPageTitle()}</span>
           </div>
           <main
-            className="min-h-full bg-slate-950 bg-cover bg-center"
+            className="min-h-full bg-slate-950 bg-cover bg-center pb-16 lg:pb-0"
             style={{ backgroundImage: `url(${backgroundImage})` }}
           >
             {children}
           </main>
         </div>
       </div>
+
+      <MobileBottomNav tabs={bottomNavTabs} onMoreClick={() => setMobileMenuOpen(true)} />
 
       {/* Logout Confirmation Popup */}
       {showLogoutConfirmation && currentUser && (

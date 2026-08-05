@@ -15,6 +15,7 @@ import {
   Eye,
   EyeOff,
   RotateCcw,
+  Save,
   Trash2,
   Undo2,
   X,
@@ -208,6 +209,8 @@ const AdminClientWorkspace = () => {
   const [deleteSelections, setDeleteSelections] = useState({});
   const [deleteError, setDeleteError] = useState("");
   const [deletingOrderId, setDeletingOrderId] = useState(null);
+  const [showCreateProjectForm, setShowCreateProjectForm] = useState(false);
+  const [workspaceRefreshKey, setWorkspaceRefreshKey] = useState(0);
   const [activeProjectId, setActiveProjectId] = useState(null);
   const [activeProject, setActiveProject] = useState(null);
   const [activeProjectLoading, setActiveProjectLoading] = useState(false);
@@ -581,7 +584,7 @@ const AdminClientWorkspace = () => {
     };
 
     loadWorkspace();
-  }, [customerId, fallbackClient]);
+  }, [customerId, fallbackClient, workspaceRefreshKey]);
 
   const projectOrders = useMemo(
     () => allData.orders.filter((order) => !isWebsiteUpdateOrder(order)).slice().sort((a, b) => sortWorkspaceItem(a, b, getProjectSortRank)),
@@ -818,6 +821,15 @@ const AdminClientWorkspace = () => {
                 onRowClick={handleOpenProject}
                 onDelete={handleRequestDelete}
                 deletingOrderId={deletingOrderId}
+                headerAction={
+                  <button
+                    type="button"
+                    onClick={() => setShowCreateProjectForm(true)}
+                    className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
+                  >
+                    Create Project for Client
+                  </button>
+                }
                 renderMeta={(order) => [
                   `Order ID: ${order._id?.slice(-8) || "N/A"}`,
                   `Category: ${order.productId?.category || "N/A"}`,
@@ -1048,6 +1060,22 @@ const AdminClientWorkspace = () => {
           </div>
         ) : null}
 
+        {showCreateProjectForm ? (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 px-4 py-6">
+            <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-[2rem] border border-slate-200 bg-white p-6 shadow-2xl">
+              <CreateProjectForClientForm
+                clientName={clientName}
+                customerId={customerId}
+                onCancel={() => setShowCreateProjectForm(false)}
+                onCreated={() => {
+                  setShowCreateProjectForm(false);
+                  setWorkspaceRefreshKey((current) => current + 1);
+                }}
+              />
+            </div>
+          </div>
+        ) : null}
+
     </AdminLayout>
   );
 };
@@ -1155,7 +1183,7 @@ const PaymentInvoicesPanel = ({
   );
 };
 
-const CompactWorkspaceCard = ({ title, subtitle, items, emptyText, onRowClick, onDelete, deletingOrderId, renderMeta, renderRight }) => {
+const CompactWorkspaceCard = ({ title, subtitle, items, emptyText, onRowClick, onDelete, deletingOrderId, renderMeta, renderRight, headerAction }) => {
   return (
     <div>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -1163,6 +1191,7 @@ const CompactWorkspaceCard = ({ title, subtitle, items, emptyText, onRowClick, o
           <h2 className="text-xl font-bold text-slate-900">{title}</h2>
           <p className="mt-1 text-sm text-slate-500">{subtitle}</p>
         </div>
+        {headerAction ? <div className="shrink-0">{headerAction}</div> : null}
       </div>
 
       <div className="mt-5">
@@ -1234,6 +1263,578 @@ const CompactWorkspaceCard = ({ title, subtitle, items, emptyText, onRowClick, o
         />
       </div>
     </div>
+  );
+};
+
+const PROJECT_CATEGORIES = [
+  { value: "standard_websites", label: "Standard Website" },
+  { value: "dynamic_websites", label: "Dynamic Website" },
+  { value: "cloud_software_development", label: "Cloud Software" },
+  { value: "app_development", label: "App Development" },
+];
+
+const FEATURE_UPGRADE_CATEGORY = "feature_upgrades";
+
+const buildInstallmentPreview = (totalAmount, installmentCount) => {
+  const count = Number(installmentCount) === 3 ? 3 : 2;
+  const splits = count === 3 ? [30, 30, 40] : [50, 50];
+  return splits.map((percentage, index) => ({
+    installmentNumber: index + 1,
+    percentage,
+    amount: Math.round((totalAmount * percentage) / 100),
+  }));
+};
+
+const projectFormInputClassName =
+  "w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-base text-black outline-none transition placeholder:text-slate-400 focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100";
+const projectFormLabelClassName = "mb-1.5 block text-base font-semibold text-slate-700";
+
+const PAYMENT_METHOD_OPTIONS = [
+  { value: "upi", label: "UPI" },
+  { value: "bank_transfer", label: "Bank transfer" },
+  { value: "cash", label: "Cash" },
+  { value: "wallet", label: "Wallet" },
+];
+
+const CreateProjectForClientForm = ({ clientName, customerId, onCancel, onCreated }) => {
+  const [step, setStep] = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [startingNodeTitle, setStartingNodeTitle] = useState("");
+  const [category, setCategory] = useState("");
+  const [totalPages, setTotalPages] = useState("");
+  const [sellingPrice, setSellingPrice] = useState("");
+  const [paymentType, setPaymentType] = useState("full");
+  const [installmentCount, setInstallmentCount] = useState("2");
+
+  const [paymentAction, setPaymentAction] = useState("record");
+  const [paymentMethod, setPaymentMethod] = useState("upi");
+  const [transactionReference, setTransactionReference] = useState("");
+  const [paymentNotes, setPaymentNotes] = useState("");
+
+  const [basePrice, setBasePrice] = useState(0);
+  const [basePriceLoading, setBasePriceLoading] = useState(false);
+  const [categoryDescription, setCategoryDescription] = useState("");
+
+  const [availableFeatures, setAvailableFeatures] = useState([]);
+  const [featuresLoading, setFeaturesLoading] = useState(true);
+  const [featuresError, setFeaturesError] = useState("");
+  const [selectedFeatureIds, setSelectedFeatureIds] = useState([]);
+  const [isFeatureDropdownOpen, setIsFeatureDropdownOpen] = useState(false);
+  const featureDropdownRef = useRef(null);
+
+  const isWebsiteCategory = category === "standard_websites" || category === "dynamic_websites";
+
+  useEffect(() => {
+    const fetchFeatures = async () => {
+      setFeaturesLoading(true);
+      setFeaturesError("");
+      try {
+        const response = await fetch(SummaryApi.allProduct.url);
+        const dataResponse = await response.json();
+        const allProducts = dataResponse?.data || [];
+        setAvailableFeatures(
+          allProducts.filter((product) => product.category === FEATURE_UPGRADE_CATEGORY)
+        );
+      } catch (fetchError) {
+        console.error("Error fetching additional features:", fetchError);
+        setFeaturesError("Additional features could not be loaded.");
+      } finally {
+        setFeaturesLoading(false);
+      }
+    };
+    fetchFeatures();
+  }, []);
+
+  useEffect(() => {
+    if (!category) {
+      setBasePrice(0);
+      setCategoryDescription("");
+      return;
+    }
+
+    const fetchBasePrice = async () => {
+      setBasePriceLoading(true);
+      try {
+        const response = await fetch(SummaryApi.categoryBasePrices.url, {
+          method: SummaryApi.categoryBasePrices.method.toUpperCase(),
+          credentials: "include",
+        });
+        const result = await response.json();
+        if (!result.success) throw new Error(result.message || "Failed to load base price");
+        const entry = (result.data || []).find((item) => item.category === category);
+        setBasePrice(entry?.basePrice || 0);
+        setCategoryDescription(entry?.description || "");
+      } catch (fetchError) {
+        console.error("Error fetching category base price:", fetchError);
+        toast.error("Could not load base price for this category.");
+        setBasePrice(0);
+        setCategoryDescription("");
+      } finally {
+        setBasePriceLoading(false);
+      }
+    };
+    fetchBasePrice();
+  }, [category]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (featureDropdownRef.current && !featureDropdownRef.current.contains(event.target)) {
+        setIsFeatureDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const toggleFeature = (featureId) => {
+    setSelectedFeatureIds((current) =>
+      current.includes(featureId)
+        ? current.filter((id) => id !== featureId)
+        : [...current, featureId]
+    );
+  };
+
+  const selectableFeatures = availableFeatures.filter(
+    (feature) => !selectedFeatureIds.includes(feature._id)
+  );
+  const selectedFeatures = selectedFeatureIds
+    .map((id) => availableFeatures.find((feature) => feature._id === id))
+    .filter(Boolean);
+  const featuresTotal = selectedFeatures.reduce(
+    (sum, feature) => sum + (Number(feature.sellingPrice) || 0),
+    0
+  );
+  const referenceTotal = Number(basePrice) + featuresTotal;
+
+  const firstInstallmentAmount = paymentType === "partial" && sellingPrice
+    ? buildInstallmentPreview(Number(sellingPrice), installmentCount)[0]?.amount || 0
+    : Number(sellingPrice) || 0;
+
+  const handleGoToPaymentStep = () => {
+    if (!startingNodeTitle.trim() || !category || !sellingPrice) {
+      toast.error("Starting node title, category, and selling price are required.");
+      return;
+    }
+    setStep(2);
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+
+    const formData = {
+      startingNodeTitle,
+      category,
+      totalPages: isWebsiteCategory ? totalPages : null,
+      sellingPrice,
+      featureIds: selectedFeatureIds,
+      paymentType,
+      installmentCount: paymentType === "partial" ? installmentCount : null,
+      recordPayment: paymentAction === "record"
+        ? {
+            paymentMethod,
+            transactionReference: transactionReference.trim(),
+            notes: paymentNotes.trim(),
+          }
+        : null,
+    };
+
+    setIsSubmitting(true);
+    try {
+      const response = await fetch(
+        `${SummaryApi.adminCreateProjectOrder.url}/${customerId}/create-project`,
+        {
+          method: SummaryApi.adminCreateProjectOrder.method,
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(formData),
+        }
+      );
+
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.message || "Failed to create project");
+      }
+
+      toast.success("Project created and started for this client.");
+      onCreated?.();
+    } catch (error) {
+      console.error("Error creating project for client:", error);
+      toast.error(error.message || "Failed to create project");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <form onSubmit={step === 2 ? handleSubmit : (event) => event.preventDefault()}>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h3 className="text-lg font-bold text-slate-900">
+            {step === 1 ? `Create Project for ${clientName}` : "Payment Settings"}
+          </h3>
+          <p className="mt-1 text-sm text-slate-500">
+            {step === 1
+              ? "This creates a working project for this client only. It will not be saved to the project catalog."
+              : "Record the first payment now, or let the client pay later. Step 2 of 2."}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition hover:bg-white hover:text-slate-700"
+          aria-label="Close create project form"
+        >
+          <X size={16} />
+        </button>
+      </div>
+
+      {step === 1 ? (
+      <>
+      <div className="mt-6 grid grid-cols-1 gap-5 md:grid-cols-2">
+        <div>
+          <label className={projectFormLabelClassName}>Starting Node Title *</label>
+          <input
+            type="text"
+            className={projectFormInputClassName}
+            value={startingNodeTitle}
+            onChange={(event) => setStartingNodeTitle(event.target.value)}
+            placeholder="e.g. Project Kickoff"
+          />
+        </div>
+
+        <div>
+          <label className={projectFormLabelClassName}>Category</label>
+          <select
+            className={projectFormInputClassName}
+            value={category}
+            onChange={(event) => setCategory(event.target.value)}
+          >
+            <option value="">Select category</option>
+            {PROJECT_CATEGORIES.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {isWebsiteCategory ? (
+          <div>
+            <label className={projectFormLabelClassName}>Total Pages</label>
+            <input
+              type="number"
+              min={4}
+              max={50}
+              className={projectFormInputClassName}
+              value={totalPages}
+              onChange={(event) => setTotalPages(event.target.value)}
+              placeholder="4-50"
+            />
+          </div>
+        ) : null}
+
+        <div>
+          <label className={projectFormLabelClassName}>
+            Base Price <span className="font-normal normal-case tracking-normal text-slate-400">(fixed per category)</span>
+          </label>
+          <div className={`${projectFormInputClassName} bg-slate-100 text-slate-700`}>
+            {!category
+              ? "Select a category first"
+              : basePriceLoading
+                ? "Loading…"
+                : `₹${Number(basePrice).toLocaleString("en-IN")}`}
+          </div>
+        </div>
+
+        {category && !basePriceLoading && categoryDescription ? (
+          <div className="md:col-span-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+            <p className="text-sm font-semibold text-slate-500">Category Description</p>
+            <p className="mt-1 text-sm text-slate-700">{categoryDescription}</p>
+          </div>
+        ) : (
+          <div />
+        )}
+
+        <div className="md:col-span-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+          <p className="text-sm font-semibold text-slate-600">
+            Reference Total (Base Price + Features): ₹{referenceTotal.toLocaleString("en-IN")}
+          </p>
+        </div>
+
+        <div>
+          <label className={projectFormLabelClassName}>
+            Selling Price <span className="font-normal normal-case tracking-normal text-slate-400">(what the client pays)</span>
+          </label>
+          <input
+            type="number"
+            min={0}
+            className={projectFormInputClassName}
+            value={sellingPrice}
+            onChange={(event) => setSellingPrice(event.target.value)}
+            placeholder="e.g. 12000"
+          />
+          {sellingPrice && Number(sellingPrice) < referenceTotal ? (
+            <p className="mt-1.5 text-sm font-semibold text-emerald-600">
+              Discount: ₹{(referenceTotal - Number(sellingPrice)).toLocaleString("en-IN")}
+            </p>
+          ) : null}
+        </div>
+
+        <div ref={featureDropdownRef} className="md:col-span-2">
+          <span className={projectFormLabelClassName}>
+            Additional Features / Upgrades <span className="font-normal normal-case tracking-normal text-slate-400">(optional, used for invoice/billing)</span>
+          </span>
+
+          {featuresLoading && (
+            <p className="text-xs text-slate-500">Loading available features…</p>
+          )}
+
+          {!featuresLoading && featuresError && (
+            <p className="text-xs text-red-500">{featuresError}</p>
+          )}
+
+          {!featuresLoading && !featuresError && (
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setIsFeatureDropdownOpen((open) => !open)}
+                className={`${projectFormInputClassName} flex items-center justify-between text-left`}
+              >
+                <span className={selectableFeatures.length === 0 && selectedFeatures.length === 0 ? "text-slate-400" : ""}>
+                  {availableFeatures.length === 0
+                    ? "No features available"
+                    : "Search & select features..."}
+                </span>
+                <span className="text-slate-400">▾</span>
+              </button>
+
+              {isFeatureDropdownOpen && (selectedFeatures.length > 0 || selectableFeatures.length > 0) && (
+                <div className="absolute z-10 mt-1 max-h-56 w-full overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-lg">
+                  {selectedFeatures.length > 0 && (
+                    <div className="flex flex-wrap gap-2 border-b border-slate-100 p-2">
+                      {selectedFeatures.map((feature) => (
+                        <span
+                          key={feature._id}
+                          className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300 bg-emerald-50 px-3 py-1 text-base font-semibold text-emerald-800"
+                        >
+                          {feature.serviceName}
+                          {typeof feature.sellingPrice === "number" && (
+                            <span className="text-emerald-600">₹{feature.sellingPrice}</span>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => toggleFeature(feature._id)}
+                            className="text-emerald-500 transition hover:text-red-500"
+                            aria-label={`Remove ${feature.serviceName}`}
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {selectableFeatures.map((feature) => (
+                    <button
+                      key={feature._id}
+                      type="button"
+                      onClick={() => toggleFeature(feature._id)}
+                      className="flex w-full items-center justify-between px-3 py-2 text-left text-base text-black transition hover:bg-emerald-50"
+                    >
+                      <span>{feature.serviceName}</span>
+                      {typeof feature.sellingPrice === "number" && (
+                        <span className="text-base font-semibold text-slate-600">₹{feature.sellingPrice}</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {selectedFeatures.length > 0 && (
+            <p className="mt-2 text-sm font-semibold text-slate-600">
+              Features total: ₹{featuresTotal.toLocaleString("en-IN")}
+            </p>
+          )}
+        </div>
+      </div>
+
+      <div className="mt-6 border-t border-slate-200 pt-5">
+        <label className={projectFormLabelClassName}>Payment Type</label>
+        <div className="flex flex-wrap gap-3">
+          <button
+            type="button"
+            onClick={() => setPaymentType("full")}
+            className={[
+              "rounded-2xl border px-4 py-2.5 text-sm font-semibold transition",
+              paymentType === "full"
+                ? "border-emerald-400 bg-emerald-50 text-emerald-700"
+                : "border-slate-200 bg-white text-slate-600 hover:bg-slate-100",
+            ].join(" ")}
+          >
+            One-time (Full)
+          </button>
+          <button
+            type="button"
+            onClick={() => setPaymentType("partial")}
+            className={[
+              "rounded-2xl border px-4 py-2.5 text-sm font-semibold transition",
+              paymentType === "partial"
+                ? "border-emerald-400 bg-emerald-50 text-emerald-700"
+                : "border-slate-200 bg-white text-slate-600 hover:bg-slate-100",
+            ].join(" ")}
+          >
+            Partial (Installments)
+          </button>
+        </div>
+
+        {paymentType === "partial" ? (
+          <div className="mt-4 max-w-xs">
+            <label className={projectFormLabelClassName}>Number of Installments</label>
+            <select
+              className={projectFormInputClassName}
+              value={installmentCount}
+              onChange={(event) => setInstallmentCount(event.target.value)}
+            >
+              <option value="2">2</option>
+              <option value="3">3</option>
+            </select>
+          </div>
+        ) : null}
+      </div>
+
+      <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+        <button
+          type="button"
+          onClick={onCancel}
+          disabled={isSubmitting}
+          className="inline-flex items-center justify-center rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-70"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          onClick={handleGoToPaymentStep}
+          className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+        >
+          Next: Payment Settings
+        </button>
+      </div>
+      </>
+      ) : (
+      <>
+      <div className="mt-6 space-y-5">
+        <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+          <p className="text-sm font-semibold text-slate-500">Amount Due Now</p>
+          <p className="mt-1 text-2xl font-bold text-slate-900">₹{firstInstallmentAmount.toLocaleString("en-IN")}</p>
+          <p className="mt-1 text-xs text-slate-500">
+            {paymentType === "partial"
+              ? `Installment 1 of ${installmentCount} — remaining installments stay unpaid and can be recorded later.`
+              : "Full project amount (one-time payment)."}
+          </p>
+        </div>
+
+        <div className="flex flex-wrap gap-3">
+          <button
+            type="button"
+            onClick={() => setPaymentAction("record")}
+            className={[
+              "rounded-2xl border px-4 py-2.5 text-sm font-semibold transition",
+              paymentAction === "record"
+                ? "border-emerald-400 bg-emerald-50 text-emerald-700"
+                : "border-slate-200 bg-white text-slate-600 hover:bg-slate-100",
+            ].join(" ")}
+          >
+            Record Payment Now
+          </button>
+          <button
+            type="button"
+            onClick={() => setPaymentAction("skip")}
+            className={[
+              "rounded-2xl border px-4 py-2.5 text-sm font-semibold transition",
+              paymentAction === "skip"
+                ? "border-emerald-400 bg-emerald-50 text-emerald-700"
+                : "border-slate-200 bg-white text-slate-600 hover:bg-slate-100",
+            ].join(" ")}
+          >
+            Just Add Project, Let Client Pay the Bill
+          </button>
+        </div>
+
+        {paymentAction === "record" ? (
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+            <div>
+              <label className={projectFormLabelClassName}>Payment Method</label>
+              <select
+                className={projectFormInputClassName}
+                value={paymentMethod}
+                onChange={(event) => setPaymentMethod(event.target.value)}
+              >
+                {PAYMENT_METHOD_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className={projectFormLabelClassName}>Transaction Reference</label>
+              <input
+                type="text"
+                className={projectFormInputClassName}
+                value={transactionReference}
+                onChange={(event) => setTransactionReference(event.target.value)}
+                placeholder="UPI ID or bank reference"
+              />
+            </div>
+            <div className="md:col-span-2">
+              <label className={projectFormLabelClassName}>
+                Note <span className="font-normal normal-case tracking-normal text-slate-400">(internal only, not shown to client)</span>
+              </label>
+              <textarea
+                rows={3}
+                className={projectFormInputClassName}
+                value={paymentNotes}
+                onChange={(event) => setPaymentNotes(event.target.value)}
+                placeholder="e.g. Collected cash in person"
+              />
+            </div>
+          </div>
+        ) : (
+          <p className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            The project will be created and started immediately, but its invoice stays unpaid until the client (or admin) records the payment later.
+          </p>
+        )}
+      </div>
+
+      <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
+        <button
+          type="button"
+          onClick={() => setStep(1)}
+          disabled={isSubmitting}
+          className="inline-flex items-center justify-center rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-70"
+        >
+          Back
+        </button>
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
+        >
+          {isSubmitting ? (
+            <>
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+              Creating...
+            </>
+          ) : (
+            <>
+              <Save size={16} />
+              Create Project
+            </>
+          )}
+        </button>
+      </div>
+      </>
+      )}
+    </form>
   );
 };
 

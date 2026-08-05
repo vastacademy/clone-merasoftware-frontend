@@ -10,6 +10,7 @@ import TriangleMazeLoader from '../components/TriangleMazeLoader';
 import UpdateRequestModal from '../components/UpdateRequestModal';
 import SummaryApi from '../common';
 import backgroundImage from '../assets/BG.png';
+import { isPlanItem } from '../helpers/orderType';
 
 const formatDate = (date) => {
   if (!date) return 'N/A';
@@ -182,6 +183,12 @@ const PlanDetails = () => {
         setNotFound(true);
         return;
       }
+
+      if (!isPlanItem(orderData.data)) {
+        navigate(`/project-details/${orderId}`, { replace: true });
+        return;
+      }
+
       setPlan(orderData.data);
 
       const requestsData = await requestsResponse.json();

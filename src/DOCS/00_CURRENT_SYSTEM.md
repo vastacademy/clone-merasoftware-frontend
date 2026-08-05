@@ -54,9 +54,11 @@ This document describes the active frontend behavior as of the current codebase.
 
 - `/admin-panel/dashboard` - `AdminDashboard`
 - `/admin-panel/clients` - `AdminClientsPage`
-- `/admin-panel/clients/:customerId` - `AdminClientWorkspace`
+- `/admin-panel/clients/:customerId` - `AdminClientWorkspace` (Projects tab now has a working "Create Project for Client" modal + live save — see `33_ADMIN_CREATE_PROJECT_FOR_CLIENT.md`)
 - `/admin-panel/website-management/projects` - `AdminProjectProductsPage` (UI-only list shell; backend wiring pending)
 - `/admin-panel/website-management/projects/add` - `AdminCreateProjectPage` (UI-only add form; backend wiring pending)
+- `/admin-panel/project-setup/base-price` - `AdminCategoryBasePricePage` (manage fixed base price per project category; used by "Create Project for Client")
+- `/admin-panel/project-setup/features` - `AdminFeatureProductsPage` (list/create/edit/delete `feature_upgrades`-category products; reuses the pre-existing generic `uploadProduct`/`updateProduct`/`deleteProduct` endpoints)
 
 ### Project product management status
 
@@ -178,6 +180,10 @@ This document describes the active frontend behavior as of the current codebase.
 - `backend/helpers/invoiceLifecycle.js` is the shared backend helper that pauses plans on overdue invoices and resumes eligible plans on paid invoices
 - Payment/invoice admin UI must use existing backend models: `transactionModel`, `monthlyInvoiceModel`, and `orderProductModel`. Do not add a separate admin payment backend.
 - Client sorting is read from the same customer backend/database; no separate activity endpoint, activity store, or admin database exists.
+- `backend/controller/order/adminCreateProjectOrder.js` (`POST /api/admin/clients/:customerId/create-project`) creates an immediately-active project order for one client directly from `AdminClientWorkspace.js`, bypassing the catalog/purchase flow entirely — it creates a small `isHidden: true` + `isCustomClientProject: true` product behind the scenes and is the first caller of `initializeProjectTimeline`. Does not reuse `createOrder.js`/`DirectPayment.js` by design (public-storefront-removal-safe). See `33_ADMIN_CREATE_PROJECT_FOR_CLIENT.md`.
+- `adminCreateProjectOrder.js` no longer accepts `serviceName`/`price`/`additionalFeatures` from the client. It derives `serviceName` from category and re-fetches base price from a new `categoryBasePriceModel` collection (`GET/POST /api/admin/category-base-prices`). Selected features are still the existing `feature_upgrades`-category `productModel` products (unchanged source) — the controller now re-fetches each requested feature ID filtered to `category: 'feature_upgrades'` and re-derives its real price server-side, instead of trusting the client-submitted name/price. `productModel.js`'s new `clientProjectFeatures` field stores a name+price snapshot per selected feature (`ref: 'product'`). See `35_CATEGORY_BASE_PRICE_AND_PROJECT_FEATURES_SYSTEM.md`.
+- `adminCreateProjectOrder.js` now also creates real invoice records (new `backend/models/invoiceModel.js`, separate from the recurring-only `monthlyInvoiceModel`) — one per installment for partial payment, one for the full amount for one-time payment, itemized via `lineItems` (category base price + each selected feature). `getMyPaymentWorkspace.js`/`getAdminUserWorkspace.js` merge these into their existing `invoices` array, so `OrderDetailPage.js`/`InvoiceDetailPage.js`/the admin Payment & Invoices ledger show real data for these orders instead of the `DUMMY_INVOICES` placeholder — no frontend changes were needed. See `37_NEW_INVOICE_SYSTEM_FOR_ADMIN_CREATED_PROJECTS.md`.
+- `CreateProjectForClientForm` (`AdminClientWorkspace.js`) is now a 2-step flow — Project Details, then a "Payment Settings" step where admin either records the first payment immediately (`recordPayment` sent to `adminCreateProjectOrder.js`, which marks the first invoice paid via a new `markProjectInvoicePaid()` helper — not the recurring-plan-only `invoiceLifecycle.js`) or explicitly defers it ("Just Add Project, Let Client Pay the Bill"). `getOrderDetails.js` now returns `hasUnpaidInvoice`/`unpaidInvoice`; `ProjectDetails.js` (customer-side) shows a "Payment Pending" banner and disables "Request Update" while the project's invoice is unpaid. See `38_TWO_STEP_PAYMENT_SETTINGS_AND_PAYMENT_PENDING_LOCK.md`.
 
 ## 7. Local Dev Note
 

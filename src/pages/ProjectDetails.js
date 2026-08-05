@@ -17,6 +17,7 @@ import { logout } from '../store/userSlice';
 import CookieManager from '../utils/cookieManager';
 import StorageService from '../utils/storageService';
 import { useOnlineStatus } from '../App';
+import { isPlanItem } from '../helpers/orderType';
 
 const normalizeCheckpointKey = (value) => {
   if (value === null || value === undefined) {
@@ -315,7 +316,12 @@ const ProjectDetails = ({ isAdminView = false }) => {
       
       if (orderData.success) {
         const order = orderData.data;
-        
+
+        if (!isAdminView && isPlanItem(order)) {
+          navigate(`/plan-details/${orderId}`, { replace: true });
+          return;
+        }
+
         // Check if this order is visible to the user
         if (order.orderVisibility === 'pending-approval') {
           setOrder({
@@ -372,7 +378,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
     } finally {
       setLoading(false);
     }
-  }, [orderId, checkPaymentStatus]);
+  }, [orderId, checkPaymentStatus, isAdminView]);
 
   useEffect(() => {
     fetchOrderDetails();
@@ -683,6 +689,21 @@ const ProjectDetails = ({ isAdminView = false }) => {
             />
           )}
 
+          {!isAdminView && order.hasUnpaidInvoice && (
+            <div className={g(
+              'mb-6 rounded-2xl border border-amber-300 bg-amber-50 p-4',
+              'mb-6 rounded-2xl border border-amber-400/40 bg-amber-500/15 p-4 backdrop-blur-md'
+            )}>
+              <p className={g('text-base font-semibold text-amber-800', 'text-base font-semibold text-amber-200')}>
+                Payment Pending
+              </p>
+              <p className={g('mt-1 text-sm text-amber-700', 'mt-1 text-sm text-amber-100/90')}>
+                This project is active, but invoice {order.unpaidInvoice?.invoiceNumber} (₹{Number(order.unpaidInvoice?.amount || 0).toLocaleString('en-IN')}) is still unpaid.
+                Some actions are unavailable until payment is recorded.
+              </p>
+            </div>
+          )}
+
           <div className={g('hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-sm lg:grid lg:grid-cols-[280px_minmax(0,1fr)_360px] lg:items-stretch', 'relative hidden overflow-hidden rounded-[1.75rem] border border-white/20 bg-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.25)] backdrop-blur-2xl backdrop-saturate-150 lg:grid lg:grid-cols-[280px_minmax(0,1fr)_360px] lg:items-stretch')}>
                 {!isAdminView && <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/[0.12] to-transparent" />}
                 <aside className={g('h-[620px] border-r border-slate-200', 'relative h-[620px] border-r border-white/15')}>
@@ -714,7 +735,9 @@ const ProjectDetails = ({ isAdminView = false }) => {
                         <button
                           type="button"
                           onClick={() => setUpdateModalOpen(true)}
-                          className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-2.5 text-base font-semibold text-white transition hover:bg-emerald-700"
+                          disabled={order.hasUnpaidInvoice}
+                          title={order.hasUnpaidInvoice ? "Available after payment is recorded" : undefined}
+                          className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-2.5 text-base font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-400 disabled:hover:bg-slate-400"
                         >
                           <Upload className="h-4 w-4" />
                           Request Update

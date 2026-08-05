@@ -18,20 +18,7 @@ import SummaryApi from '../common';
 import Context from '../context';
 import displayINRCurrency from '../helpers/displayCurrency';
 import { isOrderApproved } from '../helpers/orderVisibility';
-
-const PROJECT_CATEGORIES = new Set([
-  'standard_websites',
-  'dynamic_websites',
-  'cloud_software_development',
-  'app_development',
-  'web_applications',
-  'mobile_apps',
-]);
-
-const PLAN_CATEGORY = 'website_updates';
-
-const isProjectItem = (order) => PROJECT_CATEGORIES.has(order?.productId?.category?.toLowerCase());
-const isPlanItem = (order) => order?.productId?.category?.toLowerCase() === PLAN_CATEGORY;
+import { isProjectItem, isPlanItem } from '../helpers/orderType';
 
 const getRemainingDays = (order) => {
   if (!order) return 0;
@@ -115,7 +102,8 @@ const getItemSummary = (order) => {
   return `${progress}% complete`;
 };
 
-const getItemLink = (order) => `/project-details/${order._id}`;
+const getItemLink = (order) =>
+  isPlanItem(order) ? `/plan-details/${order._id}` : `/project-details/${order._id}`;
 
 const MetricCard = ({ icon: Icon, label, value, helper, tone = 'slate', to, highlight = false }) => {
   const glowMap = {

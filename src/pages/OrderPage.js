@@ -18,20 +18,7 @@ import CustomerWorkspaceTabs from '../components/CustomerWorkspaceTabs';
 import displayINRCurrency from '../helpers/displayCurrency';
 import { isOrderApproved } from '../helpers/orderVisibility';
 import PaymentStatusChip from '../components/PaymentStatusChip';
-
-const PROJECT_CATEGORIES = new Set([
-  'standard_websites',
-  'dynamic_websites',
-  'cloud_software_development',
-  'app_development',
-  'web_applications',
-  'mobile_apps',
-]);
-
-const PLAN_CATEGORY = 'website_updates';
-
-const isProjectItem = (order) => PROJECT_CATEGORIES.has(order?.productId?.category?.toLowerCase());
-const isPlanItem = (order) => order?.productId?.category?.toLowerCase() === PLAN_CATEGORY;
+import { isProjectItem, isPlanItem, PROJECT_CATEGORIES } from '../helpers/orderType';
 
 const getOrderStatus = (order) => {
   if (!order) return 'Processing';

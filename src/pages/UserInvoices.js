@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { FileText } from 'lucide-react';
 import SummaryApi from '../common';
 import { toast } from 'sonner';
 import CustomerWorkspaceTabs from '../components/CustomerWorkspaceTabs';
@@ -46,15 +47,15 @@ const UserInvoices = () => {
     const getStatusBadgeColor = (status) => {
         switch (status) {
             case 'paid':
-                return 'bg-green-100 text-green-800';
+                return 'border-emerald-400/40 bg-emerald-500/20 text-emerald-300';
             case 'unpaid':
-                return 'bg-yellow-100 text-yellow-800';
+                return 'border-amber-400/40 bg-amber-500/20 text-amber-300';
             case 'overdue':
-                return 'bg-red-100 text-red-800';
+                return 'border-red-400/40 bg-red-500/20 text-red-300';
             case 'cancelled':
-                return 'bg-gray-100 text-gray-800';
+                return 'border-white/15 bg-white/10 text-slate-300';
             default:
-                return 'bg-gray-100 text-gray-800';
+                return 'border-white/15 bg-white/10 text-slate-300';
         }
     };
 
@@ -79,11 +80,12 @@ const UserInvoices = () => {
     if (loading) {
         return (
             <div
-                className="min-h-screen bg-slate-950 bg-cover bg-center p-8 flex items-center justify-center"
+                className="relative min-h-[calc(100vh-4rem)] overflow-hidden bg-slate-950 bg-cover bg-center px-4 py-10 sm:px-6 lg:px-8 lg:py-14 flex items-center justify-center"
                 style={{ backgroundImage: `url(${backgroundImage})` }}
             >
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
+                <div className="pointer-events-none absolute inset-0 bg-slate-950/40" />
+                <div className="relative text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-400 mx-auto"></div>
                     <p className="mt-4 text-base text-white">Loading invoices...</p>
                 </div>
             </div>
@@ -92,142 +94,145 @@ const UserInvoices = () => {
 
     return (
         <div
-            className="min-h-screen bg-slate-950 bg-cover bg-center p-4 md:p-8"
+            className="relative min-h-[calc(100vh-4rem)] overflow-hidden bg-slate-950 bg-cover bg-center px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
             style={{ backgroundImage: `url(${backgroundImage})` }}
         >
-            <div className="max-w-7xl mx-auto">
+            <div className="pointer-events-none absolute inset-0 bg-slate-950/40" />
+
+            <div className="relative mx-auto max-w-7xl">
                 {/* Header */}
-                <div className="mb-8">
-                    <h1 className="text-2xl font-bold text-black mb-2">My Invoices</h1>
-                    <p className="text-base text-black">View and manage your monthly plan invoices</p>
+                <div className="text-center mb-6">
+                    <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">My Invoices</h1>
+                    <p className="mt-1 text-base text-slate-300">View and manage your monthly plan invoices</p>
                 </div>
 
-                {/* Filter Tabs */}
-                <div className="bg-white rounded-lg shadow-sm mb-6">
-                    <CustomerWorkspaceTabs
-                        tabs={['all', 'unpaid', 'paid', 'overdue', 'cancelled'].map((status) => ({
-                            id: status,
-                            label: status === 'all'
-                                ? 'All'
-                                : `${status.charAt(0).toUpperCase()}${status.slice(1)} (${invoices.filter((inv) => inv.status === status).length})`,
-                        }))}
-                        activeTab={filter}
-                        onChange={setFilter}
-                        ariaLabel="Invoice status filters"
-                    />
-                </div>
+                {/* Card: filter row + invoice list */}
+                <div className="relative overflow-hidden rounded-3xl border border-white/20 bg-white/10 backdrop-blur-2xl backdrop-saturate-150 shadow-[0_8px_32px_rgba(0,0,0,0.25)]">
+                    <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/[0.12] to-transparent" />
 
-                {/* Invoices List */}
-                {filteredInvoices.length === 0 ? (
-                    <div className="bg-white rounded-lg shadow-sm p-12 text-center">
-                        <div className="text-gray-400 mb-4">
-                            <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
+                    <div className="relative flex flex-wrap items-center justify-between gap-3 border-b border-white/15 px-5 py-4 sm:px-6">
+                        <div className="flex items-center gap-2">
+                            <FileText className="h-5 w-5 text-white" />
+                            <h2 className="text-lg font-semibold text-white">Invoices</h2>
                         </div>
-                        <p className="text-lg font-semibold text-black">No invoices found</p>
-                        <p className="text-sm text-black mt-2">
-                            {filter === 'all'
-                                ? 'You don\'t have any invoices yet'
-                                : `No ${filter} invoices`}
-                        </p>
+                        <CustomerWorkspaceTabs
+                            tabs={['all', 'unpaid', 'paid', 'overdue', 'cancelled'].map((status) => ({
+                                id: status,
+                                label: status === 'all'
+                                    ? 'All'
+                                    : `${status.charAt(0).toUpperCase()}${status.slice(1)} (${invoices.filter((inv) => inv.status === status).length})`,
+                            }))}
+                            activeTab={filter}
+                            onChange={setFilter}
+                            ariaLabel="Invoice status filters"
+                            variant="inline"
+                        />
                     </div>
-                ) : (
-                    <div className="space-y-4">
-                        {filteredInvoices.map((invoice) => (
-                            <div
-                                key={invoice._id}
-                                className={`bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow p-6 border-l-4 ${
-                                    invoice.status === 'paid' ? 'border-green-500' :
-                                    invoice.status === 'overdue' ? 'border-red-500' :
-                                    invoice.status === 'unpaid' ? 'border-yellow-500' :
-                                    'border-gray-300'
-                                }`}
-                            >
-                                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                                    {/* Left Section */}
-                                    <div className="flex-1">
-                                        <div className="flex items-center gap-3 mb-2">
-                                            <h3 className="text-lg font-semibold text-black">
-                                                {invoice.invoiceNumber}
-                                            </h3>
-                                            <span className={`px-3 py-1 rounded-full text-sm font-semibold uppercase ${getStatusBadgeColor(invoice.status)}`}>
-                                                {invoice.status}
-                                            </span>
-                                            {isOverdue(invoice.dueDate, invoice.status) && (
-                                                <span className="px-2 py-1 bg-red-100 text-red-700 rounded text-sm font-medium">
-                                                    ⚠️ OVERDUE
-                                                </span>
-                                            )}
-                                        </div>
 
-                                        <div className="text-sm text-black space-y-1">
-                                            <p>
-                                                <span className="font-medium">Plan:</span> {invoice.orderId?.productId?.serviceName || 'N/A'}
-                                            </p>
-                                            <p>
-                                                <span className="font-medium">Billing Period:</span>{' '}
-                                                {formatDate(invoice.renewalPeriodStart)} - {formatDate(invoice.renewalPeriodEnd)}
-                                            </p>
-                                            <p>
-                                                <span className="font-medium">Invoice Date:</span> {formatDate(invoice.invoiceDate)}
-                                            </p>
-                                            <p>
-                                                <span className="font-medium">Due Date:</span> {formatDate(invoice.dueDate)}
-                                            </p>
-                                            {invoice.paidDate && (
-                                                <p className="text-green-600">
-                                                    <span className="font-medium">Paid On:</span> {formatDate(invoice.paidDate)}
-                                                </p>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    {/* Right Section */}
-                                    <div className="flex flex-col items-end gap-3">
-                                        <div className="text-right">
-                                            <p className="text-sm text-black">Amount</p>
-                                            <p className="text-2xl font-bold text-purple-600">
-                                                ₹{invoice.amount.toLocaleString()}
-                                            </p>
-                                        </div>
-
-                                        {invoice.status === 'unpaid' || invoice.status === 'overdue' ? (
-                                            <button
-                                                onClick={() => {
-                                                    toast.info('Payment feature will be available soon!');
-                                                }}
-                                                className={`px-6 py-2 rounded-lg font-medium transition-colors ${
-                                                    invoice.status === 'overdue'
-                                                        ? 'bg-red-600 hover:bg-red-700 text-white'
-                                                        : 'bg-purple-600 hover:bg-purple-700 text-white'
-                                                }`}
-                                            >
-                                                Pay Now
-                                            </button>
-                                        ) : invoice.status === 'paid' ? (
-                                            <div className="flex items-center gap-2 text-green-600">
-                                                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                                </svg>
-                                                <span className="font-medium">Paid</span>
-                                            </div>
-                                        ) : null}
-                                    </div>
-                                </div>
-
-                                {/* Additional Info */}
-                                {invoice.notes && (
-                                    <div className="mt-4 pt-4 border-t border-gray-200">
-                                        <p className="text-sm text-black">
-                                            <span className="font-medium">Note:</span> {invoice.notes}
-                                        </p>
-                                    </div>
-                                )}
+                    <div className="relative bg-white/5 px-5 py-5 sm:px-6">
+                        {filteredInvoices.length === 0 ? (
+                            <div className="p-8 text-center">
+                                <FileText className="h-12 w-12 mx-auto text-slate-400" />
+                                <p className="mt-4 text-lg font-semibold text-white">No invoices found</p>
+                                <p className="text-sm text-slate-300 mt-2">
+                                    {filter === 'all'
+                                        ? 'You don\'t have any invoices yet'
+                                        : `No ${filter} invoices`}
+                                </p>
                             </div>
-                        ))}
+                        ) : (
+                            <div className="space-y-3">
+                                {filteredInvoices.map((invoice, index) => (
+                                    <div
+                                        key={invoice._id}
+                                        className={`rounded-2xl border border-white/10 p-5 ${index % 2 === 0 ? 'bg-white/[0.02]' : 'bg-white/[0.06]'}`}
+                                    >
+                                        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                                            {/* Left Section */}
+                                            <div className="flex-1">
+                                                <div className="flex items-center gap-3 mb-2 flex-wrap">
+                                                    <h3 className="text-lg font-semibold text-white">
+                                                        {invoice.invoiceNumber}
+                                                    </h3>
+                                                    <span className={`px-3 py-1 rounded-full border text-sm font-semibold uppercase backdrop-blur-md ${getStatusBadgeColor(invoice.status)}`}>
+                                                        {invoice.status}
+                                                    </span>
+                                                    {isOverdue(invoice.dueDate, invoice.status) && (
+                                                        <span className="px-2 py-1 rounded border border-red-400/40 bg-red-500/20 text-red-300 text-sm font-medium">
+                                                            ⚠️ OVERDUE
+                                                        </span>
+                                                    )}
+                                                </div>
+
+                                                <div className="text-sm text-slate-300 space-y-1">
+                                                    <p>
+                                                        <span className="font-medium text-slate-400">Plan:</span> {invoice.orderId?.productId?.serviceName || 'N/A'}
+                                                    </p>
+                                                    <p>
+                                                        <span className="font-medium text-slate-400">Billing Period:</span>{' '}
+                                                        {formatDate(invoice.renewalPeriodStart)} - {formatDate(invoice.renewalPeriodEnd)}
+                                                    </p>
+                                                    <p>
+                                                        <span className="font-medium text-slate-400">Invoice Date:</span> {formatDate(invoice.invoiceDate)}
+                                                    </p>
+                                                    <p>
+                                                        <span className="font-medium text-slate-400">Due Date:</span> {formatDate(invoice.dueDate)}
+                                                    </p>
+                                                    {invoice.paidDate && (
+                                                        <p className="text-emerald-300">
+                                                            <span className="font-medium">Paid On:</span> {formatDate(invoice.paidDate)}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {/* Right Section */}
+                                            <div className="flex flex-col items-end gap-3">
+                                                <div className="text-right">
+                                                    <p className="text-sm text-slate-300">Amount</p>
+                                                    <p className="text-2xl font-bold text-white">
+                                                        ₹{invoice.amount.toLocaleString()}
+                                                    </p>
+                                                </div>
+
+                                                {invoice.status === 'unpaid' || invoice.status === 'overdue' ? (
+                                                    <button
+                                                        onClick={() => {
+                                                            toast.info('Payment feature will be available soon!');
+                                                        }}
+                                                        className={`px-6 py-2 rounded-lg font-medium transition-colors text-white ${
+                                                            invoice.status === 'overdue'
+                                                                ? 'bg-red-600 hover:bg-red-700'
+                                                                : 'bg-emerald-600 hover:bg-emerald-700'
+                                                        }`}
+                                                    >
+                                                        Pay Now
+                                                    </button>
+                                                ) : invoice.status === 'paid' ? (
+                                                    <div className="flex items-center gap-2 text-emerald-300">
+                                                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                                        </svg>
+                                                        <span className="font-medium">Paid</span>
+                                                    </div>
+                                                ) : null}
+                                            </div>
+                                        </div>
+
+                                        {/* Additional Info */}
+                                        {invoice.notes && (
+                                            <div className="mt-4 pt-4 border-t border-white/10">
+                                                <p className="text-sm text-slate-300">
+                                                    <span className="font-medium text-slate-400">Note:</span> {invoice.notes}
+                                                </p>
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
-                )}
+                </div>
             </div>
         </div>
     );

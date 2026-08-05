@@ -45,6 +45,10 @@ const SummaryApi = {
         url : `${backendDomain}/api/admin/project-products`,
         method : "get"
     },
+    adminFeatureProducts : {
+        url : `${backendDomain}/api/admin/feature-products`,
+        method : "get"
+    },
     adminPlanProducts : {
         url : `${backendDomain}/api/admin/plan-products`,
         method : "get"
@@ -692,6 +696,18 @@ const SummaryApi = {
     adminDeleteOrderScan: {
         url: `${backendDomain}/api/admin/delete-order`,
         method: "get"
+    },
+    adminCreateProjectOrder: {
+        url: `${backendDomain}/api/admin/clients`,
+        method: "post"
+    },
+    categoryBasePrices: {
+        url: `${backendDomain}/api/admin/category-base-prices`,
+        method: "get"
+    },
+    updateCategoryBasePrice: {
+        url: `${backendDomain}/api/admin/category-base-prices`,
+        method: "post"
     }
 }
 
