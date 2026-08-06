@@ -2,13 +2,192 @@ import React, { useCallback, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { ListChecks, Plus } from "lucide-react";
+import { ListChecks, Plus, X } from "lucide-react";
 import SummaryApi from "../common";
 import { logout } from "../store/userSlice";
 import CookieManager from "../utils/cookieManager";
 import StorageService from "../utils/storageService";
 import AdminLayout from "../components/AdminLayout";
 import AdminWorkspaceShell, { AdminWorkspaceHeader } from "../components/admin/AdminWorkspaceShell";
+
+const FEATURE_UPGRADE_CATEGORY = "feature_upgrades";
+
+const formInputClassName =
+  "w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-base text-black outline-none transition placeholder:text-slate-400 focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100";
+const formLabelClassName = "mb-1.5 block text-base font-semibold text-slate-700";
+
+const FeatureEditForm = ({ feature, onCancel, onSaved, onDeleted }) => {
+  const isEditing = Boolean(feature?._id);
+  const [serviceName, setServiceName] = useState(feature?.serviceName ?? "");
+  const [sellingPrice, setSellingPrice] = useState(feature?.sellingPrice ?? feature?.price ?? "");
+  const [description, setDescription] = useState(feature?.formattedDescriptions?.[0]?.content ?? "");
+  const [isHidden, setIsHidden] = useState(Boolean(feature?.isHidden));
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+
+    if (!serviceName.trim()) {
+      toast.error("Feature name is required.");
+      return;
+    }
+    const numericPrice = Number(sellingPrice);
+    if (!Number.isFinite(numericPrice) || numericPrice < 0) {
+      toast.error("Price must be a non-negative number.");
+      return;
+    }
+
+    const payload = {
+      serviceName: serviceName.trim(),
+      category: FEATURE_UPGRADE_CATEGORY,
+      price: numericPrice,
+      sellingPrice: numericPrice,
+      formattedDescriptions: description.trim() ? [{ content: description.trim() }] : [],
+      isHidden,
+    };
+    if (isEditing) payload._id = feature._id;
+
+    setIsSubmitting(true);
+    try {
+      const apiConfig = isEditing ? SummaryApi.updateProduct : SummaryApi.uploadProduct;
+      const response = await fetch(apiConfig.url, {
+        method: apiConfig.method.toUpperCase(),
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const result = await response.json();
+      if (!result.success) throw new Error(result.message || "Failed to save feature");
+      toast.success(isEditing ? "Feature updated." : "Feature added.");
+      onSaved?.();
+    } catch (error) {
+      console.error("Error saving feature:", error);
+      toast.error(error.message || "Failed to save feature");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!isEditing) return;
+    setIsDeleting(true);
+    try {
+      const response = await fetch(SummaryApi.deleteProduct.url, {
+        method: SummaryApi.deleteProduct.method.toUpperCase(),
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ _id: feature._id }),
+      });
+      const result = await response.json();
+      if (!result.success) throw new Error(result.message || "Failed to delete feature");
+      toast.success("Feature deleted.");
+      onDeleted?.();
+    } catch (error) {
+      console.error("Error deleting feature:", error);
+      toast.error(error.message || "Failed to delete feature");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <div className="flex items-start justify-between gap-4">
+        <h3 className="text-lg font-bold text-slate-900">
+          {isEditing ? "Edit Feature" : "Add Feature"}
+        </h3>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition hover:bg-white hover:text-slate-700"
+          aria-label="Close"
+        >
+          <X size={16} />
+        </button>
+      </div>
+
+      <div className="mt-6 grid grid-cols-1 gap-5">
+        <div>
+          <label className={formLabelClassName}>Feature Name *</label>
+          <input
+            type="text"
+            className={formInputClassName}
+            value={serviceName}
+            onChange={(event) => setServiceName(event.target.value)}
+            placeholder="e.g. Extra Revision Round"
+          />
+        </div>
+
+        <div>
+          <label className={formLabelClassName}>Price (₹) *</label>
+          <input
+            type="number"
+            min={0}
+            className={formInputClassName}
+            value={sellingPrice}
+            onChange={(event) => setSellingPrice(event.target.value)}
+          />
+        </div>
+
+        <div>
+          <label className={formLabelClassName}>Description</label>
+          <textarea
+            className={formInputClassName}
+            rows={3}
+            value={description}
+            onChange={(event) => setDescription(event.target.value)}
+          />
+        </div>
+
+        <div className="flex items-center gap-2">
+          <input
+            id="feature-hidden"
+            type="checkbox"
+            checked={isHidden}
+            onChange={(event) => setIsHidden(event.target.checked)}
+            className="h-4 w-4 rounded border-slate-300"
+          />
+          <label htmlFor="feature-hidden" className="text-sm font-semibold text-slate-700">
+            Hidden (not shown to clients)
+          </label>
+        </div>
+      </div>
+
+      <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
+        {isEditing ? (
+          <button
+            type="button"
+            onClick={handleDelete}
+            disabled={isDeleting || isSubmitting}
+            className="inline-flex items-center justify-center rounded-2xl border border-red-200 px-4 py-3 text-sm font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            {isDeleting ? "Deleting..." : "Delete"}
+          </button>
+        ) : (
+          <span />
+        )}
+        <div className="flex flex-col-reverse gap-3 sm:flex-row">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={isSubmitting || isDeleting}
+            className="inline-flex items-center justify-center rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={isSubmitting || isDeleting}
+            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-500 px-4 py-3 text-sm font-bold text-slate-950 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            {isSubmitting ? "Saving..." : "Save"}
+          </button>
+        </div>
+      </div>
+    </form>
+  );
+};
 
 const AdminFeatureProductsPage = () => {
   const user = useSelector((state) => state?.user?.user);
@@ -17,6 +196,8 @@ const AdminFeatureProductsPage = () => {
 
   const [features, setFeatures] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [editingFeature, setEditingFeature] = useState(null);
+  const [isFormOpen, setIsFormOpen] = useState(false);
 
   const fetchFeatures = useCallback(async () => {
     setLoading(true);
@@ -41,11 +222,23 @@ const AdminFeatureProductsPage = () => {
   }, [fetchFeatures]);
 
   const handleAddFeature = () => {
-    toast.info("Add Feature will be connected in the next step.");
+    setEditingFeature(null);
+    setIsFormOpen(true);
   };
 
-  const handleFeatureOpen = () => {
-    toast.info("Feature detail sub-page will be connected in the next step.");
+  const handleFeatureOpen = (feature) => {
+    setEditingFeature(feature);
+    setIsFormOpen(true);
+  };
+
+  const closeForm = () => {
+    setIsFormOpen(false);
+    setEditingFeature(null);
+  };
+
+  const handleFeatureSaved = () => {
+    closeForm();
+    fetchFeatures();
   };
 
   const handleLogout = async () => {
@@ -129,6 +322,19 @@ const AdminFeatureProductsPage = () => {
             </div>
           )}
         </div>
+
+        {isFormOpen ? (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4">
+            <div className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl">
+              <FeatureEditForm
+                feature={editingFeature}
+                onCancel={closeForm}
+                onSaved={handleFeatureSaved}
+                onDeleted={handleFeatureSaved}
+              />
+            </div>
+          </div>
+        ) : null}
       </AdminWorkspaceShell>
     </AdminLayout>
   );

@@ -708,6 +708,26 @@ const SummaryApi = {
     updateCategoryBasePrice: {
         url: `${backendDomain}/api/admin/category-base-prices`,
         method: "post"
+    },
+    createProjectNode: {
+        url: `${backendDomain}/api/admin/projects`,
+        method: "post"
+    },
+    deleteProjectNodes: {
+        url: `${backendDomain}/api/admin/projects`,
+        method: "post"
+    },
+    restoreProjectNodes: {
+        url: `${backendDomain}/api/admin/projects`,
+        method: "post"
+    },
+    setProjectNodeVisibility: {
+        url: `${backendDomain}/api/admin/projects`,
+        method: "post"
+    },
+    resetProjectNodes: {
+        url: `${backendDomain}/api/admin/projects`,
+        method: "post"
     }
 }
 

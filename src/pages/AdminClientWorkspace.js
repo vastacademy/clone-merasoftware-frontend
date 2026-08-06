@@ -174,20 +174,18 @@ const isSameId = (value, targetId) => {
   return Boolean(comparable && targetId && comparable === String(targetId));
 };
 
-const getCheckpointStatusLabel = (checkpoint) => {
-  return checkpoint?.completed ? "Completed" : "Pending";
+const getNodeStatusLabel = (node) => {
+  if (node?.status === "deleted") return "Deleted";
+  if (node?.status === "archived") return "Archived";
+  return "Active";
 };
 
-const getCheckpointSelectionKey = (checkpoint, index) => {
-  if (checkpoint?.checkpointId !== undefined && checkpoint?.checkpointId !== null) {
-    return `checkpoint-${checkpoint.checkpointId}`;
-  }
-  return `checkpoint-index-${checkpoint?.checkpointIndex ?? index}`;
-};
+const getNodeSelectionKey = (node) => node?.nodeId;
 
-const getCheckpointBadgeClass = (checkpoint) => {
-  const label = getCheckpointStatusLabel(checkpoint).toLowerCase();
-  if (label === "completed") return "bg-emerald-100 text-emerald-800";
+const getNodeBadgeClass = (node) => {
+  const label = getNodeStatusLabel(node).toLowerCase();
+  if (label === "active") return "bg-emerald-100 text-emerald-800";
+  if (label === "deleted") return "bg-rose-100 text-rose-700";
   return "bg-slate-100 text-slate-700";
 };
 
@@ -291,12 +289,9 @@ const AdminClientWorkspace = () => {
     setActiveProjectId(project._id);
     setActiveProject(project);
     setActiveProjectError("");
-    const checkpoints = project?.checkpoints || [];
-    const initialCheckpointIndex = checkpoints.findIndex((checkpoint) => !checkpoint?.completed);
-    const selectedIndex = initialCheckpointIndex >= 0 ? initialCheckpointIndex : checkpoints.length - 1;
-    setSelectedProjectCheckpointId(
-      selectedIndex >= 0 ? getCheckpointSelectionKey(checkpoints[selectedIndex], selectedIndex) : null
-    );
+    const activeNodes = (project?.projectNodes || []).filter((node) => node?.status === "active");
+    const lastNode = activeNodes[activeNodes.length - 1];
+    setSelectedProjectCheckpointId(lastNode ? getNodeSelectionKey(lastNode) : null);
     setActiveTab("projects");
     setActivePlanId(null);
     setActivePlan(null);
@@ -445,19 +440,15 @@ const AdminClientWorkspace = () => {
   }, [activePlanId]);
 
   useEffect(() => {
-    const checkpoints = activeProject?.checkpoints || [];
-    if (!checkpoints.length) return;
+    const nodes = activeProject?.projectNodes || [];
+    if (!nodes.length) return;
 
-    const selectedExists = checkpoints.some(
-      (checkpoint, index) => getCheckpointSelectionKey(checkpoint, index) === selectedProjectCheckpointId
-    );
+    const selectedExists = nodes.some((node) => getNodeSelectionKey(node) === selectedProjectCheckpointId);
     if (selectedExists) return;
 
-    const currentIndex = checkpoints.findIndex((checkpoint) => !checkpoint?.completed);
-    const selectedIndex = currentIndex >= 0 ? currentIndex : checkpoints.length - 1;
-    setSelectedProjectCheckpointId(
-      selectedIndex >= 0 ? getCheckpointSelectionKey(checkpoints[selectedIndex], selectedIndex) : null
-    );
+    const activeNodes = nodes.filter((node) => node?.status === "active");
+    const lastNode = activeNodes[activeNodes.length - 1];
+    setSelectedProjectCheckpointId(lastNode ? getNodeSelectionKey(lastNode) : null);
   }, [activeProject, selectedProjectCheckpointId]);
 
   useEffect(() => {
@@ -1858,55 +1849,46 @@ const WorkspaceDetailSubpage = ({
 }) => {
   const itemStatus = getStatusLabel(item);
   const isProjectDetail = detailLabel === "Project";
-  const checkpoints = item?.checkpoints || [];
+  const allNodes = item?.projectNodes || [];
+  const activeRun = (item?.projectRuns || []).find((run) => run.status === "active") || null;
+  const runNodes = activeRun ? allNodes.filter((node) => node.runId === activeRun.runId) : allNodes;
   const [updateMode, setUpdateMode] = useState(true);
   const [updateMessage, setUpdateMessage] = useState("");
-  const [nodeUiState, setNodeUiState] = useState({});
   const [selectedNodeKeys, setSelectedNodeKeys] = useState([]);
   const [selectionAnchorKey, setSelectionAnchorKey] = useState(null);
   const [focusedNodeKey, setFocusedNodeKey] = useState(null);
   const nodeRowRefs = useRef({});
   const [hideDeletedNodesForClient, setHideDeletedNodesForClient] = useState(false);
   const [resetPreviewOpen, setResetPreviewOpen] = useState(false);
+  const [resetStartingTitle, setResetStartingTitle] = useState("");
   const [nodeActionNotice, setNodeActionNotice] = useState("");
-  let cumulativeProgress = 0;
-  const checkpointsWithProgress = checkpoints.map((checkpoint, index) => {
-    const checkpointWeight = Number(checkpoint?.percentage) || 0;
-    if (checkpoint?.completed) {
-      cumulativeProgress += checkpointWeight;
-    }
+  const [isNodeActionSubmitting, setIsNodeActionSubmitting] = useState(false);
 
-    return {
-      ...checkpoint,
-      checkpointIndex: index,
-      cumulativeProgress: Math.round(cumulativeProgress * 100) / 100,
-    };
-  });
-  const displayedCheckpoints = [...checkpointsWithProgress].reverse();
-  const displayedCheckpointKeys = displayedCheckpoints.map((checkpoint, index) =>
-    getCheckpointSelectionKey(checkpoint, index)
-  );
-  const pendingCheckpoints = checkpointsWithProgress.filter((checkpoint) => !checkpoint?.completed);
-  const allCheckpointsCompleted = checkpoints.length > 0 && pendingCheckpoints.length === 0;
+  const displayedNodes = [...runNodes].reverse();
+  const displayedNodeKeys = displayedNodes.map((node) => getNodeSelectionKey(node));
+  const activeNodes = runNodes.filter((node) => node.status === "active");
+  const currentProjectProgress = item?.projectProgress || 0;
+  const allNodesCompleted = activeNodes.length > 0 && currentProjectProgress >= 100;
 
   useEffect(() => {
     setUpdateMode(true);
     setUpdateMessage("");
-    setNodeUiState({});
     setSelectedNodeKeys([]);
     setSelectionAnchorKey(null);
     setFocusedNodeKey(null);
     setHideDeletedNodesForClient(false);
     setResetPreviewOpen(false);
+    setResetStartingTitle("");
     setNodeActionNotice("");
   }, [item?._id]);
+
   const getNodeSelectionRange = (selectionKey) => {
-    const anchorIndex = displayedCheckpointKeys.indexOf(selectionAnchorKey);
-    const targetIndex = displayedCheckpointKeys.indexOf(selectionKey);
+    const anchorIndex = displayedNodeKeys.indexOf(selectionAnchorKey);
+    const targetIndex = displayedNodeKeys.indexOf(selectionKey);
     if (anchorIndex < 0 || targetIndex < 0) return [selectionKey];
     const rangeStart = Math.min(anchorIndex, targetIndex);
     const rangeEnd = Math.max(anchorIndex, targetIndex);
-    return displayedCheckpointKeys.slice(rangeStart, rangeEnd + 1);
+    return displayedNodeKeys.slice(rangeStart, rangeEnd + 1);
   };
   const toggleNodeSelection = (selectionKey) => {
     setSelectedNodeKeys((current) => (
@@ -1938,46 +1920,137 @@ const WorkspaceDetailSubpage = ({
     setUpdateMessage("");
     onSelectCheckpoint?.(selectionKey);
   };
-  const updateSelectedNodeUiState = (patch) => {
-    setNodeUiState((current) => selectedNodeKeys.reduce((next, selectionKey) => ({
-      ...next,
-      [selectionKey]: { ...next[selectionKey], ...patch },
-    }), current));
-  };
-  const updateSelectedInactiveNodeUiState = (patch) => {
-    setNodeUiState((current) => selectedNodeKeys.reduce((next, selectionKey) => (
-      next[selectionKey]?.isInactive
-        ? { ...next, [selectionKey]: { ...next[selectionKey], ...patch } }
-        : next
-    ), current));
-  };
-  const handleDeleteNodePreview = () => {
-    const selectedActiveCount = selectedNodeKeys.filter((key) => !nodeUiState[key]?.isInactive).length;
-    if (selectedActiveCount === 0) return;
 
-    updateSelectedNodeUiState({ isInactive: true });
-    setSelectedNodeKeys([]);
-    setSelectionAnchorKey(null);
-    setFocusedNodeKey(null);
-    setNodeActionNotice(`${selectedActiveCount} node(s) marked inactive in the local preview. A project-detail refresh has been requested.`);
-    onSoftRefresh?.();
+  const callNodeApi = async (apiConfig, pathSuffix, body) => {
+    const response = await fetch(`${apiConfig.url}/${item._id}/nodes${pathSuffix}`, {
+      method: apiConfig.method.toUpperCase(),
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const result = await response.json();
+    if (!result.success) throw new Error(result.message || "Node action failed");
+    return result;
   };
-  const selectedCheckpoint =
-    checkpointsWithProgress.find(
-      (checkpoint, index) => getCheckpointSelectionKey(checkpoint, index) === selectedCheckpointId
-    ) ||
-    checkpointsWithProgress.find((checkpoint) => !checkpoint?.completed) ||
-    checkpointsWithProgress[checkpointsWithProgress.length - 1] ||
+
+  const handleAddNode = async (title, percentage, message) => {
+    setIsNodeActionSubmitting(true);
+    setNodeActionNotice("");
+    try {
+      await callNodeApi(SummaryApi.createProjectNode, "", {
+        title,
+        cumulativeProgress: Number(percentage),
+        message: message || undefined,
+      });
+      toast.success("Node added successfully.");
+      setUpdateMessage("");
+      onSoftRefresh?.();
+    } catch (nodeError) {
+      console.error("Error adding project node:", nodeError);
+      toast.error(nodeError.message || "Failed to add node");
+    } finally {
+      setIsNodeActionSubmitting(false);
+    }
+  };
+
+  const handleDeleteSelectedNodes = async () => {
+    const nodeIds = selectedNodeKeys.filter((key) => {
+      const node = runNodes.find((candidate) => getNodeSelectionKey(candidate) === key);
+      return node?.status === "active";
+    });
+    if (nodeIds.length === 0) return;
+
+    setIsNodeActionSubmitting(true);
+    try {
+      await callNodeApi(SummaryApi.deleteProjectNodes, "/delete", { nodeIds });
+      toast.success(`${nodeIds.length} node(s) deleted.`);
+      setSelectedNodeKeys([]);
+      setSelectionAnchorKey(null);
+      setFocusedNodeKey(null);
+      onSoftRefresh?.();
+    } catch (nodeError) {
+      console.error("Error deleting project nodes:", nodeError);
+      toast.error(nodeError.message || "Failed to delete node(s)");
+    } finally {
+      setIsNodeActionSubmitting(false);
+    }
+  };
+
+  const handleRestoreSelectedNodes = async () => {
+    const nodeIds = selectedNodeKeys.filter((key) => {
+      const node = runNodes.find((candidate) => getNodeSelectionKey(candidate) === key);
+      return node?.status === "deleted";
+    });
+    if (nodeIds.length === 0) return;
+
+    setIsNodeActionSubmitting(true);
+    try {
+      await callNodeApi(SummaryApi.restoreProjectNodes, "/restore", { nodeIds });
+      toast.success(`${nodeIds.length} node(s) restored.`);
+      onSoftRefresh?.();
+    } catch (nodeError) {
+      console.error("Error restoring project nodes:", nodeError);
+      toast.error(nodeError.message || "Failed to restore node(s)");
+    } finally {
+      setIsNodeActionSubmitting(false);
+    }
+  };
+
+  const handleToggleVisibilitySelectedNodes = async (visibleToClient) => {
+    const nodeIds = selectedNodeKeys.filter((key) =>
+      runNodes.some((candidate) => getNodeSelectionKey(candidate) === key)
+    );
+    if (nodeIds.length === 0) return;
+
+    setIsNodeActionSubmitting(true);
+    try {
+      await callNodeApi(SummaryApi.setProjectNodeVisibility, "/visibility", { nodeIds, visibleToClient });
+      toast.success(`${nodeIds.length} node(s) updated.`);
+      onSoftRefresh?.();
+    } catch (nodeError) {
+      console.error("Error updating project node visibility:", nodeError);
+      toast.error(nodeError.message || "Failed to update visibility");
+    } finally {
+      setIsNodeActionSubmitting(false);
+    }
+  };
+
+  const handleResetTimeline = async () => {
+    if (!resetStartingTitle.trim()) {
+      toast.error("Starting node title is required to reset.");
+      return;
+    }
+    setIsNodeActionSubmitting(true);
+    try {
+      await callNodeApi(SummaryApi.resetProjectNodes, "/reset", {
+        startingNodeTitle: resetStartingTitle.trim(),
+      });
+      toast.success("Project timeline reset.");
+      setResetPreviewOpen(false);
+      setResetStartingTitle("");
+      setSelectedNodeKeys([]);
+      onSoftRefresh?.();
+    } catch (nodeError) {
+      console.error("Error resetting project timeline:", nodeError);
+      toast.error(nodeError.message || "Failed to reset project timeline");
+    } finally {
+      setIsNodeActionSubmitting(false);
+    }
+  };
+
+  const selectedNode =
+    runNodes.find((node) => getNodeSelectionKey(node) === selectedCheckpointId) ||
+    activeNodes[activeNodes.length - 1] ||
+    runNodes[runNodes.length - 1] ||
     null;
-  const selectedNodeStates = selectedNodeKeys.map((key) => nodeUiState[key] || {});
-  const hasSelectedActiveNodes = selectedNodeKeys.some((key) => !nodeUiState[key]?.isInactive);
-  const hasSelectedInactiveNodes = selectedNodeKeys.some((key) => nodeUiState[key]?.isInactive);
-  const hasInactiveNodes = checkpointsWithProgress.some((checkpoint, index) => {
-    const selectionKey = getCheckpointSelectionKey(checkpoint, index);
-    return nodeUiState[selectionKey]?.isInactive;
-  });
+  const selectedNodeStates = selectedNodeKeys.map(
+    (key) => runNodes.find((node) => getNodeSelectionKey(node) === key) || {}
+  );
+  const hasSelectedActiveNodes = selectedNodeStates.some((node) => node.status === "active");
+  const hasSelectedInactiveNodes = selectedNodeStates.some((node) => node.status === "deleted");
+  const hasInactiveNodes = runNodes.some((node) => node.status === "deleted");
   const selectedNodesAreHiddenForClient = selectedNodeStates.length > 0 && selectedNodeStates.every(
-    (nodeState) => nodeState.visibleToClient === false
+    (node) => node.visibleToClient === false
   );
 
   return (
@@ -2041,20 +2114,20 @@ const WorkspaceDetailSubpage = ({
                 <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
                   <div className="flex items-center justify-between gap-3">
                     <div>
-                      <p className="text-sm font-medium text-slate-500">Progress Checkpoints</p>
-                      <h3 className="mt-1 text-lg font-semibold text-slate-900">Click a checkpoint for details</h3>
+                      <p className="text-sm font-medium text-slate-500">Progress Nodes</p>
+                      <h3 className="mt-1 text-lg font-semibold text-slate-900">Click a node for details</h3>
                     </div>
                     <div className="flex flex-wrap items-center justify-end gap-2">
                       <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-500">
-                        {checkpoints.length} checkpoints
+                        {runNodes.length} nodes
                       </span>
                       <button
                         type="button"
                         onClick={() => setResetPreviewOpen((current) => !current)}
-                        disabled={checkpoints.length === 0}
+                        disabled={runNodes.length === 0 || isNodeActionSubmitting}
                         className="inline-flex h-10 items-center justify-center gap-1.5 rounded-full border border-rose-300 bg-rose-100 px-3 text-xs font-semibold text-rose-800 transition hover:bg-rose-200 disabled:cursor-not-allowed disabled:opacity-40"
                         aria-label="Reset history"
-                        title={resetPreviewOpen ? "Close reset history preview" : "Reset history: archive current nodes and restart active progress at 0%"}
+                        title={resetPreviewOpen ? "Close reset history" : "Reset history: archive current nodes and restart active progress at 0%"}
                       >
                         <RotateCcw size={19} />
                         <span>Reset history</span>
@@ -2066,8 +2139,8 @@ const WorkspaceDetailSubpage = ({
                     <span className="mr-1 text-xs font-semibold text-slate-600">{selectedNodeKeys.length} selected</span>
                     <button
                       type="button"
-                      onClick={handleDeleteNodePreview}
-                      disabled={!hasSelectedActiveNodes}
+                      onClick={handleDeleteSelectedNodes}
+                      disabled={!hasSelectedActiveNodes || isNodeActionSubmitting}
                       className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-rose-300 bg-rose-100 text-rose-800 transition hover:bg-rose-200 disabled:cursor-not-allowed disabled:opacity-40"
                       aria-label="Delete selected node(s)"
                       title="Delete selected node(s)"
@@ -2076,18 +2149,18 @@ const WorkspaceDetailSubpage = ({
                     </button>
                     <button
                       type="button"
-                      onClick={() => updateSelectedNodeUiState({ isInactive: false })}
-                      disabled={!hasSelectedInactiveNodes}
+                      onClick={handleRestoreSelectedNodes}
+                      disabled={!hasSelectedInactiveNodes || isNodeActionSubmitting}
                       className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-emerald-300 bg-emerald-100 text-emerald-800 transition hover:bg-emerald-200 disabled:cursor-not-allowed disabled:opacity-40"
-                      aria-label="Undo delete for selected node(s)"
-                      title="Undo delete for selected node(s)"
+                      aria-label="Restore selected node(s)"
+                      title="Restore selected node(s)"
                     >
                       <Undo2 size={19} />
                     </button>
                     <button
                       type="button"
-                      onClick={() => updateSelectedInactiveNodeUiState({ visibleToClient: selectedNodesAreHiddenForClient })}
-                      disabled={!hasSelectedInactiveNodes}
+                      onClick={() => handleToggleVisibilitySelectedNodes(selectedNodesAreHiddenForClient)}
+                      disabled={selectedNodeKeys.length === 0 || isNodeActionSubmitting}
                       className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-slate-400 bg-slate-100 text-slate-800 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-40"
                       aria-label={selectedNodesAreHiddenForClient ? "Show selected node(s) to client" : "Hide selected node(s) from client"}
                       title={selectedNodesAreHiddenForClient ? "Show selected node(s) to client" : "Hide selected node(s) from client"}
@@ -2113,22 +2186,35 @@ const WorkspaceDetailSubpage = ({
                   ) : null}
 
                   {resetPreviewOpen ? (
-                    <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-dashed border-slate-300 bg-white px-3 py-2.5">
+                    <div className="mt-3 space-y-2.5 rounded-xl border border-dashed border-slate-300 bg-white px-3 py-2.5">
                       <div>
-                        <p className="text-xs font-semibold text-slate-900">Reset archive preview</p>
-                        <p className="mt-0.5 text-xs text-slate-500">Current nodes would become archived history; active progress would restart at 0%.</p>
+                        <p className="text-xs font-semibold text-slate-900">Reset project timeline</p>
+                        <p className="mt-0.5 text-xs text-slate-500">Current nodes become archived history; active progress restarts at 0% with a new starting node.</p>
                       </div>
-                      <label className="inline-flex items-center gap-2 text-xs font-semibold text-slate-700">
-                        <input type="checkbox" className="h-4 w-4 rounded border-slate-300" />
-                        Show old history to client
-                      </label>
+                      <input
+                        type="text"
+                        value={resetStartingTitle}
+                        onChange={(event) => setResetStartingTitle(event.target.value)}
+                        placeholder="New starting node title"
+                        className="w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm text-slate-800 outline-none focus:border-slate-500"
+                      />
+                      <div className="flex justify-end">
+                        <button
+                          type="button"
+                          onClick={handleResetTimeline}
+                          disabled={isNodeActionSubmitting || !resetStartingTitle.trim()}
+                          className="rounded-lg bg-rose-600 px-3 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          Confirm reset
+                        </button>
+                      </div>
                     </div>
                   ) : null}
 
                   <div className="mt-4 max-h-[25rem] space-y-2 overflow-y-auto pr-1">
-                    {checkpoints.length === 0 ? (
+                    {runNodes.length === 0 ? (
                       <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-500">
-                        No checkpoint history available for this project.
+                        No node history available for this project.
                       </div>
                     ) : (
                       <>
@@ -2145,25 +2231,24 @@ const WorkspaceDetailSubpage = ({
                           <div className="min-w-0 flex-1">
                             <div className="flex flex-wrap items-center gap-2">
                               <p className="truncate font-semibold text-slate-900">
-                                {allCheckpointsCompleted ? "Send Update" : "Update Node"}
+                                {allNodesCompleted ? "Send Update" : "Add Node"}
                               </p>
                               <span className="rounded-full bg-slate-200 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
                                 Action
                               </span>
                             </div>
                             <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
-                              <span>{allCheckpointsCompleted ? "Project update" : "Update incomplete nodes"}</span>
+                              <span>{allNodesCompleted ? "Project update" : "Add a new progress node"}</span>
                               <span>Click to open</span>
                             </div>
                           </div>
                         </button>
 
-                        {displayedCheckpoints.map((checkpoint, index) => {
-                        const selectionKey = getCheckpointSelectionKey(checkpoint, index);
+                        {displayedNodes.map((node) => {
+                        const selectionKey = getNodeSelectionKey(node);
                         const isSelected = selectionKey === selectedCheckpointId;
-                        const checkpointUiState = nodeUiState[selectionKey] || {};
-                        const isInactive = Boolean(checkpointUiState.isInactive);
-                        const isVisibleToClient = checkpointUiState.visibleToClient !== false;
+                        const isInactive = node.status === "deleted";
+                        const isVisibleToClient = node.visibleToClient !== false;
                         const isHiddenFromClient = !isVisibleToClient || (isInactive && hideDeletedNodesForClient);
                         const isFocusedForSelection = focusedNodeKey === selectionKey;
 
@@ -2178,7 +2263,7 @@ const WorkspaceDetailSubpage = ({
                               onFocus={() => setFocusedNodeKey(selectionKey)}
                               onChange={() => toggleNodeSelection(selectionKey)}
                               className="h-4 w-4 shrink-0 rounded border-slate-300 text-rose-600"
-                              aria-label={`Select ${checkpoint.name} for node management`}
+                              aria-label={`Select ${node.title} for node management`}
                             />
                             <button
                               type="button"
@@ -2189,13 +2274,13 @@ const WorkspaceDetailSubpage = ({
                               onKeyDown={(event) => {
                                 if (event.key === "ArrowUp" || event.key === "ArrowDown") {
                                   event.preventDefault();
-                                  const currentIndex = displayedCheckpointKeys.indexOf(selectionKey);
+                                  const currentIndex = displayedNodeKeys.indexOf(selectionKey);
                                   const direction = event.key === "ArrowUp" ? -1 : 1;
                                   const nextIndex = Math.min(
                                     Math.max(currentIndex + direction, 0),
-                                    displayedCheckpointKeys.length - 1
+                                    displayedNodeKeys.length - 1
                                   );
-                                  const nextKey = displayedCheckpointKeys[nextIndex];
+                                  const nextKey = displayedNodeKeys[nextIndex];
                                   nodeRowRefs.current[nextKey]?.focus();
                                   setFocusedNodeKey(nextKey);
                                   return;
@@ -2221,21 +2306,17 @@ const WorkspaceDetailSubpage = ({
                               ].join(" ")}
                             >
                               <div className="flex flex-wrap items-center gap-2">
-                                <p className="truncate font-semibold text-slate-900">{checkpoint.name}</p>
-                                <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${getCheckpointBadgeClass(checkpoint)}`}>
-                                  {getCheckpointStatusLabel(checkpoint)}
+                                <p className="truncate font-semibold text-slate-900">{node.title}</p>
+                                <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${getNodeBadgeClass(node)}`}>
+                                  {getNodeStatusLabel(node)}
                                 </span>
-                                {isInactive ? (
-                                  <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-800">Inactive</span>
-                                ) : null}
                                 {isHiddenFromClient ? (
                                   <span className="rounded-full bg-slate-200 px-2 py-0.5 text-[11px] font-semibold text-slate-600">Client hidden</span>
                                 ) : null}
                               </div>
                               <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
-                                <span>Weight: {checkpoint.percentage || 0}%</span>
-                                <span>Total: {checkpoint.cumulativeProgress}%</span>
-                                <span>Completed: {formatDateTime(checkpoint.completedAt)}</span>
+                                <span>Progress: {node.cumulativeProgress}%</span>
+                                <span>Created: {formatDateTime(node.createdAt)}</span>
                               </div>
                             </button>
                           </div>
@@ -2247,15 +2328,16 @@ const WorkspaceDetailSubpage = ({
                 </div>
 
                 <AdminProjectCheckpointDetail
-                  checkpoint={selectedCheckpoint}
-                  cumulativeProgress={selectedCheckpoint?.cumulativeProgress}
+                  node={selectedNode}
                   messages={item?.messages}
                   updateMode={updateMode}
-                  updateModeLabel={allCheckpointsCompleted ? "Send Update" : "Update Node"}
+                  updateModeLabel={allNodesCompleted ? "Send Update" : "Add Node"}
                   updateMessage={updateMessage}
                   onUpdateMessageChange={setUpdateMessage}
-                  currentProjectProgress={item?.projectProgress || 0}
+                  currentProjectProgress={currentProjectProgress}
                   formatDateTime={formatDateTime}
+                  onAddNode={handleAddNode}
+                  isSubmitting={isNodeActionSubmitting}
                 />
               </div>
 

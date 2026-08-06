@@ -1,24 +1,30 @@
 import React, { useState } from "react";
 import AdminInfoPill from "./AdminInfoPill";
 
-const getStatusLabel = (checkpoint) => (checkpoint?.completed ? "Completed" : "Pending");
+const getStatusLabel = (node) => {
+  if (node?.status === "deleted") return "Deleted";
+  if (node?.status === "archived") return "Archived";
+  return "Active";
+};
 
-const getStatusClassName = (checkpoint) => (
-  checkpoint?.completed
-    ? "bg-emerald-100 text-emerald-800"
-    : "bg-slate-100 text-slate-700"
-);
+const getStatusClassName = (node) => {
+  const label = getStatusLabel(node).toLowerCase();
+  if (label === "active") return "bg-emerald-100 text-emerald-800";
+  if (label === "deleted") return "bg-rose-100 text-rose-700";
+  return "bg-slate-100 text-slate-700";
+};
 
 const AdminProjectCheckpointDetail = ({
-  checkpoint,
-  cumulativeProgress = 0,
+  node,
   currentProjectProgress = 0,
   messages = [],
   updateMode = false,
-  updateModeLabel = "Update Node",
+  updateModeLabel = "Add Node",
   updateMessage = "",
   onUpdateMessageChange,
   formatDateTime,
+  onAddNode,
+  isSubmitting = false,
 }) => {
   const [templates, setTemplates] = useState([
     { id: "progress", name: "Progress Update", message: "Your project has moved forward. We are continuing work on the selected node(s)." },
@@ -32,17 +38,13 @@ const AdminProjectCheckpointDetail = ({
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [newNodeTitle, setNewNodeTitle] = useState("");
   const [newNodePercentage, setNewNodePercentage] = useState("");
-  const [actionPreview, setActionPreview] = useState("");
-  const selectedCheckpointKey = checkpoint
-    ? `checkpoint-${checkpoint?.checkpointId ?? checkpoint?.checkpointIndex}`
-    : null;
   const enteredPercentage = Number(newNodePercentage);
   const minimumNextPercentage = Math.min(100, Number(currentProjectProgress || 0) + 0.1);
   const isNewPercentageValid = newNodePercentage !== "" &&
     Number.isFinite(enteredPercentage) &&
     enteredPercentage >= minimumNextPercentage &&
     enteredPercentage <= 100;
-  const canPreviewNode = Boolean(newNodeTitle.trim() && isNewPercentageValid);
+  const canSubmitNode = Boolean(newNodeTitle.trim() && isNewPercentageValid) && !isSubmitting;
 
   if (updateMode) {
     const selectedTemplate = templates.find((template) => template.id === selectedTemplateId);
@@ -93,7 +95,7 @@ const AdminProjectCheckpointDetail = ({
             <h3 className="mt-1 text-lg font-semibold text-slate-900">{updateModeLabel}</h3>
           </div>
           <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700">
-            {updateModeLabel.includes("Send") ? "Project update" : (checkpoint?.name || "Selected node")}
+            {updateModeLabel.includes("Send") ? "Project update" : (node?.title || "New node")}
           </span>
         </div>
 
@@ -131,7 +133,7 @@ const AdminProjectCheckpointDetail = ({
             </label>
           </div>
           <p className={`mt-1.5 text-xs ${newNodePercentage && !isNewPercentageValid ? "text-rose-700" : "text-slate-500"}`}>
-            Valid range: {minimumNextPercentage.toFixed(1)}%–100%. UI preview only.
+            Valid range: {minimumNextPercentage.toFixed(1)}%–100%.
           </p>
         </div>
 
@@ -241,77 +243,68 @@ const AdminProjectCheckpointDetail = ({
         <div className="mt-3 flex flex-wrap justify-end gap-2">
           <button
             type="button"
-            disabled={!canPreviewNode}
-            onClick={() => setActionPreview(`Preview ready: ${newNodeTitle.trim()} at ${enteredPercentage}% would be added when backend wiring is approved.`)}
+            disabled={!canSubmitNode}
+            onClick={async () => {
+              await onAddNode?.(newNodeTitle.trim(), enteredPercentage, "");
+              setNewNodeTitle("");
+              setNewNodePercentage("");
+            }}
             className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-600 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            Add Node
+            {isSubmitting ? "Adding..." : "Add Node"}
           </button>
           <button
             type="button"
-            disabled={!updateMessage.trim()}
-            onClick={() => setActionPreview("Preview ready: the message would be sent for the selected node when backend wiring is approved.")}
-            className="rounded-xl bg-blue-600 px-3 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            Send Update
-          </button>
-          <button
-            type="button"
-            disabled={!canPreviewNode || !updateMessage.trim()}
-            onClick={() => setActionPreview(`Preview ready: ${newNodeTitle.trim()} and its message would be sent together when backend wiring is approved.`)}
+            disabled={!canSubmitNode || !updateMessage.trim()}
+            onClick={async () => {
+              await onAddNode?.(newNodeTitle.trim(), enteredPercentage, updateMessage.trim());
+              setNewNodeTitle("");
+              setNewNodePercentage("");
+            }}
             className="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
           >
-            Add Node &amp; Send
+            {isSubmitting ? "Adding..." : "Add Node & Send"}
           </button>
         </div>
-        {actionPreview ? (
-          <p className="mt-3 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-medium text-blue-800">{actionPreview}</p>
-        ) : null}
       </div>
     );
   }
 
-  if (!checkpoint) {
+  if (!node) {
     return (
       <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
-        <p className="text-sm text-slate-500">Select a checkpoint to view its details.</p>
+        <p className="text-sm text-slate-500">Select a node to view its details.</p>
       </div>
     );
   }
 
   const linkedMessages = Array.isArray(messages)
-    ? messages.filter((message) => {
-        const messageCheckpointId = message?.checkpointId != null ? Number(message.checkpointId) : null;
-        return (
-          messageCheckpointId === Number(checkpoint.checkpointId) ||
-          (message?.checkpointName && checkpoint?.name && message.checkpointName === checkpoint.name)
-        );
-      })
+    ? messages.filter((message) => message?.nodeId && message.nodeId === node.nodeId)
     : [];
-  const statusLabel = getStatusLabel(checkpoint);
+  const statusLabel = getStatusLabel(node);
   return (
     <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-sm font-medium text-slate-500">Selected Checkpoint</p>
-          <h3 className="mt-1 text-lg font-semibold text-slate-900">{checkpoint.name}</h3>
+          <p className="text-sm font-medium text-slate-500">Selected Node</p>
+          <h3 className="mt-1 text-lg font-semibold text-slate-900">{node.title}</h3>
         </div>
-        <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getStatusClassName(checkpoint)}`}>
+        <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getStatusClassName(node)}`}>
           {statusLabel}
         </span>
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-3">
-        <AdminInfoPill label="Checkpoint ID" value={checkpoint.checkpointId || "N/A"} />
-        <AdminInfoPill label="Progress Weight" value={`${checkpoint.percentage || 0}%`} />
-        <AdminInfoPill label="Total Progress Till Here" value={`${cumulativeProgress}%`} />
-        <AdminInfoPill label="Completed At" value={formatDateTime(checkpoint.completedAt)} />
+        <AdminInfoPill label="Node ID" value={node.nodeId || "N/A"} />
+        <AdminInfoPill label="Cumulative Progress" value={`${node.cumulativeProgress || 0}%`} />
+        <AdminInfoPill label="Visible To Client" value={node.visibleToClient === false ? "No" : "Yes"} />
+        <AdminInfoPill label="Created At" value={formatDateTime(node.createdAt)} />
         <AdminInfoPill label="Related Records" value={linkedMessages.length} />
       </div>
 
       <div className="mt-4 rounded-[1.25rem] border border-slate-200 bg-white p-4">
         <div className="flex items-center justify-between gap-3">
-          <p className="text-sm font-semibold text-slate-900">Checkpoint Records</p>
+          <p className="text-sm font-semibold text-slate-900">Node Records</p>
           <div className="flex items-center gap-2">
             <span className="text-xs text-slate-500">
               {linkedMessages.length} record{linkedMessages.length === 1 ? "" : "s"}
@@ -321,10 +314,10 @@ const AdminProjectCheckpointDetail = ({
 
         <div className="mt-3 space-y-3">
           {linkedMessages.length === 0 ? (
-            <p className="text-sm text-slate-500">No related record available for this checkpoint.</p>
+            <p className="text-sm text-slate-500">No related record available for this node.</p>
           ) : (
             linkedMessages.map((message, index) => (
-              <div key={message.id || `${checkpoint.checkpointId}-${index}`} className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+              <div key={message.id || `${node.nodeId}-${index}`} className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
                 <div className="flex items-center justify-between gap-3">
                   <p className="text-sm font-semibold capitalize text-slate-900">{message.sender || "Unknown"}</p>
                   <p className="text-xs text-slate-500">{formatDateTime(message.timestamp)}</p>

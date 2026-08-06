@@ -1,10 +1,23 @@
 # Admin Nodes: System Handoff and Implementation Context
 
-## Purpose
+## SUPERSEDED — READ `39_PROJECT_NODE_SYSTEM_PHASE_2_3_DONE_PHASE_4_PENDING.md` FIRST
+
+This document is the **original design/planning doc**, written before the node system was wired to any frontend. Most of what it lists below as "Recommended Phase Order" future work (Phase 1-3) is now **done**:
+
+- Node backend/data model (this doc's "Phase 1"): done — `projectNodeService.js`, `projectNodeController.js`, routes all live.
+- Active admin project UI wiring (this doc's "Phase 3"): done — `AdminClientWorkspace.js` and `AdminProjectCheckpointDetail.js` make real API calls, not local-state previews.
+- Customer project UI (this doc's "Phase 4" in this old doc's numbering): done — `ProjectDetails.js` reads `projectNodes`, not `checkpoints`.
+- New regular customer-purchase orders now get a node timeline too (`createOrder.js` calls `initializeProjectTimeline()`), not just admin-created projects.
+
+**What is still pending** (this old doc's "Phase 2: Existing project migration safety") is now tracked in `39_PROJECT_NODE_SYSTEM_PHASE_2_3_DONE_PHASE_4_PENDING.md` as "Phase 4" — read that doc for current status, exact before/after of what changed, and how to safely proceed. This doc is kept below for its original requirements/rules detail (node validation rules, delete/restore/reset semantics, template behavior) which is still accurate and useful reference — just not the current status.
+
+## Purpose (original)
 
 This document is the single handoff reference for the project-node redesign discussed with the user. Read it before planning or changing product, order, admin-project, customer-project, node, reset, visibility, or template behavior.
 
 Status on 2026-07-19: requirements discovery and audit completed. The order-owned dynamic node schema/service and migrated-timeline-gated admin node APIs are implemented; existing orders remain legacy version `0` until controlled migration.
+
+**(Original status line above is now stale — see the superseded note at the top of this file.)**
 
 ## Working Rules
 

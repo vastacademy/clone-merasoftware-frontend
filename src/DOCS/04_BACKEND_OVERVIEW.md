@@ -80,22 +80,9 @@ Represents services (website development, app development, website updates, feat
 
 **Website Projects** (Website category):
 - `totalPages` - 4 to 50 pages range
-- `checkpoints` - Array: 
-  - Each page gets one checkpoint
-  - Example: Page 1-5, Page 6-10, etc.
-  - Default: 4 checkpoints for basic, up to 50 for enterprise
+- `startingNodeTitle` - Title for the order's first 0% dynamic node at project start (see Dynamic Project Timeline section below)
 
-**Cloud Software/App Development** (App category):
-- `checkpoints` - Predefined 19-step checkpoint system
-  - Planning (5%)
-  - Backend setup (10%)
-  - Frontend setup (10%)
-  - API integration (10%)
-  - Backend development (15%)
-  - Frontend development (15%)
-  - Testing (10%)
-  - Deployment (5%)
-  - Support (5%)
+**Before/after note**: this model previously also stored `checkpoints` (a predefined per-category array — auto-generated page/step checkpoints, used to seed each new order). That field, its validation, and its generation logic (`setWebsiteCheckpoints()`, `CLOUD_SOFTWARE_CHECKPOINTS`) were removed from the schema after all live order-creation paths moved to the dynamic node system and all pre-existing website-project orders were migrated (see "New Dynamic Project Timeline Status" below). `isWebsiteService`/`isFeatureUpgrade`/`isWebsiteUpdate` category-flag logic is unrelated and untouched.
 
 **Website Updates** (Update category):
 - `validityPeriod` - Number of days valid (30/90/180/365)
@@ -134,19 +121,13 @@ Represents customer purchase of a product (most critical model).
 - `currentPhase` - planning, development, review, completed
 
 **Progress Tracking** (most important):
-- `projectProgress` - 0-100% completion
+- `projectProgress` - 0-100% completion (shared field — see Dynamic Project Timeline section below for how it's now calculated)
 - `currentPhase` - Which phase of project
-- `isWebsiteProject` - Boolean flag
-- `checkpoints` - Array of checkpoint objects:
-  ```javascript
-  {
-    index: 0,
-    description: "Homepage Design",
-    percentage: 10,
-    completed: false,
-    completedAt: null
-  }
-  ```
+- `isWebsiteProject` - Boolean flag; gates which orders the dynamic node system applies to
+- `projectTimelineVersion` - `1` for every order on the dynamic node system (all `isWebsiteProject: true` orders, new and migrated pre-existing); `0` for the 4 legacy non-website orders that predate this system and aren't supported by it
+- `projectNodes` / `projectRuns` / `projectNodeEvents` - the canonical dynamic timeline data (see below)
+
+**Before/after note**: this model previously also stored `checkpoints` (a fixed array of `{checkpointId, name, completed, completedAt, percentage}` objects, copied from the product template at order creation, with a `pre('save')` hook that summed completed percentages into `projectProgress`). That field and both hooks were removed once every live order-creation/display path moved to the node system and all pre-existing website-project orders were migrated (one node per previously-completed checkpoint, real history preserved) — see "New Dynamic Project Timeline Status" below.
 
 **Communication**:
 - `messages` - Array of message objects:
@@ -549,11 +530,13 @@ KEEP_ALIVE_URL=https://merasoftware-backend.herokuapp.com
    ↓
 3. Admin approves
    ↓
-4. Order becomes "approved" (in_progress)
+4. Order becomes "approved" (in_progress); for website-project orders,
+   initializeProjectTimeline() creates the 0% starting dynamic node
    ↓
 5. Developer assigned (optional)
    ↓
-6. Checkpoints tracked/updated
+6. Admin manually adds dynamic nodes as work progresses (no predefined
+   future-node list — see "New Dynamic Project Timeline Status" below)
    ↓
 7. 100% progress reached
    ↓
@@ -698,11 +681,16 @@ Rejects: status = rejected, user can retry
 
 ## New Dynamic Project Timeline Status
 
+**Current state (this is the live, active system — not a future plan):**
+
 - `orderProductModel` remains the project/order source of truth.
 - Canonical dynamic timeline fields are order-owned: `projectRuns`, `projectNodes`, and `projectNodeEvents`.
-- `projectProgress` remains the compatibility/current-progress projection used by existing dashboards and order summaries.
-- `backend/helpers/projectNodeService.js` owns node lifecycle validation and state transitions.
-- Admin node routes are available under `/api/admin/projects/:orderId/nodes...` and are gated to migrated timeline version `1` orders.
-- Existing orders remain legacy timeline version `0` until a controlled migration.
-- New project-product creation is planned under admin `Website Management > Projects`; project products will store a mandatory Starting Node Title and no predefined future-node template.
-- Product creation, customer order/payment, approval, and project-start initialization are separate lifecycle steps.
+- `projectProgress` remains the shared field used by existing dashboards and order summaries — now calculated as the max `cumulativeProgress` among active nodes (previously: sum of completed legacy checkpoint percentages).
+- `backend/helpers/projectNodeService.js` owns node lifecycle validation and state transitions (create, soft-delete, restore, visibility, reset).
+- Admin node routes are available under `/api/admin/projects/:orderId/nodes...` and are gated to `projectTimelineVersion: 1` orders.
+- **Every `isWebsiteProject: true` order — new and pre-existing — is on `projectTimelineVersion: 1`.** New orders get it at creation (`createOrder.js`/`adminCreateProjectOrder.js` both call `initializeProjectTimeline()`); the 9 orders that predated the node system were migrated via `backend/scripts/migratePreExistingOrdersToNodeSystem.js` (dry-run + backup-first, one node per previously-completed checkpoint so real history is preserved). The legacy `checkpoints` schema field and its generation/sum hooks have been removed from `orderProductModel.js`/`productModel.js`.
+- The 4 non-website legacy orders (`isWebsiteProject: false`) remain on `projectTimelineVersion: 0` by design — the node system only supports website-project orders, so they were intentionally left unmigrated.
+- New project-product creation now stores a mandatory `startingNodeTitle` (see `productModel.js`); it does not store predefined future-node templates.
+- Product creation, customer order/payment, approval, and project-start initialization remain separate lifecycle steps.
+
+Full history, migration evidence, and remaining Phase 4 items (dead-code cleanup): `39_PROJECT_NODE_SYSTEM_PHASE_2_3_DONE_PHASE_4_PENDING.md`.

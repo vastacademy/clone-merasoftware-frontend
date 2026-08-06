@@ -19,7 +19,7 @@ import StorageService from '../utils/storageService';
 import { useOnlineStatus } from '../App';
 import { isPlanItem } from '../helpers/orderType';
 
-const normalizeCheckpointKey = (value) => {
+const normalizeNodeKey = (value) => {
   if (value === null || value === undefined) {
     return '';
   }
@@ -27,45 +27,23 @@ const normalizeCheckpointKey = (value) => {
   return String(value).trim();
 };
 
-const getCheckpointKey = (checkpoint, index = 0) => {
-  const rawKey =
-    checkpoint?.checkpointId ??
-    checkpoint?._id ??
-    checkpoint?.id ??
-    checkpoint?.name ??
-    `checkpoint-${index}`;
+const getDefaultNodeId = (nodes = []) => {
+  const activeNodes = nodes.filter((node) => node.status === 'active');
+  const lastActiveNode = activeNodes[activeNodes.length - 1];
 
-  return normalizeCheckpointKey(rawKey);
-};
-
-const getMessageCheckpointKey = (message, index = 0) => {
-  const rawKey =
-    message?.checkpointId ??
-    message?.checkpointKey ??
-    message?.checkpointName ??
-    message?.nodeName ??
-    message?.name ??
-    `message-${index}`;
-
-  return normalizeCheckpointKey(rawKey);
-};
-
-const getDefaultCheckpointKey = (checkpoints = []) => {
-  const activeCheckpoint = checkpoints.find((checkpoint) => !checkpoint.completed);
-
-  if (activeCheckpoint) {
-    return getCheckpointKey(activeCheckpoint, checkpoints.indexOf(activeCheckpoint));
+  if (lastActiveNode) {
+    return normalizeNodeKey(lastActiveNode.nodeId);
   }
 
-  if (checkpoints.length > 0) {
-    return getCheckpointKey(checkpoints[checkpoints.length - 1], checkpoints.length - 1);
+  if (nodes.length > 0) {
+    return normalizeNodeKey(nodes[nodes.length - 1].nodeId);
   }
 
   return '';
 };
 
 const TimelineCheckpointItem = ({
-  checkpoint,
+  checkpoint: node,
   isCompleted,
   isInProgress,
   isSelected,
@@ -130,7 +108,7 @@ const TimelineCheckpointItem = ({
   return (
     <button
       type="button"
-      data-timeline-key={checkpoint.timelineKey}
+      data-node-id={node.nodeId}
       onClick={onSelect}
       className={[
         compact
@@ -157,7 +135,7 @@ const TimelineCheckpointItem = ({
       <div className="min-w-0 flex-1">
         <div className={compact ? 'flex items-center justify-between gap-2' : 'flex flex-wrap items-center gap-2'}>
           <h3 className={isGlass ? 'truncate text-base font-semibold text-white' : 'truncate text-base font-semibold text-black'}>
-            {checkpoint.name}
+            {node.title}
           </h3>
           <span className={["rounded-full border px-2 py-0.5 text-sm font-semibold", statusTone].join(' ')}>
             {statusLabel}
@@ -165,7 +143,7 @@ const TimelineCheckpointItem = ({
         </div>
         <div className={isGlass ? 'mt-2 flex flex-wrap gap-x-3 gap-y-1 text-sm text-slate-300' : 'mt-2 flex flex-wrap gap-x-3 gap-y-1 text-sm text-black'}>
           <span>{messageCount} updates</span>
-          <span>{checkpoint.completedAt ? formatDate(checkpoint.completedAt) : 'Upcoming'}</span>
+          <span>{formatDate(node.createdAt)}</span>
         </div>
       </div>
     </button>
@@ -187,7 +165,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
   const [isProjectPaused, setIsProjectPaused] = useState(false);
   const [timelineExpanded, setTimelineExpanded] = useState(false);
   const g = (adminClass, customerClass) => (isAdminView ? adminClass : customerClass);
-  const [selectedCheckpointId, setSelectedCheckpointId] = useState('');
+  const [selectedNodeId, setSelectedNodeId] = useState('');
 
   const handleLogout = async () => {
     try {
@@ -343,20 +321,16 @@ const ProjectDetails = ({ isAdminView = false }) => {
           return;
         }
 
-        const normalizedCheckpoints = Array.isArray(order.checkpoints) ? order.checkpoints : [];
+        const nodes = Array.isArray(order.projectNodes) ? order.projectNodes : [];
         const normalizedMessages = Array.isArray(order.messages)
-          ? order.messages.map((message, index) => {
-              const messageCheckpointKey = getMessageCheckpointKey(message, index);
-              const exactMatchedCheckpoint = normalizedCheckpoints.find((checkpoint, checkpointIndex) => {
-                const checkpointKey = getCheckpointKey(checkpoint, checkpointIndex);
-                return checkpointKey === messageCheckpointKey || normalizeCheckpointKey(checkpoint.checkpointId) === messageCheckpointKey;
-              });
-              const fallbackCheckpoint = exactMatchedCheckpoint || normalizedCheckpoints[Math.min(index, Math.max(normalizedCheckpoints.length - 1, 0))];
+          ? order.messages.map((message) => {
+              const linkedNode = message.nodeId
+                ? nodes.find((node) => node.nodeId === message.nodeId)
+                : null;
 
               return {
                 ...message,
-                timelineCheckpointKey: fallbackCheckpoint ? getCheckpointKey(fallbackCheckpoint, normalizedCheckpoints.indexOf(fallbackCheckpoint)) : '',
-                checkpointName: message.checkpointName || fallbackCheckpoint?.name || 'Project Update',
+                checkpointName: linkedNode?.title || 'Project Update',
               };
             })
           : [];
@@ -428,71 +402,39 @@ const ProjectDetails = ({ isAdminView = false }) => {
     }
   };
 
-  const sortedCheckpoints = useMemo(() => {
-    const checkpoints = order?.checkpoints || [];
+  const sortedNodes = useMemo(() => {
+    const nodes = order?.projectNodes || [];
+    return [...nodes].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+  }, [order?.projectNodes]);
 
-    return [...checkpoints].sort((a, b) => {
-      const aMatch = a.name?.match(/(\d+)/);
-      const bMatch = b.name?.match(/(\d+)/);
-      if (aMatch && bMatch) {
-        return parseInt(aMatch[0]) - parseInt(bMatch[0]);
-      }
-      return 0;
-    });
-  }, [order?.checkpoints]);
+  const inProgressNode = useMemo(() => {
+    const activeNodes = sortedNodes.filter((node) => node.status === 'active');
+    return activeNodes[activeNodes.length - 1] || null;
+  }, [sortedNodes]);
 
-  const inProgressCheckpoint = useMemo(
-    () => sortedCheckpoints.find((checkpoint) => !checkpoint.completed),
-    [sortedCheckpoints]
-  );
-  const nextUpcomingCheckpoint = useMemo(
-    () =>
-      inProgressCheckpoint
-        ? sortedCheckpoints.find(
-            (checkpoint) => !checkpoint.completed && checkpoint !== inProgressCheckpoint
-          )
-        : null,
-    [inProgressCheckpoint, sortedCheckpoints]
-  );
-  const visibleCheckpoints = useMemo(
-    () => [
-      ...sortedCheckpoints.filter((checkpoint) => checkpoint.completed),
-      inProgressCheckpoint,
-      nextUpcomingCheckpoint,
-    ].filter(Boolean),
-    [inProgressCheckpoint, nextUpcomingCheckpoint, sortedCheckpoints]
-  );
   const timelineNodes = useMemo(
-    () =>
-      [...visibleCheckpoints].reverse().map((checkpoint, index) => ({
-        ...checkpoint,
-        timelineKey: getCheckpointKey(checkpoint, index),
-      })),
-    [visibleCheckpoints]
+    () => [...sortedNodes].reverse(),
+    [sortedNodes]
   );
-  const selectedCheckpoint = useMemo(
+  const selectedNode = useMemo(
     () =>
       timelineNodes.find(
-        (checkpoint) => normalizeCheckpointKey(checkpoint.timelineKey) === normalizeCheckpointKey(selectedCheckpointId)
+        (node) => normalizeNodeKey(node.nodeId) === normalizeNodeKey(selectedNodeId)
       ) || null,
-    [selectedCheckpointId, timelineNodes]
+    [selectedNodeId, timelineNodes]
   );
-  const selectedCheckpointMessages = useMemo(
+  const selectedNodeMessages = useMemo(
     () =>
       (order?.messages || []).filter(
-        (message) =>
-          normalizeCheckpointKey(message.timelineCheckpointKey) ===
-          normalizeCheckpointKey(selectedCheckpoint?.timelineKey)
+        (message) => normalizeNodeKey(message.nodeId) === normalizeNodeKey(selectedNode?.nodeId)
       ),
-    [order?.messages, selectedCheckpoint?.timelineKey]
+    [order?.messages, selectedNode?.nodeId]
   );
-  const checkpointMessageCounts = useMemo(
+  const nodeMessageCounts = useMemo(
     () =>
-      timelineNodes.reduce((acc, checkpoint) => {
-        acc[checkpoint.timelineKey] = (order?.messages || []).filter(
-          (message) =>
-            normalizeCheckpointKey(message.timelineCheckpointKey) ===
-            normalizeCheckpointKey(checkpoint.timelineKey)
+      timelineNodes.reduce((acc, node) => {
+        acc[node.nodeId] = (order?.messages || []).filter(
+          (message) => normalizeNodeKey(message.nodeId) === normalizeNodeKey(node.nodeId)
         ).length;
         return acc;
       }, {}),
@@ -500,20 +442,20 @@ const ProjectDetails = ({ isAdminView = false }) => {
   );
 
   useEffect(() => {
-    const defaultCheckpointKey = getDefaultCheckpointKey(sortedCheckpoints);
+    const defaultNodeId = getDefaultNodeId(sortedNodes);
 
-    setSelectedCheckpointId((currentSelection) => {
+    setSelectedNodeId((currentSelection) => {
       const selectionExists = timelineNodes.some(
-        (checkpoint) => normalizeCheckpointKey(checkpoint.timelineKey) === normalizeCheckpointKey(currentSelection)
+        (node) => normalizeNodeKey(node.nodeId) === normalizeNodeKey(currentSelection)
       );
 
       if (selectionExists) {
         return currentSelection;
       }
 
-      return defaultCheckpointKey;
+      return defaultNodeId;
     });
-  }, [orderId, sortedCheckpoints, timelineNodes]);
+  }, [orderId, sortedNodes, timelineNodes]);
 
   if (loading) {
     return (
@@ -639,7 +581,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
   
   // Calculate progress percentage
   const progressPercentage = Math.round(order.projectProgress);
-  const currentStageLabel = inProgressCheckpoint?.name || selectedCheckpoint?.name || 'All stages completed';
+  const currentStageLabel = inProgressNode?.title || selectedNode?.title || 'All stages completed';
   const totalUpdates = order?.messages?.length || 0;
 
   return (
@@ -794,21 +736,21 @@ const ProjectDetails = ({ isAdminView = false }) => {
                     <div ref={timelineRef} className="mt-3 flex-1 min-h-0 overflow-auto pr-1">
                       <div className="relative pl-2">
                         <div className="space-y-2">
-                          {timelineNodes.map((checkpoint) => {
-                            const isCompleted = checkpoint.completed;
-                            const isInProgress = !isCompleted && checkpoint === inProgressCheckpoint;
-                            const isSelected = normalizeCheckpointKey(selectedCheckpointId) === normalizeCheckpointKey(checkpoint.timelineKey);
+                          {timelineNodes.map((node) => {
+                            const isInProgress = node === inProgressNode;
+                            const isCompleted = node.status === 'active' && !isInProgress;
+                            const isSelected = normalizeNodeKey(selectedNodeId) === normalizeNodeKey(node.nodeId);
 
                             return (
                               <TimelineCheckpointItem
-                                key={checkpoint.timelineKey}
-                                checkpoint={checkpoint}
+                                key={node.nodeId}
+                                checkpoint={node}
                               isCompleted={isCompleted}
                               isInProgress={isInProgress}
                               isSelected={isSelected}
-                              messageCount={checkpointMessageCounts[checkpoint.timelineKey] || 0}
+                              messageCount={nodeMessageCounts[node.nodeId] || 0}
                               formatDate={formatDate}
-                              onSelect={() => setSelectedCheckpointId(checkpoint.timelineKey)}
+                              onSelect={() => setSelectedNodeId(node.nodeId)}
                               isGlass={!isAdminView}
                             />
                             );
@@ -828,41 +770,41 @@ const ProjectDetails = ({ isAdminView = false }) => {
                         <div>
                           <p className={g('text-sm font-medium text-black', 'text-sm font-medium text-slate-300')}>Checkpoint Details</p>
                           <h2 className={g('mt-1 text-xl font-bold text-black', 'mt-1 text-xl font-bold text-white')}>
-                            {selectedCheckpoint ? selectedCheckpoint.name : 'No checkpoint selected'}
+                            {selectedNode ? selectedNode.title : 'No node selected'}
                           </h2>
                         </div>
-                        {selectedCheckpoint ? (
+                        {selectedNode ? (
                           <span className={[
                             "rounded-full px-3 py-1 text-sm font-semibold",
-                            selectedCheckpoint.completed
-                              ? g('bg-emerald-100 text-emerald-700', 'border border-emerald-400/40 bg-emerald-500/20 text-emerald-300')
-                              : g('bg-slate-100 text-slate-700', 'border border-white/25 bg-white/15 text-white'),
+                            selectedNode === inProgressNode
+                              ? g('bg-slate-100 text-slate-700', 'border border-white/25 bg-white/15 text-white')
+                              : g('bg-emerald-100 text-emerald-700', 'border border-emerald-400/40 bg-emerald-500/20 text-emerald-300'),
                           ].join(" ")}>
-                            {selectedCheckpoint.completed ? 'Completed' : 'Active'}
+                            {selectedNode === inProgressNode ? 'Active' : 'Completed'}
                           </span>
                         ) : null}
                       </div>
 
-                      {selectedCheckpoint ? (
+                      {selectedNode ? (
                         <div className="mt-3 flex-1 min-h-0 space-y-3 overflow-auto pr-1">
                           <div className="grid grid-cols-2 gap-2.5">
                             <div className={g('rounded-2xl border border-slate-200 bg-slate-50 p-2.5', 'rounded-2xl border border-white/10 bg-white/10 p-2.5')}>
-                              <p className={g('text-sm font-semibold uppercase text-black', 'text-sm font-semibold uppercase text-slate-300')}>Checkpoint</p>
-                              <p className={g('mt-1 text-base font-semibold text-black', 'mt-1 text-base font-semibold text-white')}>{selectedCheckpoint.name}</p>
+                              <p className={g('text-sm font-semibold uppercase text-black', 'text-sm font-semibold uppercase text-slate-300')}>Node</p>
+                              <p className={g('mt-1 text-base font-semibold text-black', 'mt-1 text-base font-semibold text-white')}>{selectedNode.title}</p>
                             </div>
                             <div className={g('rounded-2xl border border-slate-200 bg-slate-50 p-2.5', 'rounded-2xl border border-white/10 bg-white/10 p-2.5')}>
                               <p className={g('text-sm font-semibold uppercase text-black', 'text-sm font-semibold uppercase text-slate-300')}>Date</p>
                               <p className={g('mt-1 text-base font-semibold text-black', 'mt-1 text-base font-semibold text-white')}>
-                                {selectedCheckpoint.completedAt ? formatDate(selectedCheckpoint.completedAt) : 'Upcoming'}
+                                {formatDate(selectedNode.createdAt)}
                               </p>
                             </div>
                             <div className={g('rounded-2xl border border-slate-200 bg-slate-50 p-2.5', 'rounded-2xl border border-white/10 bg-white/10 p-2.5')}>
                               <p className={g('text-sm font-semibold uppercase text-black', 'text-sm font-semibold uppercase text-slate-300')}>Updates</p>
-                              <p className={g('mt-1 text-base font-semibold text-black', 'mt-1 text-base font-semibold text-white')}>{selectedCheckpointMessages.length}</p>
+                              <p className={g('mt-1 text-base font-semibold text-black', 'mt-1 text-base font-semibold text-white')}>{selectedNodeMessages.length}</p>
                             </div>
                             <div className={g('rounded-2xl border border-slate-200 bg-slate-50 p-2.5', 'rounded-2xl border border-white/10 bg-white/10 p-2.5')}>
-                              <p className={g('text-sm font-semibold uppercase text-black', 'text-sm font-semibold uppercase text-slate-300')}>Timeline</p>
-                              <p className={g('mt-1 text-base font-semibold text-black', 'mt-1 text-base font-semibold text-white')}>{selectedCheckpoint.timelineKey || 'N/A'}</p>
+                              <p className={g('text-sm font-semibold uppercase text-black', 'text-sm font-semibold uppercase text-slate-300')}>Progress</p>
+                              <p className={g('mt-1 text-base font-semibold text-black', 'mt-1 text-base font-semibold text-white')}>{selectedNode.cumulativeProgress}%</p>
                             </div>
                           </div>
 
@@ -870,19 +812,19 @@ const ProjectDetails = ({ isAdminView = false }) => {
                             <div className="flex items-center justify-between gap-3">
                               <p className={g('text-base font-semibold text-black', 'text-base font-semibold text-white')}>Textual Record</p>
                               <span className={g('rounded-full bg-white px-2.5 py-1 text-sm font-semibold text-black', 'rounded-full border border-white/15 bg-white/10 px-2.5 py-1 text-sm font-semibold text-white')}>
-                                {selectedCheckpointMessages.length} note{selectedCheckpointMessages.length === 1 ? '' : 's'}
+                                {selectedNodeMessages.length} note{selectedNodeMessages.length === 1 ? '' : 's'}
                               </span>
                             </div>
                             <div className="mt-3 flex-1 min-h-0 space-y-3 overflow-auto pr-1">
-                              {selectedCheckpointMessages.length > 0 ? (
-                                selectedCheckpointMessages.map((message, index) => (
+                              {selectedNodeMessages.length > 0 ? (
+                                selectedNodeMessages.map((message, index) => (
                                   <div
-                                    key={message._id || message.id || `${selectedCheckpoint.timelineKey}-message-${index}`}
+                                    key={message._id || message.id || `${selectedNode.nodeId}-message-${index}`}
                                     className={g('rounded-2xl border border-slate-200 bg-white p-3', 'rounded-2xl border border-white/15 bg-white/10 p-3')}
                                   >
                                     <div className="flex items-center justify-between gap-3">
                                       <p className={g('text-base font-semibold text-black', 'text-base font-semibold text-white')}>
-                                        {message.checkpointName || selectedCheckpoint.name}
+                                        {message.checkpointName || selectedNode.title}
                                       </p>
                                       <p className={g('text-sm text-black', 'text-sm text-slate-300')}>
                                         {message.timestamp ? formatDateTime(message.timestamp) : 'No date'}
@@ -901,7 +843,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
                                 ))
                               ) : (
                                 <p className={g('text-base text-black', 'text-base text-slate-300')}>
-                                  No textual record is linked to this checkpoint yet.
+                                  No textual record is linked to this node yet.
                                 </p>
                               )}
                             </div>
@@ -1014,21 +956,21 @@ const ProjectDetails = ({ isAdminView = false }) => {
                       className="relative mt-4 max-h-[318px] overflow-auto pr-1"
                     >
                       <div className="space-y-2.5">
-                        {timelineNodes.map((checkpoint) => {
-                          const isCompleted = checkpoint.completed;
-                          const isInProgress = !isCompleted && checkpoint === inProgressCheckpoint;
-                          const isSelected = normalizeCheckpointKey(selectedCheckpointId) === normalizeCheckpointKey(checkpoint.timelineKey);
+                        {timelineNodes.map((node) => {
+                          const isInProgress = node === inProgressNode;
+                          const isCompleted = node.status === 'active' && !isInProgress;
+                          const isSelected = normalizeNodeKey(selectedNodeId) === normalizeNodeKey(node.nodeId);
 
                           return (
                             <TimelineCheckpointItem
-                              key={checkpoint.timelineKey}
-                              checkpoint={checkpoint}
+                              key={node.nodeId}
+                              checkpoint={node}
                               isCompleted={isCompleted}
                               isInProgress={isInProgress}
                               isSelected={isSelected}
-                              messageCount={checkpointMessageCounts[checkpoint.timelineKey] || 0}
+                              messageCount={nodeMessageCounts[node.nodeId] || 0}
                               formatDate={formatDate}
-                              onSelect={() => setSelectedCheckpointId(checkpoint.timelineKey)}
+                              onSelect={() => setSelectedNodeId(node.nodeId)}
                               compact
                               isGlass={!isAdminView}
                             />
@@ -1038,7 +980,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
                     </div>
                   ) : (
                     <div className={g('mt-4 rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4 text-base text-black', 'relative mt-4 rounded-2xl border border-dashed border-white/15 bg-white/10 p-4 text-base text-slate-300')}>
-                      Open the timeline to select a checkpoint.
+                      Open the timeline to select a node.
                     </div>
                   )}
                 </section>
@@ -1049,45 +991,45 @@ const ProjectDetails = ({ isAdminView = false }) => {
                     <div>
                       <p className={g('text-sm font-medium text-black', 'text-sm font-medium text-slate-300')}>Checkpoint Details</p>
                       <h2 className={g('mt-1 text-lg font-semibold text-black', 'mt-1 text-lg font-semibold text-white')}>
-                        {selectedCheckpoint ? selectedCheckpoint.name : 'No checkpoint selected'}
+                        {selectedNode ? selectedNode.title : 'No node selected'}
                       </h2>
                     </div>
-                    {selectedCheckpoint ? (
+                    {selectedNode ? (
                       <span className={[
                         "rounded-full px-3 py-1 text-sm font-semibold",
-                        selectedCheckpoint.completed
-                          ? g('bg-emerald-100 text-emerald-700', 'border border-emerald-400/40 bg-emerald-500/20 text-emerald-300')
-                          : g('bg-slate-100 text-slate-700', 'border border-white/25 bg-white/15 text-white'),
+                        selectedNode === inProgressNode
+                          ? g('bg-slate-100 text-slate-700', 'border border-white/25 bg-white/15 text-white')
+                          : g('bg-emerald-100 text-emerald-700', 'border border-emerald-400/40 bg-emerald-500/20 text-emerald-300'),
                       ].join(" ")}>
-                        {selectedCheckpoint.completed ? 'Completed' : 'Active'}
+                        {selectedNode === inProgressNode ? 'Active' : 'Completed'}
                       </span>
                     ) : null}
                   </div>
 
-                  {selectedCheckpoint ? (
+                  {selectedNode ? (
                     <div className="relative mt-4 space-y-4">
                       <div className="grid grid-cols-2 gap-3">
                         <div className={g('rounded-2xl border border-slate-200 bg-slate-50 p-3', 'rounded-2xl border border-white/10 bg-white/10 p-3')}>
                           <p className={g('text-sm uppercase text-black', 'text-sm uppercase text-slate-300')}>Date</p>
                           <p className={g('mt-1 text-base font-semibold text-black', 'mt-1 text-base font-semibold text-white')}>
-                            {selectedCheckpoint.completedAt ? formatDate(selectedCheckpoint.completedAt) : 'Upcoming'}
+                            {formatDate(selectedNode.createdAt)}
                           </p>
                         </div>
                         <div className={g('rounded-2xl border border-slate-200 bg-slate-50 p-3', 'rounded-2xl border border-white/10 bg-white/10 p-3')}>
                           <p className={g('text-sm uppercase text-black', 'text-sm uppercase text-slate-300')}>Updates</p>
-                          <p className={g('mt-1 text-base font-semibold text-black', 'mt-1 text-base font-semibold text-white')}>{selectedCheckpointMessages.length}</p>
+                          <p className={g('mt-1 text-base font-semibold text-black', 'mt-1 text-base font-semibold text-white')}>{selectedNodeMessages.length}</p>
                         </div>
                       </div>
 
                       <div className={g('rounded-[1.25rem] border border-slate-200 bg-slate-50 p-4', 'rounded-[1.25rem] border border-white/10 bg-white/10 p-4')}>
                         <p className={g('text-base font-semibold text-black', 'text-base font-semibold text-white')}>Textual Record</p>
                         <div className="mt-3 space-y-3">
-                          {selectedCheckpointMessages.length > 0 ? (
-                            selectedCheckpointMessages.map((message, index) => (
-                              <div key={message._id || message.id || `${selectedCheckpoint.timelineKey}-message-${index}`} className={g('rounded-2xl border border-slate-200 bg-white p-3', 'rounded-2xl border border-white/15 bg-white/10 p-3')}>
+                          {selectedNodeMessages.length > 0 ? (
+                            selectedNodeMessages.map((message, index) => (
+                              <div key={message._id || message.id || `${selectedNode.nodeId}-message-${index}`} className={g('rounded-2xl border border-slate-200 bg-white p-3', 'rounded-2xl border border-white/15 bg-white/10 p-3')}>
                                 <div className="flex items-center justify-between gap-3">
                                   <p className={g('text-base font-semibold text-black', 'text-base font-semibold text-white')}>
-                                    {message.checkpointName || selectedCheckpoint.name}
+                                    {message.checkpointName || selectedNode.title}
                                   </p>
                                   <p className={g('text-sm text-black', 'text-sm text-slate-300')}>
                                     {message.timestamp ? formatDateTime(message.timestamp) : 'No date'}
@@ -1099,7 +1041,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
                               </div>
                             ))
                           ) : (
-                            <p className={g('text-base text-black', 'text-base text-slate-300')}>No textual record is linked to this checkpoint yet.</p>
+                            <p className={g('text-base text-black', 'text-base text-slate-300')}>No textual record is linked to this node yet.</p>
                           )}
                         </div>
                       </div>

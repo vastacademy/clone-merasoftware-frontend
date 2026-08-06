@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { IndianRupee, Plus } from "lucide-react";
+import { IndianRupee, Plus, X } from "lucide-react";
 import SummaryApi from "../common";
 import { logout } from "../store/userSlice";
 import CookieManager from "../utils/cookieManager";
@@ -17,6 +17,124 @@ const CATEGORY_LABELS = {
   app_development: "App Development",
 };
 
+const formInputClassName =
+  "w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-base text-black outline-none transition placeholder:text-slate-400 focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100";
+const formLabelClassName = "mb-1.5 block text-base font-semibold text-slate-700";
+
+const CategoryEditForm = ({ entry, onCancel, onSaved }) => {
+  const [basePrice, setBasePrice] = useState(entry.basePrice ?? 0);
+  const [description, setDescription] = useState(entry.description ?? "");
+  const [startingNodeTitle, setStartingNodeTitle] = useState(entry.startingNodeTitle ?? "");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+
+    const numericBasePrice = Number(basePrice);
+    if (!Number.isFinite(numericBasePrice) || numericBasePrice < 0) {
+      toast.error("Base price must be a non-negative number.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const response = await fetch(SummaryApi.categoryBasePrices.url, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          category: entry.category,
+          basePrice: numericBasePrice,
+          description: description.trim(),
+          startingNodeTitle: startingNodeTitle.trim(),
+        }),
+      });
+      const result = await response.json();
+      if (!result.success) throw new Error(result.message || "Failed to save category");
+      toast.success("Category saved.");
+      onSaved?.();
+    } catch (error) {
+      console.error("Error saving category base price:", error);
+      toast.error(error.message || "Failed to save category");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <div className="flex items-start justify-between gap-4">
+        <h3 className="text-lg font-bold text-slate-900">
+          {CATEGORY_LABELS[entry.category] || entry.category}
+        </h3>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition hover:bg-white hover:text-slate-700"
+          aria-label="Close"
+        >
+          <X size={16} />
+        </button>
+      </div>
+
+      <div className="mt-6 grid grid-cols-1 gap-5">
+        <div>
+          <label className={formLabelClassName}>Base Price (₹)</label>
+          <input
+            type="number"
+            min={0}
+            className={formInputClassName}
+            value={basePrice}
+            onChange={(event) => setBasePrice(event.target.value)}
+          />
+        </div>
+
+        <div>
+          <label className={formLabelClassName}>Description</label>
+          <textarea
+            className={formInputClassName}
+            rows={3}
+            value={description}
+            onChange={(event) => setDescription(event.target.value)}
+            placeholder="Shown to admin when this category is selected"
+          />
+        </div>
+
+        <div>
+          <label className={formLabelClassName}>
+            Starting Node Title <span className="font-normal normal-case tracking-normal text-slate-400">(first project timeline node for this category)</span>
+          </label>
+          <input
+            type="text"
+            className={formInputClassName}
+            value={startingNodeTitle}
+            onChange={(event) => setStartingNodeTitle(event.target.value)}
+            placeholder="e.g. Project Kickoff"
+          />
+        </div>
+      </div>
+
+      <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+        <button
+          type="button"
+          onClick={onCancel}
+          disabled={isSubmitting}
+          className="inline-flex items-center justify-center rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-70"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-500 px-4 py-3 text-sm font-bold text-slate-950 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-70"
+        >
+          {isSubmitting ? "Saving..." : "Save"}
+        </button>
+      </div>
+    </form>
+  );
+};
+
 const AdminCategoryBasePricePage = () => {
   const user = useSelector((state) => state?.user?.user);
   const dispatch = useDispatch();
@@ -24,6 +142,7 @@ const AdminCategoryBasePricePage = () => {
 
   const [prices, setPrices] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [editingEntry, setEditingEntry] = useState(null);
 
   const fetchPrices = useCallback(async () => {
     setLoading(true);
@@ -48,11 +167,23 @@ const AdminCategoryBasePricePage = () => {
   }, [fetchPrices]);
 
   const handleAddCategory = () => {
-    toast.info("Add Category will be connected in the next step.");
+    const unconfigured = prices.find(
+      (entry) => !entry.basePrice && !entry.description && !entry.startingNodeTitle
+    );
+    if (!unconfigured) {
+      toast.info("All categories are already configured. Open one below to edit it.");
+      return;
+    }
+    setEditingEntry(unconfigured);
   };
 
-  const handleCategoryOpen = () => {
-    toast.info("Category detail sub-page will be connected in the next step.");
+  const handleCategoryOpen = (entry) => {
+    setEditingEntry(entry);
+  };
+
+  const handleCategorySaved = () => {
+    setEditingEntry(null);
+    fetchPrices();
   };
 
   const handleLogout = async () => {
@@ -133,6 +264,18 @@ const AdminCategoryBasePricePage = () => {
             </div>
           )}
         </div>
+
+        {editingEntry ? (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4">
+            <div className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl">
+              <CategoryEditForm
+                entry={editingEntry}
+                onCancel={() => setEditingEntry(null)}
+                onSaved={handleCategorySaved}
+              />
+            </div>
+          </div>
+        ) : null}
       </AdminWorkspaceShell>
     </AdminLayout>
   );

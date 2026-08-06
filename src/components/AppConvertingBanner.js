@@ -743,9 +743,11 @@ const AppConvertingBanner = () => {
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600">Tasks</span>
                   <span className="text-sm font-bold text-teal-600">
-                    {order.checkpoints ? 
-                      `${order.checkpoints.filter(cp => cp.completed).length}/${order.checkpoints.length}` : 
-                      "0/0"}
+                    {order.projectTimelineVersion === 1 ?
+                      `${(order.projectNodes || []).filter(n => n.status === 'active').length} update${(order.projectNodes || []).filter(n => n.status === 'active').length === 1 ? '' : 's'}` :
+                      order.checkpoints ?
+                        `${order.checkpoints.filter(cp => cp.completed).length}/${order.checkpoints.length}` :
+                        "0/0"}
                   </span>
                 </div>
                 <div className="flex items-end h-6 space-x-1">

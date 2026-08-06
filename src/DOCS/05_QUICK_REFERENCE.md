@@ -89,9 +89,9 @@ Fast lookup for the current codebase.
 - Admin client list work belongs in `AdminClientsPage.js`
 - Admin client list default sorting consumes backend `latestActivityAt`; the endpoint remains `GET /api/admin/clients`
 - Admin client activity read logic belongs in `backend/controller/user/getAdminClients.js`; do not add a separate activity endpoint or store
-- `ProjectWorkspaceModal.js` and `SummaryApi.updateProjectProgress` are legacy node-write references.
-- Canonical dynamic node work belongs to `backend/helpers/projectNodeService.js`, `backend/controller/order/projectNodeController.js`, and order-owned timeline fields in `orderProductModel.js`.
-- New admin node APIs are migrated-timeline-gated under `/api/admin/projects/:orderId/nodes...`; existing orders remain legacy until migration.
+- `ProjectWorkspaceModal.js` and `SummaryApi.updateProjectProgress` are legacy, unreachable node-write references (route was never registered).
+- Canonical dynamic node work belongs to `backend/helpers/projectNodeService.js`, `backend/controller/order/projectNodeController.js`, and order-owned timeline fields (`projectRuns`, `projectNodes`, `projectNodeEvents`, `projectTimelineVersion`) in `orderProductModel.js`.
+- New admin node APIs are migrated-timeline-gated under `/api/admin/projects/:orderId/nodes...`. Every `isWebsiteProject: true` order (new and pre-existing) is on `projectTimelineVersion: 1` as of the migration in `39_PROJECT_NODE_SYSTEM_PHASE_2_3_DONE_PHASE_4_PENDING.md` — the legacy `checkpoints` schema field/hooks have been removed from `orderProductModel.js`/`productModel.js`. The 4 non-website legacy orders remain on version 0 by design (node system doesn't support their type).
 - Admin client detail work belongs in `AdminClientWorkspace.js`
 - Admin shell work belongs in `AdminLayout.js`
 - Admin header work belongs in `AdminHeader.js`
@@ -120,9 +120,9 @@ Fast lookup for the current codebase.
 - `backend/controller/invoice/monthlyInvoiceController.js` for invoice lifecycle admin actions
 - `backend/helpers/invoiceLifecycle.js` for overdue pause and paid resume rules
 - `backend/controller/user/getAdminClients.js` for verified working-activity aggregation used by admin client sorting
-- `backend/models/orderProductModel.js` for checkpoint fields, project progress, and timestamp middleware
+- `backend/models/orderProductModel.js` for dynamic node fields (`projectNodes`, `projectRuns`, `projectNodeEvents`, `projectTimelineVersion`), project progress, and timestamp middleware — legacy `checkpoints` field/hooks removed
 - `backend/routes/index.js` to verify whether a node-progress route is actually active
 
 ## Historical Files
 
-Older docs such as `06_CODE_AUDIT_FINDINGS.md`, `10_CUSTOMER_ONLY_LOGIN_SYSTEM.md`, and `11_ADMIN_LOGIN_IMPLEMENTATION.md` are legacy references. Use them only for history, not as current behavior.
+A set of older legacy docs (customer-only-role experiment, orphaned-file audits, MVP-conversion history) were deleted in a doc-cleanup session after individual verification that nothing in them described current live code beyond what's already in `00_CURRENT_SYSTEM.md`/`README.md`. Full copies are kept at `frontend/src/DOCS/deleted-legacy-docs-backup/` if old context is ever needed.

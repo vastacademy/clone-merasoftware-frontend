@@ -1,12 +1,11 @@
 # Codebase Audit Index and AI Handoff
 
 **Audit scope**: Full project-product, customer purchase, payment approval, admin workspace, node timeline, customer project view, activity sorting, and documentation flow.  
-**Audit date**: 2026-07-19  
+**Original audit date**: 2026-07-19 (sections below refreshed as of the node-system migration/schema-cleanup session — see the note under each stale section for what changed)  
 **Project root**: `E:\merasoftware-new`  
-**Build status**: `npm run build` was not run.  
-**Database status**: Read-only audit queries only; no database migration/update/delete was run.
+**Database status**: Read-only audit queries plus one approved, evidence-first, backup-first data migration (`backend/scripts/migratePreExistingOrdersToNodeSystem.js`) and one approved schema cleanup, both described in `39_PROJECT_NODE_SYSTEM_PHASE_2_3_DONE_PHASE_4_PENDING.md`.
 
-This file is the central handoff index. It records what was verified in code and current data, what is active, what is legacy, what has already been implemented, and what must happen next. Read it with `13_PROJECT_CREATION_AND_APPROVAL_PLAN.md` and `admin-nodes.md` before any new implementation.
+This file is the central handoff index. It records what was verified in code and current data, what is active, what is legacy, what has already been implemented, and what must happen next. Read it with `39_PROJECT_NODE_SYSTEM_PHASE_2_3_DONE_PHASE_4_PENDING.md` (current node-system status — supersedes this file's original Section 6/7 node-system snapshot) and `13_PROJECT_CREATION_AND_APPROVAL_PLAN.md` before any new implementation.
 
 ## 1. User-confirmed architecture and scope
 
@@ -30,15 +29,15 @@ This file is the central handoff index. It records what was verified in code and
 | Customer project/plan list | `ProjectsAndPlans.js` | Active project and plan list |
 | Customer product detail | `ProductDetails.js` | Product details, compatible features, coupon, payment handoff |
 | Customer payment | `DirectPayment.js` | Full/partial wallet or UPI payment and order creation |
-| Customer project detail | `ProjectDetails.js` | Current checkpoint-driven customer/admin read view |
+| Customer project detail | `ProjectDetails.js` | Dynamic node-driven customer read view (migrated off `checkpoints`, reads `order.projectNodes`) |
 | Customer start-new-project UI | `StartNewProject.js`, `StartNewProjectDetail.js`, `components/ProjectDetailView.js` | Live-wired list-row view at `/start-new-project` (fetches real products via `GET /api/get-product`, excludes `website_updates`/`feature_upgrades`, tab-filtered by category, dark-gradient-banner header) and detail subpage at `/start-new-project/:projectId` (fetches via `POST /api/product-details`, renders the new shared `ProjectDetailView.js` component: description -> what's included -> add-on feature checkboxes -> who is it for -> two proceed buttons, no price shown). Both proceed buttons (with/without payment) are UI-only no-ops. `data/sampleStartNewProjects.js` is retired/unused. See `15_START_NEW_PROJECT_UI_HISTORY.md` for the original design-iteration/backup history and `18_PROJECT_DETAIL_PAGE_AND_HEADER_REWORK.md` for the detail-page rebuild and header unification. |
 | Admin shell/dashboard | `AdminDashboard.js`, `AdminLayout.js`, `AdminHeader.js` | Active admin shell and dashboard |
 | Admin client list | `AdminClientsPage.js` | Client list sorted by `latestActivityAt`; sort/refresh stay in the dark header and the full-width search row is below it |
 | Admin client workspace | `AdminClientWorkspace.js` | Active client overview, projects, plans, payments, project subpage |
 | Admin project-product UI | `AdminProjectProductsPage.js`, `AdminCreateProjectPage.js`, `AdminLayout.js`, `adminRoutes.js` | Active Clients-style list shell at `/admin-panel/website-management/projects` and UI-only Add Project form at `/admin-panel/website-management/projects/add`; API and save are not wired |
-| Admin node detail/update UI | `components/admin/AdminProjectCheckpointDetail.js` | Current local node/template UI; new API wiring is not connected yet |
-| Legacy node modal | `components/admin/ProjectWorkspaceModal.js` | Legacy/unrouted UI using old missing endpoint contracts |
-| Legacy product UI | `AllProducts.js`, `UploadProduct.js`, `AdminEditProduct.js` | Existing but not active admin route; generates old predefined checkpoints |
+| Admin node detail/update UI | `components/admin/AdminProjectCheckpointDetail.js` | Live-wired to real node/message API calls (Add Node/Add Node & Send), not local-state-only |
+| Legacy node modal | `components/admin/ProjectWorkspaceModal.js` | Legacy/unrouted UI using old missing endpoint contracts (confirmed permanently unreachable — pending Phase 4 dead-code cleanup) |
+| Legacy product UI | `AllProducts.js`, `UploadProduct.js`, `AdminEditProduct.js` | Existing but not active admin route; still references old predefined-checkpoint concepts internally, but no longer relevant since the schema field is gone — pending Phase 4 dead-code cleanup |
 
 ### Current admin route facts
 
@@ -63,22 +62,24 @@ Verified consequences:
 
 - Product creation must not create an order.
 - Product creation must not bypass payment.
-- Pending/rejected orders must not receive an active project timeline.
-- Approval is the correct lifecycle point to copy the product Starting Node Title into the order's 0% node.
-- Approval initialization must be idempotent.
+- Pending/rejected orders must not receive an active project timeline (the flow above still creates the order in `pending-approval` first — node initialization does not grant early project-visible status).
+
+**Before/after**: this section originally planned for the product's Starting Node Title to be copied into the order's 0% node at the *approval* lifecycle step specifically. As implemented, `initializeProjectTimeline()` is actually called at order-*creation* time in `createOrder.js` (for website-category orders) — simpler than a separate approval-time step, and still idempotent (`initializeProjectTimeline()` no-ops if a timeline already exists).
 
 Primary evidence: `ProductDetails.js`, `DirectPayment.js`, `backend/controller/order/createOrder.js`, `backend/controller/user/transactionApprovalController.js`, `backend/routes/index.js`.
 
 ## 4. Verified project/product category matrix
 
-| Category | Business meaning | Current fields/behavior | New-system treatment |
-|---|---|---|---|
-| `standard_websites` | Standard website project | `totalPages` 4–50; automatic structure/page/testing checkpoints | Project product with mandatory `startingNodeTitle`; no predefined future checkpoint template |
-| `dynamic_websites` | Dynamic website project | `totalPages` 4–50; automatic website checkpoints | Project product with mandatory `startingNodeTitle`; no fixed future-node template |
-| `cloud_software_development` | Cloud/software project | Fixed cloud checkpoint template in product model/order creation | Project product with mandatory `startingNodeTitle`; no fixed future nodes |
-| `app_development` | Mobile/app project | Product model currently reuses cloud checkpoint template; some products have no checkpoints | Project product with mandatory `startingNodeTitle`; no fixed future nodes |
-| `website_updates` | Update plan, not a project timeline | `validityPeriod`, `updateCount`, renewable/limited plan fields | Remains plan system; excluded from project node creation |
-| `feature_upgrades` | Add-on/feature product | `compatibleWith`, `keyBenefits`, additional feature relationships | Not a standalone project timeline |
+| Category | Business meaning | Current fields/behavior |
+|---|---|---|
+| `standard_websites` | Standard website project | `totalPages` 4–50; `startingNodeTitle` for the order's first dynamic node |
+| `dynamic_websites` | Dynamic website project | `totalPages` 4–50; `startingNodeTitle` for the order's first dynamic node |
+| `cloud_software_development` | Cloud/software project | `startingNodeTitle` for the order's first dynamic node |
+| `app_development` | Mobile/app project | `startingNodeTitle` for the order's first dynamic node |
+| `website_updates` | Update plan, not a project timeline | `validityPeriod`, `updateCount`, renewable/limited plan fields; excluded from project node creation |
+| `feature_upgrades` | Add-on/feature product | `compatibleWith`, `keyBenefits`, additional feature relationships; not a standalone project timeline |
+
+**Before/after**: this table originally described a "New-system treatment" column contrasting each category's then-current predefined-checkpoint behavior against a planned future node system. That transition is complete — the predefined-checkpoint columns/behavior no longer exist (schema field removed), so the table above shows only current fields.
 
 ### Product form field audit
 
@@ -86,42 +87,41 @@ Current common product fields include `serviceName`, `category`, `packageInclude
 
 Current conditional fields:
 
-- Website projects: `totalPages` with 4–50 validation.
+- Website projects: `totalPages` with 4–50 validation; `startingNodeTitle` (required for the dynamic node system).
 - Website updates: `validityPeriod`, `updateCount`, renewable/limited-plan fields.
 - Feature upgrades: `compatibleWith`, `keyBenefits` and related product relationships.
-- Cloud/app products: old checkpoint templates; these are to be retired for new products.
 
-Required new project field: `startingNodeTitle`.
+**Before/after**: "Cloud/app products: old checkpoint templates" and "Required new project field: `startingNodeTitle`" (as a future item) are no longer applicable — the checkpoint templates are removed and `startingNodeTitle` is a live, already-added field, not a pending one.
 
 ## 5. Backend source-of-truth map
 
 | Concern | Source | Current status |
 |---|---|---|
-| Customer/project order | `backend/models/orderProductModel.js` | Existing SSOT; now extended with canonical timeline fields |
-| Product template | `backend/models/productModel.js` | Existing product source; Starting Node Title not added yet |
+| Customer/project order | `backend/models/orderProductModel.js` | SSOT; canonical timeline fields (`projectNodes`/`projectRuns`/`projectNodeEvents`/`projectTimelineVersion`) live for every order; legacy `checkpoints` field/hooks removed |
+| Product template | `backend/models/productModel.js` | `startingNodeTitle` field live; legacy `checkpoints`/`checkpointSchema`/`CLOUD_SOFTWARE_CHECKPOINTS`/`setWebsiteCheckpoints()` removed |
 | Customer workspace | `getAdminUserWorkspace.js` | Existing SSOT read bundle |
-| Full order detail | `getOrderDetails.js` | Admin/customer read path; customer dynamic timeline filtering added |
-| Client activity sorting | `getAdminClients.js` | Existing endpoint; now reads dynamic node event timestamps too |
-| Order creation | `createOrder.js` | Still contains old predefined checkpoint generation; must be updated for new products |
-| Payment approval | `transactionApprovalController.js` | Existing order activation; approved-start node initialization still pending |
+| Full order detail | `getOrderDetails.js` | Admin/customer read path; customer dynamic timeline filtering (`getCustomerTimeline()`) live |
+| Client activity sorting | `getAdminClients.js` | Existing endpoint; reads `projectNodeEvents` timestamps as an activity source (its `order.checkpoints` reference is now effectively dead — the field no longer exists on any order, so that specific activity source never fires) |
+| Order creation | `createOrder.js` | Calls `initializeProjectTimeline()` for website-category orders — no predefined checkpoint generation |
+| Payment approval | `transactionApprovalController.js` | Existing order activation; node initialization happens via `createOrder.js`/`adminCreateProjectOrder.js` at order-creation time, not a separate approval-time step |
 | Admin auth | `middleware/authToken.js` plus `req.userRole` checks | Existing cookie/JWT role path |
-| Active route registry | `backend/routes/index.js` | Existing routes plus new migrated-timeline-gated node routes |
+| Active route registry | `backend/routes/index.js` | Existing routes plus migrated-timeline-gated node routes (`/api/admin/projects/:orderId/nodes...`) |
 | Plans/invoices/payments | Existing plan/order/invoice/transaction models/controllers | Must remain separate and regression-safe |
 
-## 6. Dynamic node implementation already completed
+## 6. Dynamic node implementation (updated — this section originally described a still-pending system; it is now fully live)
 
 ### Order-owned fields added
 
 `orderProductModel.js` now contains:
 
-- `projectTimelineVersion` (`0` legacy, `1` canonical)
+- `projectTimelineVersion` (`1` for every `isWebsiteProject: true` order — new and pre-existing; `0` only for the 4 non-website legacy orders the node system doesn't support)
 - `projectTimelineInitialized`
 - `projectRuns[]`
 - `projectNodes[]`
 - `projectNodeEvents[]`
 - message linkage fields for `nodeId`, `runId`, and `senderId`
 
-The old checkpoint fields remain for compatibility. Existing orders are not automatically migrated.
+**Before/after**: at the original audit date, the old `checkpoints[]` field (and its `productModel.js` counterpart, `checkpointSchema`/`CLOUD_SOFTWARE_CHECKPOINTS`/`setWebsiteCheckpoints()`) still existed for compatibility and no orders had been migrated. Both have since been removed from the schema — every website-project order, including the 9 that predated the node system, is on the dynamic node system end to end. Full migration evidence, the decision record, and the schema-cleanup diff are in `39_PROJECT_NODE_SYSTEM_PHASE_2_3_DONE_PHASE_4_PENDING.md`.
 
 ### Canonical service
 
@@ -149,21 +149,11 @@ The old checkpoint fields remain for compatibility. Existing orders are not auto
 
 These routes intentionally reject legacy timeline version `0` orders until migration/initialization is completed. The old `SummaryApi.updateProjectProgress` and `/api/update-project-progress` contract is legacy and not the canonical new-node contract.
 
-## 7. Actual database audit evidence
+## 7. Database audit evidence (updated — the migration this section anticipated has since run)
 
-Read-only audit against the current database returned:
+**Original snapshot (2026-07-19, for historical reference only — do not treat as current)**: 13 total orders, 9 project orders (7 completed, 2 zero-progress, 0 partially-completed), completed checkpoints had `completedAt` values, one verified completed project had checkpoint weight sum `99.91` vs order progress `100`.
 
-- Total orders: `13`
-- Project orders: `9`
-- Completed project orders: `7`
-- Zero-progress/planning project orders: `2`
-- Partially completed project orders: `0`
-- Completed checkpoints had `completedAt` values.
-- Existing completed projects contain messages linked to old checkpoints.
-- Completed project totals are generally `100`; one verified completed project has old checkpoint weight sum `99.91` while order progress is `100`, so migration must preserve verified order progress.
-- Plans/update orders have no project checkpoint timeline and must remain outside node migration.
-
-Product audit also confirmed existing product records use old checkpoint templates such as `Website Structure ready` and `Project Initiation`. These titles can be used as evidence for historical migration mapping, but the future product form must explicitly store Starting Node Title.
+**Current state**: the same 9 pre-existing website-project orders were migrated via `backend/scripts/migratePreExistingOrdersToNodeSystem.js` — one node per previously-completed checkpoint (running-sum cumulative progress; same-value duplicate steps, caused by 0%-weight checkpoints, merged into one node rather than artificially inflated). All 9 now read `projectTimelineVersion: 1` with real per-checkpoint node history, re-verified against the live DB post-migration. The 4 non-website legacy orders (no project checkpoint timeline, confirmed unrelated to plans/updates) were left untouched — the node system doesn't support their type. The legacy product-template checkpoint titles (`Website Structure ready`, `Project Initiation`, etc.) that this section originally flagged as future migration-mapping evidence were the actual titles used for the migrated nodes. See `39_PROJECT_NODE_SYSTEM_PHASE_2_3_DONE_PHASE_4_PENDING.md` for full before/after detail and the backup file locations.
 
 ## 8. Current state versus pending work
 
@@ -192,42 +182,40 @@ Product audit also confirmed existing product records use old checkpoint templat
 
 ### Pending next
 
+**Node-system items originally listed here are done** (items 3, 4, 6, 7, 8, 9, 10 from the original list: `startingNodeTitle` added, predefined future-node generation removed from both product save and order creation, transaction approval wired to idempotent starting-node init via `initializeProjectTimeline()`, admin/customer UI connected to canonical node APIs, and the pre-existing-order migration dry-run + execution both completed). See `39_PROJECT_NODE_SYSTEM_PHASE_2_3_DONE_PHASE_4_PENDING.md` for what's still open in that system (dead-code cleanup only — `ProjectWorkspaceModal.js`, unused `emailService.js` exports, unrouted `UploadProduct.js`/`AdminEditProduct.js`).
+
+Still open, unrelated to the node system:
+
 1. Add the new product API/data source to the existing Clients-style Projects list.
 2. Connect the existing Add Project UI form to the approved product create contract, then build edit/manage screens.
-3. Add `startingNodeTitle` to product model and new project-product validation.
-4. Remove predefined future-node generation from new product save/order creation while preserving legacy data.
-5. Verify customer product listing, ProductDetails, compatible features, pricing, and DirectPayment compatibility.
-6. Wire transaction approval to idempotent 0% starting-node initialization.
-7. Connect active admin project UI to canonical node APIs.
-8. Connect customer ProjectDetails to canonical visible timeline fields.
-9. Run migration dry-run for existing completed and zero-progress orders.
-10. Execute controlled migration only after new-project flow passes verification.
-11. Build the admin-panel project detail/manage page: a thin new admin route/page that reuses `components/ProjectDetailView.js` (not a duplicate/branch) inside `AdminLayout`, wrapped with an admin action bar (Edit -> navigate to `AdminCreateProjectPage.js` in edit mode, Delete). Requires explicit scoping/approval before coding, per this project's standing rules. See `18_PROJECT_DETAIL_PAGE_AND_HEADER_REWORK.md`.
-12. Decide and wire the real business logic behind `ProjectDetailView.js`'s two proceed buttons ("Add to Cart & Proceed to Payment", "Submit Project Request (Without Payment)") — currently both are UI-only no-ops; the exact meaning of "without payment" (booking vs. enquiry-only vs. something else) is explicitly undecided.
+3. Verify customer product listing, ProductDetails, compatible features, pricing, and DirectPayment compatibility.
+4. Build the admin-panel project detail/manage page: a thin new admin route/page that reuses `components/ProjectDetailView.js` (not a duplicate/branch) inside `AdminLayout`, wrapped with an admin action bar (Edit -> navigate to `AdminCreateProjectPage.js` in edit mode, Delete). Requires explicit scoping/approval before coding, per this project's standing rules. See `18_PROJECT_DETAIL_PAGE_AND_HEADER_REWORK.md`.
+5. Decide and wire the real business logic behind `ProjectDetailView.js`'s two proceed buttons ("Add to Cart & Proceed to Payment", "Submit Project Request (Without Payment)") — currently both are UI-only no-ops; the exact meaning of "without payment" (booking vs. enquiry-only vs. something else) is explicitly undecided.
 
 ## 9. Regression boundaries
 
 - Do not create a second project/node database.
-- Do not use product `checkpoints[]` as the new dynamic timeline.
 - Do not physically delete old completed history during product creation.
 - Do not initialize a node for pending/rejected orders.
 - Do not change plans, invoices, payments, tickets, or update-plan behavior in the project-product phase.
 - Do not reuse full-order delete for node soft deletion.
 - Preserve `projectProgress`, order status, order visibility, product listing fields, and payment response contracts.
 - Keep admin authorization and customer ownership filtering in every new read/write route.
-- Do not retire old fields until migration, customer/admin compatibility, and rollback evidence are verified.
+
+**Before/after**: this section originally also said "do not use product `checkpoints[]` as the new dynamic timeline" and "do not retire old fields until migration/compatibility/rollback evidence are verified" — both were about the legacy checkpoint field, which no longer exists in the schema (removed only after the migration ran and was re-verified against the live DB; a full backup was taken first). See `39_PROJECT_NODE_SYSTEM_PHASE_2_3_DONE_PHASE_4_PENDING.md`.
 
 ## 10. Documentation entry points
 
 - `14_CODEBASE_AUDIT_INDEX.md` — this complete audit handoff and current implementation/pending-state index
 - `README.md` — documentation index and current high-level map
 - `00_CURRENT_SYSTEM.md` — active application behavior
+- `39_PROJECT_NODE_SYSTEM_PHASE_2_3_DONE_PHASE_4_PENDING.md` — **current source of truth for the dynamic node system** (this file's Sections 6/7 are a historical snapshot, refreshed with pointers here but not a substitute); read this before touching anything node/checkpoint/timeline-related
 - `04_BACKEND_OVERVIEW.md` — backend architecture and dynamic node status
 - `05_QUICK_REFERENCE.md` — file/route lookup
 - `12_CLIENT_ACTIVITY_SORT_AUDIT.md` — activity sorting and node write-path history
 - `13_PROJECT_CREATION_AND_APPROVAL_PLAN.md` — approved new project-product and approval plan
 - `18_PROJECT_DETAIL_PAGE_AND_HEADER_REWORK.md` — customer project detail page rebuild on the new shared `ProjectDetailView.js` component, its style-iteration history, the dark-banner header unification across four customer pages, and the reverted admin-detail-page attempt/confirmed reuse plan
-- `admin-nodes.md` — dynamic node requirements, rules, and implementation phases
+- `admin-nodes.md` — original dynamic node requirements/rules/phases (design doc, superseded by `39_...md` for current status; still accurate for node validation rules/delete-restore-reset semantics)
 - `admin-plan.md` — admin strategy and project creation sequence
 - `AdminProjectProductsPage.js` — current UI-only Projects list screen; no API or database writes
 - `AdminCreateProjectPage.js` — current UI-only Add Project form; no API or database writes
