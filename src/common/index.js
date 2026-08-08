@@ -713,6 +713,10 @@ const SummaryApi = {
         url: `${backendDomain}/api/admin/projects`,
         method: "post"
     },
+    editProjectNode: {
+        url: `${backendDomain}/api/admin/projects`,
+        method: "post"
+    },
     deleteProjectNodes: {
         url: `${backendDomain}/api/admin/projects`,
         method: "post"

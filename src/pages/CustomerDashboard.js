@@ -4,7 +4,6 @@ import { useSelector } from 'react-redux';
 import {
   ArrowRight,
   LayoutDashboard,
-  LayoutGrid,
   PlusCircle,
   RefreshCw,
   Wallet,
@@ -16,91 +15,11 @@ import DashboardLayout from '../components/DashboardLayout';
 import backgroundImage from '../assets/BG.png';
 import SummaryApi from '../common';
 import Context from '../context';
+import OrderListRow, { OrderListHeader } from '../components/OrderListRow';
 import displayINRCurrency from '../helpers/displayCurrency';
 import { isOrderApproved } from '../helpers/orderVisibility';
-import { isProjectItem, isPlanItem } from '../helpers/orderType';
-
-const getRemainingDays = (order) => {
-  if (!order) return 0;
-
-  if ((order.productId?.isMonthlyRenewablePlan || order.productId?.isMonthlyLimitedPlan) && order.currentMonthExpiryDate) {
-    const today = new Date();
-    const expiryDate = new Date(order.currentMonthExpiryDate);
-    return Math.max(0, Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24)));
-  }
-
-  if (!order.createdAt || !order.productId?.validityPeriod) return 0;
-
-  const startDate = new Date(order.createdAt);
-  const endDate = new Date(startDate);
-  endDate.setDate(endDate.getDate() + order.productId.validityPeriod);
-
-  return Math.max(0, Math.ceil((endDate - new Date()) / (1000 * 60 * 60 * 24)));
-};
-
-const getItemType = (order) => (isPlanItem(order) ? 'Plan' : 'Project');
-
-const getItemStatus = (order) => {
-  if (!order) return { label: 'Unknown', tone: 'bg-slate-100 text-slate-700' };
-
-  if (order.orderVisibility === 'payment-rejected') {
-    return { label: 'Payment rejected', tone: 'bg-rose-100 text-rose-700' };
-  }
-
-  if (order.orderVisibility === 'pending-approval') {
-    return { label: 'Pending approval', tone: 'bg-amber-100 text-amber-800' };
-  }
-
-  if (isProjectItem(order)) {
-    if (order.projectProgress >= 100 || order.currentPhase === 'completed') {
-      return { label: 'Completed', tone: 'bg-emerald-100 text-emerald-700' };
-    }
-
-    if (isOrderApproved(order)) {
-      return { label: 'In progress', tone: 'bg-blue-100 text-blue-700' };
-    }
-  }
-
-  if (isPlanItem(order)) {
-    const remainingDays = getRemainingDays(order);
-    const isExhausted =
-      order.planStatus === 'closed' ||
-      !order.isActive ||
-      (order.productId?.isMonthlyRenewablePlan || order.productId?.isMonthlyLimitedPlan
-        ? (order.totalYearlyDaysRemaining || 0) <= 0
-        : (order.updatesUsed || 0) >= (order.productId?.updateCount || 0));
-
-    if (isExhausted) {
-      return { label: 'Closed', tone: 'bg-slate-200 text-slate-700' };
-    }
-
-    if (isOrderApproved(order) && remainingDays > 0) {
-      return { label: 'Active plan', tone: 'bg-violet-100 text-violet-700' };
-    }
-  }
-
-  return { label: 'Processing', tone: 'bg-slate-100 text-slate-700' };
-};
-
-const getItemSummary = (order) => {
-  if (isPlanItem(order)) {
-    const updateCount = Number(order.productId?.updateCount || 0);
-    const updatesUsed = Number(order.updatesUsed || 0);
-
-    if (order.productId?.isMonthlyRenewablePlan || order.productId?.isMonthlyLimitedPlan) {
-      return `${order.totalYearlyDaysRemaining || 0} day(s) left`;
-    }
-
-    if (updateCount > 0) {
-      return `${Math.max(0, updateCount - updatesUsed)} update(s) left`;
-    }
-
-    return 'Plan details available';
-  }
-
-  const progress = Math.round(order?.projectProgress || 0);
-  return `${progress}% complete`;
-};
+import { isProjectItem, isPlanItem, sortItemsLatestFirst } from '../helpers/orderType';
+import { getRemainingDays } from '../helpers/orderPresentation';
 
 const getItemLink = (order) =>
   isPlanItem(order) ? `/plan-details/${order._id}` : `/project-details/${order._id}`;
@@ -161,7 +80,6 @@ const CustomerDashboard = () => {
       const data = await response.json();
       if (data.success) {
         const allOrders = Array.isArray(data.data) ? [...data.data] : [];
-        allOrders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
         setOrders(allOrders);
       }
     } catch (error) {
@@ -176,36 +94,44 @@ const CustomerDashboard = () => {
   }, [user?._id]);
 
   const dashboardItems = useMemo(
-    () => orders.filter((order) => isProjectItem(order) || isPlanItem(order)).slice(0, 5),
+    () =>
+      orders
+        .filter((order) => isProjectItem(order) || isPlanItem(order))
+        .sort(sortItemsLatestFirst)
+        .slice(0, 5),
     [orders]
   );
 
   const activeProjects = useMemo(
     () =>
-      orders.filter(
-        (order) =>
-          isProjectItem(order) &&
-          isOrderApproved(order) &&
-          order.orderVisibility !== 'payment-rejected' &&
-          order.orderVisibility !== 'pending-approval' &&
-          order.projectProgress < 100 &&
-          order.currentPhase !== 'completed'
-      ),
+      orders
+        .filter(
+          (order) =>
+            isProjectItem(order) &&
+            isOrderApproved(order) &&
+            order.orderVisibility !== 'payment-rejected' &&
+            order.orderVisibility !== 'pending-approval' &&
+            order.projectProgress < 100 &&
+            order.currentPhase !== 'completed'
+        )
+        .sort(sortItemsLatestFirst),
     [orders]
   );
 
   const activePlans = useMemo(
     () =>
-      orders.filter(
-        (order) =>
-          isPlanItem(order) &&
-          isOrderApproved(order) &&
-          order.orderVisibility !== 'payment-rejected' &&
-          order.orderVisibility !== 'pending-approval' &&
-          order.planStatus !== 'closed' &&
-          order.isActive &&
-          getRemainingDays(order) > 0
-      ),
+      orders
+        .filter(
+          (order) =>
+            isPlanItem(order) &&
+            isOrderApproved(order) &&
+            order.orderVisibility !== 'payment-rejected' &&
+            order.orderVisibility !== 'pending-approval' &&
+            order.planStatus !== 'closed' &&
+            order.isActive &&
+            getRemainingDays(order) > 0
+        )
+        .sort(sortItemsLatestFirst),
     [orders]
   );
 
@@ -375,98 +301,17 @@ const CustomerDashboard = () => {
 
             {dashboardItems.length > 0 ? (
               <>
-                <div className="relative grid grid-cols-12 gap-3 border-b border-white/15 bg-white/5 px-5 py-3 text-sm font-semibold uppercase text-slate-300 sm:px-6">
-                  <div className="col-span-12 lg:col-span-5">Item</div>
-                  <div className="col-span-6 lg:col-span-2">Type</div>
-                  <div className="col-span-6 lg:col-span-2">Status</div>
-                  <div className="col-span-6 lg:col-span-2">Updated</div>
-                  <div className="col-span-6 lg:col-span-1 text-right">Open</div>
-                </div>
+                <OrderListHeader />
 
                 <div className="relative divide-y divide-white/10">
-                  {dashboardItems.map((order, index) => {
-                    const status = getItemStatus(order);
-                    const isProject = isProjectItem(order);
-                    const isPlan = isPlanItem(order);
-                    const summary = isPlan ? getItemSummary(order) : 'Project';
-                    const progress = Math.round(order?.projectProgress || 0);
-                    const remainingDays = getRemainingDays(order);
-                    const category = order.productId?.category?.split('_').join(' ') || 'Unknown type';
-                    const currentValue = isPlan
-                      ? (order.productId?.isMonthlyRenewablePlan || order.productId?.isMonthlyLimitedPlan
-                        ? `${order.totalYearlyDaysRemaining || 0} day(s) left`
-                        : `${Math.max(0, Number(order.productId?.updateCount || 0) - Number(order.updatesUsed || 0))} update(s) left`)
-                      : `${progress}% complete`;
-
-                    return (
-                      <button
-                        key={order._id}
-                        type="button"
-                        onClick={() => openItem(order)}
-                        className={[
-                          'grid w-full grid-cols-12 gap-3 px-5 py-4 text-left transition hover:bg-white/[0.1] sm:px-6',
-                          index % 2 === 0 ? 'bg-white/[0.02]' : 'bg-white/[0.06]',
-                        ].join(' ')}
-                      >
-                        <div className="col-span-12 lg:col-span-5">
-                          <div className="flex items-start gap-3">
-                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/20 bg-white/10 text-white backdrop-blur-md">
-                              {isProject ? <LayoutGrid className="h-5 w-5" /> : <Layers3 className="h-5 w-5" />}
-                            </div>
-                            <div className="min-w-0">
-                              <div className="flex flex-wrap items-center gap-2">
-                                <span className="rounded-full bg-white px-2.5 py-1 text-sm font-semibold uppercase text-slate-900">
-                                  {getItemType(order)}
-                                </span>
-                                <span className="rounded-full border border-white/20 bg-white/10 px-2.5 py-1 text-sm font-semibold uppercase text-slate-200">
-                                  {summary}
-                                </span>
-                              </div>
-                              <h3 className="mt-2 truncate text-lg font-semibold text-white">
-                                {order.productId?.serviceName || 'Untitled'}
-                              </h3>
-                              <p className="mt-1 truncate text-sm text-slate-300">{category}</p>
-                              <p className="mt-2 text-sm text-slate-300 sm:hidden">
-                                Updated {new Date(order.updatedAt || order.createdAt).toLocaleDateString('en-GB')}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="col-span-6 lg:col-span-2 lg:flex lg:items-center">
-                          <div className="space-y-1">
-                            <p className="text-base font-semibold text-white">{isPlan ? 'Plan' : 'Project'}</p>
-                            <p className="text-sm text-slate-300">
-                              {isPlan ? (order.productId?.isMonthlyRenewablePlan || order.productId?.isMonthlyLimitedPlan ? 'Monthly' : 'Update based') : 'Work item'}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="col-span-6 lg:col-span-2 lg:flex lg:items-center">
-                          <span className={`inline-flex w-fit rounded-full px-3 py-1 text-sm font-semibold ${status.tone}`}>
-                            {status.label}
-                          </span>
-                        </div>
-
-                        <div className="col-span-6 lg:col-span-2 lg:flex lg:items-center">
-                          <div className="space-y-1">
-                            <p className="text-base font-semibold text-white">{new Date(order.updatedAt || order.createdAt).toLocaleDateString('en-GB')}</p>
-                            <p className="text-sm text-slate-300">{order.assignedDeveloper?.name || 'Not assigned'}</p>
-                            <p className="text-sm text-slate-300">{currentValue}</p>
-                          </div>
-                        </div>
-
-                        <div className="col-span-6 flex items-center justify-between lg:col-span-1 lg:justify-end">
-                        <div className="hidden text-right lg:block">
-                          <p className="text-sm text-slate-300">
-                            {isPlan ? `${remainingDays} day(s) left` : `${progress}%`}
-                          </p>
-                        </div>
-                          <ArrowRight className="h-5 w-5 text-slate-400" />
-                        </div>
-                      </button>
-                    );
-                  })}
+                  {dashboardItems.map((order, index) => (
+                    <OrderListRow
+                      key={order._id}
+                      order={order}
+                      index={index}
+                      onClick={openItem}
+                    />
+                  ))}
                 </div>
               </>
             ) : (

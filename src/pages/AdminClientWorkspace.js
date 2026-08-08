@@ -14,6 +14,7 @@ import {
   AlertCircle,
   Eye,
   EyeOff,
+  Pencil,
   RotateCcw,
   Save,
   Trash2,
@@ -37,12 +38,10 @@ import {
   buildLedgerItems,
 } from "../helpers/paymentLedger";
 
-const tabs = [
-  { id: "overview", label: "Overview", active: true },
-  { id: "projects", label: "Projects", active: true },
-  { id: "plans", label: "Plans", active: true },
-  { id: "payments", label: "Payment & Invoices", active: true },
-];
+const OVERVIEW_TAB = { id: "overview", label: "Overview", active: true };
+const PROJECTS_TAB = { id: "projects", label: "Projects", active: true };
+const PLANS_TAB = { id: "plans", label: "Plans", active: true };
+const PAYMENTS_TAB = { id: "payments", label: "Payment & Invoices", active: true };
 
 const safeDateTime = (value) => {
   if (!value) return null;
@@ -196,7 +195,7 @@ const AdminClientWorkspace = () => {
   const dispatch = useDispatch();
   const user = useSelector((state) => state?.user?.user);
   const { isOnline } = useOnlineStatus();
-  const [activeTab, setActiveTab] = useState(location.state?.activeTab || "overview");
+  const [activeTab, setActiveTab] = useState(location.state?.activeTab || null);
   const [customerLoading, setCustomerLoading] = useState(true);
   const [dataLoading, setDataLoading] = useState(true);
   const [fetchError, setFetchError] = useState("");
@@ -587,6 +586,23 @@ const AdminClientWorkspace = () => {
     [allData.orders]
   );
 
+  const hasActiveProject = useMemo(() => projectOrders.some(isActiveOrder), [projectOrders]);
+  const hasActivePlan = useMemo(
+    () => planOrders.some((plan) => getPlanDisplayStatus(plan) === "Active"),
+    [planOrders]
+  );
+
+  const tabs = useMemo(() => {
+    if (hasActiveProject) return [PROJECTS_TAB, PLANS_TAB, OVERVIEW_TAB, PAYMENTS_TAB];
+    if (hasActivePlan) return [PLANS_TAB, PROJECTS_TAB, OVERVIEW_TAB, PAYMENTS_TAB];
+    return [OVERVIEW_TAB, PROJECTS_TAB, PLANS_TAB, PAYMENTS_TAB];
+  }, [hasActiveProject, hasActivePlan]);
+
+  useEffect(() => {
+    if (activeTab === null && !dataLoading) setActiveTab(tabs[0].id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dataLoading]);
+
   const cards = useMemo(() => {
     const activeOrders = projectOrders.filter(isActiveOrder);
     const pendingOrders = projectOrders.filter(isPendingOrder);
@@ -728,7 +744,7 @@ const AdminClientWorkspace = () => {
 
         <AdminWorkspaceTabs
           tabs={tabs}
-          activeTab={activeTab}
+          activeTab={activeTab || tabs[0].id}
           onChange={setActiveTab}
           ariaLabel="Client workspace sections"
         />
@@ -1863,6 +1879,7 @@ const WorkspaceDetailSubpage = ({
   const [resetStartingTitle, setResetStartingTitle] = useState("");
   const [nodeActionNotice, setNodeActionNotice] = useState("");
   const [isNodeActionSubmitting, setIsNodeActionSubmitting] = useState(false);
+  const [editingNodeKey, setEditingNodeKey] = useState(null);
 
   const displayedNodes = [...runNodes].reverse();
   const displayedNodeKeys = displayedNodes.map((node) => getNodeSelectionKey(node));
@@ -1880,6 +1897,7 @@ const WorkspaceDetailSubpage = ({
     setResetPreviewOpen(false);
     setResetStartingTitle("");
     setNodeActionNotice("");
+    setEditingNodeKey(null);
   }, [item?._id]);
 
   const getNodeSelectionRange = (selectionKey) => {
@@ -1918,6 +1936,7 @@ const WorkspaceDetailSubpage = ({
     }
     setUpdateMode(false);
     setUpdateMessage("");
+    setEditingNodeKey(null);
     onSelectCheckpoint?.(selectionKey);
   };
 
@@ -1948,6 +1967,38 @@ const WorkspaceDetailSubpage = ({
     } catch (nodeError) {
       console.error("Error adding project node:", nodeError);
       toast.error(nodeError.message || "Failed to add node");
+    } finally {
+      setIsNodeActionSubmitting(false);
+    }
+  };
+
+  const handleStartEditNode = (selectionKey) => {
+    setEditingNodeKey(selectionKey);
+    setUpdateMode(true);
+    setUpdateMessage("");
+  };
+
+  const handleCancelEditNode = () => {
+    setEditingNodeKey(null);
+  };
+
+  const handleSaveCorrection = async (editingNode, title, percentage, message) => {
+    setIsNodeActionSubmitting(true);
+    setNodeActionNotice("");
+    try {
+      await callNodeApi(SummaryApi.editProjectNode, "/edit", {
+        nodeId: editingNode.nodeId,
+        title,
+        cumulativeProgress: Number(percentage),
+        message: message || undefined,
+      });
+      toast.success("Node updated successfully.");
+      setEditingNodeKey(null);
+      setUpdateMessage("");
+      onSoftRefresh?.();
+    } catch (nodeError) {
+      console.error("Error updating project node:", nodeError);
+      toast.error(nodeError.message || "Failed to update node");
     } finally {
       setIsNodeActionSubmitting(false);
     }
@@ -2053,6 +2104,26 @@ const WorkspaceDetailSubpage = ({
     (node) => node.visibleToClient === false
   );
 
+  const editingNodeForDetail = editingNodeKey
+    ? runNodes.find((node) => getNodeSelectionKey(node) === editingNodeKey) || null
+    : null;
+  const editBounds = editingNodeForDetail
+    ? (() => {
+        // activeNodes is already in creation order; the run's first active node
+        // is the 0% starting node, and neighbours define the editable band.
+        const targetIndex = activeNodes.findIndex(
+          (node) => getNodeSelectionKey(node) === editingNodeKey
+        );
+        const lowerNeighbor = targetIndex > 0 ? activeNodes[targetIndex - 1] : null;
+        const upperNeighbor = targetIndex >= 0 ? activeNodes[targetIndex + 1] : null;
+        return {
+          isStartingNode: targetIndex === 0,
+          lowerBound: lowerNeighbor ? Number(lowerNeighbor.cumulativeProgress) || 0 : 0,
+          upperBound: upperNeighbor ? Number(upperNeighbor.cumulativeProgress) || 0 : null,
+        };
+      })()
+    : null;
+
   return (
     <div>
       <div className="mb-5 flex flex-wrap items-center gap-4 xl:flex-nowrap">
@@ -2149,6 +2220,16 @@ const WorkspaceDetailSubpage = ({
                     </button>
                     <button
                       type="button"
+                      onClick={() => handleStartEditNode(selectedNodeKeys[0])}
+                      disabled={selectedNodeKeys.length !== 1 || !hasSelectedActiveNodes || isNodeActionSubmitting}
+                      className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-amber-300 bg-amber-100 text-amber-800 transition hover:bg-amber-200 disabled:cursor-not-allowed disabled:opacity-40"
+                      aria-label="Edit selected node"
+                      title="Edit selected node (deletes and recreates with corrected values)"
+                    >
+                      <Pencil size={19} />
+                    </button>
+                    <button
+                      type="button"
                       onClick={handleRestoreSelectedNodes}
                       disabled={!hasSelectedInactiveNodes || isNodeActionSubmitting}
                       className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-emerald-300 bg-emerald-100 text-emerald-800 transition hover:bg-emerald-200 disabled:cursor-not-allowed disabled:opacity-40"
@@ -2220,7 +2301,10 @@ const WorkspaceDetailSubpage = ({
                       <>
                         <button
                           type="button"
-                          onClick={() => setUpdateMode(true)}
+                          onClick={() => {
+                            setUpdateMode(true);
+                            setEditingNodeKey(null);
+                          }}
                           className={[
                             "flex w-full items-start gap-4 rounded-2xl border px-4 py-3 text-left transition",
                             updateMode
@@ -2338,6 +2422,10 @@ const WorkspaceDetailSubpage = ({
                   formatDateTime={formatDateTime}
                   onAddNode={handleAddNode}
                   isSubmitting={isNodeActionSubmitting}
+                  editingNode={editingNodeForDetail}
+                  editBounds={editBounds}
+                  onSaveCorrection={handleSaveCorrection}
+                  onCancelEdit={handleCancelEditNode}
                 />
               </div>
 

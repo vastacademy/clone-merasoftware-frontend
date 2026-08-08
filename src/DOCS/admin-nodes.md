@@ -182,7 +182,7 @@ Rules:
 - At exactly 100%, creating another node is blocked.
 - Admin may create a node without a message; node-only updates must work.
 - Admin may create a node and send an optional message in the same action.
-- Existing node edit is not allowed. Correction is delete the node and create a new node.
+- ~~Existing node edit is not allowed. Correction is delete the node and create a new node.~~ **SUPERSEDED** — real in-place node edit now exists (`editProjectNode` in `projectNodeService.js`, route `POST /admin/projects/:orderId/nodes/edit`). Starting node is title-only (locked 0%); other nodes edit title + progress within neighbour bounds. See `40_NODE_EDIT_DYNAMIC_TABS_PAYMENT_LINK_AND_LIST_SSOT.md` §2.
 
 ### Admin update UI target
 

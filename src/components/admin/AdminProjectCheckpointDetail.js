@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import AdminInfoPill from "./AdminInfoPill";
 
 const getStatusLabel = (node) => {
@@ -25,6 +25,10 @@ const AdminProjectCheckpointDetail = ({
   formatDateTime,
   onAddNode,
   isSubmitting = false,
+  editingNode = null,
+  editBounds = null,
+  onSaveCorrection,
+  onCancelEdit,
 }) => {
   const [templates, setTemplates] = useState([
     { id: "progress", name: "Progress Update", message: "Your project has moved forward. We are continuing work on the selected node(s)." },
@@ -38,12 +42,42 @@ const AdminProjectCheckpointDetail = ({
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [newNodeTitle, setNewNodeTitle] = useState("");
   const [newNodePercentage, setNewNodePercentage] = useState("");
+
+  useEffect(() => {
+    if (editingNode) {
+      setNewNodeTitle(editingNode.title || "");
+      setNewNodePercentage(String(editingNode.cumulativeProgress ?? ""));
+    } else {
+      setNewNodeTitle("");
+      setNewNodePercentage("");
+    }
+  }, [editingNode]);
+
   const enteredPercentage = Number(newNodePercentage);
-  const minimumNextPercentage = Math.min(100, Number(currentProjectProgress || 0) + 0.1);
-  const isNewPercentageValid = newNodePercentage !== "" &&
-    Number.isFinite(enteredPercentage) &&
-    enteredPercentage >= minimumNextPercentage &&
-    enteredPercentage <= 100;
+  const isStartingNodeEdit = Boolean(editingNode && editBounds?.isStartingNode);
+
+  // Editing constraints mirror the backend editProjectNode rules exactly:
+  //  - starting node: progress is locked at 0%, only title changes
+  //  - other node: progress must sit strictly between its neighbours
+  //  - new node (not editing): progress must be above current active progress
+  let minimumNextPercentage;
+  let maximumNextPercentage;
+  if (editingNode) {
+    minimumNextPercentage = Math.min(100, Number(editBounds?.lowerBound ?? 0) + 0.1);
+    maximumNextPercentage = editBounds?.upperBound != null
+      ? Math.max(0, Number(editBounds.upperBound) - 0.1)
+      : 100;
+  } else {
+    minimumNextPercentage = Math.min(100, Number(currentProjectProgress || 0) + 0.1);
+    maximumNextPercentage = 100;
+  }
+
+  const isNewPercentageValid = isStartingNodeEdit
+    ? true
+    : newNodePercentage !== "" &&
+      Number.isFinite(enteredPercentage) &&
+      enteredPercentage >= minimumNextPercentage &&
+      enteredPercentage <= maximumNextPercentage;
   const canSubmitNode = Boolean(newNodeTitle.trim() && isNewPercentageValid) && !isSubmitting;
 
   if (updateMode) {
@@ -92,17 +126,27 @@ const AdminProjectCheckpointDetail = ({
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-sm font-medium text-slate-500">Project Update</p>
-            <h3 className="mt-1 text-lg font-semibold text-slate-900">{updateModeLabel}</h3>
+            <h3 className="mt-1 text-lg font-semibold text-slate-900">
+              {editingNode ? "Edit Node" : updateModeLabel}
+            </h3>
           </div>
           <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700">
-            {updateModeLabel.includes("Send") ? "Project update" : (node?.title || "New node")}
+            {editingNode ? "Correction" : (updateModeLabel.includes("Send") ? "Project update" : (node?.title || "New node"))}
           </span>
         </div>
+
+        {editingNode ? (
+          <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800">
+            Editing "{editingNode.title}" — saving will replace this node with the values below.
+          </p>
+        ) : null}
 
         <div className="mt-3 rounded-xl border border-blue-200 bg-blue-50/60 p-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
-              <p className="text-sm font-semibold text-slate-900">New node update</p>
+              <p className="text-sm font-semibold text-slate-900">
+                {editingNode ? "Corrected node details" : "New node update"}
+              </p>
             </div>
             <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-blue-700">
               Current {Number(currentProjectProgress || 0).toFixed(1)}%
@@ -114,12 +158,13 @@ const AdminProjectCheckpointDetail = ({
               <input
                 type="number"
                 min={minimumNextPercentage}
-                max="100"
+                max={maximumNextPercentage}
                 step="0.1"
-                value={newNodePercentage}
+                value={isStartingNodeEdit ? "0" : newNodePercentage}
                 onChange={(event) => setNewNodePercentage(event.target.value)}
                 placeholder={minimumNextPercentage.toFixed(1)}
-                className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm font-normal text-slate-800 outline-none focus:border-blue-500"
+                disabled={isStartingNodeEdit}
+                className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm font-normal text-slate-800 outline-none focus:border-blue-500 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
               />
             </label>
             <label className="text-xs font-semibold text-slate-700">
@@ -133,7 +178,9 @@ const AdminProjectCheckpointDetail = ({
             </label>
           </div>
           <p className={`mt-1.5 text-xs ${newNodePercentage && !isNewPercentageValid ? "text-rose-700" : "text-slate-500"}`}>
-            Valid range: {minimumNextPercentage.toFixed(1)}%–100%.
+            {isStartingNodeEdit
+              ? "Starting node stays at 0% — only its title can be changed."
+              : `Valid range: ${minimumNextPercentage.toFixed(1)}%–${maximumNextPercentage.toFixed(1)}%.`}
           </p>
         </div>
 
@@ -241,30 +288,55 @@ const AdminProjectCheckpointDetail = ({
           className="mt-3 min-h-20 w-full resize-none rounded-xl border border-slate-300 bg-white p-3 text-sm text-slate-700 outline-none focus:border-slate-500"
         />
         <div className="mt-3 flex flex-wrap justify-end gap-2">
-          <button
-            type="button"
-            disabled={!canSubmitNode}
-            onClick={async () => {
-              await onAddNode?.(newNodeTitle.trim(), enteredPercentage, "");
-              setNewNodeTitle("");
-              setNewNodePercentage("");
-            }}
-            className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-600 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {isSubmitting ? "Adding..." : "Add Node"}
-          </button>
-          <button
-            type="button"
-            disabled={!canSubmitNode || !updateMessage.trim()}
-            onClick={async () => {
-              await onAddNode?.(newNodeTitle.trim(), enteredPercentage, updateMessage.trim());
-              setNewNodeTitle("");
-              setNewNodePercentage("");
-            }}
-            className="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {isSubmitting ? "Adding..." : "Add Node & Send"}
-          </button>
+          {editingNode ? (
+            <>
+              <button
+                type="button"
+                disabled={isSubmitting}
+                onClick={() => onCancelEdit?.()}
+                className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-600 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Cancel Edit
+              </button>
+              <button
+                type="button"
+                disabled={!canSubmitNode}
+                onClick={async () => {
+                  await onSaveCorrection?.(editingNode, newNodeTitle.trim(), enteredPercentage, updateMessage.trim());
+                }}
+                className="rounded-xl bg-amber-600 px-3 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isSubmitting ? "Saving..." : "Save Correction"}
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                disabled={!canSubmitNode}
+                onClick={async () => {
+                  await onAddNode?.(newNodeTitle.trim(), enteredPercentage, "");
+                  setNewNodeTitle("");
+                  setNewNodePercentage("");
+                }}
+                className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-600 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isSubmitting ? "Adding..." : "Add Node"}
+              </button>
+              <button
+                type="button"
+                disabled={!canSubmitNode || !updateMessage.trim()}
+                onClick={async () => {
+                  await onAddNode?.(newNodeTitle.trim(), enteredPercentage, updateMessage.trim());
+                  setNewNodeTitle("");
+                  setNewNodePercentage("");
+                }}
+                className="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isSubmitting ? "Adding..." : "Add Node & Send"}
+              </button>
+            </>
+          )}
         </div>
       </div>
     );

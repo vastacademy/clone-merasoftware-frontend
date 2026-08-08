@@ -643,6 +643,18 @@ const ProjectDetails = ({ isAdminView = false }) => {
                 This project is active, but invoice {order.unpaidInvoice?.invoiceNumber} (₹{Number(order.unpaidInvoice?.amount || 0).toLocaleString('en-IN')}) is still unpaid.
                 Some actions are unavailable until payment is recorded.
               </p>
+              {order.unpaidInvoice?._id && (
+                <button
+                  type="button"
+                  onClick={() => navigate(`/invoice-detail/${order.unpaidInvoice._id}`)}
+                  className={g(
+                    'mt-2 text-sm font-semibold text-amber-800 underline underline-offset-2 transition hover:text-amber-900',
+                    'mt-2 text-sm font-semibold text-amber-200 underline underline-offset-2 transition hover:text-amber-100'
+                  )}
+                >
+                  Proceed for payment
+                </button>
+              )}
             </div>
           )}
 
