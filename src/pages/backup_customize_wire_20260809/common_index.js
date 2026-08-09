@@ -213,10 +213,6 @@ const SummaryApi = {
         url : `${backendDomain}/api/create-order`,
         method: "post"
     },
-    createCustomProjectOrder : {
-        url : `${backendDomain}/api/customer/custom-project-order`,
-        method: "post"
-    },
     ordersList : {
         url : `${backendDomain}/api/get-order`,
         method: "get"
