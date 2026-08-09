@@ -201,17 +201,9 @@ const StartNewWebsiteBuild = () => {
 
     if (questionKey === 'path') {
       if (value === 'customize') {
-        // Derive the primary project category from the flow answers (Phase 1: 5k-30k branch only).
-        // "I'll manage content myself" => dynamic website; "MeraSoftware will maintain it" => static website.
-        const projectCategory =
-          nextAnswers.ownership === 'self_managed' ? 'dynamic_websites' : 'standard_websites';
         setTimeout(() => {
           navigate('/start-new-project/build/new_website/customize', {
-            state: {
-              budget: nextAnswers.budget,
-              ownership: nextAnswers.ownership,
-              projectCategory,
-            },
+            state: { budget: nextAnswers.budget, ownership: nextAnswers.ownership },
           });
         }, 220);
         return;
