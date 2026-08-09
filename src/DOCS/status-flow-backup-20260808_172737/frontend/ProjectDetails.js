@@ -694,7 +694,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
                           className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-2.5 text-base font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-400 disabled:hover:bg-slate-400"
                         >
                           <Upload className="h-4 w-4" />
-                          Upload Data
+                          Request Update
                         </button>
                       ) : null}
 
@@ -715,18 +715,17 @@ const ProjectDetails = ({ isAdminView = false }) => {
 
                       <div className={g('mt-4 border-t border-slate-200 pt-4', 'mt-4 border-t border-white/15 pt-4')}>
                         <p className={g('text-lg font-semibold text-black', 'text-lg font-semibold text-white')}>Snapshot</p>
-                        {/* Document style: divider-separated key/value rows, no boxes */}
-                        <div className={g('mt-2 divide-y divide-slate-200', 'mt-2 divide-y divide-white/10')}>
-                          <div className="flex items-center justify-between py-2.5">
-                            <span className={g('text-sm text-slate-600', 'text-sm text-slate-300')}>Last update</span>
+                        <div className="mt-3 space-y-2.5">
+                          <div className={g('flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-2.5', 'flex items-center justify-between rounded-2xl border border-white/10 bg-white/10 px-4 py-2.5')}>
+                            <span className={g('text-sm text-black', 'text-sm text-slate-300')}>Last update</span>
                             <span className={g('text-base font-semibold text-black', 'text-base font-semibold text-white')}>{formatDateTime(order.updatedAt || order.createdAt)}</span>
                           </div>
-                          <div className="flex items-center justify-between py-2.5">
-                            <span className={g('text-sm text-slate-600', 'text-sm text-slate-300')}>Updates linked</span>
-                            <span className={g('text-base font-semibold tabular-nums text-black', 'text-base font-semibold tabular-nums text-white')}>{totalUpdates}</span>
+                          <div className={g('flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-2.5', 'flex items-center justify-between rounded-2xl border border-white/10 bg-white/10 px-4 py-2.5')}>
+                            <span className={g('text-sm text-black', 'text-sm text-slate-300')}>Updates linked</span>
+                            <span className={g('text-base font-semibold text-black', 'text-base font-semibold text-white')}>{totalUpdates}</span>
                           </div>
-                          <div className="flex items-center justify-between py-2.5">
-                            <span className={g('text-sm text-slate-600', 'text-sm text-slate-300')}>Current phase</span>
+                          <div className={g('flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-2.5', 'flex items-center justify-between rounded-2xl border border-white/10 bg-white/10 px-4 py-2.5')}>
+                            <span className={g('text-sm text-black', 'text-sm text-slate-300')}>Current phase</span>
                             <span className={g('text-base font-semibold text-black', 'text-base font-semibold text-white')}>{order.currentPhase || 'N/A'}</span>
                           </div>
                         </div>
@@ -799,61 +798,63 @@ const ProjectDetails = ({ isAdminView = false }) => {
                       </div>
 
                       {selectedNode ? (
-                        <div className="mt-4 flex-1 min-h-0 space-y-5 overflow-auto pr-1">
-                          {/* Meta row — document style: divider-separated columns, no boxes */}
-                          <div className={g('flex divide-x divide-slate-200 border-b border-slate-200 pb-4', 'flex divide-x divide-white/10 border-b border-white/15 pb-4')}>
-                            <div className="flex-1 pr-4">
-                              <p className={g('text-xs font-semibold uppercase tracking-wide text-slate-500', 'text-xs font-semibold uppercase tracking-wide text-slate-400')}>Date</p>
-                              <p className={g('mt-1 text-base font-bold tabular-nums text-black', 'mt-1 text-base font-bold tabular-nums text-white')}>
+                        <div className="mt-3 flex-1 min-h-0 space-y-3 overflow-auto pr-1">
+                          <div className="grid grid-cols-2 gap-2.5">
+                            <div className={g('rounded-2xl border border-slate-200 bg-slate-50 p-2.5', 'rounded-2xl border border-white/10 bg-white/10 p-2.5')}>
+                              <p className={g('text-sm font-semibold uppercase text-black', 'text-sm font-semibold uppercase text-slate-300')}>Node</p>
+                              <p className={g('mt-1 text-base font-semibold text-black', 'mt-1 text-base font-semibold text-white')}>{selectedNode.title}</p>
+                            </div>
+                            <div className={g('rounded-2xl border border-slate-200 bg-slate-50 p-2.5', 'rounded-2xl border border-white/10 bg-white/10 p-2.5')}>
+                              <p className={g('text-sm font-semibold uppercase text-black', 'text-sm font-semibold uppercase text-slate-300')}>Date</p>
+                              <p className={g('mt-1 text-base font-semibold text-black', 'mt-1 text-base font-semibold text-white')}>
                                 {formatDate(selectedNode.createdAt)}
                               </p>
                             </div>
-                            <div className="flex-1 px-4">
-                              <p className={g('text-xs font-semibold uppercase tracking-wide text-slate-500', 'text-xs font-semibold uppercase tracking-wide text-slate-400')}>Progress</p>
-                              <p className={g('mt-1 text-base font-bold tabular-nums text-black', 'mt-1 text-base font-bold tabular-nums text-white')}>{selectedNode.cumulativeProgress}%</p>
+                            <div className={g('rounded-2xl border border-slate-200 bg-slate-50 p-2.5', 'rounded-2xl border border-white/10 bg-white/10 p-2.5')}>
+                              <p className={g('text-sm font-semibold uppercase text-black', 'text-sm font-semibold uppercase text-slate-300')}>Updates</p>
+                              <p className={g('mt-1 text-base font-semibold text-black', 'mt-1 text-base font-semibold text-white')}>{selectedNodeMessages.length}</p>
                             </div>
-                            <div className="flex-1 pl-4">
-                              <p className={g('text-xs font-semibold uppercase tracking-wide text-slate-500', 'text-xs font-semibold uppercase tracking-wide text-slate-400')}>Updates</p>
-                              <p className={g('mt-1 text-base font-bold tabular-nums text-black', 'mt-1 text-base font-bold tabular-nums text-white')}>{selectedNodeMessages.length}</p>
+                            <div className={g('rounded-2xl border border-slate-200 bg-slate-50 p-2.5', 'rounded-2xl border border-white/10 bg-white/10 p-2.5')}>
+                              <p className={g('text-sm font-semibold uppercase text-black', 'text-sm font-semibold uppercase text-slate-300')}>Progress</p>
+                              <p className={g('mt-1 text-base font-semibold text-black', 'mt-1 text-base font-semibold text-white')}>{selectedNode.cumulativeProgress}%</p>
                             </div>
                           </div>
 
-                          {/* Textual Record — section label with a trailing rule, no wrapper box */}
-                          <div className="flex min-h-0 flex-1 flex-col">
-                            <div className="flex items-center gap-3">
-                              <p className={g('text-xs font-semibold uppercase tracking-wide text-slate-500', 'text-xs font-semibold uppercase tracking-wide text-slate-400')}>
-                                Textual Record · {selectedNodeMessages.length} note{selectedNodeMessages.length === 1 ? '' : 's'}
-                              </p>
-                              <span className={g('h-px flex-1 bg-slate-200', 'h-px flex-1 bg-white/15')} />
+                          <div className={g('flex min-h-0 flex-1 flex-col rounded-[1.25rem] border border-slate-200 bg-slate-50 p-3.5', 'flex min-h-0 flex-1 flex-col rounded-[1.25rem] border border-white/10 bg-white/10 p-3.5')}>
+                            <div className="flex items-center justify-between gap-3">
+                              <p className={g('text-base font-semibold text-black', 'text-base font-semibold text-white')}>Textual Record</p>
+                              <span className={g('rounded-full bg-white px-2.5 py-1 text-sm font-semibold text-black', 'rounded-full border border-white/15 bg-white/10 px-2.5 py-1 text-sm font-semibold text-white')}>
+                                {selectedNodeMessages.length} note{selectedNodeMessages.length === 1 ? '' : 's'}
+                              </span>
                             </div>
-                            <div className="mt-1 flex-1 min-h-0 overflow-auto pr-1">
+                            <div className="mt-3 flex-1 min-h-0 space-y-3 overflow-auto pr-1">
                               {selectedNodeMessages.length > 0 ? (
                                 selectedNodeMessages.map((message, index) => (
                                   <div
                                     key={message._id || message.id || `${selectedNode.nodeId}-message-${index}`}
-                                    className={g('border-b border-slate-200 py-4 last:border-b-0', 'border-b border-white/10 py-4 last:border-b-0')}
+                                    className={g('rounded-2xl border border-slate-200 bg-white p-3', 'rounded-2xl border border-white/15 bg-white/10 p-3')}
                                   >
-                                    <div className="flex items-baseline justify-between gap-3">
+                                    <div className="flex items-center justify-between gap-3">
                                       <p className={g('text-base font-semibold text-black', 'text-base font-semibold text-white')}>
                                         {message.checkpointName || selectedNode.title}
                                       </p>
-                                      <p className={g('shrink-0 text-sm tabular-nums text-slate-500', 'shrink-0 text-sm tabular-nums text-slate-400')}>
+                                      <p className={g('text-sm text-black', 'text-sm text-slate-300')}>
                                         {message.timestamp ? formatDateTime(message.timestamp) : 'No date'}
                                       </p>
                                     </div>
-                                    <p className={g('mt-1.5 whitespace-pre-line text-base leading-6 text-slate-700', 'mt-1.5 whitespace-pre-line text-base leading-6 text-slate-200')}>
+                                    <p className={g('mt-2 whitespace-pre-line text-base leading-6 text-black', 'mt-2 whitespace-pre-line text-base leading-6 text-slate-200')}>
                                       {message.message || message.remark || message.notes || 'No textual details available.'}
                                     </p>
                                     {(message.fileSize || message.fileName) ? (
-                                      <p className={g('mt-2 text-sm font-medium text-emerald-700', 'mt-2 text-sm font-medium text-emerald-300')}>
-                                        ↳ {message.fileName ? message.fileName : 'Attachment'}
-                                        {message.fileSize ? ` · ${message.fileSize}` : ''}
+                                      <p className={g('mt-2 text-sm text-black', 'mt-2 text-sm text-slate-300')}>
+                                        {message.fileName ? `File: ${message.fileName}` : 'Attachment'}
+                                        {message.fileSize ? ` | Size: ${message.fileSize}` : ''}
                                       </p>
                                     ) : null}
                                   </div>
                                 ))
                               ) : (
-                                <p className={g('py-4 text-base text-slate-500', 'py-4 text-base text-slate-400')}>
+                                <p className={g('text-base text-black', 'text-base text-slate-300')}>
                                   No textual record is linked to this node yet.
                                 </p>
                               )}
@@ -919,7 +920,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
                         className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-3 text-base font-semibold text-white transition hover:bg-emerald-700"
                       >
                         <Upload className="h-4 w-4" />
-                        Upload Data
+                        Request Update
                       </button>
                       {order.projectLink && order.projectLink.trim() !== '' ? (
                         <a

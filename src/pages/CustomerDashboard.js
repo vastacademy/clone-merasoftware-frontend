@@ -325,7 +325,7 @@ const CustomerDashboard = () => {
                 </p>
                 <div className="mt-5">
                   <Link
-                    to="/home"
+                    to="/start-new-project"
                     className="inline-flex items-center gap-2 rounded-2xl bg-white px-4 py-3 text-base font-semibold text-slate-900 transition hover:bg-slate-100"
                   >
                     <PlusCircle className="h-4 w-4" />

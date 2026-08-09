@@ -192,7 +192,7 @@ const ProjectsAndPlans = () => {
                     Back to Dashboard
                   </Link>
                   <Link
-                    to="/home"
+                    to="/start-new-project"
                     className="inline-flex items-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-4 py-3 text-base font-semibold text-white backdrop-blur-md transition hover:bg-white/20"
                   >
                     Start New Project

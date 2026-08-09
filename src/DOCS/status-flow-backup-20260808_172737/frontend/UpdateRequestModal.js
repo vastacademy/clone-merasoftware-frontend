@@ -232,34 +232,28 @@ const UpdateRequestModal = ({ plan, onClose, onSubmitSuccess }) => {
   
 // Update the file icons to handle new file types
 const getFileIcon = (fileType) => {
-  const chip = 'w-10 h-10 p-2 mr-3 rounded-lg border border-white/15 bg-white/10 flex-shrink-0';
   if (fileType.startsWith('image/')) {
-    return <Image className={`${chip} text-white/70`} />;
+    return <Image className="w-10 h-10 text-gray-400 mr-3" />;
   } else if (fileType === 'application/pdf') {
-    return <FileText className={`${chip} text-rose-300`} />;
-  } else if (fileType === 'application/msword' ||
+    return <FileText className="w-10 h-10 text-red-400 mr-3" />;
+  } else if (fileType === 'application/msword' || 
              fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-    return <FileText className={`${chip} text-sky-300`} />;
+    return <FileText className="w-10 h-10 text-blue-400 mr-3" />;
   } else {
-    return <FileText className={`${chip} text-white/70`} />;
+    return <FileText className="w-10 h-10 text-gray-400 mr-3" />;
   }
 };
 
 
   return (
-    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-      {/* Outer frame — the GREEN gradient scene the modal floats on (matches the mockup's .scene) */}
-      <div className="w-full max-w-2xl max-h-[90vh] flex rounded-[1.5rem] p-6 shadow-[0_25px_70px_rgba(0,0,0,0.55)] ring-1 ring-inset ring-white/[0.06] bg-[radial-gradient(120%_120%_at_15%_0%,#1f6d54_0%,#143b3a_45%,#0d1b26_100%)]">
-      {/* Inner modal — dark neutral glass floating on the green frame (matches .modal.glass) */}
-      <div className="relative w-full flex flex-col rounded-[1.4rem] border border-white/[0.18] text-white shadow-[0_20px_60px_rgba(0,0,0,0.45)] overflow-hidden bg-[rgba(20,26,32,0.55)] backdrop-blur-xl backdrop-saturate-150">
-        {/* Top sheen, matching the page's glass cards */}
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-1/3 bg-gradient-to-b from-white/[0.10] to-transparent" />
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-lg w-full max-w-3xl max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="relative border-b border-white/15 px-5 py-4 flex justify-between items-center">
-          <h3 className="font-bold text-lg text-white">Upload Data</h3>
-          <button
+        <div className="border-b px-4 py-3 flex justify-between items-center">
+          <h3 className="font-semibold text-lg">Request Website Update</h3>
+          <button 
             onClick={onClose}
-            className="grid h-8 w-8 place-items-center rounded-lg border border-white/15 bg-white/10 text-white/80 transition hover:bg-white/15 hover:text-white disabled:opacity-50"
+            className="text-gray-500 hover:text-gray-700"
             disabled={loading}
           >
             <X className="w-5 h-5" />
@@ -280,43 +274,32 @@ const getFileIcon = (fileType) => {
         
         {showConfirmation ? (
           /* Confirmation Screen */
-          <div className="relative flex-1 overflow-auto p-6 flex flex-col items-center">
+          <div className="flex-1 overflow-auto p-6 flex flex-col items-center">
             <div className="text-center mb-6">
-              <h4 className="text-xl font-bold mb-2 text-white">Confirm Update Request</h4>
-              <p className="text-white/70">
+              <h4 className="text-xl font-semibold mb-2">Confirm Update Request</h4>
+              <p className="text-gray-600">
                 You're about to use 1 of your available monthly updates. This action cannot be undone.
               </p>
             </div>
-
-            <div className="w-full rounded-2xl border border-white/10 bg-white/[0.06] p-4 mb-6">
-              <h5 className="text-xs font-semibold uppercase tracking-wide text-white/60 mb-3">Summary</h5>
-              <div className="divide-y divide-white/10">
-                <div className="flex items-center justify-between py-2">
-                  <span className="text-sm text-white/70">Plan</span>
-                  <span className="text-sm font-semibold text-white">{plan.productId?.serviceName}</span>
-                </div>
-                <div className="flex items-center justify-between py-2">
-                  <span className="text-sm text-white/70">Files</span>
-                  <span className="text-sm font-semibold tabular-nums text-white">{files.length} files uploaded</span>
-                </div>
-                <div className="flex items-center justify-between py-2">
-                  <span className="text-sm text-white/70">Instructions</span>
-                  <span className="text-sm font-semibold tabular-nums text-white">{messages.length} messages</span>
-                </div>
-              </div>
+            
+            <div className="w-full bg-gray-50 rounded-lg p-4 mb-6">
+              <h5 className="font-medium mb-2">Summary</h5>
+              <p><span className="text-gray-600">Plan:</span> {plan.productId?.serviceName}</p>
+              <p><span className="text-gray-600">Files:</span> {files.length} files uploaded</p>
+              <p><span className="text-gray-600">Instructions:</span> {messages.length} messages</p>
             </div>
-
+            
             <div className="flex gap-4 mt-auto">
               <button
                 onClick={() => setShowConfirmation(false)}
-                className="px-5 py-2.5 rounded-xl border border-white/20 bg-white/10 font-semibold text-white transition hover:bg-white/15 disabled:opacity-50"
+                className="px-5 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
                 disabled={loading}
               >
                 Back
               </button>
               <button
                 onClick={submitUpdateRequest}
-                className="px-5 py-2.5 rounded-xl bg-emerald-600 font-semibold text-white transition hover:bg-emerald-700 flex items-center disabled:opacity-50"
+                className="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center"
                 disabled={loading}
               >
                 Confirm and Submit
@@ -325,12 +308,12 @@ const getFileIcon = (fileType) => {
           </div>
         ) : (
           /* Main Update Request Form */
-          <div className="relative flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 flex flex-col overflow-hidden">
             {/* Content */}
             <div className="p-4 flex-1 overflow-auto">
               <div className="mb-6">
-                <h4 className="text-xs font-semibold uppercase tracking-wide text-white/60 mb-1">Upload Files</h4>
-                <p className="text-sm text-white/55 mb-4">
+                <h4 className="font-medium mb-3">Upload Files</h4>
+                <p className="text-sm text-gray-600 mb-4">
                 Only JPG images, PDF, DOC, TXT and RTF documents are supported. Max file size: 5MB. Maximum 20 files allowed. Images will be automatically compressed.
                 </p>
 
@@ -338,14 +321,14 @@ const getFileIcon = (fileType) => {
                 <div className="flex items-center justify-center w-full">
                   <label
                     htmlFor="file-upload"
-                    className={`border-2 border-dashed rounded-2xl w-full p-6 flex flex-col items-center justify-center cursor-pointer transition ${
+                    className={`border-2 border-dashed rounded-lg w-full p-6 flex flex-col items-center justify-center cursor-pointer ${
                       files.length >= 20
-                        ? 'border-white/15 bg-white/[0.04] cursor-not-allowed'
-                        : 'border-white/25 bg-white/[0.06] hover:bg-white/10'
+                        ? 'border-gray-200 bg-gray-100 cursor-not-allowed'
+                        : 'border-gray-300 hover:bg-gray-50'
                     }`}
                   >
-                    <Upload className={`w-10 h-10 mb-2 ${files.length >= 20 ? 'text-white/30' : 'text-emerald-400'}`} />
-                    <p className={`text-sm ${files.length >= 20 ? 'text-white/40' : 'text-white/70'}`}>
+                    <Upload className={`w-10 h-10 mb-2 ${files.length >= 20 ? 'text-gray-300' : 'text-gray-400'}`} />
+                    <p className={`text-sm ${files.length >= 20 ? 'text-gray-400' : 'text-gray-600'}`}>
                       {files.length >= 20 ? 'Maximum files reached (20/20)' : `Click to upload or drag and drop (${files.length}/20)`}
                     </p>
                     <input
@@ -363,59 +346,57 @@ const getFileIcon = (fileType) => {
                 
                 {/* File previews */}
                 {files.length > 0 && (
-                  <div className="mt-4">
-                    <h5 className="text-xs font-semibold uppercase tracking-wide text-white/60 mb-1">Uploaded Files</h5>
-                    <div className="divide-y divide-white/10 border-t border-white/10">
+                  <div className="mt-4 space-y-3">
+                    <h5 className="font-medium text-sm">Uploaded Files</h5>
                     {files.map((file, index) => (
-                      <div key={index} className="flex items-center py-3">
+                      <div key={index} className="flex items-center bg-gray-50 p-3 rounded-lg">
                         {file.type.startsWith('image/') ? (
-                          <div className="flex-shrink-0 w-10 h-10 rounded-lg overflow-hidden mr-3 border border-white/15">
-                            <img
-                              src={file.preview}
-                              alt={file.name}
+                          <div className="flex-shrink-0 w-10 h-10 bg-gray-200 rounded overflow-hidden mr-3">
+                            <img 
+                              src={file.preview} 
+                              alt={file.name} 
                               className="w-full h-full object-cover"
                             />
                           </div>
                         ) : getFileIcon(file.type)}
-
+                        
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate text-white">{file.name}</p>
-                          <p className="text-xs text-white/50 tabular-nums">
+                          <p className="text-sm font-medium truncate">{file.name}</p>
+                          <p className="text-xs text-gray-500">
                             {(file.size / 1024).toFixed(1)} KB • {file.type.split('/')[1]}
                           </p>
                         </div>
-
+                        
                         <button
                           onClick={() => removeFile(index)}
-                          className="ml-2 text-white/50 hover:text-rose-400 transition"
+                          className="ml-2 text-gray-400 hover:text-red-500"
                         >
                           <X className="w-5 h-5" />
                         </button>
                       </div>
                     ))}
-                    </div>
                   </div>
                 )}
               </div>
               
               <div>
-                <h4 className="text-xs font-semibold uppercase tracking-wide text-white/60 mb-1">Instructions</h4>
-                <p className="text-sm text-white/55 mb-4">
+                <h4 className="font-medium mb-3">Instructions</h4>
+                <p className="text-sm text-gray-600 mb-4">
                   Please provide clear instructions for your website update.
                 </p>
-
+                
                 {/* Previous messages */}
-                <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-3 mb-4 max-h-48 overflow-y-auto">
+                <div className="bg-gray-50 rounded-lg p-3 mb-4 max-h-48 overflow-y-auto">
                   {messages.length === 0 ? (
-                    <p className="text-white/50 text-sm text-center py-4">
+                    <p className="text-gray-500 text-sm text-center py-4">
                       No instructions added yet. Use the form below to add instructions.
                     </p>
                   ) : (
-                    <div className="divide-y divide-white/10">
+                    <div className="space-y-3">
                       {messages.map((msg, index) => (
-                        <div key={index} className="py-3 first:pt-0 last:pb-0">
-                          <p className="text-sm text-white">{msg.text}</p>
-                          <p className="text-xs text-white/50 mt-1 tabular-nums">
+                        <div key={index} className="bg-white rounded-lg p-3 shadow-sm">
+                          <p className="text-sm">{msg.text}</p>
+                          <p className="text-xs text-gray-500 mt-1">
                             {msg.timestamp.toLocaleTimeString()}
                           </p>
                         </div>
@@ -423,7 +404,7 @@ const getFileIcon = (fileType) => {
                     </div>
                   )}
                 </div>
-
+                
                 {/* Message input */}
                 <div className="flex items-end gap-2">
                   <div className="flex-1 relative">
@@ -431,27 +412,20 @@ const getFileIcon = (fileType) => {
                       ref={messageInputRef}
                       value={message}
                       onChange={(e) => setMessage(e.target.value)}
-                      onKeyDown={(e) => {
-                        // Enter sends the message; Shift+Enter inserts a new line.
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault();
-                          sendMessage();
-                        }
-                      }}
-                      placeholder="Type your instructions here... (Enter to add, Shift+Enter for new line)"
-                      className="w-full rounded-xl border border-white/16 bg-white/[0.08] p-3 min-h-[80px] text-white placeholder:text-white/40 focus:outline-none focus:border-emerald-400/60 resize-none"
+                      placeholder="Type your instructions here..."
+                      className="w-full border rounded-lg p-3 min-h-[80px] focus:outline-none focus:border-blue-500 resize-none"
                     ></textarea>
-                    <div className="absolute bottom-2 right-2 text-xs text-white/40 tabular-nums">
+                    <div className="absolute bottom-2 right-2 text-xs text-gray-400">
                       {message.length} characters
                     </div>
                   </div>
                   <button
                     onClick={sendMessage}
                     disabled={!message.trim()}
-                    className={`px-3 py-3 rounded-xl transition ${
-                      !message.trim()
-                        ? 'bg-white/10 text-white/40 cursor-not-allowed'
-                        : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                    className={`px-3 py-3 rounded-lg ${
+                      !message.trim() 
+                        ? 'bg-gray-200 text-gray-400 cursor-not-allowed' 
+                        : 'bg-blue-600 text-white hover:bg-blue-700'
                     }`}
                   >
                     <Send className="w-5 h-5" />
@@ -461,7 +435,7 @@ const getFileIcon = (fileType) => {
             </div>
             
             {/* Footer */}
-            <div className="p-4 border-t border-white/15">
+            <div className="p-4 border-t">
               <button
                 onClick={() => {
                   // Agar message field mein kuch hai to pehle usse send kar do
@@ -476,24 +450,23 @@ const getFileIcon = (fileType) => {
                  setShowConfirmation(true);
                 }}
                 disabled={files.length === 0 && messages.length === 0}
-                className={`w-full py-3 rounded-xl font-semibold transition ${
+                className={`w-full py-2 rounded-lg font-medium ${
                   files.length === 0 && messages.length === 0
-                    ? 'bg-white/10 text-white/40 cursor-not-allowed'
-                    : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-blue-600 text-white hover:bg-blue-700'
                 }`}
               >
                 Proceed to Confirmation
               </button>
-
+              
               {files.length === 0 && messages.length === 0 && (
-                <p className="text-amber-300 text-xs mt-2 text-center">
+                <p className="text-orange-500 text-xs mt-2 text-center">
                   Please upload files or add instructions to proceed
                 </p>
               )}
             </div>
           </div>
         )}
-      </div>
       </div>
     </div>
   );
