@@ -37,7 +37,14 @@ const postLogin = ({
   }
 
   toast.success(dataApi.message);
-  navigate("/home", { replace: true });
+
+  // First-login password reset (soft): users auto-created via lead convert
+  // land on the set-password page but can skip to /home.
+  if (dataApi?.data?.mustResetPassword) {
+    navigate("/set-new-password", { replace: true });
+  } else {
+    navigate("/home", { replace: true });
+  }
 
   if (fetchUserDetails) {
     void fetchUserDetails();

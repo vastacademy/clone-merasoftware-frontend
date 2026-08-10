@@ -1,6 +1,8 @@
 import ProtectedRoute from "../components/ProtectedRoute";
 import AdminDashboard from "../pages/AdminDashboard";
 import AdminClientsPage from "../pages/AdminClientsPage";
+import AdminLeadsPage from "../pages/AdminLeadsPage";
+import AdminLeadDetailPage from "../pages/AdminLeadDetailPage";
 import AdminClientWorkspace from "../pages/AdminClientWorkspace";
 import AdminPaymentRecordDetail from "../pages/AdminPaymentRecordDetail";
 import ProjectDetails from "../pages/ProjectDetails";
@@ -17,6 +19,22 @@ export const adminRoutes = [
     element: (
       <ProtectedRoute requireRole={['admin']}>
         <AdminDashboard/>
+      </ProtectedRoute>
+    )
+  },
+  {
+    path: "admin-panel/leads",
+    element: (
+      <ProtectedRoute requireRole={['admin']}>
+        <AdminLeadsPage/>
+      </ProtectedRoute>
+    )
+  },
+  {
+    path: "admin-panel/leads/:leadId",
+    element: (
+      <ProtectedRoute requireRole={['admin']}>
+        <AdminLeadDetailPage/>
       </ProtectedRoute>
     )
   },

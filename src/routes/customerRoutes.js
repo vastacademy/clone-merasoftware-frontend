@@ -23,6 +23,7 @@ import StartNewWebsiteCustomize from "../pages/StartNewWebsiteCustomize";
 import ServicePlanDetail from "../pages/ServicePlanDetail";
 import GamesListPage from "../chess/GamesListPage";
 import ChessPage from "../chess/ChessPage";
+import SetNewPassword from "../pages/SetNewPassword";
 
 const CustomerProtectedRoute = ({ children }) => (
   <ProtectedRoute requireRole={['customer']}>
@@ -31,6 +32,14 @@ const CustomerProtectedRoute = ({ children }) => (
 );
 
 export const customerRoutes = [
+  {
+    path: "set-new-password",
+    element: (
+      <CustomerProtectedRoute>
+        <SetNewPassword/>
+      </CustomerProtectedRoute>
+    )
+  },
   {
     path: "dashboard",
     element: (

@@ -10,12 +10,15 @@ import {
   Menu,
   PanelsTopLeft,
   Settings2,
+  UserPlus,
   Users2,
 } from "lucide-react";
 import MobileSidebarDrawer from "./MobileSidebarDrawer";
+import AdminGlobalSearch from "./admin/AdminGlobalSearch";
 
 export const adminSidebarModules = [
   { id: "dashboard", label: "Dashboard", icon: BarChart3, live: true, to: "/admin-panel/dashboard" },
+  { id: "leads", label: "Leads", icon: UserPlus, live: true, to: "/admin-panel/leads" },
   { id: "clients", label: "Clients", icon: Users2, live: true, to: "/admin-panel/clients" },
   {
     id: "website-management",
@@ -80,6 +83,10 @@ const AdminLayout = ({
 
         <div className="mt-6 inline-flex rounded-full border border-emerald-400/30 bg-emerald-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-emerald-300">
           Admin Panel
+        </div>
+
+        <div className="mt-5">
+          <AdminGlobalSearch onNavigate={() => setMobileMenuOpen(false)} />
         </div>
       </div>
 

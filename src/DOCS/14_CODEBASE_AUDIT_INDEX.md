@@ -102,8 +102,9 @@ Current conditional fields:
 | Customer workspace | `getAdminUserWorkspace.js` | Existing SSOT read bundle |
 | Full order detail | `getOrderDetails.js` | Admin/customer read path; customer dynamic timeline filtering (`getCustomerTimeline()`) live |
 | Client activity sorting | `getAdminClients.js` | Existing endpoint; reads `projectNodeEvents` timestamps as an activity source (its `order.checkpoints` reference is now effectively dead — the field no longer exists on any order, so that specific activity source never fires) |
-| Order creation | `createOrder.js` | Calls `initializeProjectTimeline()` for website-category orders — no predefined checkpoint generation |
-| Payment approval | `transactionApprovalController.js` | Existing order activation; node initialization happens via `createOrder.js`/`adminCreateProjectOrder.js` at order-creation time, not a separate approval-time step |
+| Order creation | `createOrder.js` | Product-based (catalog) path; calls `initializeProjectTimeline()` for website-category orders — no predefined checkpoint generation |
+| Custom-project order creation (customer) | `customerCreateCustomProjectOrder.js` | Product-less path for the Customize flow (`POST /api/customer/custom-project-order`); customer-side twin of `adminCreateProjectOrder.js` — builds a hidden `isCustomClientProject` product, re-derives price server-side (`categoryBasePrice` + compatible `feature_upgrades`, pages priced per `pageCount`), creates a `pending-approval` order, calls `initializeProjectTimeline()`, and (partial) `buildInstallments` 2⇒50/50 or 3⇒30/30/40. Paid in-page via `/wallet/verify-payment` (see `42_...md`) |
+| Payment approval | `transactionApprovalController.js` | Existing order activation; node initialization happens via `createOrder.js`/`adminCreateProjectOrder.js`/`customerCreateCustomProjectOrder.js` at order-creation time, not a separate approval-time step |
 | Admin auth | `middleware/authToken.js` plus `req.userRole` checks | Existing cookie/JWT role path |
 | Active route registry | `backend/routes/index.js` | Existing routes plus migrated-timeline-gated node routes (`/api/admin/projects/:orderId/nodes...`) |
 | Plans/invoices/payments | Existing plan/order/invoice/transaction models/controllers | Must remain separate and regression-safe |

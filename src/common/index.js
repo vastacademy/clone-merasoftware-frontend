@@ -713,6 +713,38 @@ const SummaryApi = {
         url: `${backendDomain}/api/admin/category-base-prices`,
         method: "post"
     },
+    adminLeads: {
+        url: `${backendDomain}/api/admin/leads`,
+        method: "get"
+    },
+    createLead: {
+        url: `${backendDomain}/api/admin/leads`,
+        method: "post"
+    },
+    leadDetail: {
+        url: `${backendDomain}/api/admin/leads`,
+        method: "get"
+    },
+    updateLead: {
+        url: `${backendDomain}/api/admin/leads`,
+        method: "patch"
+    },
+    adminGlobalSearch: {
+        url: `${backendDomain}/api/admin/search`,
+        method: "get"
+    },
+    convertLead: {
+        url: `${backendDomain}/api/admin/leads`,
+        method: "post"
+    },
+    setNewPassword: {
+        url: `${backendDomain}/api/set-new-password`,
+        method: "post"
+    },
+    uploadProposal: {
+        url: `${backendDomain}/api/admin/leads`,
+        method: "post"
+    },
     createProjectNode: {
         url: `${backendDomain}/api/admin/projects`,
         method: "post"
