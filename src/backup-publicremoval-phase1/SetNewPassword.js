@@ -1,15 +1,11 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useSelector } from "react-redux";
 import { toast } from "sonner";
 import { KeyRound } from "lucide-react";
 import SummaryApi from "../common";
-import { getPortalHome } from "../helpers/portalHome";
 
 const SetNewPassword = () => {
   const navigate = useNavigate();
-  const user = useSelector((state) => state?.user?.user);
-  const portalHome = getPortalHome(user?.role);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [saving, setSaving] = useState(false);
@@ -40,7 +36,7 @@ const SetNewPassword = () => {
         return;
       }
       toast.success("Password updated successfully");
-      navigate(portalHome, { replace: true });
+      navigate("/home", { replace: true });
     } catch (error) {
       console.error("Error setting new password:", error);
       toast.error("Error updating password");
@@ -50,7 +46,7 @@ const SetNewPassword = () => {
   };
 
   const handleSkip = () => {
-    navigate(portalHome, { replace: true });
+    navigate("/home", { replace: true });
   };
 
   return (

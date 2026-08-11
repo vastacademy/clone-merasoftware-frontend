@@ -14,19 +14,18 @@ This is the current architecture summary for the active frontend code.
 
 1. `src/index.js` boots the React app.
 2. `src/App.js` provides online status context.
-3. `src/AppContent.js` initializes user session state and shared app context.
-4. `src/components/Header.js` selects the correct header for the current role.
-5. `src/routes/index.js` builds the route tree from public, customer, and admin route groups.
+3. `src/AppContent.js` initializes user session state and shared app context, and renders only `<Outlet/>` (no global header/footer — the public site is removed; see `44_PUBLIC_SITE_REMOVAL.md`).
+4. `src/routes/index.js` builds the route tree from the entry, customer, and admin route groups.
 
 ## Active Route Groups
 
-### Public
+### Entry (public site removed)
 
-- `/` - `RoleBasedHome`
-- `/home` - `Home`
+- `/` - `RoleBasedHome` (redirects to `/login` or the role's portal home)
 - `/login` - `Login`
-- `/forgot-password`
-- product, search, policy, and contact pages
+- `/unauthorized` - wrong-role fallback
+
+No public marketing/storefront/policy pages exist (`/home`, product, search, contact, etc. all removed).
 
 ### Customer
 
@@ -57,12 +56,10 @@ This is the current architecture summary for the active frontend code.
 - `customerRoutes` are restricted to `role: customer`
 - `adminRoutes` are restricted to `role: admin`
 
-## Header And Shell Layout
+## Shell Layout
 
-- `Header` chooses `CustomerHeader` or `AdminHeader` based on role
-- `CustomerHeader` is the customer-facing header
-- `AdminHeader` is the admin-facing header
-- `DashboardLayout` is the shared customer dashboard shell
+- Portal chrome comes only from `DashboardLayout` (customer) / `AdminLayout` (admin); the old global `Header`/`SharedHeader`/`Footer` were removed with the public site (`44_PUBLIC_SITE_REMOVAL.md`)
+- `DashboardLayout` is the shared customer dashboard shell (and hosts the customer cart)
 - `CustomerDashboard` is the active customer dashboard page
 - `UserDashboard` is legacy and no longer the routed dashboard surface
 - `ProjectsAndPlans` is the active customer project/plan list page
@@ -70,7 +67,7 @@ This is the current architecture summary for the active frontend code.
 - `OrderDetailPage` is the single-order detail page and remains visually untouched
 - `AdminDashboard` is the active admin dashboard page
 - `ProjectDetails` is a routed customer/admin detail page that now uses a fixed desktop shell height with scrollable timeline/details panels and a compact snapshot column
-- `AppContent` and `DashboardLayout` keep content flow natural instead of forcing viewport-height wrappers, so footer placement follows actual content height
+- `AppContent` and `DashboardLayout` keep content flow natural instead of forcing viewport-height wrappers
 - The customer dashboard shell now emphasizes dashboard, track project, and wallet as primary quick links, with orders/profile/support available as secondary links; `Start New Project` is hidden temporarily from the sidebar
 - Wallet balance is sourced from `current_user` / `userDetails` and surfaced through `AppContent`; the dashboard no longer owns a separate wallet endpoint flow
 - The dashboard page now only reads wallet state, order data, and active project state from the shared app layer
@@ -79,7 +76,7 @@ This is the current architecture summary for the active frontend code.
 
 ## Current Notes
 
-- The customer login path currently redirects to `/home`
+- The customer login path redirects to `/dashboard` (admin → `/admin-panel/dashboard`) via `getPortalHome(role)`; there is no `/home`
 - The admin dashboard is no longer a dummy page; `AdminDashboard.js` is the active page
 - The customer dashboard side panel is the active shell for the current UI direction
 - Localhost cookie warnings can appear if production cookie-domain env values are reused in dev

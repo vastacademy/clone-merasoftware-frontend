@@ -7,13 +7,10 @@ Fast lookup for the current codebase.
 | File | Purpose |
 |------|---------|
 | `src/App.js` | Online status and app boot |
-| `src/AppContent.js` | Session init, context provider, shared shell |
-| `src/components/Header.js` | Role-based header selector |
-| `src/components/AdminHeader.js` | Admin header UI |
-| `src/components/CustomerHeader.js` | Customer header UI |
-| `src/components/DashboardLayout.js` | Customer dashboard shell |
+| `src/AppContent.js` | Session init, context provider, `<Outlet/>` only (no global header/footer) |
+| `src/helpers/portalHome.js` | `getPortalHome(role)` — SSOT for post-login/root landing |
+| `src/components/DashboardLayout.js` | Customer dashboard shell (hosts the cart) |
 | `src/components/AdminLayout.js` | Shared admin shell |
-| `src/components/Footer.js` | Global footer |
 | `src/pages/CustomerDashboard.js` | Active customer dashboard launchpad |
 | `src/pages/ProjectsAndPlans.js` | Active project/plan tracking list |
 | `src/pages/UserDashboard.js` | Legacy customer dashboard content |
@@ -33,16 +30,11 @@ Fast lookup for the current codebase.
 
 ## Current Route Map
 
-### Public
+### Entry (public site removed — see `44_PUBLIC_SITE_REMOVAL.md`)
 
-- `/` - `RoleBasedHome`
-- `/home`
+- `/` - `RoleBasedHome` (redirects to `/login` or the role's portal home)
 - `/login`
-- `/forgot-password`
-- `/product/:id`
-- `/search`
-- policy pages
-- `/contact-us`
+- `/unauthorized`
 
 ### Customer
 
@@ -72,8 +64,8 @@ Fast lookup for the current codebase.
 
 1. User submits credentials on `/login`
 2. `Login.js` calls the sign-in API
-3. `postLogin()` stores user data and redirects to `/home`
-4. `Header` picks the correct header based on role
+3. `postLogin()` stores user data and redirects via `getPortalHome(role)` (admin → `/admin-panel/dashboard`, customer → `/dashboard`); there is no `/home`
+4. Portal chrome comes from `DashboardLayout`/`AdminLayout` (no global header)
 5. Protected routes handle access after login
 
 ## Current Dashboard Roles
@@ -93,14 +85,13 @@ Fast lookup for the current codebase.
 - Canonical dynamic node work belongs to `backend/helpers/projectNodeService.js`, `backend/controller/order/projectNodeController.js`, and order-owned timeline fields (`projectRuns`, `projectNodes`, `projectNodeEvents`, `projectTimelineVersion`) in `orderProductModel.js`.
 - New admin node APIs are migrated-timeline-gated under `/api/admin/projects/:orderId/nodes...`. Every `isWebsiteProject: true` order (new and pre-existing) is on `projectTimelineVersion: 1` as of the migration in `39_PROJECT_NODE_SYSTEM_PHASE_2_3_DONE_PHASE_4_PENDING.md` — the legacy `checkpoints` schema field/hooks have been removed from `orderProductModel.js`/`productModel.js`. The 4 non-website legacy orders remain on version 0 by design (node system doesn't support their type).
 - Admin client detail work belongs in `AdminClientWorkspace.js`
-- Admin shell work belongs in `AdminLayout.js`
-- Admin header work belongs in `AdminHeader.js`
+- Admin shell/header work belongs in `AdminLayout.js` (there is no separate `AdminHeader` — removed with the public site)
 - Admin `Payment & Invoices` tab work belongs in `AdminClientWorkspace.js`
 - Admin payment records in that tab come from `allData.transactions`; do not create a separate admin payment source
 - Admin invoice records in that tab come from `allData.invoices`; `Mark Paid` calls `/api/invoices/:invoiceId/mark-paid`
 - Payment approve/reject actions should not be wired until active backend transaction approval routes are verified/completed
 - Project detail UI work belongs in `ProjectDetails.js`
-- Footer spacing and shell flow work belong to `AppContent.js`, `DashboardLayout.js`, and `Footer.js`
+- Shell flow work belongs to `AppContent.js`, `DashboardLayout.js`, and `AdminLayout.js` (there is no global `Footer` — removed with the public site)
 - Admin client overview data should be pulled from the existing customer APIs, not a separate admin DB
 - Admin project detail now follows a history-first subpage pattern: checkpoint list, selected checkpoint notes, project submissions, and file metadata all live in the same project subpage
 - Customer project detail at `/project-details/:orderId` is checkpoint-driven: the active checkpoint opens by default, timeline clicks update the detail panel, and the old Recent Updates feed is not shown

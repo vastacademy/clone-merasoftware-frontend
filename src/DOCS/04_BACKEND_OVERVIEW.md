@@ -347,11 +347,11 @@ One-time passwords for email verification.
 - `guestSlidesModal.js` - Welcome slides for non-logged-in users
 - `userWelcomeModal.js` - Welcome content personalization
 - `notificationModel.js` - System notifications
-- `contactRequestModel.js` - Contact form submissions
 - `partnerCommissionModel.js` - Partner earnings tracking
 - `withdrawalRequestModel.js` - Withdrawal requests from partners
 - `adminSettingsModel.js` - Admin configuration
-- `cartProduct.js` - Shopping cart items
+
+> Removed with the public site (`44_PUBLIC_SITE_REMOVAL.md`): `cartProduct.js` (old public add-to-cart) and `contactRequestModel.js` (public contact form) — moved to `backend/backup-publicremoval-phase4B/models/`.
 
 ---
 

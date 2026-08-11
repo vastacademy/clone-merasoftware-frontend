@@ -56,16 +56,18 @@ This guide explains how data flows through the application from frontend to back
 ```javascript
 {
   fetchUserDetails: () => Promise,
-  cartProductCount: 5,
   walletBalance: 5000,
+  setWalletBalance: () => void,
+  fetchWalletBalance: () => Promise,
   activeProject: null,
-  handleLogout: () => void,
-  onlineStatus: true/false
+  updateActiveProject: () => void,
+  handleLogout: () => void
 }
 ```
+> Note: `cartProductCount` / `fetchUserAddToCart` were removed from this context with the public site (the old public add-to-cart is gone). See `44_PUBLIC_SITE_REMOVAL.md`.
 
 **Providers**:
-- **App.js**: OnlineStatusContext (monitors internet connection)
+- **App.js**: OnlineStatusContext (monitors internet connection) + `DraftOrdersProvider` (the current customer cart)
 - **AppContent.js**: Main context with user data and methods
 
 **Usage Pattern**:
@@ -74,8 +76,8 @@ import { useContext } from 'react'
 import { Context } from '../context'
 
 function MyComponent() {
-  const { cartProductCount, walletBalance } = useContext(Context)
-  return <div>{cartProductCount} items, ₹{walletBalance}</div>
+  const { walletBalance } = useContext(Context)
+  return <div>₹{walletBalance}</div>
 }
 ```
 
@@ -161,9 +163,9 @@ const SummaryApi = {
     method: "get",
     url: `/api/user-details`
   },
-  addToCart: {
+  productDetails: {
     method: "post",
-    url: `/api/addtocart`
+    url: `/api/product-details`
   },
   // ... 100+ endpoints
 }
@@ -302,9 +304,9 @@ try {
    └─ httpOnly cookie with JWT
    └─ Automatically sent with future requests
 
-9. Redirect to dashboard
-   └─ Router redirects to role-based dashboard
-   └─ Header updates with user name/avatar
+9. Redirect to portal home
+   └─ getPortalHome(role): admin → /admin-panel/dashboard, customer → /dashboard
+   └─ Portal shell (DashboardLayout/AdminLayout) renders with user name/avatar
 
 10. Future API calls
     └─ Every request includes cookie
@@ -312,49 +314,7 @@ try {
     └─ Adds userId to request
 ```
 
-### Example 2: Add to Cart Flow
-
-```
-1. User clicks "Add to Cart" on product
-   └─ ProductCard component button click
-
-2. Get product ID
-   └─ Product._id from props
-
-3. Send to backend
-   └─ POST /api/addtocart
-   └─ Body: { productId, quantity, price }
-   └─ Cookie with JWT sent automatically
-
-4. Backend processes
-   └─ Verify user authenticated (from token)
-   └─ Check product exists
-   └─ Add to cart collection
-   └─ Return success
-
-5. Frontend receives response
-   └─ result.success === true
-   └─ Show success toast
-
-6. Update cart count
-   └─ GET /api/countAddToCartProduct
-   └─ Backend returns count
-   └─ Update Context: cartProductCount = 5
-
-7. Update localStorage
-   └─ Cache updated cart count
-
-8. Component re-renders
-   └─ Cart icon shows "5" badge
-   └─ User sees confirmation
-
-9. Next page load
-   └─ App initializes from localStorage cache
-   └─ Cart count shown immediately
-   └─ No API call if within cache expiry
-```
-
-### Example 3: Create Order Flow
+### Example 2: Create Order Flow
 
 ```
 1. User views cart, clicks "Proceed to Checkout"
@@ -582,11 +542,6 @@ try {
 - User role change
 - Profile update
 
-**Clear cartProductCount**:
-- Add to cart
-- Remove from cart
-- After checkout
-
 **Clear walletBalance**:
 - Transaction approved/rejected
 - Wallet add/deduct
@@ -612,10 +567,6 @@ localStorage.removeItem('token')
 // After transaction
 storageService.removeItem('walletBalance')
 // Next API call will fetch fresh data
-
-// After cart change
-storageService.removeItem('cartProductCount')
-// Context update will trigger re-fetch
 ```
 
 ---

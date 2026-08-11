@@ -1,7 +1,17 @@
 import { Navigate } from "react-router-dom";
+import { useSelector } from "react-redux";
+import { getPortalHome } from "../helpers/portalHome";
 
+// Root "/" landing. The public site is gone as an entry point:
+// logged-out users go to /login, logged-in users to their portal home.
 const RoleBasedHome = () => {
-  return <Navigate to="/home" replace />;
+  const user = useSelector((state) => state?.user?.user);
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return <Navigate to={getPortalHome(user.role)} replace />;
 };
 
 export default RoleBasedHome;

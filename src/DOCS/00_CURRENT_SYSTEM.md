@@ -7,27 +7,24 @@ This document describes the active frontend behavior as of the current codebase.
 - Login page: `src/pages/Login.js`
 - OTP verification page still exists: `src/pages/OtpVerification.js`
 - Current direct-login path uses `postLogin()` from `src/helpers/postLogin.js`
-- After successful login, the app redirects to `/home`
+- After successful login, the app redirects to the role's **portal home** via `getPortalHome(role)` (`src/helpers/portalHome.js`): admin → `/admin-panel/dashboard`, customer → `/dashboard`. The public site is gone — there is no `/home`. See `44_PUBLIC_SITE_REMOVAL.md`.
 - `postLogin()` stores user data in Redux, cookies, and local storage
 
 ### Current behavior
 
-- Customer login stays in the customer flow and lands on `/home`
-- Admin login also returns to the normal app flow after sign-in
-- The active route decision is handled by `Header` and protected routes, not by a separate dashboard redirect in login
+- Customer login lands on `/dashboard`; admin login lands on `/admin-panel/dashboard`
+- Root `/` (`RoleBasedHome`) redirects: logged-out → `/login`, logged-in → the role's portal home
+- The active route decision is handled by protected routes and `RoleBasedHome`, not by a separate dashboard redirect in login
 
 ## 2. Route Map
 
-### Public routes
+### Entry routes (the only non-portal routes — public site removed)
 
-- `/` - `RoleBasedHome`
-- `/home` - `Home`
+- `/` - `RoleBasedHome` (redirects to `/login` or the role's portal home)
 - `/login` - `Login`
-- `/forgot-password`
-- `/product/:id`
-- `/search`
-- policy pages such as `/terms-and-conditions`, `/privacy-policy`, `/cookies-policy`, `/delivery-policy`, `/refund-policy`, `/disclaimers`
-- `/contact-us`
+- `/unauthorized` - wrong-role fallback (used by `ProtectedRoute.js`)
+
+The public marketing/storefront site (`/home`, `/product/:id`, `/search`, `/contact-us`, `/service-card`, `/forgot-password`, `/demo`, `/practice`, and all policy pages) has been **removed**. See `44_PUBLIC_SITE_REMOVAL.md`.
 
 ### Customer routes
 
@@ -74,19 +71,10 @@ This document describes the active frontend behavior as of the current codebase.
 
 ## 3. Active Layouts
 
-- `Header` selects `AdminHeader` or `CustomerHeader` based on `user.role`
-- `CustomerHeader` now uses a profile-first layout with:
-  - avatar fallback using first letter
-  - hover dropdown on desktop
-  - wallet and notification bell kept in the header
-  - logout moved into the dropdown
-- `AdminHeader` uses the same profile-first pattern with:
-  - light header styling
-  - hover dropdown on desktop
-  - admin panel and logout in the dropdown
-- `DashboardLayout` is the active customer dashboard shell
+- The old global `Header`/`SharedHeader`/`Footer` were **removed** with the public site (Phase 2 of `44_PUBLIC_SITE_REMOVAL.md`). Portals now rely entirely on their own shells (`DashboardLayout`/`AdminLayout`) — `AppContent` renders only `<Outlet/>` (plus the `Context.Provider` and `ScrollToTop`).
+- `DashboardLayout` is the active customer dashboard shell (and now hosts the customer cart: `DraftOrderSavedDrawer` + `FloatingCartButton`)
 - `DashboardLayout` owns the sidebar page badge; `/projects-and-plans` resolves to `Projects and Plans`
-- `DashboardLayout` resolves customer badges for wallet, orders, projects, support, updates, invoices, payments, cart, and profile-completion routes
+- `DashboardLayout` resolves customer badges for wallet, orders, projects, support, updates, invoices, payments, and profile-completion routes
 - `OrderPage` keeps its header, filters, counts, and order list inside one shared card, matching the Projects and Plans single-box layout
 - `OrderPage` active filters use the same emerald selection color as `ProjectsAndPlans`
 - `CustomerDashboard` is the active customer dashboard launchpad page
@@ -96,9 +84,8 @@ This document describes the active frontend behavior as of the current codebase.
 - `OrderDetailPage` remains unchanged and is the order detail surface for a single record
 - `AdminDashboard` is the active admin dashboard page
 - `AdminLayout` is the shared admin shell used by dashboard, clients, and client detail pages
-- `AppContent` now keeps the app outlet content flow natural instead of forcing a viewport min-height, so the footer can sit directly after page content
-- `DashboardLayout` and `AdminLayout` sidebars are `sticky` (not `fixed`) inside a `flex items-stretch` row with the content column; this lets the sidebar's background visually extend to match content height instead of being viewport-locked and skipped by the page footer
-- `Footer` no longer centers its desktop content with an internal `max-w-7xl`; it now uses the same `mx-auto max-w-[90rem] px-4 sm:px-6 lg:px-8` wrapper as `AdminWorkspaceShell`, so footer columns align with the sidebar-adjacent content width on both customer and admin pages instead of centering independently of the sidebar
+- `AppContent` keeps the app outlet content flow natural instead of forcing a viewport min-height
+- `DashboardLayout` and `AdminLayout` sidebars are `sticky` (not `fixed`) inside a `flex items-stretch` row with the content column; this lets the sidebar's background visually extend to match content height instead of being viewport-locked
 
 ## 4. Dashboard Behavior
 
@@ -107,7 +94,7 @@ This document describes the active frontend behavior as of the current codebase.
 - Main content now lives in `CustomerDashboard`
 - Left panel UI comes from `DashboardLayout`
 - The dashboard is a launchpad for key customer information and next actions, not a workflow-heavy control panel
-- Primary sidebar quick links are Dashboard, Projects and Plans, Start New Project, and Wallet, with Orders/Profile/Support kept as secondary links; the `Start New Project` quick link now points to `/start-new-project` (previously pointed to the public `/home` page before this link existed)
+- Primary sidebar quick links are Dashboard, Projects and Plans, Start New Project, and Wallet, with Orders/Profile/Support kept as secondary links; the `Start New Project` quick link points to `/start-new-project`
 - Wallet balance is treated as a single source of truth from `current_user` / `userDetails`; `AppContent` reads that value and the dashboard does not own a separate wallet fetch
 - Dashboard recent items use a row-based list layout with status and progress-only-at-the-far-right presentation
 
@@ -132,7 +119,7 @@ This document describes the active frontend behavior as of the current codebase.
 - `AdminDashboard` now shows dashboard summary content only
 - `AdminClientsPage` shows the client list as its own route
 - It has:
-  - sticky desktop sidebar (via `AdminLayout`); there is no mobile drawer for this sidebar — below the `lg` breakpoint the sidebar is not rendered at all, and mobile navigation comes only from `SharedHeader`'s own generic mobile nav dropdown
+  - sticky desktop sidebar (via `AdminLayout`); mobile navigation comes from `AdminLayout`'s own `MobileSidebarDrawer`
   - landscape orientation button on mobile
   - dashboard refresh actions
 
@@ -200,4 +187,4 @@ Do not treat these as current source of truth:
 - `AdminDashboardDummy.js`
 - old docs describing `/admin-panel/dashboard` as removed
 - old docs describing a customer-only system with no admin route
-- old homepage cleanup docs that mention deleted landing pages as if they were current
+- **any doc describing the public marketing/storefront site, `Home.js`, product browsing (`/product/:id`, `/search`, `CategoryProduct`), the public `Header`/`SharedHeader`/`Footer`, or the old public add-to-cart (`cartProduct`) system as current** — all removed; see `44_PUBLIC_SITE_REMOVAL.md`. These references survive only in historical docs (`28_CART_SYSTEM_AND_ADD_MORE_PAGES.md`, `03_DATA_FLOW_AND_PATTERNS.md`, etc.) as history, not current state.

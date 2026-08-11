@@ -3,6 +3,10 @@ import { Outlet } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { useOnlineStatus } from './App';
 import { setUserDetails, updateWalletBalance, logout } from './store/userSlice';
+import Header from './components/Header';
+import Footer from './components/Footer';
+import DraftOrderSavedDrawer from './components/DraftOrderSavedDrawer';
+import FloatingCartButton from './components/FloatingCartButton';
 import SummaryApi from './common';
 import Context from './context';
 import CookieManager from './utils/cookieManager';
@@ -25,6 +29,7 @@ const AppContent = () => {
   const dispatch = useDispatch();
   const user = useSelector(state => state?.user?.user);
   const { isOnline, isInitialized } = useOnlineStatus(); 
+  const [cartProductCount, setCartProductCount] = useState(0);
   const [walletBalance, setWalletBalance] = useState(0);
   const [activeProject, setActiveProject] = useState(null);
   const [showQR, setShowQR] = useState(false);
@@ -51,6 +56,7 @@ const AppContent = () => {
         setWalletBalance(0);
       dispatch(updateWalletBalance(0));
       dispatch(logout());
+      setCartProductCount(0);
       }
     } catch (error) {
       console.error("Error during logout:", error);
@@ -144,6 +150,28 @@ const AppContent = () => {
     }
   };
 
+  const fetchUserAddToCart = async () => {
+    try {
+      // First check localStorage
+      const cachedCount = StorageService.getCartCount();
+      setCartProductCount(cachedCount);
+
+      // If online, fetch fresh data
+      if (isOnline) {
+        const dataResponse = await fetch(SummaryApi.addToCartProductCount.url, {
+          method: SummaryApi.addToCartProductCount.method,
+          credentials: 'include'
+        });
+        const dataApi = await dataResponse.json();
+        const newCount = dataApi?.data?.count || 0;
+        setCartProductCount(newCount);
+        StorageService.setCartCount(newCount);
+      }
+    } catch (error) {
+      console.error("Error fetching cart count:", error);
+    }
+  };
+
    // Add a function to update active project that can be called from child components
  const updateActiveProject = (project) => {
   // console.log("AppContent: updating activeProject:", project);
@@ -167,7 +195,12 @@ const AppContent = () => {
 
         if (cachedUser) {
           console.log("✅ [AppContent] Restoring user from localStorage:", cachedUser.name);
-          await fetchUserDetails();
+          const loadedUser = await fetchUserDetails();
+          if (loadedUser?.role === "customer") {
+            await fetchUserAddToCart();
+          } else {
+            setCartProductCount(0);
+          }
           return;
         }
 
@@ -178,7 +211,14 @@ const AppContent = () => {
           if (!userLoaded) {
             console.log("❌ [AppContent] API returned not ok, logging out");
             dispatch(logout());
+            await fetchUserAddToCart();
             return;
+          }
+
+          if (userLoaded.role === "customer") {
+            await fetchUserAddToCart();
+          } else {
+            setCartProductCount(0);
           }
         } else {
           // Offline aur no cached user
@@ -260,6 +300,8 @@ useEffect(() => {
   return (
      <Context.Provider value={{
         fetchUserDetails,
+        cartProductCount,
+        fetchUserAddToCart,
         walletBalance,
         setWalletBalance,
         fetchWalletBalance,
@@ -269,9 +311,13 @@ useEffect(() => {
       }}>
         <div className="flex min-h-screen flex-col">
           <ScrollToTop />
+          <Header activeProject={activeProject} />
           <main className="flex-1 pt-0 md:pt-0">
             <Outlet />
           </main>
+          <Footer />
+          <DraftOrderSavedDrawer />
+          <FloatingCartButton />
         </div>
       </Context.Provider>
   )

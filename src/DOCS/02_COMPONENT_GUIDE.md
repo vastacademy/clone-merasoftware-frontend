@@ -4,37 +4,15 @@ This guide focuses on the active components that matter most in the current code
 
 ## Layout Components
 
-### `Header.js`
-
-- Role-based header switcher
-- Renders `AdminHeader` for admin users
-- Renders `CustomerHeader` for everyone else
-
-### `CustomerHeader.js`
-
-- Customer-facing header
-- Profile-first avatar with first-letter fallback
-- Hover dropdown on desktop
-- Wallet amount and notification bell stay in the header
-- Logout lives in the profile dropdown
-
-### `AdminHeader.js`
-
-- Admin-facing header
-- Light header styling
-- Profile avatar with first-letter fallback
-- Hover dropdown on desktop
-- Dropdown contains admin panel access and logout
+> The old global `Header.js` / `SharedHeader.js` / `CustomerHeader` / `AdminHeader` / `Footer.js` were **removed** with the public site — portal chrome now comes only from `DashboardLayout` / `AdminLayout`. See `44_PUBLIC_SITE_REMOVAL.md`.
 
 ### `DashboardLayout.js`
 
-- Shared customer dashboard shell
-- Left side panel is fixed on desktop
-- Primary quick links are dashboard, track project, and wallet
-- Orders, profile, and support remain as secondary links
-- `Start New Project` is temporarily hidden from the sidebar, but the `/home` route still exists
+- Shared customer dashboard shell (also hosts the customer cart: `DraftOrderSavedDrawer` + `FloatingCartButton`)
+- Left side panel is sticky on desktop; `MobileSidebarDrawer` + `MobileBottomNav` below `lg`
+- Primary quick links are Dashboard, Projects and Plans, Start New Project; Orders/Wallet/Games/Profile/Support are secondary ("More")
 - Logout confirmation popup is part of this layout
-- Customer route page badges are resolved centrally from the current pathname, including updates, invoices, payments, cart, support tickets, and profile completion
+- Customer route page badges are resolved centrally from the current pathname
 - Does not change the customer dashboard business logic
 
 ### `ProtectedRoute.js`
@@ -103,7 +81,7 @@ This guide focuses on the active components that matter most in the current code
 
 ## Current Working Pattern
 
-- Keep UI shell changes inside `Header`, `DashboardLayout`, or the page shell
+- Keep UI shell changes inside `DashboardLayout`/`AdminLayout` or the page shell
 - Keep dashboard business logic inside the page component
 - Do not move working data fetching into docs-only examples
 - Keep wallet balance ownership in `AppContent` + backend `current_user`; avoid duplicate wallet fetches from dashboard pages

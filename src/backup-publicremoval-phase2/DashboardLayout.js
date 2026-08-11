@@ -14,8 +14,6 @@ import StorageService from '../utils/storageService';
 import { useOnlineStatus } from '../App';
 import MobileSidebarDrawer from './MobileSidebarDrawer';
 import MobileBottomNav from './MobileBottomNav';
-import DraftOrderSavedDrawer from './DraftOrderSavedDrawer';
-import FloatingCartButton from './FloatingCartButton';
 import backgroundImage from '../assets/BG.png';
 
 const DashboardLayout = ({ children, user, walletBalance, cartCount, isLoading, activeProject }) => {
@@ -327,10 +325,6 @@ const DashboardLayout = ({ children, user, walletBalance, cartCount, isLoading, 
       </div>
 
       <MobileBottomNav tabs={bottomNavTabs} onMoreClick={() => setMobileMenuOpen(true)} />
-
-      {/* Customer cart (moved from AppContent — cart is a customer-portal feature). */}
-      <DraftOrderSavedDrawer />
-      <FloatingCartButton />
 
       {/* Logout Confirmation Popup */}
       {showLogoutConfirmation && currentUser && (

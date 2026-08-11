@@ -1,7 +1,6 @@
 import CookieManager from "../utils/cookieManager";
 import StorageService from "../utils/storageService";
 import { setUserDetails, updateWalletBalance } from "../store/userSlice";
-import { getPortalHome } from "./portalHome";
 
 const postLogin = ({
   dataApi,
@@ -9,6 +8,7 @@ const postLogin = ({
   navigate,
   toast,
   fetchUserDetails,
+  fetchUserAddToCart,
 }) => {
   const user = dataApi?.data?.user;
   if (!user) {
@@ -39,15 +39,19 @@ const postLogin = ({
   toast.success(dataApi.message);
 
   // First-login password reset (soft): users auto-created via lead convert
-  // land on the set-password page but can skip to their portal home.
+  // land on the set-password page but can skip to /home.
   if (dataApi?.data?.mustResetPassword) {
     navigate("/set-new-password", { replace: true });
   } else {
-    navigate(getPortalHome(user.role), { replace: true });
+    navigate("/home", { replace: true });
   }
 
   if (fetchUserDetails) {
     void fetchUserDetails();
+  }
+
+  if (fetchUserAddToCart) {
+    void fetchUserAddToCart();
   }
 };
 

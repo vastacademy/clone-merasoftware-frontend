@@ -18,7 +18,7 @@ const Login = () => {
 
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { fetchUserDetails } = useContext(Context);
+  const { fetchUserDetails, fetchUserAddToCart } = useContext(Context);
 
   const handleOnChange = (e) => {
     const { name, value } = e.target;
@@ -58,6 +58,7 @@ const Login = () => {
         navigate,
         toast,
         fetchUserDetails,
+        fetchUserAddToCart,
       });
     } catch (error) {
       console.error("Login error:", error);

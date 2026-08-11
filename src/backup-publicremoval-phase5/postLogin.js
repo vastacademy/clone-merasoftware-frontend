@@ -9,6 +9,7 @@ const postLogin = ({
   navigate,
   toast,
   fetchUserDetails,
+  fetchUserAddToCart,
 }) => {
   const user = dataApi?.data?.user;
   if (!user) {
@@ -48,6 +49,10 @@ const postLogin = ({
 
   if (fetchUserDetails) {
     void fetchUserDetails();
+  }
+
+  if (fetchUserAddToCart) {
+    void fetchUserAddToCart();
   }
 };
 
