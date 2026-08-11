@@ -9,7 +9,6 @@ import {
   LogOut,
   PanelsTopLeft,
   Settings2,
-  Trash2,
   UserPlus,
   Users2,
 } from "lucide-react";
@@ -42,7 +41,6 @@ export const adminSidebarModules = [
       { id: "features", label: "Features", icon: ListChecks, live: true, to: "/admin-panel/project-setup/features" },
     ],
   },
-  { id: "trash", label: "Trash", icon: Trash2, live: true, to: "/admin-panel/trash" },
   { id: "upcoming-orders", label: "Upcoming Orders", icon: Layers3, soon: true },
   { id: "upcoming-reports", label: "Upcoming Reports", icon: BarChart3, soon: true },
 ];

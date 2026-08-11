@@ -36,7 +36,7 @@ const OrderListRow = ({ order, index = 0, onClick }) => {
   const isProject = isProjectItem(order);
   const isPlan = isPlanItem(order);
   const accent = getItemTypeAccent(order);
-  const summary = getItemSummary(order);
+  const summary = isPlan ? getItemSummary(order) : 'Project';
   const category = order.productId?.category?.split('_').join(' ') || 'Unknown type';
   const currentValue = isPlan
     ? (order.productId?.isMonthlyRenewablePlan || order.productId?.isMonthlyLimitedPlan
@@ -64,11 +64,9 @@ const OrderListRow = ({ order, index = 0, onClick }) => {
               <span className={`rounded-full px-2.5 py-1 text-sm font-semibold uppercase ${accent.badge}`}>
                 {getItemTypeLabel(order)}
               </span>
-              {summary && (
-                <span className="rounded-full border border-white/20 bg-white/10 px-2.5 py-1 text-sm font-semibold uppercase text-slate-200">
-                  {summary}
-                </span>
-              )}
+              <span className="rounded-full border border-white/20 bg-white/10 px-2.5 py-1 text-sm font-semibold uppercase text-slate-200">
+                {summary}
+              </span>
             </div>
             <h3 className="mt-2 truncate text-lg font-semibold text-white">
               {order.productId?.serviceName || 'Untitled'}

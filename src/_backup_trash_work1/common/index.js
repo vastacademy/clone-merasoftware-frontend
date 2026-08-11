@@ -698,25 +698,6 @@ const SummaryApi = {
         url: `${backendDomain}/api/admin/leads`,
         method: "delete"
     },
-    // Trash (soft-delete) system. trashClient: POST /api/admin/clients/:id/trash.
-    // getTrash: GET list. restoreTrash: POST /api/admin/trash/:type/:id/restore.
-    // purgeTrash: DELETE /api/admin/trash/:type/:id (permanent).
-    trashClient: {
-        url: `${backendDomain}/api/admin/clients`,
-        method: "post"
-    },
-    getTrash: {
-        url: `${backendDomain}/api/admin/trash`,
-        method: "get"
-    },
-    restoreTrash: {
-        url: `${backendDomain}/api/admin/trash`,
-        method: "post"
-    },
-    purgeTrash: {
-        url: `${backendDomain}/api/admin/trash`,
-        method: "delete"
-    },
     adminGlobalSearch: {
         url: `${backendDomain}/api/admin/search`,
         method: "get"

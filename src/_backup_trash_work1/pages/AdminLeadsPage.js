@@ -195,7 +195,7 @@ const AdminLeadsPage = () => {
         toast.error(result.message || "Failed to delete lead");
         return;
       }
-      toast.success("Lead moved to Trash");
+      toast.success("Lead deleted");
       setLeadToDelete(null);
       await fetchLeads();
     } catch (error) {
@@ -482,10 +482,11 @@ const AdminLeadsPage = () => {
               <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-red-100 text-red-600">
                 <Trash2 size={24} />
               </div>
-              <h2 className="mt-4 text-center text-lg font-bold text-slate-900">Move lead to Trash?</h2>
+              <h2 className="mt-4 text-center text-lg font-bold text-slate-900">Delete lead?</h2>
               <p className="mt-2 text-center text-sm text-slate-600">
-                <span className="font-semibold text-slate-900">{leadToDelete.name || "This lead"}</span> will be moved to
-                Trash and hidden from your leads. You can restore it within 30 days before it is permanently deleted.
+                You are about to delete{" "}
+                <span className="font-semibold text-slate-900">{leadToDelete.name || "this lead"}</span>. This action cannot
+                be undone.
               </p>
             </div>
 
@@ -505,7 +506,7 @@ const AdminLeadsPage = () => {
                 className="inline-flex items-center gap-2 rounded-2xl bg-red-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {deletingId ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
-                {deletingId ? "Moving..." : "Move to Trash"}
+                {deletingId ? "Deleting..." : "Delete"}
               </button>
             </div>
           </div>

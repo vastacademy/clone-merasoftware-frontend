@@ -12,6 +12,7 @@ import AdminPlanProductsPage from "../pages/AdminPlanProductsPage";
 import AdminCreatePlanPage from "../pages/AdminCreatePlanPage";
 import AdminCategoryBasePricePage from "../pages/AdminCategoryBasePricePage";
 import AdminFeatureProductsPage from "../pages/AdminFeatureProductsPage";
+import AdminTrashPage from "../pages/AdminTrashPage";
 
 export const adminRoutes = [
   {
@@ -107,6 +108,14 @@ export const adminRoutes = [
     element: (
       <ProtectedRoute requireRole={['admin']}>
         <AdminFeatureProductsPage/>
+      </ProtectedRoute>
+    )
+  },
+  {
+    path: "admin-panel/trash",
+    element: (
+      <ProtectedRoute requireRole={['admin']}>
+        <AdminTrashPage/>
       </ProtectedRoute>
     )
   },

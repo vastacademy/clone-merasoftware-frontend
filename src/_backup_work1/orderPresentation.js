@@ -87,11 +87,6 @@ export const getItemStatusMeta = (order) => {
 };
 
 // Short summary text: plans show remaining days/updates, projects show progress %.
-// Projects only get a progress summary once work is actually underway — while the
-// order is pending (payment rejected / awaiting approval / unpaid invoice) or
-// approved-but-not-started (0%), there is no meaningful progress to show, so the
-// summary is empty and callers should render no badge. Pending conditions mirror
-// getItemStatusMeta so the summary never contradicts the status badge.
 export const getItemSummary = (order) => {
   if (isPlanItem(order)) {
     if (order.productId?.isMonthlyRenewablePlan || order.productId?.isMonthlyLimitedPlan) {
@@ -103,25 +98,7 @@ export const getItemSummary = (order) => {
     return totalUpdates > 0 ? `${Math.max(0, totalUpdates - usedUpdates)} update(s) left` : 'Plan details available';
   }
 
-  if (isProjectItem(order)) {
-    // A project reads as complete via either signal, matching getItemStatusMeta.
-    if (order.projectProgress >= 100 || order.currentPhase === 'completed') {
-      return '100% complete';
-    }
-
-    const isPending =
-      order.orderVisibility === 'payment-rejected' ||
-      order.orderVisibility === 'pending-approval' ||
-      order.hasUnpaidInvoice ||
-      !isOrderApproved(order);
-
-    const progress = Math.round(order?.projectProgress || 0);
-    if (isPending || progress <= 0) return '';
-
-    return `${progress}% complete`;
-  }
-
-  return '';
+  return `${Math.round(order?.projectProgress || 0)}% complete`;
 };
 
 export const getItemTypeLabel = (order) => (isPlanItem(order) ? 'Plan' : 'Project');
