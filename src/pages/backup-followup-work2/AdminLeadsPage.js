@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { ArrowUpDown, Loader2, Plus, RefreshCw, Search, Trash2, UserPlus, X } from "lucide-react";
+import { ArrowUpDown, Plus, RefreshCw, Search, UserPlus, X } from "lucide-react";
 import SummaryApi from "../common";
 import { logout } from "../store/userSlice";
 import CookieManager from "../utils/cookieManager";
@@ -51,8 +51,6 @@ const AdminLeadsPage = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
-  const [deletingId, setDeletingId] = useState(null);
-  const [leadToDelete, setLeadToDelete] = useState(null);
 
   const handleLogout = async () => {
     try {
@@ -165,47 +163,6 @@ const AdminLeadsPage = () => {
     }
   };
 
-  const requestDeleteLead = (lead) => {
-    if (deletingId) return;
-    if (lead.convertedToUserId) {
-      toast.error("Converted leads cannot be deleted");
-      return;
-    }
-    setLeadToDelete(lead);
-  };
-
-  const closeDeleteModal = () => {
-    if (deletingId) return;
-    setLeadToDelete(null);
-  };
-
-  const confirmDeleteLead = async () => {
-    const lead = leadToDelete;
-    if (!lead || deletingId) return;
-
-    try {
-      setDeletingId(lead._id);
-      const response = await fetch(`${SummaryApi.deleteLead.url}/${lead._id}`, {
-        method: SummaryApi.deleteLead.method,
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-      });
-      const result = await response.json();
-      if (!result.success) {
-        toast.error(result.message || "Failed to delete lead");
-        return;
-      }
-      toast.success("Lead deleted");
-      setLeadToDelete(null);
-      await fetchLeads();
-    } catch (error) {
-      console.error("Error deleting lead:", error);
-      toast.error("Error deleting lead");
-    } finally {
-      setDeletingId(null);
-    }
-  };
-
   const displayedLeads = useMemo(() => {
     const query = searchTerm.trim().toLowerCase();
     let result = leads;
@@ -301,35 +258,27 @@ const AdminLeadsPage = () => {
         <div className="p-5 sm:p-6">
           <AdminWorkspaceList
             columns={[
-              { label: "Lead", className: "col-span-12 lg:col-span-3" },
+              { label: "Lead", className: "col-span-12 lg:col-span-4" },
               { label: "Contact", className: "col-span-6 lg:col-span-3" },
               { label: "Status", className: "col-span-6 lg:col-span-2" },
-              { label: "Source", className: "col-span-6 lg:col-span-1" },
-              { label: "Added", className: "col-span-6 lg:col-span-1" },
-              { label: "Action", className: "col-span-6 text-right lg:col-span-2" },
+              { label: "Source", className: "col-span-6 lg:col-span-2" },
+              { label: "Added", className: "col-span-6 text-right lg:col-span-1" },
             ]}
             loading={loading}
             emptyText="No leads yet. Use Add Lead to create one."
             items={displayedLeads}
             footer={`Showing ${displayedLeads.length} of ${leads.length} leads`}
             renderRow={(lead, index) => (
-              <div
+              <button
                 key={lead._id}
-                role="button"
-                tabIndex={0}
+                type="button"
                 onClick={() => navigate(`/admin-panel/leads/${lead._id}`)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    navigate(`/admin-panel/leads/${lead._id}`);
-                  }
-                }}
                 className={[
-                  "group grid w-full cursor-pointer grid-cols-12 gap-3 px-5 py-4 text-left transition hover:bg-slate-100 sm:px-6",
+                  "grid w-full grid-cols-12 gap-3 px-5 py-4 text-left transition hover:bg-slate-100 sm:px-6",
                   index % 2 === 0 ? "bg-white" : "bg-slate-50",
                 ].join(" ")}
               >
-                <div className="col-span-12 lg:col-span-3">
+                <div className="col-span-12 lg:col-span-4">
                   <p className="truncate text-base font-bold text-slate-950">{lead.name || "N/A"}</p>
                   <p className="mt-1 text-xs text-slate-500">Lead #{index + 1}</p>
                 </div>
@@ -344,36 +293,13 @@ const AdminLeadsPage = () => {
                     {lead.status || "New"}
                   </span>
                 </div>
-                <div className="col-span-6 lg:col-span-1 lg:flex lg:items-center">
+                <div className="col-span-6 lg:col-span-2 lg:flex lg:items-center">
                   <p className="truncate text-sm text-slate-700">{lead.source || "—"}</p>
                 </div>
-                <div className="col-span-6 lg:col-span-1 lg:flex lg:items-center">
+                <div className="col-span-6 flex items-center justify-end lg:col-span-1">
                   <p className="text-sm font-semibold text-slate-900">{formatDate(lead.createdAt)}</p>
                 </div>
-
-                {/* Action column — Delete button (hard red, appears on row hover; hidden for converted leads). */}
-                <div className="col-span-6 flex items-center justify-end lg:col-span-2">
-                  {!lead.convertedToUserId ? (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        requestDeleteLead(lead);
-                      }}
-                      disabled={deletingId === lead._id}
-                      aria-label={`Delete lead ${lead.name || ""}`}
-                      className="inline-flex items-center gap-1.5 rounded-xl bg-red-600 px-3 py-2 text-xs font-semibold text-white opacity-0 transition hover:bg-red-700 focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-red-300 group-hover:opacity-100 disabled:cursor-not-allowed disabled:opacity-100"
-                    >
-                      {deletingId === lead._id ? (
-                        <Loader2 size={14} className="animate-spin" />
-                      ) : (
-                        <Trash2 size={14} />
-                      )}
-                      Delete
-                    </button>
-                  ) : null}
-                </div>
-              </div>
+              </button>
             )}
           />
         </div>
@@ -471,44 +397,6 @@ const AdminLeadsPage = () => {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
-
-      {leadToDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4">
-          <div className="w-full max-w-md rounded-3xl bg-white shadow-2xl">
-            <div className="px-6 pt-6">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-red-100 text-red-600">
-                <Trash2 size={24} />
-              </div>
-              <h2 className="mt-4 text-center text-lg font-bold text-slate-900">Delete lead?</h2>
-              <p className="mt-2 text-center text-sm text-slate-600">
-                You are about to delete{" "}
-                <span className="font-semibold text-slate-900">{leadToDelete.name || "this lead"}</span>. This action cannot
-                be undone.
-              </p>
-            </div>
-
-            <div className="flex justify-center gap-3 px-6 py-6">
-              <button
-                type="button"
-                onClick={closeDeleteModal}
-                disabled={Boolean(deletingId)}
-                className="rounded-2xl border border-slate-200 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 disabled:opacity-60"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={confirmDeleteLead}
-                disabled={Boolean(deletingId)}
-                className="inline-flex items-center gap-2 rounded-2xl bg-red-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {deletingId ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
-                {deletingId ? "Deleting..." : "Delete"}
-              </button>
-            </div>
           </div>
         </div>
       )}

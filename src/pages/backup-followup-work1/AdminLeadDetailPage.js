@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
-import { ArrowLeft, Download, Mail, MessageSquarePlus, Phone, UserCheck, UserPlus } from "lucide-react";
+import { ArrowLeft, Download, FileText, Mail, MessageSquarePlus, Phone, Upload, UserCheck, UserPlus } from "lucide-react";
 import SummaryApi from "../common";
 import { logout } from "../store/userSlice";
 import CookieManager from "../utils/cookieManager";
@@ -37,11 +37,12 @@ const AdminLeadDetailPage = () => {
 
   const [lead, setLead] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [statusSaving, setStatusSaving] = useState(false);
   const [followUpNote, setFollowUpNote] = useState("");
-  const [followUpBadge, setFollowUpBadge] = useState("");
-  const [followUpFile, setFollowUpFile] = useState(null);
   const [followUpSaving, setFollowUpSaving] = useState(false);
   const [converting, setConverting] = useState(false);
+  const [proposalFile, setProposalFile] = useState(null);
+  const [proposalUploading, setProposalUploading] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -79,8 +80,6 @@ const AdminLeadDetailPage = () => {
         return;
       }
       setLead(result.data);
-      // Pre-select the follow-up badge to the lead's current stage (sensible default).
-      setFollowUpBadge(result.data?.status || "New");
     } catch (error) {
       console.error("Error fetching lead:", error);
       toast.error("Error loading lead");
@@ -96,33 +95,44 @@ const AdminLeadDetailPage = () => {
 
   const isConverted = Boolean(lead?.convertedToUserId);
 
+  const handleStatusChange = async (status) => {
+    if (!lead || status === lead.status || statusSaving || isConverted) return;
+    try {
+      setStatusSaving(true);
+      const response = await fetch(`${SummaryApi.updateLead.url}/${leadId}`, {
+        method: SummaryApi.updateLead.method,
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "status", status }),
+      });
+      const result = await response.json();
+      if (!result.success) {
+        toast.error(result.message || "Failed to update status");
+        return;
+      }
+      toast.success("Status updated");
+      await fetchLead();
+    } catch (error) {
+      console.error("Error updating status:", error);
+      toast.error("Error updating status");
+    } finally {
+      setStatusSaving(false);
+    }
+  };
+
   const handleAddFollowUp = async (event) => {
     event.preventDefault();
-    if (isConverted) return;
-    if (!followUpBadge) {
-      toast.error("Please select a stage badge");
-      return;
-    }
     if (!followUpNote.trim()) {
       toast.error("Please write a follow-up note");
       return;
     }
     try {
       setFollowUpSaving(true);
-      // Multipart so the optional file rides along in the same request; adding the
-      // follow-up also moves the lead's stage to the chosen badge (backend merge).
-      const formData = new FormData();
-      formData.append("action", "followUp");
-      formData.append("badge", followUpBadge);
-      formData.append("note", followUpNote);
-      if (followUpFile) {
-        formData.append("attachment", followUpFile);
-      }
-
       const response = await fetch(`${SummaryApi.updateLead.url}/${leadId}`, {
         method: SummaryApi.updateLead.method,
         credentials: "include",
-        body: formData,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "followUp", note: followUpNote }),
       });
       const result = await response.json();
       if (!result.success) {
@@ -131,7 +141,6 @@ const AdminLeadDetailPage = () => {
       }
       toast.success("Follow-up added");
       setFollowUpNote("");
-      setFollowUpFile(null);
       await fetchLead();
     } catch (error) {
       console.error("Error adding follow-up:", error);
@@ -178,9 +187,46 @@ const AdminLeadDetailPage = () => {
     }
   };
 
+  const handleUploadProposal = async (event) => {
+    event.preventDefault();
+    if (!proposalFile) {
+      toast.error("Please choose a proposal file");
+      return;
+    }
+    try {
+      setProposalUploading(true);
+      const formData = new FormData();
+      formData.append("proposal", proposalFile);
+
+      const response = await fetch(`${SummaryApi.uploadProposal.url}/${leadId}/proposal`, {
+        method: SummaryApi.uploadProposal.method,
+        credentials: "include",
+        body: formData,
+      });
+      const result = await response.json();
+      if (!result.success) {
+        toast.error(result.message || "Failed to upload proposal");
+        return;
+      }
+      toast.success(`Proposal v${result.data?.version} uploaded`);
+      setProposalFile(null);
+      await fetchLead();
+    } catch (error) {
+      console.error("Error uploading proposal:", error);
+      toast.error("Error uploading proposal");
+    } finally {
+      setProposalUploading(false);
+    }
+  };
+
   const followUps = useMemo(() => {
     const list = lead?.followUps || [];
     return [...list].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+  }, [lead]);
+
+  const proposals = useMemo(() => {
+    const list = lead?.proposals || [];
+    return [...list].sort((a, b) => (b.version || 0) - (a.version || 0));
   }, [lead]);
 
   return (
@@ -235,7 +281,7 @@ const AdminLeadDetailPage = () => {
             </div>
 
             <div className="rounded-3xl border border-slate-200 bg-white p-5">
-              <h3 className="text-sm font-bold uppercase tracking-wide text-slate-500">Current Stage</h3>
+              <h3 className="text-sm font-bold uppercase tracking-wide text-slate-500">Pipeline Stage</h3>
               {isConverted ? (
                 <div className="mt-3 space-y-3">
                   <p className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
@@ -251,18 +297,26 @@ const AdminLeadDetailPage = () => {
                   </button>
                 </div>
               ) : (
-                <div className="mt-3 space-y-2">
-                  <span
-                    className={[
-                      "inline-flex rounded-full border px-4 py-1.5 text-sm font-semibold",
-                      STATUS_STYLES[lead?.status] || STATUS_STYLES.New,
-                    ].join(" ")}
-                  >
-                    {lead?.status || "New"}
-                  </span>
-                  <p className="text-xs text-slate-500">
-                    Stage updates automatically from the badge on each follow-up below.
-                  </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {PIPELINE_STAGES.map((stage) => {
+                    const active = lead?.status === stage;
+                    return (
+                      <button
+                        key={stage}
+                        type="button"
+                        onClick={() => handleStatusChange(stage)}
+                        disabled={statusSaving || active}
+                        className={[
+                          "rounded-full border px-3 py-1.5 text-xs font-semibold transition disabled:cursor-default",
+                          active
+                            ? STATUS_STYLES[stage]
+                            : "border-slate-200 bg-white text-slate-500 hover:bg-slate-50",
+                        ].join(" ")}
+                      >
+                        {stage}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -298,43 +352,6 @@ const AdminLeadDetailPage = () => {
 
               {!isConverted ? (
                 <form onSubmit={handleAddFollowUp} className="mt-3 space-y-3">
-                  {/* Stage + file side by side; remark below (full width). */}
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    {/* Stage badge (dropdown) — colored so the timeline flow is readable. */}
-                    <div>
-                      <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                        Stage
-                      </label>
-                      <select
-                        value={followUpBadge}
-                        onChange={(e) => setFollowUpBadge(e.target.value)}
-                        className={[
-                          "w-full rounded-2xl border px-4 py-3 text-sm font-semibold outline-none transition focus:ring-4 focus:ring-emerald-100",
-                          STATUS_STYLES[followUpBadge] || STATUS_STYLES.New,
-                        ].join(" ")}
-                      >
-                        {PIPELINE_STAGES.map((stage) => (
-                          <option key={stage} value={stage}>
-                            {stage}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {/* Optional attachment for this follow-up. */}
-                    <div>
-                      <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                        Attachment <span className="font-normal normal-case text-slate-400">(optional)</span>
-                      </label>
-                      <input
-                        type="file"
-                        onChange={(e) => setFollowUpFile(e.target.files?.[0] || null)}
-                        className="block w-full rounded-2xl border border-slate-200 bg-slate-50 py-2.5 pl-3 text-sm text-slate-700 file:mr-3 file:rounded-xl file:border-0 file:bg-slate-100 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-slate-700 hover:file:bg-slate-200"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Remark (last, full width). */}
                   <textarea
                     value={followUpNote}
                     onChange={(e) => setFollowUpNote(e.target.value)}
@@ -342,7 +359,6 @@ const AdminLeadDetailPage = () => {
                     rows={3}
                     className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
                   />
-
                   <div className="flex justify-end">
                     <button
                       type="submit"
@@ -364,34 +380,73 @@ const AdminLeadDetailPage = () => {
                 ) : (
                   followUps.map((item, index) => (
                     <div key={index} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                      <div className="flex flex-wrap items-center gap-2">
-                        {item.badge ? (
-                          <span
-                            className={[
-                              "inline-flex rounded-full border px-3 py-1 text-xs font-semibold",
-                              STATUS_STYLES[item.badge] || STATUS_STYLES.New,
-                            ].join(" ")}
-                          >
-                            {item.badge}
-                          </span>
-                        ) : null}
-                      </div>
-                      <p className="mt-2 whitespace-pre-wrap text-sm text-slate-800">{item.note}</p>
-                      {item.attachment?.downloadLink ? (
-                        <a
-                          href={item.attachment.downloadLink}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="mt-3 inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
-                        >
-                          <Download size={14} />
-                          <span className="max-w-[200px] truncate">{item.attachment.name || "Attachment"}</span>
-                        </a>
-                      ) : null}
+                      <p className="whitespace-pre-wrap text-sm text-slate-800">{item.note}</p>
                       <p className="mt-2 text-xs text-slate-500">
                         {item.createdBy?.name ? `${item.createdBy.name} · ` : ""}
                         {formatDateTime(item.createdAt)}
                       </p>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Proposals / Quotations (versioned timeline) */}
+            <div className="mt-6 rounded-3xl border border-slate-200 bg-white p-5">
+              <h3 className="text-sm font-bold uppercase tracking-wide text-slate-500">Proposals &amp; Quotations</h3>
+
+              {!isConverted ? (
+                <form onSubmit={handleUploadProposal} className="mt-3 space-y-3">
+                  <input
+                    type="file"
+                    accept=".pdf,.doc,.docx"
+                    onChange={(e) => setProposalFile(e.target.files?.[0] || null)}
+                    className="block w-full text-sm text-slate-700 file:mr-3 file:rounded-xl file:border-0 file:bg-slate-100 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-slate-700 hover:file:bg-slate-200"
+                  />
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-xs text-slate-500">PDF or DOC. Each upload is saved as a new version.</p>
+                    <button
+                      type="submit"
+                      disabled={proposalUploading || !proposalFile}
+                      className="inline-flex shrink-0 items-center gap-2 rounded-2xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      <Upload size={16} />
+                      {proposalUploading ? "Uploading..." : "Upload Proposal"}
+                    </button>
+                  </div>
+                </form>
+              ) : null}
+
+              <div className="mt-5 space-y-3">
+                {proposals.length === 0 ? (
+                  <p className="rounded-2xl bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
+                    No proposals uploaded yet.
+                  </p>
+                ) : (
+                  proposals.map((item, index) => (
+                    <div key={index} className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                      <div className="flex min-w-0 items-center gap-3">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-100 text-indigo-700">
+                          <FileText size={18} />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold text-slate-900">
+                            Proposal v{item.version} · <span className="truncate font-normal text-slate-600">{item.name}</span>
+                          </p>
+                          <p className="mt-0.5 text-xs text-slate-500">{formatDateTime(item.uploadedAt)}</p>
+                        </div>
+                      </div>
+                      {item.downloadLink ? (
+                        <a
+                          href={item.downloadLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
+                        >
+                          <Download size={14} />
+                          Download
+                        </a>
+                      ) : null}
                     </div>
                   ))
                 )}

@@ -729,10 +729,6 @@ const SummaryApi = {
         url: `${backendDomain}/api/admin/leads`,
         method: "post"
     },
-    deleteLead: {
-        url: `${backendDomain}/api/admin/leads`,
-        method: "delete"
-    },
     adminGlobalSearch: {
         url: `${backendDomain}/api/admin/search`,
         method: "get"
