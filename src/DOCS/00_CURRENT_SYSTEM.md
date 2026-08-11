@@ -140,6 +140,7 @@ The public marketing/storefront site (`/home`, `/product/:id`, `/search`, `/cont
 - The `Payment & Invoices` tab uses existing workspace `transactions` and `invoices` arrays; it does not create a new admin payment source
 - The `Payment & Invoices` tab shows payment records as display-only until transaction approve/reject backend routes are verified/completed
 - The `Payment & Invoices` tab lets admin mark `unpaid` and `overdue` invoices as paid through `/api/invoices/:invoiceId/mark-paid`
+- `AdminClientWorkspace` now has an **`Account & Access`** tab: admin can **view** a client's password (plaintext), **reset** it, and **ban/enable** login (`isActive`). Password viewing needs a plaintext copy because bcrypt is one-way; this is flag-gated (`STORE_PLAIN_PASSWORD`) and reversible. See `47_ADMIN_USER_ACCESS_CONTROL_PASSWORD_AND_LOGIN_BAN.md`.
 - Project subpages now fetch an admin-only project history bundle from the same order-details source: checkpoint progress, linked checkpoint notes, update requests, file metadata, invoices, and transactions stay in one record view for projects
 - Project subpages now show a checkpoint list first, then a checkpoint detail panel with linked notes; project submission and file records are shown below for project-level history
 - Customer project details now use the same checkpoint-driven pattern on the customer side and no longer show a separate Recent Updates feed
@@ -151,6 +152,7 @@ The public marketing/storefront site (`/home`, `/product/:id`, `/search`, `/cont
 
 ## 5. API Notes
 
+- **Admin user access control (new)**: `userModel` now has additive `plainPassword` (display-only, gated by `backend/config/accessControlConfig.STORE_PLAIN_PASSWORD`) and `isActive` (login gate, default `true`). Plaintext is written at signup/convert/self-reset and **backfilled on successful login** for pre-existing users; `userSignIn.js` blocks login when `isActive === false` (checked only after the password matches). Three admin-only endpoints under `/admin/clients/:customerId/*` — `credentials` (view), `reset-password` (hash + plaintext), `account-status` (ban/enable, with self- and admin-account guards) — power the `Account & Access` tab. Login always authenticates against the bcrypt hash; plaintext is never used for auth and is stripped from the login response. Disable later via the flag + `backend/scripts/removePlainPasswords.js`. DB-leak risk of plaintext was an accepted owner decision. See `47_ADMIN_USER_ACCESS_CONTROL_PASSWORD_AND_LOGIN_BAN.md`.
 - Login uses the sign-in endpoint from `SummaryApi`
 - Customer dashboard reads orders and wallet data from existing API calls
 - `OrderPage` reads the full order list from `SummaryApi.ordersList` and renders a purchase-history list with price, purchase date, type, and status

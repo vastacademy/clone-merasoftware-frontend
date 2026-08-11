@@ -1,10 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ChevronLeft, Sparkles, CheckCircle2, CalendarClock, XCircle } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
+import { toast } from 'react-toastify';
 import SummaryApi from '../common';
+import Context from '../context';
+import displayINRCurrency from '../helpers/displayCurrency';
 import DashboardLayout from '../components/DashboardLayout';
 import TriangleMazeLoader from '../components/TriangleMazeLoader';
 import backgroundImage from '../assets/BG.png';
+
+const generateTransactionId = () =>
+  `TXN${Date.now()}${Math.floor(Math.random() * 1000)}`;
 
 const formatDate = (date) => {
   if (!date) return 'N/A';
@@ -72,16 +79,111 @@ const InvoiceDetailPage = () => {
     }
   };
 
-  const handlePayNow = () => {
-    navigate(`/direct-payment`, {
-      state: {
-        invoicePayment: true,
+  // ---- Canonical in-page payment (SSOT) ----
+  // This page is the single source of truth for paying an invoice. It pays THIS invoice
+  // by posting to /wallet/verify-payment with invoiceId + orderId (sourceType: 'invoice'),
+  // never creating a second order (the DirectPayment.js duplicate-order path is not used).
+  // Every other surface just links here; there is no other Pay Now form.
+  const context = useContext(Context);
+  const [showPayment, setShowPayment] = useState(false);
+  const [showQR, setShowQR] = useState(false);
+  const [payProcessing, setPayProcessing] = useState(false);
+  const [payTxnId, setPayTxnId] = useState('');
+  const [upiLink, setUpiLink] = useState('');
+  const [upiRef, setUpiRef] = useState('');
+
+  const amountDueNow = Number(invoice?.amount || 0);
+  const orderIdForPay = invoice?.orderId?._id || invoice?.orderId;
+  const isInstallmentInvoice = Boolean(invoice?.installmentNumber);
+
+  const submitVerification = async ({ txnId, upiTransactionId, method }) => {
+    const response = await fetch(SummaryApi.wallet.verifyPayment.url, {
+      method: SummaryApi.wallet.verifyPayment.method,
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        transactionId: txnId,
+        amount: amountDueNow,
+        upiTransactionId: upiTransactionId || `WALLET-${txnId}`,
+        paymentMethod: method,
+        sourceType: 'invoice',
         invoiceId: invoice._id,
-        orderId: invoice.orderId?._id,
-        invoiceAmount: invoice.amount,
-        productName: invoice.orderId?.productId?.serviceName || 'Plan',
-      },
+        orderId: orderIdForPay,
+        isInstallmentPayment: isInstallmentInvoice,
+        installmentNumber: isInstallmentInvoice ? invoice.installmentNumber : null,
+        type: 'payment',
+        description: `Payment for invoice ${invoice.invoiceNumber}`,
+      }),
     });
+    const data = await response.json();
+    // An already-submitted transaction is treated as success (same as InstallmentPayment.js).
+    if (!data.success && !(data.message || '').includes('already submitted')) {
+      throw new Error(data.message || 'Payment verification failed');
+    }
+  };
+
+  // Wallet covers the due amount → deduct + submit for approval. Else show a UPI QR.
+  const handleConfirmPayment = async () => {
+    if (payProcessing) return;
+    try {
+      setPayProcessing(true);
+      const walletBalance = context?.walletBalance || 0;
+
+      if (walletBalance >= amountDueNow) {
+        const txnId = generateTransactionId();
+        const deductRes = await fetch(SummaryApi.wallet.deduct.url, {
+          method: SummaryApi.wallet.deduct.method,
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            amount: amountDueNow,
+            description: `Payment for invoice ${invoice.invoiceNumber}`,
+            isInstallmentPayment: isInstallmentInvoice,
+          }),
+        });
+        const deductData = await deductRes.json();
+        if (!deductData.success) {
+          throw new Error(deductData.message || 'Wallet payment failed');
+        }
+        await submitVerification({ txnId, method: 'wallet' });
+        context?.fetchWalletBalance?.();
+        toast.success('Payment submitted for admin approval.');
+        setShowPayment(false);
+        navigate(-1);
+        return;
+      }
+
+      const txnId = generateTransactionId();
+      setPayTxnId(txnId);
+      const upiId = 'vacomputers.com@okhdfcbank';
+      const payeeName = 'VA Computer';
+      const upi = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(payeeName)}&am=${amountDueNow}&cu=INR&tn=${encodeURIComponent(`Invoice ${invoice.invoiceNumber}`)}&tr=${txnId}`;
+      setUpiLink(upi);
+      setShowQR(true);
+    } catch (error) {
+      toast.error(error.message || 'Payment failed. Please try again.');
+    } finally {
+      setPayProcessing(false);
+    }
+  };
+
+  const handleVerifyUpi = async () => {
+    if (!upiRef.trim()) {
+      toast.error('Please enter your UPI transaction ID');
+      return;
+    }
+    try {
+      setPayProcessing(true);
+      await submitVerification({ txnId: payTxnId, upiTransactionId: upiRef.trim(), method: 'upi' });
+      toast.success('Payment submitted for admin approval.');
+      setShowQR(false);
+      setShowPayment(false);
+      navigate(-1);
+    } catch (error) {
+      toast.error(error.message || 'Payment verification failed.');
+    } finally {
+      setPayProcessing(false);
+    }
   };
 
   if (loading) {
@@ -203,7 +305,7 @@ const InvoiceDetailPage = () => {
               ) : (
                 invoice.status !== 'cancelled' && (
                   <button
-                    onClick={handlePayNow}
+                    onClick={() => { setShowPayment(true); setShowQR(false); }}
                     className="w-full rounded-lg bg-emerald-600 py-3 text-base font-medium text-white hover:bg-emerald-700"
                   >
                     Pay Now
@@ -214,6 +316,86 @@ const InvoiceDetailPage = () => {
           </div>
         </div>
       </div>
+
+      {showPayment && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="w-full max-w-md rounded-[1.5rem] border border-white/15 bg-slate-900/95 p-6 text-white shadow-2xl backdrop-blur-2xl">
+            {!showQR ? (
+              <>
+                <h3 className="text-lg font-bold">Pay Invoice {invoice.invoiceNumber}</h3>
+                <div className="mt-4 space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-slate-300">Amount due</span>
+                    <span className="font-semibold text-white">{displayINRCurrency(amountDueNow)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-300">Wallet balance</span>
+                    <span className="font-semibold text-emerald-300">{displayINRCurrency(context?.walletBalance || 0)}</span>
+                  </div>
+                </div>
+                <p className="mt-3 text-xs text-slate-400">
+                  {(context?.walletBalance || 0) >= amountDueNow
+                    ? 'Your wallet covers this amount. It will be deducted and sent for admin approval.'
+                    : 'Not enough wallet balance — you will pay via UPI QR next.'}
+                </p>
+                <div className="mt-5 flex gap-3">
+                  <button
+                    onClick={() => setShowPayment(false)}
+                    disabled={payProcessing}
+                    className="flex-1 rounded-lg border border-white/20 py-2.5 text-sm font-semibold text-slate-200 hover:bg-white/10 disabled:opacity-60"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleConfirmPayment}
+                    disabled={payProcessing}
+                    className="flex-1 rounded-lg bg-emerald-600 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
+                  >
+                    {payProcessing
+                      ? 'Processing...'
+                      : (context?.walletBalance || 0) >= amountDueNow
+                        ? 'Pay from Wallet'
+                        : 'Continue to UPI'}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <h3 className="text-lg font-bold">Scan &amp; Pay {displayINRCurrency(amountDueNow)}</h3>
+                <div className="mt-4 flex justify-center rounded-2xl bg-white p-4">
+                  <QRCodeSVG value={upiLink} size={190} />
+                </div>
+                <label className="mt-4 block text-sm font-medium text-slate-200">
+                  UPI Transaction ID
+                </label>
+                <input
+                  type="text"
+                  value={upiRef}
+                  onChange={(event) => setUpiRef(event.target.value)}
+                  placeholder="Enter the UPI reference after paying"
+                  className="mt-1.5 w-full rounded-lg border border-white/20 bg-white/5 px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-emerald-400 focus:outline-none"
+                />
+                <div className="mt-5 flex gap-3">
+                  <button
+                    onClick={() => setShowQR(false)}
+                    disabled={payProcessing}
+                    className="flex-1 rounded-lg border border-white/20 py-2.5 text-sm font-semibold text-slate-200 hover:bg-white/10 disabled:opacity-60"
+                  >
+                    Back
+                  </button>
+                  <button
+                    onClick={handleVerifyUpi}
+                    disabled={payProcessing}
+                    className="flex-1 rounded-lg bg-emerald-600 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
+                  >
+                    {payProcessing ? 'Submitting...' : 'Submit for Approval'}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 };

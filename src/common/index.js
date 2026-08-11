@@ -653,6 +653,23 @@ const SummaryApi = {
         url: `${backendDomain}/api/admin/clients`,
         method: "post"
     },
+    // Account & Access (admin) — caller appends `/:customerId/<action>`.
+    clientCredentials: {
+        url: `${backendDomain}/api/admin/clients`,
+        method: "get"
+    },
+    resetClientPassword: {
+        url: `${backendDomain}/api/admin/clients`,
+        method: "post"
+    },
+    updateClientAccountStatus: {
+        url: `${backendDomain}/api/admin/clients`,
+        method: "post"
+    },
+    approveProjectOrder: {
+        url: `${backendDomain}/api/admin/projects`,
+        method: "post"
+    },
     categoryBasePrices: {
         url: `${backendDomain}/api/admin/category-base-prices`,
         method: "get"

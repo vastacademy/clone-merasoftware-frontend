@@ -396,9 +396,14 @@ const ProjectDetails = ({ isAdminView = false }) => {
     navigate('/dashboard');
   };
 
+  // SSOT: all payment goes through the canonical invoice page. This project page never
+  // hosts its own payment form — it only routes to /invoice-detail/:invoiceId, which is
+  // the single place an invoice is paid.
   const handleMakePayment = () => {
-    if (currentInstallment) {
-      navigate(`/installment-payment/${orderId}/${currentInstallment.installmentNumber}`);
+    if (order?.unpaidInvoice?._id) {
+      navigate(`/invoice-detail/${order.unpaidInvoice._id}`);
+    } else {
+      navigate(`/order-detail/${orderId}`);
     }
   };
 
@@ -529,24 +534,15 @@ const ProjectDetails = ({ isAdminView = false }) => {
                     Back to Dashboard
                   </button>
                   <button
-                    onClick={() => navigate(`/direct-payment`, {
-                      state: {
-                        retryPaymentId: order._id,
-                        productId: order.productId?._id,
-                        paymentData: {
-                          product: order.productId,
-                          selectedFeatures: order.orderItems?.filter(item => item.type === 'feature').map(item => ({
-                            id: item.id,
-                            name: item.name,
-                            quantity: item.quantity || 1,
-                            sellingPrice: item.originalPrice || 0,
-                            totalPrice: item.finalPrice || 0
-                          })) || [],
-                          totalPrice: order.price,
-                          originalTotalPrice: order.originalPrice || order.price
-                        }
+                    onClick={() => {
+                      // SSOT: retry pays the same invoice via the canonical invoice page —
+                      // no re-order through DirectPayment.js (which would create a duplicate).
+                      if (order?.unpaidInvoice?._id) {
+                        navigate(`/invoice-detail/${order.unpaidInvoice._id}`);
+                      } else {
+                        navigate(`/order-detail/${order._id}`);
                       }
-                    })}
+                    }}
                     className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-base font-semibold"
                   >
                     Retry Payment

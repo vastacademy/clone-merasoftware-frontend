@@ -5,7 +5,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'sonner';
 import {
   Home, ShoppingBag, UserCircle, Wallet, MessageSquare, LogOut,
-  FileText, X, PlusCircle, Gamepad2
+  FileText, X, PlusCircle, Gamepad2, Menu
 } from 'lucide-react';
 import SummaryApi from '../common';
 import { logout } from '../store/userSlice';
@@ -14,7 +14,6 @@ import StorageService from '../utils/storageService';
 import { useOnlineStatus } from '../App';
 import MobileSidebarDrawer from './MobileSidebarDrawer';
 import MobileBottomNav from './MobileBottomNav';
-import PortalHeader from './PortalHeader';
 import DraftOrderSavedDrawer from './DraftOrderSavedDrawer';
 import FloatingCartButton from './FloatingCartButton';
 import backgroundImage from '../assets/BG.png';
@@ -292,16 +291,9 @@ const DashboardLayout = ({ children, user, walletBalance, cartCount, isLoading, 
 
   return (
     <>
-      <PortalHeader
-        user={currentUser}
-        portalLabel="Customer Portal"
-        dashboardTo="/dashboard"
-        onLogout={handleLogoutClick}
-        links={[...quickLinks, ...secondaryLinks].map(({ to, label }) => ({ to, label }))}
-      />
       <div className="flex min-h-full items-stretch bg-slate-950">
         <aside
-          className="sticky top-16 z-40 hidden h-[calc(100vh-4rem)] w-72 shrink-0 flex-col self-start overflow-y-auto border-r border-slate-800 bg-slate-950 bg-cover bg-center text-white shadow-2xl lg:flex"
+          className="sticky top-0 z-40 hidden h-screen w-72 shrink-0 flex-col self-start overflow-y-auto border-r border-slate-800 bg-slate-950 bg-cover bg-center text-white shadow-2xl lg:flex"
           style={{ backgroundImage: `url(${backgroundImage})` }}
         >
           <div className="flex h-full w-full flex-col bg-slate-950/55">
@@ -314,6 +306,17 @@ const DashboardLayout = ({ children, user, walletBalance, cartCount, isLoading, 
         </MobileSidebarDrawer>
 
         <div className="min-w-0 flex-1">
+          <div className="sticky top-0 z-30 flex items-center gap-3 border-b border-slate-200 bg-white px-4 py-3 lg:hidden">
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen(true)}
+              aria-label="Open menu"
+              className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-100"
+            >
+              <Menu size={18} />
+            </button>
+            <span className="text-sm font-semibold text-slate-900">{getPageTitle()}</span>
+          </div>
           <main
             className="min-h-full bg-slate-950 bg-cover bg-center pb-16 lg:pb-0"
             style={{ backgroundImage: `url(${backgroundImage})` }}

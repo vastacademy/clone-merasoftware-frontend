@@ -20,6 +20,9 @@ import {
   Trash2,
   Undo2,
   X,
+  Copy,
+  KeyRound,
+  ShieldAlert,
 } from "lucide-react";
 import SummaryApi from "../common";
 import { logout } from "../store/userSlice";
@@ -42,6 +45,7 @@ const OVERVIEW_TAB = { id: "overview", label: "Overview", active: true };
 const PROJECTS_TAB = { id: "projects", label: "Projects", active: true };
 const PLANS_TAB = { id: "plans", label: "Plans", active: true };
 const PAYMENTS_TAB = { id: "payments", label: "Payment & Invoices", active: true };
+const ACCESS_TAB = { id: "access", label: "Account & Access", active: true };
 
 const safeDateTime = (value) => {
   if (!value) return null;
@@ -218,6 +222,14 @@ const AdminClientWorkspace = () => {
   const [activePlan, setActivePlan] = useState(null);
   const [activePlanLoading, setActivePlanLoading] = useState(false);
   const [activePlanError, setActivePlanError] = useState("");
+  // Account & Access section state
+  const [accessData, setAccessData] = useState(null);
+  const [accessLoading, setAccessLoading] = useState(false);
+  const [accessError, setAccessError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [newPasswordInput, setNewPasswordInput] = useState("");
+  const [resetting, setResetting] = useState(false);
+  const [statusUpdating, setStatusUpdating] = useState(false);
   const [allData, setAllData] = useState({
     orders: [],
     renewals: [],
@@ -524,6 +536,94 @@ const AdminClientWorkspace = () => {
     navigate(`/admin-panel/clients/${customerId}/payments/${item.kind}/${item.raw._id}`);
   };
 
+  // --- Account & Access handlers ---
+  const loadAccessData = async () => {
+    if (!customerId) return;
+    try {
+      setAccessLoading(true);
+      setAccessError("");
+      const response = await fetch(`${SummaryApi.clientCredentials.url}/${customerId}/credentials`, {
+        method: SummaryApi.clientCredentials.method,
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+      });
+      const result = await response.json();
+      if (!result.success) throw new Error(result.message || "Failed to load credentials");
+      setAccessData(result.data);
+    } catch (err) {
+      setAccessError(err.message || "Failed to load credentials");
+    } finally {
+      setAccessLoading(false);
+    }
+  };
+
+  // Load credentials when the Account & Access tab opens.
+  useEffect(() => {
+    if (activeTab === "access" && customerId && !accessData && !accessLoading) {
+      loadAccessData();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, customerId]);
+
+  const handleCopyPassword = async () => {
+    const pwd = accessData?.plainPassword;
+    if (!pwd) return;
+    try {
+      await navigator.clipboard.writeText(pwd);
+      toast.success("Password copied");
+    } catch {
+      toast.error("Could not copy");
+    }
+  };
+
+  const handleResetPassword = async () => {
+    if (!customerId) return;
+    if (!newPasswordInput || newPasswordInput.length < 4) {
+      toast.error("Password must be at least 4 characters");
+      return;
+    }
+    try {
+      setResetting(true);
+      const response = await fetch(`${SummaryApi.resetClientPassword.url}/${customerId}/reset-password`, {
+        method: SummaryApi.resetClientPassword.method,
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ newPassword: newPasswordInput }),
+      });
+      const result = await response.json();
+      if (!result.success) throw new Error(result.message || "Failed to reset password");
+      toast.success("Password reset successfully");
+      setNewPasswordInput("");
+      await loadAccessData();
+    } catch (err) {
+      toast.error(err.message || "Failed to reset password");
+    } finally {
+      setResetting(false);
+    }
+  };
+
+  const handleToggleAccountStatus = async () => {
+    if (!customerId || !accessData) return;
+    const nextActive = !accessData.isActive;
+    try {
+      setStatusUpdating(true);
+      const response = await fetch(`${SummaryApi.updateClientAccountStatus.url}/${customerId}/account-status`, {
+        method: SummaryApi.updateClientAccountStatus.method,
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isActive: nextActive }),
+      });
+      const result = await response.json();
+      if (!result.success) throw new Error(result.message || "Failed to update account status");
+      toast.success(nextActive ? "Account enabled" : "Account disabled");
+      setAccessData((prev) => (prev ? { ...prev, isActive: nextActive } : prev));
+    } catch (err) {
+      toast.error(err.message || "Failed to update account status");
+    } finally {
+      setStatusUpdating(false);
+    }
+  };
+
   useEffect(() => {
     if (!customerId) return;
 
@@ -593,9 +693,9 @@ const AdminClientWorkspace = () => {
   );
 
   const tabs = useMemo(() => {
-    if (hasActiveProject) return [PROJECTS_TAB, PLANS_TAB, OVERVIEW_TAB, PAYMENTS_TAB];
-    if (hasActivePlan) return [PLANS_TAB, PROJECTS_TAB, OVERVIEW_TAB, PAYMENTS_TAB];
-    return [OVERVIEW_TAB, PROJECTS_TAB, PLANS_TAB, PAYMENTS_TAB];
+    if (hasActiveProject) return [PROJECTS_TAB, PLANS_TAB, OVERVIEW_TAB, PAYMENTS_TAB, ACCESS_TAB];
+    if (hasActivePlan) return [PLANS_TAB, PROJECTS_TAB, OVERVIEW_TAB, PAYMENTS_TAB, ACCESS_TAB];
+    return [OVERVIEW_TAB, PROJECTS_TAB, PLANS_TAB, PAYMENTS_TAB, ACCESS_TAB];
   }, [hasActiveProject, hasActivePlan]);
 
   useEffect(() => {
@@ -925,6 +1025,23 @@ const AdminClientWorkspace = () => {
           />
         )}
 
+        {activeTab === "access" && (
+          <AccountAccessPanel
+            accessData={accessData}
+            accessLoading={accessLoading}
+            accessError={accessError}
+            showPassword={showPassword}
+            setShowPassword={setShowPassword}
+            onCopyPassword={handleCopyPassword}
+            newPasswordInput={newPasswordInput}
+            setNewPasswordInput={setNewPasswordInput}
+            resetting={resetting}
+            onResetPassword={handleResetPassword}
+            statusUpdating={statusUpdating}
+            onToggleStatus={handleToggleAccountStatus}
+          />
+        )}
+
         {fetchError ? (
           <div className="mt-5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
             {fetchError}
@@ -1084,6 +1201,152 @@ const AdminClientWorkspace = () => {
         ) : null}
 
     </AdminLayout>
+  );
+};
+
+const AccountAccessPanel = ({
+  accessData,
+  accessLoading,
+  accessError,
+  showPassword,
+  setShowPassword,
+  onCopyPassword,
+  newPasswordInput,
+  setNewPasswordInput,
+  resetting,
+  onResetPassword,
+  statusUpdating,
+  onToggleStatus,
+}) => {
+  if (accessLoading) {
+    return (
+      <div className="mt-5 rounded-2xl border border-slate-200 bg-white px-4 py-6 text-sm text-slate-500">
+        Loading account details…
+      </div>
+    );
+  }
+
+  if (accessError) {
+    return (
+      <div className="mt-5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+        {accessError}
+      </div>
+    );
+  }
+
+  if (!accessData) return null;
+
+  const isActive = accessData.isActive !== false;
+  const hasPlain = !!accessData.plainPassword;
+
+  return (
+    <div className="mt-5 space-y-5">
+      {/* Login credentials */}
+      <div className="rounded-2xl border border-slate-200 bg-white p-5">
+        <div className="flex items-center gap-2 text-slate-900">
+          <KeyRound size={18} />
+          <h3 className="text-base font-bold">Login Credentials</h3>
+        </div>
+
+        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+          <div>
+            <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Login Email</p>
+            <p className="mt-1 break-all text-sm font-semibold text-slate-800">{accessData.email}</p>
+          </div>
+          <div>
+            <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Password</p>
+            {hasPlain ? (
+              <div className="mt-1 flex items-center gap-2">
+                <span className="rounded-lg bg-slate-100 px-3 py-1 font-mono text-sm text-slate-800">
+                  {showPassword ? accessData.plainPassword : "••••••••"}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:bg-slate-50 hover:text-slate-700"
+                  title={showPassword ? "Hide" : "Show"}
+                >
+                  {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                </button>
+                <button
+                  type="button"
+                  onClick={onCopyPassword}
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:bg-slate-50 hover:text-slate-700"
+                  title="Copy"
+                >
+                  <Copy size={15} />
+                </button>
+              </div>
+            ) : (
+              <p className="mt-1 text-sm text-slate-500">
+                Not available yet — will appear after this user's next login, or set a new one below.
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Reset password */}
+      <div className="rounded-2xl border border-slate-200 bg-white p-5">
+        <div className="flex items-center gap-2 text-slate-900">
+          <RotateCcw size={18} />
+          <h3 className="text-base font-bold">Reset Password</h3>
+        </div>
+        <p className="mt-1 text-sm text-slate-500">
+          Set a new password for this client. They can log in with it immediately.
+        </p>
+        <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+          <input
+            type="text"
+            value={newPasswordInput}
+            onChange={(e) => setNewPasswordInput(e.target.value)}
+            placeholder="New password (min 4 characters)"
+            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-800 outline-none focus:border-slate-400 sm:max-w-xs"
+          />
+          <button
+            type="button"
+            onClick={onResetPassword}
+            disabled={resetting}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-60"
+          >
+            <Save size={15} />
+            {resetting ? "Saving…" : "Set Password"}
+          </button>
+        </div>
+      </div>
+
+      {/* Login access (ban / enable) */}
+      <div className="rounded-2xl border border-slate-200 bg-white p-5">
+        <div className="flex items-center gap-2 text-slate-900">
+          {isActive ? <ShieldCheck size={18} /> : <ShieldAlert size={18} />}
+          <h3 className="text-base font-bold">Login Access</h3>
+        </div>
+        <div className="mt-3 flex items-center justify-between gap-4">
+          <div>
+            <p className="text-sm font-semibold text-slate-800">
+              {isActive ? "Account is active" : "Account is disabled"}
+            </p>
+            <p className="mt-0.5 text-sm text-slate-500">
+              {isActive
+                ? "This client can log in normally."
+                : "This client cannot log in until re-enabled."}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onToggleStatus}
+            disabled={statusUpdating}
+            className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition disabled:opacity-60 ${
+              isActive
+                ? "bg-rose-600 text-white hover:bg-rose-700"
+                : "bg-emerald-600 text-white hover:bg-emerald-700"
+            }`}
+          >
+            {statusUpdating ? "Updating…" : isActive ? "Disable Login" : "Enable Login"}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 };
 
@@ -1881,6 +2144,46 @@ const WorkspaceDetailSubpage = ({
   const [isNodeActionSubmitting, setIsNodeActionSubmitting] = useState(false);
   const [editingNodeKey, setEditingNodeKey] = useState(null);
 
+  // Approval bar state — only used when this project order is still pending approval
+  // (customer "Pay Later" / decide-later orders that carry no transaction yet).
+  const isPendingApproval = item?.orderVisibility === "pending-approval";
+  const [approvalMode, setApprovalMode] = useState(null); // null | "record" | "reject"
+  const [approvalMethod, setApprovalMethod] = useState("upi");
+  const [approvalReference, setApprovalReference] = useState("");
+  const [approvalNotes, setApprovalNotes] = useState("");
+  const [approvalRejectReason, setApprovalRejectReason] = useState("");
+  const [approvalSubmitting, setApprovalSubmitting] = useState(false);
+
+  const submitApproval = async (mode) => {
+    setApprovalSubmitting(true);
+    try {
+      const response = await fetch(`${SummaryApi.approveProjectOrder.url}/${item._id}/approval`, {
+        method: SummaryApi.approveProjectOrder.method.toUpperCase(),
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mode,
+          paymentMethod: mode === "approve_with_payment" ? approvalMethod : undefined,
+          transactionReference: mode === "approve_with_payment" ? approvalReference : undefined,
+          notes: mode === "approve_with_payment" ? approvalNotes : undefined,
+          rejectionReason: mode === "reject" ? approvalRejectReason : undefined,
+        }),
+      });
+      const result = await response.json();
+      if (!result.success) throw new Error(result.message || "Approval action failed");
+      toast.success(result.message || "Done");
+      setApprovalMode(null);
+      setApprovalReference("");
+      setApprovalNotes("");
+      setApprovalRejectReason("");
+      onSoftRefresh?.();
+    } catch (approvalError) {
+      toast.error(approvalError.message || "Approval action failed");
+    } finally {
+      setApprovalSubmitting(false);
+    }
+  };
+
   const displayedNodes = [...runNodes].reverse();
   const displayedNodeKeys = displayedNodes.map((node) => getNodeSelectionKey(node));
   const activeNodes = runNodes.filter((node) => node.status === "active");
@@ -1898,6 +2201,11 @@ const WorkspaceDetailSubpage = ({
     setResetStartingTitle("");
     setNodeActionNotice("");
     setEditingNodeKey(null);
+    setApprovalMode(null);
+    setApprovalMethod("upi");
+    setApprovalReference("");
+    setApprovalNotes("");
+    setApprovalRejectReason("");
   }, [item?._id]);
 
   const getNodeSelectionRange = (selectionKey) => {
@@ -2168,6 +2476,127 @@ const WorkspaceDetailSubpage = ({
           )}
         </button>
       </div>
+
+      {isProjectDetail && isPendingApproval ? (
+        <div className="mb-5 rounded-[1.5rem] border border-amber-200 bg-amber-50 p-5">
+          <div className="flex items-start gap-3">
+            <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-700">
+              !
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-base font-bold text-amber-900">This project is waiting for your approval</p>
+              <p className="mt-1 text-sm text-amber-700">
+                The customer started this project. Approve it (with or without recording a payment), or reject the request.
+              </p>
+
+              <div className="mt-4 flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  disabled={approvalSubmitting}
+                  onClick={() => submitApproval("approve_no_payment")}
+                  className="inline-flex items-center gap-2 rounded-2xl border border-emerald-300 bg-emerald-100 px-4 py-2.5 text-sm font-semibold text-emerald-800 transition hover:bg-emerald-200 disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  Approve without Payment
+                </button>
+                <button
+                  type="button"
+                  disabled={approvalSubmitting}
+                  onClick={() => setApprovalMode(approvalMode === "record" ? null : "record")}
+                  className={[
+                    "inline-flex items-center gap-2 rounded-2xl border px-4 py-2.5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-70",
+                    approvalMode === "record"
+                      ? "border-emerald-400 bg-emerald-500 text-white hover:bg-emerald-600"
+                      : "border-emerald-300 bg-white text-emerald-800 hover:bg-emerald-50",
+                  ].join(" ")}
+                >
+                  Record Payment
+                </button>
+                <button
+                  type="button"
+                  disabled={approvalSubmitting}
+                  onClick={() => setApprovalMode(approvalMode === "reject" ? null : "reject")}
+                  className={[
+                    "inline-flex items-center gap-2 rounded-2xl border px-4 py-2.5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-70",
+                    approvalMode === "reject"
+                      ? "border-rose-400 bg-rose-500 text-white hover:bg-rose-600"
+                      : "border-rose-200 bg-white text-rose-700 hover:bg-rose-50",
+                  ].join(" ")}
+                >
+                  Reject
+                </button>
+              </div>
+
+              {approvalMode === "record" ? (
+                <div className="mt-4 rounded-2xl border border-emerald-200 bg-white p-4">
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <div>
+                      <label className={projectFormLabelClassName}>Payment Method</label>
+                      <select
+                        className={projectFormInputClassName}
+                        value={approvalMethod}
+                        onChange={(event) => setApprovalMethod(event.target.value)}
+                      >
+                        {PAYMENT_METHOD_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>{option.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className={projectFormLabelClassName}>Transaction Reference</label>
+                      <input
+                        type="text"
+                        className={projectFormInputClassName}
+                        value={approvalReference}
+                        onChange={(event) => setApprovalReference(event.target.value)}
+                        placeholder="UPI ID or bank reference"
+                      />
+                    </div>
+                  </div>
+                  <div className="mt-4">
+                    <label className={projectFormLabelClassName}>Note (optional)</label>
+                    <input
+                      type="text"
+                      className={projectFormInputClassName}
+                      value={approvalNotes}
+                      onChange={(event) => setApprovalNotes(event.target.value)}
+                      placeholder="Internal note for this payment"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    disabled={approvalSubmitting}
+                    onClick={() => submitApproval("approve_with_payment")}
+                    className="mt-4 inline-flex items-center gap-2 rounded-2xl border border-emerald-400 bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-70"
+                  >
+                    {approvalSubmitting ? "Saving..." : "Record Payment & Approve"}
+                  </button>
+                </div>
+              ) : null}
+
+              {approvalMode === "reject" ? (
+                <div className="mt-4 rounded-2xl border border-rose-200 bg-white p-4">
+                  <label className={projectFormLabelClassName}>Rejection Reason</label>
+                  <input
+                    type="text"
+                    className={projectFormInputClassName}
+                    value={approvalRejectReason}
+                    onChange={(event) => setApprovalRejectReason(event.target.value)}
+                    placeholder="Reason shown to the customer"
+                  />
+                  <button
+                    type="button"
+                    disabled={approvalSubmitting || !approvalRejectReason.trim()}
+                    onClick={() => submitApproval("reject")}
+                    className="mt-4 inline-flex items-center gap-2 rounded-2xl border border-rose-400 bg-rose-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-rose-600 disabled:cursor-not-allowed disabled:opacity-70"
+                  >
+                    {approvalSubmitting ? "Rejecting..." : "Confirm Reject"}
+                  </button>
+                </div>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {loading ? (
         <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-500">

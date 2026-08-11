@@ -7,15 +7,14 @@ import {
   Layers3,
   ListChecks,
   LogOut,
+  Menu,
   PanelsTopLeft,
   Settings2,
   UserPlus,
   Users2,
 } from "lucide-react";
 import MobileSidebarDrawer from "./MobileSidebarDrawer";
-import MobileBottomNav from "./MobileBottomNav";
 import AdminGlobalSearch from "./admin/AdminGlobalSearch";
-import PortalHeader from "./PortalHeader";
 
 export const adminSidebarModules = [
   { id: "dashboard", label: "Dashboard", icon: BarChart3, live: true, to: "/admin-panel/dashboard" },
@@ -53,25 +52,6 @@ const AdminLayout = ({
   const location = useLocation();
   const currentPath = location.pathname;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  // Flatten the sidebar modules (incl. group children) into routable header
-  // links — same SSOT array as the sidebar, only "soon" placeholders skipped.
-  const headerLinks = adminSidebarModules.flatMap((module) =>
-    module.group
-      ? module.children.filter((child) => child.to).map(({ to, label }) => ({ to, label }))
-      : module.to
-        ? [{ to: module.to, label: module.label }]
-        : []
-  );
-
-  // Mobile bottom bar: 4 most-used admin destinations + a "More" button that
-  // opens the same MobileSidebarDrawer (rest of the modules live there).
-  const bottomNavTabs = [
-    { to: "/admin-panel/dashboard", label: "Dashboard", icon: BarChart3, active: currentPath === "/admin-panel/dashboard" },
-    { to: "/admin-panel/leads", label: "Leads", icon: UserPlus, active: currentPath.startsWith("/admin-panel/leads") },
-    { to: "/admin-panel/clients", label: "Clients", icon: Users2, active: currentPath.startsWith("/admin-panel/clients") },
-    { to: "/admin-panel/website-management/projects", label: "Projects", icon: BriefcaseBusiness, active: currentPath.startsWith("/admin-panel/website-management/projects") },
-  ];
 
   const sidebarContent = (
     <div className="flex h-full w-full flex-col">
@@ -208,33 +188,32 @@ const AdminLayout = ({
   );
 
   return (
-    <>
-      <PortalHeader
-        user={user}
-        portalLabel="Admin Portal"
-        dashboardTo="/admin-panel/dashboard"
-        onLogout={onLogout}
-        showProfileLink={false}
-        links={headerLinks}
-      />
-      <div className="flex min-h-full items-stretch bg-slate-100">
-        <aside className="sticky top-16 z-40 hidden h-[calc(100vh-4rem)] w-72 shrink-0 self-start overflow-y-auto border-r border-slate-800 bg-slate-950 text-white shadow-2xl lg:flex lg:flex-col">
-          {sidebarContent}
-        </aside>
+    <div className="flex min-h-full items-stretch bg-slate-100">
+      <aside className="sticky top-0 z-40 hidden h-screen w-72 shrink-0 self-start overflow-y-auto border-r border-slate-800 bg-slate-950 text-white shadow-2xl lg:flex lg:flex-col">
+        {sidebarContent}
+      </aside>
 
-        <MobileSidebarDrawer isOpen={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)}>
-          {sidebarContent}
-        </MobileSidebarDrawer>
+      <MobileSidebarDrawer isOpen={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)}>
+        {sidebarContent}
+      </MobileSidebarDrawer>
 
-        <div className="min-w-0 flex-1">
-        <main className="min-h-full bg-slate-100 pb-16 lg:pb-0">
+      <div className="min-w-0 flex-1">
+        <div className="sticky top-0 z-30 flex items-center gap-3 border-b border-slate-200 bg-white px-4 py-3 lg:hidden">
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen(true)}
+            aria-label="Open menu"
+            className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-100"
+          >
+            <Menu size={18} />
+          </button>
+          <span className="text-sm font-semibold text-slate-900">Admin Panel</span>
+        </div>
+        <main className="min-h-full bg-slate-100">
           {children}
         </main>
       </div>
-      </div>
-
-      <MobileBottomNav tabs={bottomNavTabs} onMoreClick={() => setMobileMenuOpen(true)} />
-    </>
+    </div>
   );
 };
 

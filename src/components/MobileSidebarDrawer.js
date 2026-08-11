@@ -19,12 +19,12 @@ const MobileSidebarDrawer = ({ isOpen, onClose, children }) => {
         onClick={onClose}
         aria-hidden="true"
       />
-      <div className="absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col bg-slate-950 text-white shadow-2xl">
+      <div className="absolute inset-y-0 right-0 flex w-72 max-w-[85vw] flex-col bg-slate-950 text-white shadow-2xl">
         <button
           type="button"
           onClick={onClose}
           aria-label="Close menu"
-          className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20"
+          className="absolute left-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20"
         >
           <X size={18} />
         </button>
