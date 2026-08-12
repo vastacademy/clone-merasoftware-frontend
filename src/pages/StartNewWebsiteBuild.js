@@ -225,6 +225,12 @@ const StartNewWebsiteBuild = () => {
   };
 
   const handleBack = () => {
+    // Contact/summary screen par hain to pehle usse hatao — user apne pichle
+    // question (websiteType / path) par wapas aaye, shuruaat mein nahi.
+    if (submitted) {
+      setSubmitted(false);
+      return;
+    }
     if (step === 0) {
       navigate('/start-new-project');
       return;

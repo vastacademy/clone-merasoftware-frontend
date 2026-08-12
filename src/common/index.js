@@ -169,6 +169,10 @@ const SummaryApi = {
         url : `${backendDomain}/api/customer/custom-project-order`,
         method: "post"
     },
+    customerCategoryBasePrice : {
+        url : `${backendDomain}/api/customer/category-base-price`,
+        method: "get"
+    },
     ordersList : {
         url : `${backendDomain}/api/get-order`,
         method: "get"

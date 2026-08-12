@@ -439,11 +439,9 @@ const StartNewWebsiteCustomize = () => {
     setCreatedOrder(null);
   }, [projectCategory, chosenFeatureIds, pageCount, paymentOption, installmentCount, couponCode]);
 
-  // Create the order server-side (price is re-derived there). For full/partial the customer
-  // has already paid (wallet/UPI), so paymentDetails is passed and the backend creates the
-  // order + invoice + the pending payment transaction together — never a payment-less order.
-  // Returns the created-order payload on success, throws on failure.
-  const createProjectOrder = async (paymentDetails = null) => {
+  // Create the pending-approval order server-side (price is re-derived there).
+  // Returns the created-order payload on success, or null on failure.
+  const createProjectOrder = async () => {
     const requestBody = {
       category: projectCategory,
       pageCount,
@@ -453,7 +451,6 @@ const StartNewWebsiteCustomize = () => {
       paymentType: paymentOption, // 'full' | 'partial' | 'decide_later'
       installmentCount: paymentOption === 'partial' ? installmentCount : undefined,
       couponCode: couponCode || null,
-      paymentDetails: paymentDetails || undefined,
     };
 
     const response = await fetch(SummaryApi.createCustomProjectOrder.url, {
@@ -473,7 +470,7 @@ const StartNewWebsiteCustomize = () => {
   const handleSubmit = async () => {
     if (submitting) return;
 
-    // Decide-later: create the order (unpaid, no payment step), show success directly.
+    // Decide-later: create the order (unpaid), no payment step, show success directly.
     if (paymentOption === 'decide_later') {
       try {
         setSubmitting(true);
@@ -487,67 +484,102 @@ const StartNewWebsiteCustomize = () => {
       return;
     }
 
-    // Full / Partial: DO NOT create the order here — the order is created only once the
-    // customer actually pays (in handleConfirmPayment / handleVerifyUpi). This just opens
-    // the confirmation popup, which shows the client estimate until the order exists.
-    setShowQR(false);
-    setShowPaymentModal(true);
+    // Full / Partial: reuse the already-created order if the customer reopened the
+    // popup without changing anything (avoids creating a duplicate order); otherwise
+    // create it, then open the payment confirmation popup.
+    if (createdOrder) {
+      setShowQR(false);
+      setShowPaymentModal(true);
+      return;
+    }
+    try {
+      setSubmitting(true);
+      const order = await createProjectOrder();
+      setCreatedOrder(order);
+      setShowPaymentModal(true);
+    } catch (error) {
+      toast.error(error.message || 'Something went wrong. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  // Amount to collect now, before the order exists: first-installment split of the client
-  // estimate (partial) or the full estimate (full). Byte-aligned with the backend's
-  // firstInstallmentAmount. Once the order is created on pay, its exact amount is used.
+  // Amount to collect now: full price for one-time, first installment for partial.
   const amountDueNow = createdOrder
     ? createdOrder.firstInstallmentAmount || createdOrder.finalPrice
-    : paymentOption === 'partial'
-    ? Math.round((estimateTotal * splitsFor(installmentCount)[0]) / 100)
-    : estimateTotal;
+    : 0;
 
-  // Wallet / UPI split for the amount due now. The wallet is the customer's own money, so it
-  // is applied first (instantly, no approval); only the remainder needs UPI. These are shown
-  // in the popup; the backend independently re-derives the same split from the real balance.
-  const walletBalance = context?.walletBalance || 0;
-  const walletPart = Math.min(walletBalance, amountDueNow);
-  const upiPart = Math.max(0, amountDueNow - walletPart);
-
-  // Create the order + its payment atomically (the customer has already paid). One request —
-  // the backend never yields a payment-less order, decides the wallet/UPI split itself, debits
-  // the wallet instantly and (for a UPI remainder) records a pending transaction to approve.
-  // For a UPI transaction id is sent only when there is a UPI remainder. Returns created order.
-  const createOrderWithPayment = async ({ txnId, upiRef }) => {
-    const order = await createProjectOrder({
-      transactionId: txnId,
-      upiTransactionId: upiRef || null,
+  // Submit a payment verification request against the already-created order. Mirrors
+  // InstallmentPayment.js / DirectPayment.js verify-payment body exactly.
+  const submitVerification = async ({ txnId, amount, upiRef, method }) => {
+    const response = await fetch(SummaryApi.wallet.verifyPayment.url, {
+      method: SummaryApi.wallet.verifyPayment.method,
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        transactionId: txnId,
+        amount,
+        upiTransactionId: upiRef || `WALLET-${txnId}`,
+        paymentMethod: method,
+        isInstallmentPayment: paymentOption === 'partial',
+        type: 'payment',
+        orderId: createdOrder.orderId,
+        installmentNumber: paymentOption === 'partial' ? 1 : null,
+        description: `${
+          paymentOption === 'partial' ? 'First installment' : 'Payment'
+        } for custom project order ${createdOrder.orderId}`,
+      }),
     });
-    setCreatedOrder(order);
-    return order;
+    const data = await response.json();
+    // An already-submitted transaction is treated as success (same as InstallmentPayment.js).
+    if (!data.success && !(data.message || '').includes('already submitted')) {
+      throw new Error(data.message || 'Payment verification failed');
+    }
   };
 
   // Step 1: customer confirmed the summary popup → start the wallet/UPI payment flow.
   const handleConfirmPayment = async () => {
-    if (payProcessing) return;
+    if (!createdOrder || payProcessing) return;
     try {
       setPayProcessing(true);
+      const walletBalance = context?.walletBalance || 0;
 
-      // Wallet covers the whole amount → create + instant wallet debit, auto-approved. No UPI.
-      if (upiPart === 0) {
+      // Wallet fully covers the amount due → deduct + submit for approval.
+      if (walletBalance >= amountDueNow) {
         const txnId = generateTransactionId();
-        await createOrderWithPayment({ txnId });
-        context?.fetchWalletBalance?.(); // balance was just debited server-side
+        const deductRes = await fetch(SummaryApi.wallet.deduct.url, {
+          method: SummaryApi.wallet.deduct.method,
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            amount: amountDueNow,
+            description: `Payment for custom project order ${createdOrder.orderId}`,
+            isInstallmentPayment: paymentOption === 'partial',
+          }),
+        });
+        const deductData = await deductRes.json();
+        if (!deductData.success) {
+          throw new Error(deductData.message || 'Wallet payment failed');
+        }
+        await submitVerification({
+          txnId,
+          amount: amountDueNow,
+          method: 'wallet',
+        });
+        context?.fetchWalletBalance?.();
         setShowPaymentModal(false);
         setShowSuccess(true);
         return;
       }
 
-      // Wallet doesn't fully cover it → show a UPI QR for the remainder only. The wallet part
-      // (if any) is debited together with the order once the customer submits the UPI id.
+      // Not enough wallet balance → show a UPI QR for the full amount due.
       const txnId = generateTransactionId();
       setPayTxnId(txnId);
       const upiId = 'vacomputers.com@okhdfcbank';
       const payeeName = 'VA Computer';
       const upi = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(
         payeeName
-      )}&am=${upiPart}&cu=INR&tn=${encodeURIComponent(
+      )}&am=${amountDueNow}&cu=INR&tn=${encodeURIComponent(
         `Order Payment - ${txnId}`
       )}&tr=${txnId}`;
       setUpiLink(upi);
@@ -573,10 +605,12 @@ const StartNewWebsiteCustomize = () => {
     }
     try {
       setPayProcessing(true);
-      // Customer paid the UPI remainder → create the order now; the backend debits any wallet
-      // part instantly and records the UPI part as pending for admin approval.
-      await createOrderWithPayment({ txnId: payTxnId, upiRef: trimmedUpiId });
-      context?.fetchWalletBalance?.(); // a wallet part may have been debited server-side
+      await submitVerification({
+        txnId: payTxnId,
+        amount: amountDueNow,
+        upiRef: trimmedUpiId,
+        method: 'upi',
+      });
       setShowQR(false);
       setShowPaymentModal(false);
       setShowSuccess(true);
@@ -874,24 +908,6 @@ const StartNewWebsiteCustomize = () => {
                   </span>
                 </div>
 
-                {/* Wallet/UPI split — shown when the wallet is used and doesn't fully cover it */}
-                {walletPart > 0 && upiPart > 0 && (
-                  <div className="relative mt-3 divide-y divide-white/10 rounded-xl border border-emerald-400/25 bg-emerald-500/[0.06] px-4 py-2">
-                    <div className="flex items-baseline justify-between gap-4 py-2 text-sm">
-                      <span className="text-slate-300">Paid from wallet (instant)</span>
-                      <span className="font-medium text-emerald-300">
-                        ₹{walletPart.toLocaleString('en-IN')}
-                      </span>
-                    </div>
-                    <div className="flex items-baseline justify-between gap-4 py-2 text-sm">
-                      <span className="text-slate-300">To pay via UPI</span>
-                      <span className="font-medium text-white">
-                        ₹{upiPart.toLocaleString('en-IN')}
-                      </span>
-                    </div>
-                  </div>
-                )}
-
                 <button
                   type="button"
                   onClick={handleConfirmPayment}
@@ -900,11 +916,9 @@ const StartNewWebsiteCustomize = () => {
                 >
                   {payProcessing
                     ? 'Processing…'
-                    : upiPart === 0
-                    ? `Pay ₹${walletPart.toLocaleString('en-IN')} from wallet`
-                    : walletPart > 0
-                    ? `Pay ₹${walletPart.toLocaleString('en-IN')} wallet + ₹${upiPart.toLocaleString('en-IN')} UPI`
-                    : `Pay ₹${upiPart.toLocaleString('en-IN')} with UPI`}
+                    : (context?.walletBalance || 0) >= amountDueNow
+                    ? `Pay ₹${amountDueNow.toLocaleString('en-IN')} from wallet`
+                    : 'Pay with UPI'}
                 </button>
               </>
             ) : (
@@ -912,13 +926,8 @@ const StartNewWebsiteCustomize = () => {
               <>
                 <h3 className="relative text-xl font-semibold text-white">Scan to pay</h3>
                 <p className="relative mt-1 text-sm text-slate-300">
-                  Pay ₹{upiPart.toLocaleString('en-IN')} using any UPI app, then enter
+                  Pay ₹{amountDueNow.toLocaleString('en-IN')} using any UPI app, then enter
                   the transaction ID below.
-                  {walletPart > 0 && (
-                    <span className="mt-1 block text-emerald-300">
-                      ₹{walletPart.toLocaleString('en-IN')} will be paid from your wallet instantly.
-                    </span>
-                  )}
                 </p>
 
                 <div className="relative mt-5 flex flex-col items-center">
@@ -975,15 +984,11 @@ const StartNewWebsiteCustomize = () => {
             <h3 className="relative mt-5 text-xl font-semibold text-white">
               {paymentOption === 'decide_later'
                 ? 'Project request submitted'
-                : createdOrder?.approved
-                ? 'Payment successful — project started'
                 : 'Payment submitted for approval'}
             </h3>
             <p className="relative mt-2 text-base leading-relaxed text-slate-300">
               {paymentOption === 'decide_later'
                 ? 'Our team will review your requirement and get in touch with you shortly.'
-                : createdOrder?.approved
-                ? 'Your wallet payment is complete and your project has started. You can track it from your dashboard.'
                 : 'Your payment is being verified. Your project will start once our team approves it (usually within a few hours).'}
             </p>
 
