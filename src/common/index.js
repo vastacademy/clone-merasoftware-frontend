@@ -733,6 +733,21 @@ const SummaryApi = {
         url: `${backendDomain}/api/admin/leads`,
         method: "post"
     },
+    // Client documents (agreements etc.). uploadClientDocument: admin POST to
+    // /api/admin/clients/:customerId/documents (append customerId at call site).
+    // myDocuments: customer GET — merged newest-first documents + lead proposals.
+    uploadClientDocument: {
+        url: `${backendDomain}/api/admin/clients`,
+        method: "post"
+    },
+    adminClientDocuments: {
+        url: `${backendDomain}/api/admin/clients`,
+        method: "get"
+    },
+    myDocuments: {
+        url: `${backendDomain}/api/my-documents`,
+        method: "get"
+    },
     createProjectNode: {
         url: `${backendDomain}/api/admin/projects`,
         method: "post"

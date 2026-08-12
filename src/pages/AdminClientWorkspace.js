@@ -24,6 +24,8 @@ import {
   Copy,
   KeyRound,
   ShieldAlert,
+  Upload,
+  Download,
 } from "lucide-react";
 import SummaryApi from "../common";
 import { logout } from "../store/userSlice";
@@ -46,6 +48,7 @@ const OVERVIEW_TAB = { id: "overview", label: "Overview", active: true };
 const PROJECTS_TAB = { id: "projects", label: "Projects", active: true };
 const PLANS_TAB = { id: "plans", label: "Plans", active: true };
 const PAYMENTS_TAB = { id: "payments", label: "Payment & Invoices", active: true };
+const DOCUMENTS_TAB = { id: "documents", label: "Documents", active: true };
 const ACCESS_TAB = { id: "access", label: "Account & Access", active: true };
 
 const safeDateTime = (value) => {
@@ -233,6 +236,11 @@ const AdminClientWorkspace = () => {
   const [statusUpdating, setStatusUpdating] = useState(false);
   const [showTrashConfirm, setShowTrashConfirm] = useState(false);
   const [trashing, setTrashing] = useState(false);
+  // Documents section state (admin-sent documents timeline for this client)
+  const [documentsList, setDocumentsList] = useState(null);
+  const [documentsLoading, setDocumentsLoading] = useState(false);
+  const [documentsError, setDocumentsError] = useState("");
+  const [documentUploading, setDocumentUploading] = useState(false);
   const [allData, setAllData] = useState({
     orders: [],
     renewals: [],
@@ -568,6 +576,59 @@ const AdminClientWorkspace = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, customerId]);
 
+  // --- Documents handlers ---
+  const loadDocuments = async () => {
+    if (!customerId) return;
+    try {
+      setDocumentsLoading(true);
+      setDocumentsError("");
+      const response = await fetch(`${SummaryApi.adminClientDocuments.url}/${customerId}/documents`, {
+        method: SummaryApi.adminClientDocuments.method,
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+      });
+      const result = await response.json();
+      if (!result.success) throw new Error(result.message || "Failed to load documents");
+      setDocumentsList(result.data?.documents || []);
+    } catch (err) {
+      setDocumentsError(err.message || "Failed to load documents");
+    } finally {
+      setDocumentsLoading(false);
+    }
+  };
+
+  // Load documents when the Documents tab opens.
+  useEffect(() => {
+    if (activeTab === "documents" && customerId && documentsList === null && !documentsLoading) {
+      loadDocuments();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, customerId]);
+
+  const handleUploadDocument = async ({ file, source }) => {
+    if (!customerId || !file) return;
+    try {
+      setDocumentUploading(true);
+      const formData = new FormData();
+      formData.append("document", file);
+      formData.append("source", source || "general");
+      const response = await fetch(`${SummaryApi.uploadClientDocument.url}/${customerId}/documents`, {
+        method: SummaryApi.uploadClientDocument.method,
+        credentials: "include",
+        body: formData,
+      });
+      const result = await response.json();
+      if (!result.success) throw new Error(result.message || "Failed to upload document");
+      toast.success("Document uploaded");
+      // Refresh the timeline from the source of truth.
+      await loadDocuments();
+    } catch (err) {
+      toast.error(err.message || "Failed to upload document");
+    } finally {
+      setDocumentUploading(false);
+    }
+  };
+
   const handleCopyPassword = async () => {
     const pwd = accessData?.plainPassword;
     if (!pwd) return;
@@ -719,9 +780,9 @@ const AdminClientWorkspace = () => {
   );
 
   const tabs = useMemo(() => {
-    if (hasActiveProject) return [PROJECTS_TAB, PLANS_TAB, OVERVIEW_TAB, PAYMENTS_TAB, ACCESS_TAB];
-    if (hasActivePlan) return [PLANS_TAB, PROJECTS_TAB, OVERVIEW_TAB, PAYMENTS_TAB, ACCESS_TAB];
-    return [OVERVIEW_TAB, PROJECTS_TAB, PLANS_TAB, PAYMENTS_TAB, ACCESS_TAB];
+    if (hasActiveProject) return [PROJECTS_TAB, PLANS_TAB, OVERVIEW_TAB, PAYMENTS_TAB, DOCUMENTS_TAB, ACCESS_TAB];
+    if (hasActivePlan) return [PLANS_TAB, PROJECTS_TAB, OVERVIEW_TAB, PAYMENTS_TAB, DOCUMENTS_TAB, ACCESS_TAB];
+    return [OVERVIEW_TAB, PROJECTS_TAB, PLANS_TAB, PAYMENTS_TAB, DOCUMENTS_TAB, ACCESS_TAB];
   }, [hasActiveProject, hasActivePlan]);
 
   useEffect(() => {
@@ -1053,6 +1114,17 @@ const AdminClientWorkspace = () => {
           />
         )}
 
+        {activeTab === "documents" && (
+          <ClientDocumentsPanel
+            documents={documentsList}
+            loading={documentsLoading}
+            error={documentsError}
+            uploading={documentUploading}
+            onUpload={handleUploadDocument}
+            formatDateTime={formatDateTime}
+          />
+        )}
+
         {activeTab === "access" && (
           <AccountAccessPanel
             accessData={accessData}
@@ -1266,6 +1338,137 @@ const AdminClientWorkspace = () => {
         )}
 
     </AdminLayout>
+  );
+};
+
+const formatFileSize = (bytes) => {
+  const n = Number(bytes) || 0;
+  if (n <= 0) return "";
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+  return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+};
+
+const getDocKindMeta = (doc) => {
+  if (doc?.kind === "proposal") {
+    return { label: `Proposal v${doc.version}`, badge: "bg-amber-50 text-amber-700 border-amber-200" };
+  }
+  if (doc?.source === "agreement") {
+    return { label: "Agreement", badge: "bg-emerald-50 text-emerald-700 border-emerald-200" };
+  }
+  return { label: "Document", badge: "bg-slate-100 text-slate-600 border-slate-200" };
+};
+
+const ClientDocumentsPanel = ({ documents, loading, error, uploading, onUpload, formatDateTime }) => {
+  const [file, setFile] = useState(null);
+  const [source, setSource] = useState("agreement");
+  const fileInputRef = useRef(null);
+
+  const submit = async () => {
+    if (!file) {
+      toast.error("Please choose a file first");
+      return;
+    }
+    await onUpload({ file, source });
+    setFile(null);
+    setSource("agreement");
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  return (
+    <div className="mt-5 space-y-5">
+      {/* Upload card */}
+      <div className="rounded-2xl border border-slate-200 bg-white p-5">
+        <div className="flex items-center gap-2 text-slate-900">
+          <Upload size={18} />
+          <h3 className="text-base font-bold">Send a Document</h3>
+        </div>
+        <p className="mt-1 text-sm text-slate-500">
+          Upload an agreement or document for this client. It appears in their Documents page even if no project is running.
+        </p>
+        <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".pdf,.doc,.docx"
+            onChange={(e) => setFile(e.target.files?.[0] || null)}
+            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-800 outline-none file:mr-3 file:rounded-lg file:border-0 file:bg-slate-900 file:px-3 file:py-1 file:text-white focus:border-slate-400 sm:max-w-sm"
+          />
+          <select
+            value={source}
+            onChange={(e) => setSource(e.target.value)}
+            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-800 outline-none focus:border-slate-400 sm:max-w-[10rem]"
+          >
+            <option value="agreement">Agreement</option>
+            <option value="general">General</option>
+          </select>
+          <button
+            type="button"
+            onClick={submit}
+            disabled={uploading}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-60"
+          >
+            <Upload size={15} />
+            {uploading ? "Uploading…" : "Upload"}
+          </button>
+        </div>
+      </div>
+
+      {/* Timeline card */}
+      <div className="rounded-2xl border border-slate-200 bg-white p-5">
+        <div className="flex items-center gap-2 text-slate-900">
+          <FileText size={18} />
+          <h3 className="text-base font-bold">Documents Timeline</h3>
+        </div>
+
+        {loading ? (
+          <p className="mt-4 text-sm text-slate-500">Loading documents…</p>
+        ) : error ? (
+          <p className="mt-4 text-sm text-rose-600">{error}</p>
+        ) : !documents || documents.length === 0 ? (
+          <p className="mt-4 text-sm text-slate-500">
+            No documents yet. Proposals sent while this client was a lead, and any agreements you upload, will appear here.
+          </p>
+        ) : (
+          <ul className="mt-4 space-y-3">
+            {documents.map((doc) => {
+              const meta = getDocKindMeta(doc);
+              const sizeLabel = formatFileSize(doc.size);
+              return (
+                <li
+                  key={doc.id}
+                  className="flex items-start justify-between gap-4 rounded-xl border border-slate-200 bg-slate-50/60 px-4 py-3"
+                >
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className={`rounded-full border px-2 py-0.5 text-xs font-semibold ${meta.badge}`}>
+                        {meta.label}
+                      </span>
+                      <span className="truncate text-sm font-semibold text-slate-800">{doc.name || "Document"}</span>
+                    </div>
+                    <p className="mt-1 text-xs text-slate-500">
+                      {formatDateTime(doc.date)}
+                      {sizeLabel ? ` · ${sizeLabel}` : ""}
+                    </p>
+                  </div>
+                  {doc.downloadLink ? (
+                    <a
+                      href={doc.downloadLink}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                    >
+                      <Download size={14} />
+                      Download
+                    </a>
+                  ) : null}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
+    </div>
   );
 };
 

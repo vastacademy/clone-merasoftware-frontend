@@ -5,7 +5,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'sonner';
 import {
   Home, ShoppingBag, UserCircle, Wallet, MessageSquare, LogOut,
-  FileText, X, PlusCircle, Gamepad2
+  FileText, X, PlusCircle, Gamepad2, FileCheck
 } from 'lucide-react';
 import SummaryApi from '../common';
 import { logout } from '../store/userSlice';
@@ -55,6 +55,7 @@ const DashboardLayout = ({ children, user, walletBalance, cartCount, isLoading, 
     if (currentPath.startsWith('/support')) return 'Contact Support';
     if (currentPath.startsWith('/my-updates')) return 'My Updates';
     if (currentPath.startsWith('/my-invoices')) return 'My Invoices';
+    if (currentPath.startsWith('/documents')) return 'Documents';
     if (currentPath.startsWith('/direct-payment')) return 'Direct Payment';
     if (currentPath.startsWith('/installment-payment')) return 'Installment Payment';
     if (currentPath.startsWith('/cart')) return 'Cart';
@@ -88,6 +89,7 @@ const DashboardLayout = ({ children, user, walletBalance, cartCount, isLoading, 
   const gamesActive = currentPath.startsWith('/games');
   const secondaryLinks = [
     { to: '/order', label: 'Orders', icon: ShoppingBag, active: currentPath.startsWith('/order') },
+    { to: '/documents', label: 'Documents', icon: FileCheck, active: currentPath.startsWith('/documents') },
     { to: '/wallet', label: 'Wallet', icon: Wallet, active: currentPath.startsWith('/wallet') },
     { to: '/games', label: 'Games', icon: Gamepad2, active: gamesActive },
     { to: '/profile', label: 'Profile', icon: UserCircle, active: currentPath.startsWith('/profile') },

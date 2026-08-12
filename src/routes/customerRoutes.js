@@ -24,6 +24,7 @@ import ServicePlanDetail from "../pages/ServicePlanDetail";
 import GamesListPage from "../chess/GamesListPage";
 import ChessPage from "../chess/ChessPage";
 import SetNewPassword from "../pages/SetNewPassword";
+import CustomerDocuments from "../pages/CustomerDocuments";
 
 const CustomerProtectedRoute = ({ children }) => (
   <ProtectedRoute requireRole={['customer']}>
@@ -157,6 +158,14 @@ export const customerRoutes = [
     element: (
       <CustomerProtectedRoute>
         <UserInvoices/>
+      </CustomerProtectedRoute>
+    )
+  },
+  {
+    path: "documents",
+    element: (
+      <CustomerProtectedRoute>
+        <CustomerDocuments/>
       </CustomerProtectedRoute>
     )
   },
