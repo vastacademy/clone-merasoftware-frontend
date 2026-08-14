@@ -565,12 +565,6 @@ const SummaryApi = {
             url : `${backendDomain}/api/wallet/deduct`,
             method : "post"
         },
-        // Instant wallet payment for an existing order/installment (customer's own money,
-        // no approval). Replaces the dead `deduct` stub above — pages will migrate to this.
-        payInstant : {
-            url : `${backendDomain}/api/wallet/pay-instant`,
-            method : "post"
-        },
         history : {
             url : `${backendDomain}/api/wallet/history`,
             method : "get"
@@ -642,10 +636,6 @@ const SummaryApi = {
     adminUserWorkspace: {
         url: `${backendDomain}/api/admin/user-workspace`,
         method: "get"
-    },
-    adminRechargeWallet: {
-        url: `${backendDomain}/api/admin/clients`,
-        method: "post"
     },
     myPaymentWorkspace: {
         url: `${backendDomain}/api/my-payment-workspace`,

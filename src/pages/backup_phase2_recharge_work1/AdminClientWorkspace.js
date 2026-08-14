@@ -1111,9 +1111,6 @@ const AdminClientWorkspace = () => {
             getBadgeClassName={getBadgeClassName}
             formatDateTime={formatDateTime}
             onOpenRecord={handleOpenPaymentRecord}
-            customerId={customerId}
-            walletBalance={Number(allData.summary?.walletBalance ?? customer?.walletBalance ?? 0)}
-            onRecharged={() => setWorkspaceRefreshKey((current) => current + 1)}
           />
         )}
 
@@ -1653,68 +1650,12 @@ const PaymentInvoicesPanel = ({
   getBadgeClassName,
   formatDateTime,
   onOpenRecord,
-  customerId,
-  walletBalance = 0,
-  onRecharged,
 }) => {
   const pendingPayments = transactions.filter((transaction) => transaction?.status === "pending");
   const unpaidInvoices = invoices.filter((invoice) => ["unpaid", "overdue"].includes(invoice?.status));
   const paidInvoices = invoices.filter((invoice) => invoice?.status === "paid");
   const completedPayments = transactions.filter((transaction) => transaction?.status === "completed");
   const ledgerItems = buildLedgerItems(transactions, invoices);
-
-  // Admin wallet recharge — instant credit (creditWalletInstant), shows up in the same ledger.
-  const [showRecharge, setShowRecharge] = useState(false);
-  const [rechargeAmount, setRechargeAmount] = useState("");
-  const [rechargeMethod, setRechargeMethod] = useState("upi");
-  const [rechargeReference, setRechargeReference] = useState("");
-  const [rechargeNote, setRechargeNote] = useState("");
-  const [recharging, setRecharging] = useState(false);
-
-  const resetRecharge = () => {
-    setShowRecharge(false);
-    setRechargeAmount("");
-    setRechargeMethod("upi");
-    setRechargeReference("");
-    setRechargeNote("");
-  };
-
-  const handleRecharge = async () => {
-    const amount = Number(rechargeAmount);
-    if (!Number.isFinite(amount) || amount <= 0) {
-      toast.error("Enter a valid amount");
-      return;
-    }
-    try {
-      setRecharging(true);
-      const response = await fetch(
-        `${SummaryApi.adminRechargeWallet.url}/${customerId}/recharge-wallet`,
-        {
-          method: SummaryApi.adminRechargeWallet.method,
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            amount,
-            paymentMethod: rechargeMethod,
-            reference: rechargeReference.trim(),
-            note: rechargeNote.trim(),
-          }),
-        }
-      );
-      const result = await response.json();
-      if (!result.success) {
-        throw new Error(result.message || "Recharge failed");
-      }
-      toast.success(result.message || "Wallet recharged");
-      resetRecharge();
-      onRecharged?.();
-    } catch (error) {
-      console.error("Error recharging wallet:", error);
-      toast.error(error.message || "Recharge failed");
-    } finally {
-      setRecharging(false);
-    }
-  };
 
   return (
     <section className="space-y-5">
@@ -1723,27 +1664,6 @@ const PaymentInvoicesPanel = ({
         <AdminInfoPill label="Pending Payments" value={pendingPayments.length} />
         <AdminInfoPill label="Unpaid Invoices" value={unpaidInvoices.length} />
         <AdminInfoPill label="Paid Invoices" value={paidInvoices.length} />
-      </div>
-
-      {/* Wallet balance + admin recharge */}
-      <div className="flex flex-col gap-3 rounded-[1.5rem] border border-slate-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
-        <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700">
-            <Wallet size={20} />
-          </div>
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Wallet balance</p>
-            <p className="text-xl font-bold text-slate-900">₹{walletBalance.toLocaleString("en-IN")}</p>
-          </div>
-        </div>
-        <button
-          type="button"
-          onClick={() => setShowRecharge(true)}
-          className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
-        >
-          <Wallet size={16} />
-          Recharge Wallet
-        </button>
       </div>
 
       <div>
@@ -1823,86 +1743,6 @@ const PaymentInvoicesPanel = ({
           )}
         </div>
       </div>
-
-      {/* Admin recharge modal */}
-      {showRecharge && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm" onClick={resetRecharge}>
-          <div className="w-full max-w-md rounded-[2rem] bg-white p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <div className="mb-5 flex items-start justify-between">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-600">Wallet recharge</p>
-                <h3 className="mt-1 text-xl font-bold text-slate-900">Add money to client wallet</h3>
-                <p className="mt-1 text-sm text-slate-500">Credited instantly — no approval needed. Appears in the client's wallet history.</p>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <label className="block">
-                <span className="text-sm font-semibold text-slate-700">Amount (₹)</span>
-                <input
-                  type="number"
-                  min="1"
-                  value={rechargeAmount}
-                  onChange={(e) => setRechargeAmount(e.target.value)}
-                  placeholder="e.g. 500"
-                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-emerald-400"
-                />
-              </label>
-              <label className="block">
-                <span className="text-sm font-semibold text-slate-700">Method</span>
-                <select
-                  value={rechargeMethod}
-                  onChange={(e) => setRechargeMethod(e.target.value)}
-                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-emerald-400"
-                >
-                  <option value="upi">UPI</option>
-                  <option value="cash">Cash</option>
-                  <option value="bank_transfer">Bank transfer</option>
-                </select>
-              </label>
-              <label className="block">
-                <span className="text-sm font-semibold text-slate-700">Reference (optional)</span>
-                <input
-                  type="text"
-                  value={rechargeReference}
-                  onChange={(e) => setRechargeReference(e.target.value)}
-                  placeholder="UPI ID / bank reference"
-                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-emerald-400"
-                />
-              </label>
-              <label className="block">
-                <span className="text-sm font-semibold text-slate-700">Note (internal, optional)</span>
-                <textarea
-                  value={rechargeNote}
-                  onChange={(e) => setRechargeNote(e.target.value)}
-                  rows={2}
-                  placeholder="e.g. Cash collected in person"
-                  className="mt-2 w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none focus:border-emerald-400"
-                />
-              </label>
-            </div>
-
-            <div className="mt-6 flex gap-3">
-              <button
-                type="button"
-                onClick={resetRecharge}
-                disabled={recharging}
-                className="flex-1 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleRecharge}
-                disabled={recharging}
-                className="flex-1 rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {recharging ? "Recharging…" : "Recharge"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </section>
   );
 };
