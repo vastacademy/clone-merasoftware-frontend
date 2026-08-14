@@ -94,102 +94,50 @@ const InstallmentPayment = () => {
 
   const handleWalletPayment = async () => {
     if (!installment) return;
-    
+
     try {
       setLoading(true);
-      
-      // Generate a transaction ID
-      const txnId = generateTransactionId();
-      
-      // If wallet has sufficient balance for this installment
+
+      // Full wallet cover → instant payment, no admin approval (wallet is the customer's own,
+      // already-approved money). The single /wallet/pay-instant call atomically debits the wallet
+      // and settles the installment + approves the order server-side.
       if (context.walletBalance >= installment.amount) {
-        // Process payment for current installment amount
-        const response = await fetch(SummaryApi.wallet.deduct.url, {
-          method: SummaryApi.wallet.deduct.method,
+        const response = await fetch(SummaryApi.wallet.payInstant.url, {
+          method: SummaryApi.wallet.payInstant.method,
           credentials: 'include',
           headers: {
-            "content-type": 'application/json'
+            'Content-Type': 'application/json',
           },
           body: JSON.stringify({
+            orderId: orderId,
             amount: installment.amount,
-            description: `Installment ${installmentNumber} payment for project`,
-            isInstallmentPayment: true
-          })
+            installmentNumber: parseInt(installmentNumber),
+          }),
         });
-        
+
         const data = await response.json();
-        
-        if (data.success) {
-          // Update the installment status to pending verification
-          const updateResponse = await fetch(SummaryApi.payInstallment.url, {
-            method: 'POST',
-            credentials: 'include',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              orderId: orderId,
-              installmentNumber: parseInt(installmentNumber),
-              amount: installment.amount,
-              isInstallmentPayment: true,
-              transactionId: txnId,
-              paymentStatus: 'pending-approval'
-            })
-          });
-          
-          const updateData = await updateResponse.json();
-          
-          if (!updateData.success) {
-            toast.error(updateData.message || 'Failed to update payment status');
-            setLoading(false);
-            return;
-          }
-          
-          // Update wallet balance
-          context.fetchWalletBalance();
-          
-          // Redirect to project details with clear message
-          toast.success('Payment submitted! Project will continue after admin approval (1-4 hours).');
-          navigate(`/project-details/${orderId}`);
-        } else {
+
+        if (!data.success) {
           toast.error(data.message || 'Payment failed');
+          setLoading(false);
+          return;
         }
+
+        // Refresh the just-debited wallet balance and take the customer back to the project.
+        context.fetchWalletBalance();
+        toast.success('Payment successful! Your project will continue now.');
+        navigate(`/project-details/${orderId}`);
       } else {
-        // Partial payment from wallet (if wallet has some balance)
-        if (context.walletBalance > 0) {
-          const response = await fetch(SummaryApi.wallet.deduct.url, {
-            method: SummaryApi.wallet.deduct.method,
-            credentials: 'include',
-            headers: {
-              "content-type": 'application/json'
-            },
-            body: JSON.stringify({
-              amount: context.walletBalance,
-              description: `Partial wallet payment for installment ${installmentNumber}`,
-              isInstallmentPayment: true
-            })
-          });
-          
-          const data = await response.json();
-          
-          if (!data.success) {
-            toast.error(data.message || 'Wallet payment failed');
-            setLoading(false);
-            return;
-          }
-          
-          // Update wallet balance
-          context.fetchWalletBalance();
-        }
-        
-        // Set transaction ID for QR payment
+        // Partial: the wallet doesn't cover the whole installment. The wallet part is debited only
+        // when the UPI remainder is verified (see verifyPayment) so a half-paid state can't be left
+        // behind if the customer abandons the QR screen. Here we only open the QR for the remainder.
+        const txnId = generateTransactionId();
         setTransactionId(txnId);
-        
-        // Create UPI payment link
+
         const upiId = 'vacomputers.com@okhdfcbank'; // Replace with your UPI ID
         const payeeName = 'VA Computer';
         const upi = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(payeeName)}&am=${remainingAmount}&cu=INR&tn=${encodeURIComponent(`Installment Payment - ${txnId}`)}&tr=${txnId}`;
-        
+
         setUpiLink(upi);
         setShowQR(true);
       }
@@ -210,17 +158,37 @@ const InstallmentPayment = () => {
     try {
       setLoading(true);
       setVerificationStatus('Submitting verification request...');
-      
-      console.log('Sending verification with data:', {
-        transactionId,
-        amount: remainingAmount,
-        upiTransactionId,
-        isInstallmentPayment: true,
-        orderId,
-        installmentNumber: parseInt(installmentNumber)
-      });
-      
-      // First create a transaction record for the QR payment
+
+      // Combined payment: the wallet part (installment total minus the UPI remainder) is the
+      // customer's own money, so it is debited instantly now — linked to this UPI transaction via
+      // parentTransactionId so that if the admin later REJECTS the UPI part, the wallet part is
+      // auto-refunded (transactionApprovalController). It advances paidAmount but does NOT mark the
+      // installment paid; the UPI approval finishes that.
+      const walletPart = Math.max(0, installment.amount - remainingAmount);
+      if (walletPart > 0) {
+        const walletRes = await fetch(SummaryApi.wallet.payInstant.url, {
+          method: SummaryApi.wallet.payInstant.method,
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            orderId: orderId,
+            amount: walletPart,
+            installmentNumber: parseInt(installmentNumber),
+            parentTransactionId: transactionId,
+          }),
+        });
+        const walletData = await walletRes.json();
+        if (!walletData.success) {
+          setVerificationStatus(walletData.message || 'Wallet payment failed');
+          setLoading(false);
+          return;
+        }
+        context.fetchWalletBalance();
+      }
+
+      // Then record the UPI remainder as a pending transaction for admin approval.
       const verifyResponse = await fetch(SummaryApi.wallet.verifyPayment.url, {
         method: SummaryApi.wallet.verifyPayment.method,
         credentials: 'include',

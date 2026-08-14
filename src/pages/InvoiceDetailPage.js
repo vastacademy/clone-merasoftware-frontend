@@ -130,24 +130,28 @@ const InvoiceDetailPage = () => {
       const walletBalance = context?.walletBalance || 0;
 
       if (walletBalance >= amountDueNow) {
-        const txnId = generateTransactionId();
-        const deductRes = await fetch(SummaryApi.wallet.deduct.url, {
-          method: SummaryApi.wallet.deduct.method,
+        // Full wallet cover → instant payment, no admin approval (the wallet is the customer's own,
+        // already-approved money). One /wallet/pay-instant call atomically debits the wallet and
+        // settles the order/installment server-side.
+        const payRes = await fetch(SummaryApi.wallet.payInstant.url, {
+          method: SummaryApi.wallet.payInstant.method,
           credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            orderId: orderIdForPay,
             amount: amountDueNow,
-            description: `Payment for invoice ${invoice.invoiceNumber}`,
-            isInstallmentPayment: isInstallmentInvoice,
+            installmentNumber: isInstallmentInvoice ? invoice.installmentNumber : null,
+            // A real plan invoice → the backend also marks the invoice document paid (invoice mode).
+            // The temp DUMMY_INVOICES have string ids and no server record; skip invoiceId for those.
+            invoiceId: String(invoice._id).startsWith('dummy-') ? null : invoice._id,
           }),
         });
-        const deductData = await deductRes.json();
-        if (!deductData.success) {
-          throw new Error(deductData.message || 'Wallet payment failed');
+        const payData = await payRes.json();
+        if (!payData.success) {
+          throw new Error(payData.message || 'Wallet payment failed');
         }
-        await submitVerification({ txnId, method: 'wallet' });
         context?.fetchWalletBalance?.();
-        toast.success('Payment submitted for admin approval.');
+        toast.success('Payment successful! Your plan is now active.');
         setShowPayment(false);
         navigate(-1);
         return;

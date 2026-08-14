@@ -557,16 +557,10 @@ const SummaryApi = {
             url : `${backendDomain}/api/wallet/balance`,
             method: "get"
         },
-        addBalance: {
-            url : `${backendDomain}/api/wallet/add-balance`,
-            method: "post"
-        },
-        deduct : {
-            url : `${backendDomain}/api/wallet/deduct`,
-            method : "post"
-        },
-        // Instant wallet payment for an existing order/installment (customer's own money,
-        // no approval). Replaces the dead `deduct` stub above — pages will migrate to this.
+        // Instant wallet payment for an existing order/installment/invoice (customer's own money,
+        // no approval). This replaced the old dead `deduct`/`add-balance` stubs (routes that were
+        // never registered on the backend — they 404'd); InstallmentPayment.js and
+        // InvoiceDetailPage.js now use this. See doc 51.
         payInstant : {
             url : `${backendDomain}/api/wallet/pay-instant`,
             method : "post"
