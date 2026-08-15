@@ -99,13 +99,16 @@ const OrderDetailPage = () => {
     }
   };
 
-  // Route to the actual installment-payment page (wallet-instant / UPI / combined, same SSOT
-  // path as ProjectDetails.js's PaymentAlert button). `/direct-payment` was the wrong destination
-  // — it only reads `location.state.paymentData`/`retryPaymentId`, never the installment shape
-  // this used to send, so every click there landed on "Payment information not found" and bounced
-  // to the dashboard without ever reaching a payment endpoint.
   const handlePayInstallment = (installment) => {
-    navigate(`/installment-payment/${order._id}/${installment.installmentNumber}`);
+    navigate(`/direct-payment`, {
+      state: {
+        installmentPayment: true,
+        orderId: order._id,
+        installmentNumber: installment.installmentNumber,
+        installmentAmount: installment.amount,
+        productName: order.productId?.serviceName || 'Product',
+      },
+    });
   };
 
   const handleRetryPayment = () => {

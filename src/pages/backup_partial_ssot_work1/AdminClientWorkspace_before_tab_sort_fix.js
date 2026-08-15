@@ -51,10 +51,6 @@ const PAYMENTS_TAB = { id: "payments", label: "Payment & Invoices", active: true
 const DOCUMENTS_TAB = { id: "documents", label: "Documents", active: true };
 const ACCESS_TAB = { id: "access", label: "Account & Access", active: true };
 
-// Fixed tab order (user-confirmed) — same for every client, no longer derived from whether the
-// client currently has an active project/plan.
-const WORKSPACE_TABS = [PROJECTS_TAB, PLANS_TAB, PAYMENTS_TAB, DOCUMENTS_TAB, ACCESS_TAB, OVERVIEW_TAB];
-
 const safeDateTime = (value) => {
   if (!value) return null;
   const parsed = new Date(value);
@@ -92,13 +88,10 @@ const isPendingOrder = (order) =>
 const isActiveOrder = (order) =>
   !isPendingOrder(order) && !isRejectedOrder(order) && !isCompletedOrder(order);
 
-// Pending-approval ranks WITH active (both 0) so a brand-new project — which starts life as
-// pending-approval — sorts by its own newest-first date instead of always dropping below active
-// projects. Completed/rejected still rank below everything (they're finished/closed work), so
-// they stay at the bottom regardless of how recently they were touched.
 const getProjectSortRank = (order) => {
-  if (isCompletedOrder(order)) return 2;
-  if (isRejectedOrder(order)) return 1;
+  if (isCompletedOrder(order)) return 3;
+  if (isPendingOrder(order)) return 1;
+  if (isRejectedOrder(order)) return 2;
   return 0;
 };
 
@@ -780,10 +773,17 @@ const AdminClientWorkspace = () => {
     [allData.orders]
   );
 
-  // Fixed order (user-confirmed, replaces the earlier active-project/active-plan-dependent
-  // ordering): Projects, Plans, Payments, Documents, Access, Overview last — same for every
-  // client regardless of what they currently have running.
-  const tabs = WORKSPACE_TABS;
+  const hasActiveProject = useMemo(() => projectOrders.some(isActiveOrder), [projectOrders]);
+  const hasActivePlan = useMemo(
+    () => planOrders.some((plan) => getPlanDisplayStatus(plan) === "Active"),
+    [planOrders]
+  );
+
+  const tabs = useMemo(() => {
+    if (hasActiveProject) return [PROJECTS_TAB, PLANS_TAB, OVERVIEW_TAB, PAYMENTS_TAB, DOCUMENTS_TAB, ACCESS_TAB];
+    if (hasActivePlan) return [PLANS_TAB, PROJECTS_TAB, OVERVIEW_TAB, PAYMENTS_TAB, DOCUMENTS_TAB, ACCESS_TAB];
+    return [OVERVIEW_TAB, PROJECTS_TAB, PLANS_TAB, PAYMENTS_TAB, DOCUMENTS_TAB, ACCESS_TAB];
+  }, [hasActiveProject, hasActivePlan]);
 
   useEffect(() => {
     if (activeTab === null && !dataLoading) setActiveTab(tabs[0].id);
