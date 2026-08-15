@@ -307,13 +307,17 @@ const ProjectDetails = ({ isAdminView = false }) => {
           return;
         }
 
-        // A pending-approval order (payment submitted, awaiting admin approval — either the whole
-        // order or a later installment's UPI portion) no longer full-page-blocks the customer.
-        // The project stays visible and interactive to whatever degree it already is; the
-        // "Upload Data" action gate below (isActionLocked) covers the payment-pending case with a
-        // disabled button + badge instead, matching the existing hasUnpaidInvoice pattern rather
-        // than a separate, inconsistent full-screen state.
-
+        // Check if this order is visible to the user
+        if (order.orderVisibility === 'pending-approval') {
+          setOrder({
+            ...order,
+            isPendingApproval: true,
+            pendingMessage: "Your payment is being processed. Project details will be available after admin approval."
+          });
+          setLoading(false);
+          return;
+        }
+        
         if (order.orderVisibility === 'payment-rejected') {
           setOrder({
             ...order,
@@ -477,6 +481,40 @@ const ProjectDetails = ({ isAdminView = false }) => {
     );
   }
 
+  // Special rendering for pending approval
+  if (order && order.isPendingApproval && !isAdminView) {
+    return (
+      <Shell {...shellProps}>
+        <div className="p-6">
+          <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r-lg shadow-sm">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-amber-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <h3 className="text-lg font-semibold text-amber-800">Payment Processing</h3>
+                <div className="mt-2 text-base text-amber-700">
+                  <p>{order.pendingMessage}</p>
+                  <p className="mt-2">This process usually takes 1-4 hours. You'll receive a notification once your payment is approved.</p>
+                </div>
+                <div className="mt-4">
+                  <button
+                    onClick={handleBack}
+                    className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-base font-semibold"
+                  >
+                    Back to Dashboard
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Shell>
+    );
+  }
+
   // Special rendering for rejected payments
   if (order && order.isPaymentRejected && !isAdminView) {
     return (
@@ -549,11 +587,6 @@ const ProjectDetails = ({ isAdminView = false }) => {
   const currentStageLabel = inProgressNode?.title || selectedNode?.title || 'All stages completed';
   const totalUpdates = order?.messages?.length || 0;
 
-  // Whole-order pending-approval (payment submitted, admin hasn't approved yet) — no longer a
-  // full-page block; it gates the "Upload Data" action the same way hasUnpaidInvoice does.
-  const isOrderPendingApproval = order.orderVisibility === 'pending-approval';
-  const isUploadLocked = Boolean(order.hasUnpaidInvoice) || isOrderPendingApproval;
-
   return (
     <Shell {...shellProps}>
       <div
@@ -601,31 +634,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
             />
           )}
 
-          {/* Single payment-pending banner covering both underlying causes — never two at once.
-              A whole-order pending-approval order (customerCreateCustomProjectOrder.js creates it
-              `pending-approval` by default; it only flips to `approved` when a UPI remainder is
-              nil) ALWAYS also has its due invoice sitting unpaid/partially_paid, because
-              markProjectInvoicePaid only settles the wallet-paid part until that UPI portion is
-              admin-approved — so hasUnpaidInvoice and isOrderPendingApproval are true together for
-              the same underlying reason on that order. isOrderPendingApproval is checked first
-              (it's the more specific, whole-order case); hasUnpaidInvoice alone (order already
-              approved, one later installment's invoice still unpaid — the original 38_...md case)
-              only renders when the order isn't itself pending. */}
-          {!isAdminView && isOrderPendingApproval && (
-            <div className={g(
-              'mb-6 rounded-2xl border border-emerald-300 bg-emerald-50 p-4',
-              'mb-6 rounded-2xl border border-emerald-400/40 bg-emerald-500/15 p-4 backdrop-blur-md'
-            )}>
-              <p className={g('text-base font-semibold text-emerald-800', 'text-base font-semibold text-emerald-200')}>
-                Payment Submitted — Awaiting Approval
-              </p>
-              <p className={g('mt-1 text-sm text-emerald-700', 'mt-1 text-sm text-emerald-100/90')}>
-                Your payment has been submitted and is awaiting admin approval (usually 1-4 hours). Some actions are unavailable until it is approved.
-              </p>
-            </div>
-          )}
-
-          {!isAdminView && !isOrderPendingApproval && order.hasUnpaidInvoice && (
+          {!isAdminView && order.hasUnpaidInvoice && (
             <div className={g(
               'mb-6 rounded-2xl border border-amber-300 bg-amber-50 p-4',
               'mb-6 rounded-2xl border border-amber-400/40 bg-amber-500/15 p-4 backdrop-blur-md'
@@ -683,15 +692,12 @@ const ProjectDetails = ({ isAdminView = false }) => {
                         <button
                           type="button"
                           onClick={() => setUpdateModalOpen(true)}
-                          disabled={isUploadLocked}
-                          title={isUploadLocked ? "Available after payment is recorded" : undefined}
+                          disabled={order.hasUnpaidInvoice}
+                          title={order.hasUnpaidInvoice ? "Available after payment is recorded" : undefined}
                           className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-2.5 text-base font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-400 disabled:hover:bg-slate-400"
                         >
                           <Upload className="h-4 w-4" />
                           Upload Data
-                          {isUploadLocked && (
-                            <span className="ml-1 rounded-full bg-white/20 px-2 py-0.5 text-xs font-semibold">Pending</span>
-                          )}
                         </button>
                       ) : null}
 
