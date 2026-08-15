@@ -2974,10 +2974,18 @@ const WorkspaceDetailSubpage = ({
             <div className="min-w-0 flex-1">
               <p className="text-base font-bold text-amber-900">This project is waiting for your approval</p>
               <p className="mt-1 text-sm text-amber-700">
-                This project has no payment recorded yet. Record a payment to approve it, or reject the request — a project can never be approved without a payment on record.
+                The customer started this project. Approve it (with or without recording a payment), or reject the request.
               </p>
 
               <div className="mt-4 flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  disabled={approvalSubmitting}
+                  onClick={() => submitApproval("approve_no_payment")}
+                  className="inline-flex items-center gap-2 rounded-2xl border border-emerald-300 bg-emerald-100 px-4 py-2.5 text-sm font-semibold text-emerald-800 transition hover:bg-emerald-200 disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  Approve without Payment
+                </button>
                 <button
                   type="button"
                   disabled={approvalSubmitting}
