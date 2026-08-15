@@ -268,18 +268,11 @@ const ProjectDetails = ({ isAdminView = false }) => {
           return;
         }
         
-        // Determine if we should show the alert based on progress. Prefer the installment's own
-        // admin-configured progressThreshold (Layer B — per-project gate, matches the backend's
-        // appendProjectNode() cap in projectNodeService.js exactly). Fall back to the old
-        // hardcoded 40%/75% only for installments created before this field existed
-        // (progressThreshold is null/undefined on them), so pre-existing orders keep behaving
-        // exactly as before.
-        const hasThreshold = nextUnpaidInstallment.progressThreshold != null;
-        const shouldPause = hasThreshold
-          ? Math.round(order.projectProgress) >= Number(nextUnpaidInstallment.progressThreshold)
-          : (nextUnpaidInstallment.installmentNumber === 2 && Math.round(order.projectProgress) >= 40) ||
-            (nextUnpaidInstallment.installmentNumber === 3 && Math.round(order.projectProgress) >= 75);
-
+        // Determine if we should show the alert based on progress
+        const shouldPause = 
+          (nextUnpaidInstallment.installmentNumber === 2 && Math.round(order.projectProgress) >= 40) ||
+          (nextUnpaidInstallment.installmentNumber === 3 && Math.round(order.projectProgress) >= 75);
+        
         setShouldShowPaymentAlert(shouldPause);
         setIsProjectPaused(shouldPause);
         setCurrentInstallment(nextUnpaidInstallment);

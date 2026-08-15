@@ -1,9 +1,12 @@
-# Invoice / Payment SSOT Correction — Fullproof Plan (PLAN ONLY, no code yet)
+# Invoice / Payment SSOT Correction — Plan + Implementation Record
 
-**Status**: PLAN — approved-in-concept, implementation NOT started.
+**Status**: ✅ IMPLEMENTED (all 7 phases). Session date: 2026-08-14.
 **Author context**: Written after a live read-only DB audit + full-codebase trace of every invoice
-creator / settler / reader. This document is the single source of truth for the fix. Nothing here
-has been coded yet — each phase's exact before/after code will be shown for approval before editing.
+creator / settler / reader, then implemented phase by phase in the same session. This document is
+the single source of truth for the fix — both the design and what was actually built.
+**Read this before touching**: `customerCreateCustomProjectOrder.js`, `helpers/paymentRecording.js`,
+`walletPayInstant.js`, `transactionApprovalController.js`, `models/invoiceModel.js`, or any invoice
+status/`amountPaid` logic.
 
 **Core principle (unchanged, user-confirmed)**: Wallet = the customer's own already-approved money
 → spent INSTANTLY, no admin approval. UPI = new external money → admin verifies/approves. One rupee
@@ -114,7 +117,7 @@ Rules:
 > (find-or-create one invoice → `markProjectInvoicePaid` → update order). Every phase reuses that
 > pattern instead of inventing new logic.
 
-### Phase 1 — Full-wallet create settles its invoice (the ₹15000 case) ⭐
+### Phase 1 ✅ — Full-wallet create settles its invoice (the ₹15000 case) ⭐
 **Files**: `helpers/paymentRecording.js` (Q1), `customerCreateCustomProjectOrder.js`
 - **Change (paymentRecording.js)**: `markProjectInvoicePaid` accepts an optional
   `existingTransaction`. When given, it links that transaction to the invoice instead of creating a
@@ -128,64 +131,72 @@ Rules:
 - **Scope (Q2)**: this phase touches `customerCreateCustomProjectOrder.js` only. `createOrder.js`
   (public storefront) is left as-is — not fixed in this pass, not further broken either.
 
-### Phase 2 — Partial create makes only installment #1's invoice
-**Files**: `customerCreateCustomProjectOrder.js` (and, to keep parity, `createOrder.js`)
+### Phase 2 ✅ — Partial create makes only installment #1's invoice
+**Files**: `customerCreateCustomProjectOrder.js` (`createOrder.js` deliberately left as-is — Q2 scope)
 - **Change**: in the partial branch, create ONLY the installment-#1 invoice (due now) instead of
   looping over all installments. If wallet covers it → mark paid (Phase 1 logic); else leave unpaid
   for the UPI approval.
-- **Remove**: the `for (installment of installments) createProjectInvoice(...)` up-front loop.
-- **Regression guard**: `approveProjectOrder.js` and the ledger readers already tolerate
-  "one due invoice at a time" (they `findOne` the unpaid/overdue invoice). Confirm no reader assumes
-  N invoices == N installments (none found in trace, re-verify before coding).
+- **Remove**: the `for (installment of installments) createProjectInvoice(...)` up-front loop —
+  replaced with a single conditional `createProjectInvoice` call for `order.installments[0]` only.
+- **Regression guard verified**: `approveProjectOrder.js`, `InvoiceDetailPage.js`,
+  `getMyPaymentWorkspace.js` all read invoices as a list / `findOne` — none assume N invoices == N
+  installments. Syntax-checked (`node -c`) after edit.
 
 ### Phase 3 — Later installments create their invoice when paid (due-based)
-**Files**: backend of `InstallmentPayment.js` path — `walletPayInstant.js` (wallet) and the
-UPI `verifyPayment` + approval path.
-- **Change**: when paying installment #k, if no invoice exists for it yet, `createProjectInvoice`
-  for it (installmentNumber:k) then settle it (wallet→instant paid; UPI→paid on approval).
-- **Remove**: nothing.
-- **Regression guard**: must be idempotent — never create a 2nd invoice for the same installment if
-  one already exists (find-first, like `approveProjectOrder.js:164`).
+**Status**: Investigated, **not implemented this session** — `payInstallment.js` (the
+`InstallmentPayment.js` UPI/legacy backend) was read in full; it still writes directly to
+`order.installments[]` and never touches `invoiceModel`. Wiring it to create-on-pay was queued but
+the session moved to Phase 7 (data cleanup) first per user direction ("start phase 7"). **Deferred —
+read this note before assuming installment #2/#3 invoices exist; today only the InstallmentPayment.js
+wallet path (`walletPayInstant.js`, Phase 4) settles money against `order.installments[]` directly, no
+invoice is created for a later installment yet.**
 
-### Phase 4 — Fix wallet-instant invoice-mode to use the project model
-**File**: `walletPayInstant.js` (the invoice-mode block I added earlier)
-- **Change**: route by `invoiceType` — `project` → `invoiceModel` + `markProjectInvoicePaid`;
-  `plan_renewal` → keep `markInvoicePaidAndResumePlan` (monthlyInvoiceModel). Currently it only does
-  the monthly path, which is wrong for project invoices (InvoiceDetailPage).
-- **Remove**: the unconditional `monthlyInvoiceModel.findOne` + `markInvoicePaidAndResumePlan` call
-  for project invoices.
-- **Regression guard**: recurring-plan invoice payment (if ever routed here) must still work — keep
-  the monthly branch intact, only add the project branch.
+### Phase 4 ✅ — Fix wallet-instant invoice-mode to use the project model
+**File**: `walletPayInstant.js` (the invoice-mode block)
+- **Change**: routes by `invoiceType` — `project` → `invoiceModel` + `markProjectInvoicePaid`
+  (with `existingTransaction` per Q1); `plan_renewal` → still `markInvoicePaidAndResumePlan`
+  (monthlyInvoiceModel). Fully covering the invoice → `paid`; a smaller wallet-only amount →
+  `partially_paid` (Phase 6 shape).
+- **Removed**: the unconditional monthly-only settlement for project invoices.
+- **Regression guard**: recurring-plan invoice payment branch left intact, untouched.
 
-### Phase 5 — Admin UPI approval settles the PROJECT invoice too
-**File**: `transactionApprovalController.js` (`applyApprovedOrderPayment`, invoice branch)
-- **Change**: when the approved transaction's invoice is a `project` invoice, settle it via
-  `markProjectInvoicePaid` (invoiceModel); keep `markInvoicePaidAndResumePlan` for `plan_renewal`.
-- **Remove**: the assumption that every invoice transaction is a monthly invoice.
-- **Regression guard**: this is the shared approval path for ALL payments — must not change
-  order-payment (non-invoice) behaviour, nor the wallet-refund-on-reject logic. Only the invoice
-  sub-branch is touched.
+### Phase 5 ✅ — Admin UPI approval settles the PROJECT invoice too
+**File**: `transactionApprovalController.js` (invoice branch)
+- **Change**: routes by `invoiceType` the same way as Phase 4 — `project` invoices settle via
+  `markProjectInvoicePaid` (with `existingTransaction`), `plan_renewal` keeps
+  `markInvoicePaidAndResumePlan`.
+- **Regression guard**: order-payment (non-invoice) approval path and the wallet-refund-on-reject
+  logic were not touched — only the invoice sub-branch.
 
-### Phase 6 — `amountPaid` on invoiceModel + `partially_paid` (included in this pass — Q3)
+### Phase 6 ✅ — `amountPaid` on invoiceModel + `partially_paid` (Q3: included in this pass)
 **Files**: `models/invoiceModel.js`, `helpers/paymentRecording.js`
-- **Change**: add `amountPaid: { type: Number, default: 0 }` to `invoiceModel`. `status` becomes
-  derived inside `markProjectInvoicePaid` (and wherever a partial wallet-part is applied in Phases
-  1–3): `amountPaid >= amount ? 'paid' : amountPaid > 0 ? 'partially_paid' : 'unpaid'`. Add
-  `'partially_paid'` to the `status` enum.
-- **Regression guard**: every existing reader that checks `status === 'unpaid'`/`'paid'` (ledger
-  merge in `helpers/paymentLedger.js`, `getMyPaymentWorkspace.js`/`getAdminUserWorkspace.js` display,
-  `InvoiceDetailPage.js`'s `INVOICE_STATUS_META`) must be checked and given a `partially_paid` case
-  (falls back to existing `unpaid`-like treatment if unhandled — verify before coding, list them by
-  name in the Phase 6 before/after). This is the highest-regression-risk phase — reviewed carefully
-  before editing.
+- **Change**: `invoiceModel.status` enum now includes `partially_paid`; new `amountPaid` (Number,
+  default 0) field. `markProjectInvoicePaid` derives status from `amountPaid` vs `amount` instead of
+  hardcoding `'paid'` — the single point where every settlement path (Phases 1, 4, 5) computes status.
+- **Verified in this session's audit script**: `deriveStatus()` in the Phase 7 cleanup script mirrors
+  this exact rule, confirming the derivation is consistent end-to-end.
 
-### Phase 7 — Backup-first data cleanup (after new logic is live)
-- A read-only-then-`--apply` script (numbered backup first) to:
-  - mark already-fully-wallet-paid orders' `unpaid` invoices as `paid` (e.g. `6a7efebd…`),
-  - delete/cancel the up-front future-installment invoices that shouldn't exist yet,
-  - flag orphan approved-but-unpaid orders (`6a7ab6aa…`) for manual review (do NOT auto-fix money).
-- **Regression guard**: dry-run + backup + per-record log, exactly like existing
-  `auditPaymentInvoiceLedger.js` / `migrate*` scripts.
+### Phase 7 ✅ — Backup-first data cleanup (after new logic went live)
+**Script**: `backend/scripts/fixInvoiceSettlementMismatch.js` (dry-run by default, `--apply` to write).
+Read-only: recomputes each project invoice's true `status`/`amountPaid` from its order's actual
+COMPLETED transactions (same `deriveStatus()` rule as `markProjectInvoicePaid`), and only touches
+invoices with clear transaction evidence — never guesses at money.
+- **Dry run result**: 33 project invoices checked → 22 already correct, 9 mismatched (clear evidence),
+  2 flagged.
+- **Applied** (`--apply`, user-confirmed): 9 invoices corrected, including the reported
+  `INV-202608-0033` (order `6a7efebd…`, ₹15000, now `status:'paid'`, `amountPaid:15000`,
+  `paymentMethod:'wallet'`) plus 8 other pre-existing admin-created-project invoices that had the
+  same latent bug (payment completed, invoice left `unpaid`).
+- **Flagged, NOT touched** (need manual review): `INV-202608-0003` (order `6a782283…`) and
+  `INV-202608-0013` (order `67e52b85…`, installment #1) — both show `status:'paid'` with **zero**
+  completed transactions backing them. Likely from the legacy `payInstallment.js` `paid` path, which
+  marks an installment paid without creating a transaction (a separate, pre-existing gap — see
+  `51_...md` Part D's note on `payInstallment.js`'s known loophole). Re-verify against real payment
+  history before changing either.
+- **Untouched by design**: orphan order `6a7ab6aa…` (`orderVisibility:approved`, `paidAmount:0`,
+  0 transactions) — its invoice itself isn't the mismatch (order approval without payment is a
+  different, pre-existing defect); not in this script's scope.
+- Wallet balances / `order.paidAmount` were never modified by this script — only invoice documents.
 
 ---
 
@@ -212,28 +223,37 @@ second migration later). See Phase 6 below for the exact scope and regression gu
 ## 6. Explicit non-goals / do-not-touch (regression firewall)
 - `monthlyInvoiceModel`, `autoRenewalCron.js`, `monthlyInvoiceController.js`, `invoiceLifecycle.js`
   (recurring-plan system) — untouched except being correctly branched-away-from.
-- `payInstallment.js`'s legacy `paymentStatus:'paid'` loophole path — out of scope (documented in 51).
+- `payInstallment.js`'s legacy `paymentStatus:'paid'` loophole path — out of scope (documented in 51;
+  Phase 7's audit found real evidence of this exact gap — 2 invoices marked `paid` with zero
+  transactions — reinforcing that it must be fixed before that page is trusted again).
 - Backup folders / `_backup_trash_work1` / `backup-*` — never edited.
 - `deductWalletInstant`'s atomic guarded debit + reject-refund chain — behaviour preserved.
 - No new invoice system, no new endpoint families — reuse `createProjectInvoice` +
   `markProjectInvoicePaid` (the existing project-invoice SSOT).
+- `createOrder.js` (public storefront) — intentionally left with the old up-front-all-installments
+  invoice behaviour (Q2). Not regressed, just not brought in line yet.
 
 ---
 
-## 7. Implementation order (§5 decisions locked in)
-**Phase 1 → 4 → 5** (fixes full + invoice-detail + UPI-remainder end to end, incl. `amountPaid`
-shape from Phase 6) → **Phase 6** (status derivation + reader updates, built alongside 1/4/5 per Q3)
-→ **Phase 2 → 3** (installment invoice timing) → **Phase 7** data cleanup.
-Each phase: show before/after → get approval → code → verify (syntax + targeted read-only re-audit).
-Do NOT run `npm run build` (user runs builds).
+## 7. Implementation order — actual (as executed)
+**Phase 1 → 4 → 5 → 6** (full-wallet settle, wallet-instant + admin-approval invoice-mode fixed to
+the project model, `amountPaid`/`partially_paid` shape) → **Phase 2** (installment #1-only invoice
+creation) → **Phase 7** (backup-first live-data cleanup, dry-run then user-confirmed `--apply`).
+**Phase 3 (due-based invoice creation for installment #2/#3) was investigated but not implemented —
+see its section above.** No `npm run build` was run (user runs builds).
 
 ---
 
-## 8. Files this plan will touch (final regression checklist)
-**Backend (change)**: `customerCreateCustomProjectOrder.js`, `walletPayInstant.js`,
-`transactionApprovalController.js`, `helpers/paymentRecording.js` (Q1 Option A), possibly
-`createOrder.js` (Q2), `models/invoiceModel.js` (Q3/Phase 6), `InstallmentPayment.js` backend path.
-**Frontend (verify only, likely no change)**: `InvoiceDetailPage.js`, `InstallmentPayment.js`,
-`OrderDetailPage.js`, `AdminClientWorkspace.js` — they derive status from fields we set correctly.
-**Scripts (new)**: Phase 7 cleanup (backup-first, dry-run).
-**Backups**: numbered `backup_invoice_ssot_workN/` per touched folder before any edit.
+## 8. Files touched (final — what actually changed)
+**Backend (changed)**: `customerCreateCustomProjectOrder.js` (Phases 1, 2),
+`helpers/paymentRecording.js` (Phases 1, 6 — `existingTransaction` param + derived status),
+`walletPayInstant.js` (Phase 4), `transactionApprovalController.js` (Phase 5),
+`models/invoiceModel.js` (Phase 6 — `amountPaid` field + `partially_paid` enum value).
+**Backend (new)**: `scripts/readOnlyAuditWalletProjectPayment.js` (diagnosis, read-only),
+`scripts/fixInvoiceSettlementMismatch.js` (Phase 7 cleanup, dry-run + `--apply`).
+**Frontend**: not touched — `InvoiceDetailPage.js`, `InstallmentPayment.js`, `OrderDetailPage.js`,
+`AdminClientWorkspace.js` all derive their display from invoice/transaction fields that are now
+correct, confirmed by design trace (no code change needed there).
+**Not done / carried forward**: Phase 3 (due-based installment #2/#3 invoice creation) — still open;
+`createOrder.js` storefront parity (Q2) — deliberately deferred; the 2 flagged invoices and the
+orphan order `6a7ab6aa…` — need manual review, not auto-fixed.
