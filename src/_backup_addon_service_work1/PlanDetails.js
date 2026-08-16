@@ -45,39 +45,6 @@ const getPlanVisualStatus = (plan) => {
   const product = plan.productId || {};
   const isRecurring = Boolean(product.isMonthlyLimitedPlan || product.isMonthlyRenewablePlan);
 
-  // Service Plan branch — checked first and returned early so none of the legacy
-  // logic below (which reads fields a service plan simply doesn't have) ever runs
-  // for one. Legacy plans fall through completely unchanged.
-  if (plan.isServicePlan && plan.servicePlanSnapshot) {
-    const snapshot = plan.servicePlanSnapshot;
-    const status = plan.servicePlanStatus || 'active';
-
-    const endDate = plan.servicePlanEndDate ? new Date(plan.servicePlanEndDate) : null;
-    const daysLeft = endDate
-      ? Math.max(0, Math.ceil((endDate - new Date()) / (1000 * 60 * 60 * 24)))
-      : null;
-
-    // A reminder-only service grants no portal allowance, so "uses left" is not a
-    // meaningful concept for it — only its duration is.
-    const isReminderOnly = snapshot.serviceBehavior === 'reminder_only';
-    const isUnlimited = snapshot.limitScope === 'unlimited';
-    const accessLimit = Number(snapshot.portalAccessCount || 0);
-    const accessUsed = Number(plan.serviceAccessUsedInCycle || 0);
-    const accessLeft = isReminderOnly || isUnlimited
-      ? null
-      : Math.max(0, accessLimit - accessUsed);
-
-    const base = { isServicePlan: true, isRecurring: false, daysLeft, accessLeft, accessUsed, accessLimit, isReminderOnly, isUnlimited };
-
-    if (status === 'cancelled') return { ...base, badge: 'Cancelled', tone: 'closed', canRequest: false };
-    if (status === 'expired') return { ...base, badge: 'Expired', tone: 'expired', canRequest: false };
-    if (status === 'paused') return { ...base, badge: 'Paused', tone: 'paused', canRequest: false };
-    if (daysLeft === 0) return { ...base, badge: 'Expired', tone: 'expired', canRequest: false };
-    if (accessLeft === 0) return { ...base, badge: 'Cycle limit used', tone: 'used_up', canRequest: false };
-
-    return { ...base, badge: 'Active', tone: 'active', canRequest: !isReminderOnly };
-  }
-
   if (plan.planStatus === 'closed') {
     return { badge: 'Closed', tone: 'closed', isRecurring, canRequest: false };
   }

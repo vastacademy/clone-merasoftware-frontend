@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback, useContext, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { 
@@ -18,8 +18,6 @@ import CookieManager from '../utils/cookieManager';
 import StorageService from '../utils/storageService';
 import { useOnlineStatus } from '../App';
 import { isPlanItem } from '../helpers/orderType';
-import AddServiceModal from '../components/AddServiceModal';
-import Context from '../context';
 
 const normalizeNodeKey = (value) => {
   if (value === null || value === undefined) {
@@ -164,11 +162,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
   const [shouldShowPaymentAlert, setShouldShowPaymentAlert] = useState(false);
   const [currentInstallment, setCurrentInstallment] = useState(null);
   const [updateModalOpen, setUpdateModalOpen] = useState(false);
-  const [showAddServiceModal, setShowAddServiceModal] = useState(false);
   const [isProjectPaused, setIsProjectPaused] = useState(false);
-  // Wallet balance for the add-service modal — read from the app-wide SSOT,
-  // never fetched separately here.
-  const appContext = useContext(Context);
   const [timelineExpanded, setTimelineExpanded] = useState(false);
   const g = (adminClass, customerClass) => (isAdminView ? adminClass : customerClass);
   const [selectedNodeId, setSelectedNodeId] = useState('');
@@ -433,10 +427,17 @@ const ProjectDetails = ({ isAdminView = false }) => {
       order.orderVisibility !== 'payment-rejected'
   );
 
-  // Services are picked in a modal rather than on a separate page, so the
-  // customer never leaves their project — no attach-context has to be carried
-  // through navigation, and closing returns them exactly where they were.
-  const handleAddService = () => setShowAddServiceModal(true);
+  // Opens the service catalog with this project as the attach target. The
+  // catalog page reads these from location.state; nothing is created here.
+  const handleAddService = () => {
+    navigate('/start-new-project?tab=plans', {
+      state: {
+        attachToProjectId: orderId,
+        attachPhase: isProjectFinished ? 'after_completion' : 'in_progress',
+        attachProjectName: order?.productId?.serviceName || 'your project',
+      },
+    });
+  };
 
   const sortedNodes = useMemo(() => {
     const nodes = order?.projectNodes || [];
@@ -1143,18 +1144,6 @@ const ProjectDetails = ({ isAdminView = false }) => {
             }}
           />
         )}
-
-      {!isAdminView && (
-        <AddServiceModal
-          isOpen={showAddServiceModal}
-          onClose={() => setShowAddServiceModal(false)}
-          projectOrderId={orderId}
-          projectName={order?.productId?.serviceName || 'your project'}
-          isProjectFinished={isProjectFinished}
-          walletBalance={appContext?.walletBalance || 0}
-          onPurchased={() => appContext?.fetchWalletBalance?.()}
-        />
-      )}
     </Shell>
   );
 };

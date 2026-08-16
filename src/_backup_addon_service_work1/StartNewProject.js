@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { ArrowRight, Cloud, Database, Globe, Layers3, Smartphone, Sparkles } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
@@ -49,12 +49,7 @@ const formatPrice = (value) =>
 const StartNewProject = () => {
   const user = useSelector((state) => state?.user?.user);
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-
-  // Allows deep-linking straight to a tab, e.g. /start-new-project?tab=plans.
-  const requestedTab = searchParams.get('tab');
-
-  const [view, setView] = useState(requestedTab && TAB_CATEGORIES[requestedTab] ? requestedTab : 'websites');
+  const [view, setView] = useState('websites');
   const [projects, setProjects] = useState([]);
 
   useEffect(() => {

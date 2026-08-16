@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback, useContext, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { 
@@ -18,8 +18,6 @@ import CookieManager from '../utils/cookieManager';
 import StorageService from '../utils/storageService';
 import { useOnlineStatus } from '../App';
 import { isPlanItem } from '../helpers/orderType';
-import AddServiceModal from '../components/AddServiceModal';
-import Context from '../context';
 
 const normalizeNodeKey = (value) => {
   if (value === null || value === undefined) {
@@ -164,11 +162,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
   const [shouldShowPaymentAlert, setShouldShowPaymentAlert] = useState(false);
   const [currentInstallment, setCurrentInstallment] = useState(null);
   const [updateModalOpen, setUpdateModalOpen] = useState(false);
-  const [showAddServiceModal, setShowAddServiceModal] = useState(false);
   const [isProjectPaused, setIsProjectPaused] = useState(false);
-  // Wallet balance for the add-service modal — read from the app-wide SSOT,
-  // never fetched separately here.
-  const appContext = useContext(Context);
   const [timelineExpanded, setTimelineExpanded] = useState(false);
   const g = (adminClass, customerClass) => (isAdminView ? adminClass : customerClass);
   const [selectedNodeId, setSelectedNodeId] = useState('');
@@ -416,28 +410,6 @@ const ProjectDetails = ({ isAdminView = false }) => {
     }
   };
 
-  // Same completion test the payment-alert logic already uses (see
-  // checkPaymentStatus) — kept identical so "finished" means one thing on
-  // this page.
-  const isProjectFinished = order
-    ? order.projectProgress >= 100 || order.currentPhase === 'completed'
-    : false;
-
-  // A service can be attached to any project that is a confirmed sale — whether
-  // it is mid-build, on an installment plan, or already delivered. The only
-  // exclusions are the two states where the project itself isn't real yet:
-  // still awaiting approval, or rejected outright.
-  const canAddService = Boolean(
-    order &&
-      order.orderVisibility !== 'pending-approval' &&
-      order.orderVisibility !== 'payment-rejected'
-  );
-
-  // Services are picked in a modal rather than on a separate page, so the
-  // customer never leaves their project — no attach-context has to be carried
-  // through navigation, and closing returns them exactly where they were.
-  const handleAddService = () => setShowAddServiceModal(true);
-
   const sortedNodes = useMemo(() => {
     const nodes = order?.projectNodes || [];
     return [...nodes].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
@@ -677,46 +649,6 @@ const ProjectDetails = ({ isAdminView = false }) => {
                   Proceed for payment
                 </button>
               )}
-            </div>
-          )}
-
-          {/* Add-on services. Available both while the project is running and
-              after it is finished — only the wording changes, since the two
-              cases mean different things to the customer (extending a live
-              project vs. ongoing servicing of a delivered one).
-
-              A service is a SEPARATE purchase with its own full payment and its
-              own invoice — it is deliberately NOT gated on the project's own
-              payment state. A project on an installment plan is a customer in
-              good standing (installment #2 isn't even due until its progress
-              threshold unlocks), so blocking them from buying a service would
-              block the customer most likely to want one. Only a project that
-              isn't a confirmed sale yet is excluded. */}
-          {!isAdminView && canAddService && (
-            <div className={g(
-              'mb-6 flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between',
-              'mb-6 flex flex-col gap-3 rounded-2xl border border-white/20 bg-white/10 p-4 backdrop-blur-2xl sm:flex-row sm:items-center sm:justify-between'
-            )}>
-              <div>
-                <p className={g('text-base font-semibold text-black', 'text-base font-semibold text-white')}>
-                  {isProjectFinished ? 'Ongoing servicing for this project' : 'Add a service to this project'}
-                </p>
-                <p className={g('mt-1 text-sm text-slate-600', 'mt-1 text-sm text-white/70')}>
-                  {isProjectFinished
-                    ? 'Keep this project maintained with a recurring service — maintenance, marketing, renewals and more.'
-                    : 'Add extra services alongside your running project, such as marketing, content or maintenance.'}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={handleAddService}
-                className={g(
-                  'inline-flex shrink-0 items-center justify-center rounded-xl bg-emerald-600 px-4 py-2.5 text-base font-semibold text-white transition hover:bg-emerald-700',
-                  'inline-flex shrink-0 items-center justify-center rounded-xl bg-emerald-500 px-4 py-2.5 text-base font-semibold text-white transition hover:bg-emerald-400'
-                )}
-              >
-                Add a Service
-              </button>
             </div>
           )}
 
@@ -1143,18 +1075,6 @@ const ProjectDetails = ({ isAdminView = false }) => {
             }}
           />
         )}
-
-      {!isAdminView && (
-        <AddServiceModal
-          isOpen={showAddServiceModal}
-          onClose={() => setShowAddServiceModal(false)}
-          projectOrderId={orderId}
-          projectName={order?.productId?.serviceName || 'your project'}
-          isProjectFinished={isProjectFinished}
-          walletBalance={appContext?.walletBalance || 0}
-          onPurchased={() => appContext?.fetchWalletBalance?.()}
-        />
-      )}
     </Shell>
   );
 };

@@ -1,10 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useSelector } from 'react-redux';
+import { toast } from 'sonner';
+import { QRCodeSVG } from 'qrcode.react';
 import { ArrowLeft } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
 import SummaryApi from '../common';
-import { useDraftOrders } from '../context/DraftOrdersContext';
+import Context from '../context';
 
 const PLAN_TYPE_LABELS = {
   website_updates: 'Website Update',
@@ -44,6 +46,10 @@ const BILLING_CYCLE_LABELS = {
   quarterly: 'Billed Quarterly',
   half_yearly: 'Billed Every 6 Months',
   yearly: 'Billed Yearly',
+  every_2_years: 'Billed Every 2 Years',
+  every_3_years: 'Billed Every 3 Years',
+  every_4_years: 'Billed Every 4 Years',
+  every_5_years: 'Billed Every 5 Years',
 };
 
 const formatPrice = (value) =>
@@ -81,9 +87,20 @@ const ServicePlanDetail = () => {
   const user = useSelector((state) => state?.user?.user);
   const navigate = useNavigate();
   const { planId } = useParams();
-  const { saveDraftOrder, openCartDrawer } = useDraftOrders();
+  const context = useContext(Context);
   const [plan, setPlan] = useState(null);
   const [loaded, setLoaded] = useState(false);
+
+  // In-page payment step — same proven wallet/UPI pattern as
+  // StartNewWebsiteCustomize.js: the order and its payment are created together
+  // in one backend call, so a payment-less order can never exist.
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showQR, setShowQR] = useState(false);
+  const [upiLink, setUpiLink] = useState('');
+  const [payTxnId, setPayTxnId] = useState('');
+  const [upiTransactionId, setUpiTransactionId] = useState('');
+  const [payProcessing, setPayProcessing] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   useEffect(() => {
     const fetchPlan = async () => {
@@ -99,25 +116,96 @@ const ServicePlanDetail = () => {
     fetchPlan();
   }, [planId]);
 
-  const handleBack = () => navigate('/start-new-project');
+  const handleBack = () => navigate('/start-new-project?tab=plans');
 
-  const handleProceedToPayment = () => {
-    const draftOrder = {
-      draftOrderId: `service-plan-${plan._id}`,
-      productId: plan._id,
-      type: 'service_plan',
-      typeLabel: PLAN_TYPE_LABELS[plan.servicePlan?.planType] || 'Service Plan',
-      category: plan.category,
-      name: plan.serviceName,
-      basePrice: plan.sellingPrice,
-      price: plan.sellingPrice,
-      availableFeatures: [],
-      selectedFeatureIds: [],
-      sourceProduct: plan,
-    };
+  const generateTransactionId = () =>
+    `SVC${Date.now()}${Math.floor(Math.random() * 10000)}`;
 
-    saveDraftOrder(draftOrder);
-    openCartDrawer();
+  // Creates the order + its payment atomically. The backend re-derives the price
+  // and the wallet/UPI split itself — nothing here is trusted for money.
+  const createServicePlanOrder = async ({ txnId, upiRef }) => {
+    const response = await fetch(SummaryApi.createServicePlanOrder.url, {
+      method: SummaryApi.createServicePlanOrder.method,
+      credentials: 'include',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        // This page is the standalone purchase surface. Buying a service FOR a
+        // project happens in AddServiceModal, opened from the project itself.
+        planId: plan._id,
+        paymentDetails: {
+          transactionId: txnId,
+          upiTransactionId: upiRef || null,
+        },
+      }),
+    });
+    const result = await response.json();
+    if (!result.success) {
+      throw new Error(result.message || 'Could not complete the purchase');
+    }
+    return result.data;
+  };
+
+  // Wallet/UPI split for display + flow choice. The wallet is the customer's own
+  // money so it applies first; only the remainder needs UPI. The backend
+  // independently re-derives this same split from the real balance.
+  const planPrice = Number(plan?.sellingPrice ?? plan?.price ?? 0);
+  const currentWalletBalance = Number(context?.walletBalance || 0);
+  const currentWalletPart = Math.min(currentWalletBalance, planPrice);
+  const currentUpiPart = Math.max(0, planPrice - currentWalletPart);
+
+  // Step 1: customer confirmed the summary → start the wallet/UPI flow.
+  const handleConfirmPayment = async () => {
+    if (payProcessing) return;
+    try {
+      setPayProcessing(true);
+
+      // Wallet covers the whole amount → instant debit, auto-approved, no UPI.
+      if (currentUpiPart === 0) {
+        await createServicePlanOrder({ txnId: generateTransactionId() });
+        context?.fetchWalletBalance?.();
+        setShowPaymentModal(false);
+        setShowSuccess(true);
+        return;
+      }
+
+      // Wallet doesn't fully cover it → UPI QR for the remainder only.
+      const txnId = generateTransactionId();
+      setPayTxnId(txnId);
+      const upiId = 'vacomputers.com@okhdfcbank';
+      const payeeName = 'VA Computer';
+      setUpiLink(
+        `upi://pay?pa=${upiId}&pn=${encodeURIComponent(payeeName)}&am=${currentUpiPart}&cu=INR&tn=${encodeURIComponent(
+          `Service Plan Payment - ${txnId}`
+        )}&tr=${txnId}`
+      );
+      setShowQR(true);
+    } catch (error) {
+      toast.error(error.message || 'Payment failed. Please try again.');
+    } finally {
+      setPayProcessing(false);
+    }
+  };
+
+  // Step 2 (QR path): customer entered their UPI reference → submit for approval.
+  const handleVerifyUpi = async () => {
+    const trimmedUpiId = upiTransactionId.trim();
+    // UPI UTR/reference is 12-digit numeric — same rule as the customize flow.
+    if (!/^\d{12,}$/.test(trimmedUpiId)) {
+      toast.error('UPI transaction ID must be at least 12 digits');
+      return;
+    }
+    try {
+      setPayProcessing(true);
+      await createServicePlanOrder({ txnId: payTxnId, upiRef: trimmedUpiId });
+      context?.fetchWalletBalance?.();
+      setShowQR(false);
+      setShowPaymentModal(false);
+      setShowSuccess(true);
+    } catch (error) {
+      toast.error(error.message || 'Verification failed. Please try again.');
+    } finally {
+      setPayProcessing(false);
+    }
   };
 
   if (!loaded) return null;
@@ -146,6 +234,7 @@ const ServicePlanDetail = () => {
   const servicePlan = plan.servicePlan || {};
   const description = plan.formattedDescriptions?.[0]?.content || '';
   const planTypeLabel = PLAN_TYPE_LABELS[servicePlan.planType] || 'Service Plan';
+  const isReminderOnly = servicePlan.serviceBehavior === 'reminder_only';
   const portalAccessLine = getPortalAccessLine(servicePlan);
   const validityLine = getValidityLine(servicePlan);
   const billingCycleLabel = BILLING_CYCLE_LABELS[servicePlan.billingCycle];
@@ -186,7 +275,9 @@ const ServicePlanDetail = () => {
                 </section>
               )}
 
-              {/* 2. What You Get */}
+              {/* 2. What You Get — a reminder-only service has no portal
+                  allowance to list, so the whole section is skipped. */}
+              {!isReminderOnly && (
               <section>
                 <SectionHeading>What You Get</SectionHeading>
                 <ul className="mt-3 space-y-2">
@@ -204,6 +295,7 @@ const ServicePlanDetail = () => {
                   )}
                 </ul>
               </section>
+              )}
 
               {/* 3. Plan Validity */}
               <section>
@@ -242,15 +334,139 @@ const ServicePlanDetail = () => {
             <div className="border-t border-slate-200 px-5 py-6 sm:px-8 sm:py-8">
               <button
                 type="button"
-                onClick={handleProceedToPayment}
+                onClick={() => setShowPaymentModal(true)}
                 className="inline-flex w-full items-center justify-center rounded-2xl bg-slate-950 px-4 py-3 text-base font-semibold text-white transition hover:bg-slate-800 sm:w-auto"
               >
-                Add to Cart
+                Proceed to Payment
               </button>
             </div>
           </article>
         </div>
       </div>
+
+      {/* Payment confirmation — wallet first, UPI QR only for any remainder. */}
+      {showPaymentModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 px-4 py-6">
+          <div className="max-h-full w-full max-w-md overflow-y-auto rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-2xl">
+            {!showQR ? (
+              <>
+                <h2 className="text-xl font-bold text-black">Confirm your purchase</h2>
+                <p className="mt-1 text-base text-slate-600">{plan.serviceName}</p>
+
+                <div className="mt-5 space-y-2 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="flex items-center justify-between text-base text-black">
+                    <span>Amount due</span>
+                    <span className="font-semibold">{formatPrice(planPrice)}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-base text-black">
+                    <span>Paid from wallet</span>
+                    <span className="font-semibold">{formatPrice(currentWalletPart)}</span>
+                  </div>
+                  {currentUpiPart > 0 && (
+                    <div className="flex items-center justify-between border-t border-slate-200 pt-2 text-base text-black">
+                      <span>To pay via UPI</span>
+                      <span className="font-semibold">{formatPrice(currentUpiPart)}</span>
+                    </div>
+                  )}
+                </div>
+
+                <p className="mt-3 text-sm text-slate-500">
+                  Wallet balance: {formatPrice(currentWalletBalance)}
+                  {currentUpiPart > 0
+                    ? ' — the remaining amount needs admin approval after you pay by UPI.'
+                    : ' — this purchase is covered by your wallet and activates immediately.'}
+                </p>
+
+                <div className="mt-6 flex flex-col gap-2 sm:flex-row-reverse">
+                  <button
+                    type="button"
+                    onClick={handleConfirmPayment}
+                    disabled={payProcessing}
+                    className="inline-flex flex-1 items-center justify-center rounded-2xl bg-emerald-600 px-4 py-3 text-base font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+                  >
+                    {payProcessing ? 'Processing…' : currentUpiPart === 0 ? 'Pay from Wallet' : 'Continue to UPI'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowPaymentModal(false)}
+                    disabled={payProcessing}
+                    className="inline-flex flex-1 items-center justify-center rounded-2xl border border-slate-300 bg-white px-4 py-3 text-base font-semibold text-black transition hover:bg-slate-50 disabled:cursor-not-allowed"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <h2 className="text-xl font-bold text-black">Pay {formatPrice(currentUpiPart)}</h2>
+                <p className="mt-1 text-sm text-slate-600">
+                  Scan the QR, then enter your UPI transaction ID below.
+                </p>
+
+                <div className="mt-4 flex justify-center rounded-2xl border border-slate-200 bg-white p-4">
+                  <QRCodeSVG value={upiLink} size={190} />
+                </div>
+
+                <label className="mt-4 block">
+                  <span className="mb-1.5 block text-base font-semibold text-slate-700">
+                    UPI Transaction ID
+                  </span>
+                  <input
+                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-base text-black outline-none focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="12-digit reference number"
+                    value={upiTransactionId}
+                    onChange={(event) => setUpiTransactionId(event.target.value)}
+                  />
+                </label>
+
+                <div className="mt-5 flex flex-col gap-2 sm:flex-row-reverse">
+                  <button
+                    type="button"
+                    onClick={handleVerifyUpi}
+                    disabled={payProcessing || upiTransactionId.trim().length < 12}
+                    className="inline-flex flex-1 items-center justify-center rounded-2xl bg-emerald-600 px-4 py-3 text-base font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+                  >
+                    {payProcessing ? 'Submitting…' : 'Submit for Approval'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowQR(false)}
+                    disabled={payProcessing}
+                    className="inline-flex flex-1 items-center justify-center rounded-2xl border border-slate-300 bg-white px-4 py-3 text-base font-semibold text-black transition hover:bg-slate-50 disabled:cursor-not-allowed"
+                  >
+                    Back
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Success */}
+      {showSuccess && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 px-4 py-6">
+          <div className="w-full max-w-md rounded-[1.75rem] border border-slate-200 bg-white p-6 text-center shadow-2xl">
+            <h2 className="text-xl font-bold text-black">
+              {currentUpiPart === 0 ? 'Your service is active' : 'Payment submitted'}
+            </h2>
+            <p className="mt-2 text-base text-slate-600">
+              {currentUpiPart === 0
+                ? `${plan.serviceName} has been activated.`
+                : 'Your payment is awaiting admin approval, usually within a few hours.'}
+            </p>
+            <button
+              type="button"
+              onClick={() => navigate('/projects-and-plans')}
+              className="mt-5 inline-flex w-full items-center justify-center rounded-2xl bg-slate-950 px-4 py-3 text-base font-semibold text-white transition hover:bg-slate-800"
+            >
+              View My Plans
+            </button>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 };

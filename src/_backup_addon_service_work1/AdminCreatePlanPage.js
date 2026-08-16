@@ -16,13 +16,6 @@ const PLAN_TYPES = [
   { value: "other", label: "Other" },
 ];
 
-// What the service actually does at runtime. A reminder-only service has no
-// portal allowance at all — it just runs on its schedule and notifies.
-const SERVICE_BEHAVIORS = [
-  { value: "portal_access_control", label: "Portal Access Control", hint: "Controls how much the customer can use the portal (uploads/requests)" },
-  { value: "reminder_only", label: "Reminder Only", hint: "No portal allowance — only tracks duration and sends reminders" },
-];
-
 const FILES_LIMIT_OPTIONS = [1, 2, 3, 4, 5, 10, 15, 20, 25];
 
 const LIMIT_SCOPES = [
@@ -64,10 +57,6 @@ const BILLING_CYCLES = [
   { value: "quarterly", label: "Quarterly", months: 3 },
   { value: "half_yearly", label: "Every 6 Months", months: 6 },
   { value: "yearly", label: "Yearly", months: 12 },
-  { value: "every_2_years", label: "Every 2 Years", months: 24 },
-  { value: "every_3_years", label: "Every 3 Years", months: 36 },
-  { value: "every_4_years", label: "Every 4 Years", months: 48 },
-  { value: "every_5_years", label: "Every 5 Years", months: 60 },
 ];
 
 const TOTAL_CYCLES_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
@@ -85,7 +74,6 @@ const AdminCreatePlanPage = () => {
   // Basic details
   const [serviceName, setServiceName] = useState("");
   const [planType, setPlanType] = useState("");
-  const [serviceBehavior, setServiceBehavior] = useState("");
   const [price, setPrice] = useState("");
   const [sellingPrice, setSellingPrice] = useState("");
   const [visibility, setVisibility] = useState("visible");
@@ -95,10 +83,6 @@ const AdminCreatePlanPage = () => {
   const [validityValue, setValidityValue] = useState("");
   const [validityValueCustom, setValidityValueCustom] = useState("");
   const [billingCycle, setBillingCycle] = useState("");
-
-  // A reminder-only service grants no portal allowance, so the whole
-  // "Plan Power" section is hidden and its fields are never submitted.
-  const isReminderOnly = serviceBehavior === "reminder_only";
 
   const resolvedValidityValue = validityValue === "manual" ? Number(validityValueCustom) : Number(validityValue);
 
@@ -152,28 +136,21 @@ const AdminCreatePlanPage = () => {
       toast.error("Plan type is required");
       return;
     }
-    if (!serviceBehavior) {
-      toast.error("Service behavior is required");
+    if (!limitScope) {
+      toast.error("Limit scope is required");
       return;
     }
-    // Plan Power fields only apply to a portal-access-control service.
-    if (!isReminderOnly) {
-      if (!limitScope) {
-        toast.error("Limit scope is required");
-        return;
-      }
-      if (limitScope === "manual" && (!manualUnit || !manualCount)) {
-        toast.error("Manual unit and count are required for manual scope");
-        return;
-      }
-      if (limitScope !== "unlimited" && !totalCycles) {
-        toast.error("Portal access is required");
-        return;
-      }
-      if (!filesLimitCount) {
-        toast.error("Files limit is required");
-        return;
-      }
+    if (limitScope === "manual" && (!manualUnit || !manualCount)) {
+      toast.error("Manual unit and count are required for manual scope");
+      return;
+    }
+    if (limitScope !== "unlimited" && !totalCycles) {
+      toast.error("Portal access is required");
+      return;
+    }
+    if (!filesLimitCount) {
+      toast.error("Files limit is required");
+      return;
     }
     if (!validityUnit || !validityValue) {
       toast.error("Plan validity is required");
@@ -187,12 +164,11 @@ const AdminCreatePlanPage = () => {
     const submissionData = {
       serviceName,
       planType,
-      serviceBehavior,
-      limitScope: isReminderOnly ? undefined : limitScope,
-      manualUnit: !isReminderOnly && limitScope === "manual" ? manualUnit : undefined,
-      manualCount: !isReminderOnly && limitScope === "manual" ? Number(manualCount) : undefined,
-      portalAccessCount: isReminderOnly || limitScope === "unlimited" ? undefined : Number(resolvedPortalAccessCount),
-      filesLimit: isReminderOnly ? undefined : Number(resolvedFilesLimit),
+      limitScope,
+      manualUnit: limitScope === "manual" ? manualUnit : undefined,
+      manualCount: limitScope === "manual" ? Number(manualCount) : undefined,
+      portalAccessCount: limitScope === "unlimited" ? undefined : Number(resolvedPortalAccessCount),
+      filesLimit: Number(resolvedFilesLimit),
       validityUnit,
       validityValue: Number(resolvedValidity),
       billingCycle: billingCycle || undefined,
@@ -269,43 +245,9 @@ const AdminCreatePlanPage = () => {
                   ))}
                 </select>
               </label>
-
-              <label className="md:col-span-2">
-                <span className={labelClassName}>Service Behavior</span>
-                <select
-                  className={inputClassName}
-                  value={serviceBehavior}
-                  onChange={(event) => {
-                    const nextBehavior = event.target.value;
-                    setServiceBehavior(nextBehavior);
-                    // Switching to reminder-only clears any Plan Power values so a
-                    // hidden field can never be submitted with stale data.
-                    if (nextBehavior === "reminder_only") {
-                      setLimitScope("");
-                      setManualUnit("");
-                      setManualCount("");
-                      setTotalCycles("");
-                      setTotalCyclesValue("");
-                      setFilesLimitCount("");
-                      setFilesLimitCountValue("");
-                    }
-                  }}
-                >
-                  <option value="">Select service behavior</option>
-                  {SERVICE_BEHAVIORS.map((option) => (
-                    <option key={option.value} value={option.value}>{option.label}</option>
-                  ))}
-                </select>
-                {serviceBehavior && (
-                  <span className="mt-1.5 block text-sm text-slate-500">
-                    {SERVICE_BEHAVIORS.find((option) => option.value === serviceBehavior)?.hint}
-                  </span>
-                )}
-              </label>
             </div>
 
-            {/* Plan power — portal-access-control services only */}
-            {!isReminderOnly && (
+            {/* Plan power */}
             <div className="mt-6 border-t border-slate-200 pt-4">
               <span className={sectionTitleClassName}>Plan Power</span>
               <div className="mt-3 grid gap-x-4 gap-y-4 md:grid-cols-2">
@@ -403,7 +345,6 @@ const AdminCreatePlanPage = () => {
                 )}
               </div>
             </div>
-            )}
 
             {/* Plan validity */}
             <div className="mt-6 border-t border-slate-200 pt-4">

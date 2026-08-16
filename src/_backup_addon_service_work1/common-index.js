@@ -169,14 +169,6 @@ const SummaryApi = {
         url : `${backendDomain}/api/customer/custom-project-order`,
         method: "post"
     },
-    createServicePlanOrder : {
-        url : `${backendDomain}/api/customer/service-plan-order`,
-        method: "post"
-    },
-    createServicePlanOrdersBulk : {
-        url : `${backendDomain}/api/customer/service-plan-orders-bulk`,
-        method: "post"
-    },
     customerCategoryBasePrice : {
         url : `${backendDomain}/api/customer/category-base-price`,
         method: "get"
