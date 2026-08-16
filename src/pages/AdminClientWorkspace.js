@@ -1763,7 +1763,14 @@ const PaymentInvoicesPanel = ({
               No payment or invoice records found for this client.
             </div>
           ) : (
-            ledgerGroups.map((group) => (
+            ledgerGroups.map((group) => {
+              const finalInvoice = group.items.find((item) => item.raw?.invoiceType === "project_final")?.raw || null;
+              const finalInvoiceBalance = Math.max(
+                0,
+                Number(finalInvoice?.amount || 0) - Number(finalInvoice?.amountPaid || 0)
+              );
+
+              return (
               <button
                 key={group.key}
                 type="button"
@@ -1775,12 +1782,18 @@ const PaymentInvoicesPanel = ({
                   <p className="mt-1 text-sm text-slate-500">
                     {group.items.length} payment or invoice record{group.items.length === 1 ? "" : "s"} · Latest activity {formatDateTime(group.items[0]?.date)}
                   </p>
+                  {finalInvoice ? (
+                    <p className={`mt-2 text-xs font-bold ${finalInvoiceBalance === 0 ? "text-emerald-700" : "text-amber-700"}`}>
+                      Final Invoice · {finalInvoiceBalance === 0 ? "Fully Paid" : `Pending ${formatCurrency(finalInvoiceBalance)}`}
+                    </p>
+                  ) : null}
                 </div>
                 <span className="shrink-0 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
                   Open payments
                 </span>
               </button>
-            ))
+              );
+            })
           )}
         </div>
       </div>

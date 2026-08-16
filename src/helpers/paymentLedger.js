@@ -63,6 +63,7 @@ export const getTransactionPaymentLabel = (transaction) => {
 };
 
 const getInvoiceLabel = (invoice) => {
+  if (invoice?.invoiceType === "project_final") return "Final Project Invoice";
   if (invoice?.invoiceType === "plan_renewal") return "Plan Renewal";
   if (invoice?.installmentNumber) return `${getOrdinal(invoice.installmentNumber)} Installment`;
   return "Invoice";

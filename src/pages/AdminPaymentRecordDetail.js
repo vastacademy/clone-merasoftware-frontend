@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Download, Mail, Send, Wallet } from "lucide-react";
+import { ArrowLeft, Download, Eye, Mail, Send, Share2, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import SummaryApi from "../common";
 import AdminLayout from "../components/AdminLayout";
@@ -603,6 +603,7 @@ const SinglePaymentRecordDetail = () => {
 const getOrderReference = (value) => String(value?._id || value || "");
 
 const getInvoiceLabel = (invoice) => {
+  if (invoice?.invoiceType === "project_final") return "Final Project Invoice";
   if (invoice?.installmentNumber) return `${getOrdinal(invoice.installmentNumber)} Installment Invoice`;
   if (invoice?.invoiceType === "plan_renewal") return "Plan Renewal Invoice";
   return "Invoice";
@@ -620,6 +621,7 @@ const PaymentOrderHistory = ({ customerId, orderId }) => {
   const [paymentReference, setPaymentReference] = useState("");
   const [paymentNote, setPaymentNote] = useState("");
   const [rejectionReason, setRejectionReason] = useState("");
+  const [finalInvoiceAction, setFinalInvoiceAction] = useState("");
   const isGeneralPayments = orderId === "general";
 
   useEffect(() => {
@@ -652,7 +654,7 @@ const PaymentOrderHistory = ({ customerId, orderId }) => {
     };
   }, [customerId, reloadKey]);
 
-  const { order, invoices, transactions, serviceName, invoiceValue, recordedPayments, pendingRecords, initialProjectInvoiceId } = useMemo(() => {
+  const { order, invoices, finalInvoice, transactions, serviceName, invoiceValue, recordedPayments, pendingRecords, initialProjectInvoiceId } = useMemo(() => {
     const allOrders = workspace?.orders || [];
     const allInvoices = workspace?.invoices || [];
     const allTransactions = workspace?.transactions || [];
@@ -672,7 +674,9 @@ const PaymentOrderHistory = ({ customerId, orderId }) => {
     const resolvedServiceName = isGeneralPayments
       ? "Wallet & General Payments"
       : matchingOrder?.productId?.serviceName || matchingInvoices[0]?.orderId?.productId?.serviceName || matchingTransactions[0]?.orderId?.productId?.serviceName || "Payment History";
-    const totalInvoiceValue = matchingInvoices.reduce((sum, current) => sum + Number(current.amount || 0), 0);
+    const projectFinalInvoice = matchingInvoices.find((current) => current.invoiceType === "project_final") || null;
+    const paymentInvoices = matchingInvoices.filter((current) => current.invoiceType !== "project_final");
+    const totalInvoiceValue = paymentInvoices.reduce((sum, current) => sum + Number(current.amount || 0), 0);
     const totalRecordedPayments = matchingTransactions
       .filter((current) => current.status === "completed")
       .reduce((sum, current) => sum + Number(current.amount || 0), 0);
@@ -684,7 +688,8 @@ const PaymentOrderHistory = ({ customerId, orderId }) => {
 
     return {
       order: matchingOrder,
-      invoices: matchingInvoices,
+      invoices: paymentInvoices,
+      finalInvoice: projectFinalInvoice,
       transactions: matchingTransactions,
       serviceName: resolvedServiceName,
       invoiceValue: totalInvoiceValue,
@@ -696,6 +701,68 @@ const PaymentOrderHistory = ({ customerId, orderId }) => {
 
   const openRecord = (kind, recordId) => {
     navigate(`/admin-panel/clients/${customerId}/payments/${kind}/${recordId}`);
+  };
+
+  const handleFinalInvoiceDownload = async () => {
+    if (!finalInvoice || finalInvoiceAction) return;
+    try {
+      setFinalInvoiceAction("download");
+      const response = await fetch(`${SummaryApi.projectFinalInvoice.url}/${finalInvoice._id}/download`, { credentials: "include" });
+      if (!response.ok) throw new Error((await response.json().catch(() => ({}))).message || "Failed to download final invoice");
+      const url = window.URL.createObjectURL(await response.blob());
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `${finalInvoice.invoiceNumber || "final-project-invoice"}.pdf`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      window.URL.revokeObjectURL(url);
+      toast.success("Final invoice download started");
+    } catch (error) {
+      toast.error(error.message || "Failed to download final invoice");
+    } finally {
+      setFinalInvoiceAction("");
+    }
+  };
+
+  const handleFinalInvoiceView = () => {
+    if (!finalInvoice || finalInvoiceAction) return;
+    window.open(`${SummaryApi.projectFinalInvoice.url}/${finalInvoice._id}/view`, "_blank", "noopener,noreferrer");
+  };
+
+  const handleFinalInvoiceNativeShare = async () => {
+    if (!finalInvoice || finalInvoiceAction) return;
+    if (!navigator.share || !navigator.canShare) {
+      toast.error("Native PDF sharing is not supported on this browser. Use Download instead.");
+      return;
+    }
+    try {
+      setFinalInvoiceAction("nativeShare");
+      const response = await fetch(`${SummaryApi.projectFinalInvoice.url}/${finalInvoice._id}/download`, { credentials: "include" });
+      if (!response.ok) throw new Error((await response.json().catch(() => ({}))).message || "Failed to prepare final invoice");
+      const file = new File([await response.blob()], `${finalInvoice.invoiceNumber || "final-project-invoice"}.pdf`, { type: "application/pdf" });
+      if (!navigator.canShare({ files: [file] })) throw new Error("Native PDF sharing is not supported on this device");
+      await navigator.share({ title: "Final Project Invoice", files: [file] });
+    } catch (error) {
+      if (error.name !== "AbortError") toast.error(error.message || "Failed to share final invoice");
+    } finally {
+      setFinalInvoiceAction("");
+    }
+  };
+
+  const handleFinalInvoiceShare = async () => {
+    if (!finalInvoice || finalInvoiceAction) return;
+    try {
+      setFinalInvoiceAction("share");
+      const response = await fetch(`${SummaryApi.projectFinalInvoice.url}/${finalInvoice._id}/resend`, { method: "post", credentials: "include" });
+      const result = await response.json();
+      if (!result.success) throw new Error(result.message || "Failed to share final invoice");
+      toast.success(result.message || "Final invoice shared by email");
+    } catch (error) {
+      toast.error(error.message || "Failed to share final invoice");
+    } finally {
+      setFinalInvoiceAction("");
+    }
   };
 
   const openAction = (type, record) => {
@@ -809,6 +876,25 @@ const PaymentOrderHistory = ({ customerId, orderId }) => {
                   <InfoLine label="Pending records" value={pendingRecords} />
                 </div>
               </section>
+
+              {finalInvoice ? (
+                <section className="rounded-[2rem] border border-emerald-200 bg-emerald-50 p-5 shadow-sm sm:p-6">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-[0.16em] text-emerald-700">Live cumulative statement</p>
+                      <h2 className="mt-2 text-lg font-bold text-slate-900">Final Project Invoice</h2>
+                      <p className="mt-1 text-sm text-slate-600">{finalInvoice.invoiceNumber} · Paid {formatCurrency(finalInvoice.amountPaid)} of {formatCurrency(finalInvoice.amount)}</p>
+                      <p className="mt-1 text-sm font-semibold text-emerald-800">{Number(finalInvoice.amount || 0) - Number(finalInvoice.amountPaid || 0) > 0 ? `Pending ${formatCurrency(Number(finalInvoice.amount || 0) - Number(finalInvoice.amountPaid || 0))}` : "Fully paid"}</p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <button type="button" onClick={handleFinalInvoiceView} disabled={Boolean(finalInvoiceAction)} className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-800 disabled:opacity-60"><Eye size={15} />View</button>
+                      <button type="button" onClick={handleFinalInvoiceDownload} disabled={Boolean(finalInvoiceAction)} className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white disabled:opacity-60"><Download size={15} />{finalInvoiceAction === "download" ? "Preparing..." : "Download"}</button>
+                      <button type="button" onClick={handleFinalInvoiceNativeShare} disabled={Boolean(finalInvoiceAction)} className="inline-flex items-center gap-2 rounded-xl border border-emerald-300 bg-white px-3 py-2 text-xs font-semibold text-emerald-800 disabled:opacity-60"><Share2 size={15} />{finalInvoiceAction === "nativeShare" ? "Preparing..." : "Share PDF"}</button>
+                      <button type="button" onClick={handleFinalInvoiceShare} disabled={Boolean(finalInvoiceAction)} className="inline-flex items-center gap-2 rounded-xl border border-emerald-300 bg-white px-3 py-2 text-xs font-semibold text-emerald-800 disabled:opacity-60"><Mail size={15} />{finalInvoiceAction === "share" ? "Sharing..." : "Email"}</button>
+                    </div>
+                  </div>
+                </section>
+              ) : null}
 
               <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
                 <div className="flex items-center justify-between gap-3">

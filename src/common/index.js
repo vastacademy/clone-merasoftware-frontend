@@ -649,6 +649,10 @@ const SummaryApi = {
         url: `${backendDomain}/api/admin/clients`,
         method: "get"
     },
+    projectFinalInvoice: {
+        url: `${backendDomain}/api/admin/project-final-invoices`,
+        method: "get"
+    },
     adminDeleteOrder: {
         url: `${backendDomain}/api/admin/delete-order`,
         method: "delete"
