@@ -37,16 +37,29 @@ const ORDINALS = ["1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th",
 
 const getOrdinal = (n) => ORDINALS[n - 1] || `${n}th`;
 
-const getPaymentLabel = (transaction) => {
+const getPaymentMethodLabel = (paymentMethod) => {
+  const labels = {
+    upi: "UPI",
+    wallet: "Wallet",
+    cash: "Cash",
+    bank_transfer: "Bank Transfer",
+    combined: "Combined",
+  };
+  return labels[paymentMethod] || "Payment";
+};
+
+// A transaction's installmentNumber is its financial ownership. sourceType can still be
+// "invoice" for an installment payment because the backend needs that to settle its invoice.
+// Never let sourceType hide the installment label in admin UI.
+export const getTransactionPaymentLabel = (transaction) => {
   const source = transaction?.sourceType || transaction?.type;
-  if (source === "installment" || transaction?.isInstallmentPayment) {
-    return transaction.installmentNumber
-      ? `${getOrdinal(transaction.installmentNumber)} Installment`
-      : "Installment Payment";
-  }
-  if (source === "renewal") return "Renewal Payment";
-  if (source === "wallet" || source === "deposit") return "Wallet Deposit";
-  return "Payment";
+  const paymentMethod = getPaymentMethodLabel(transaction?.paymentMethod);
+  if (transaction?.installmentNumber) return `${getOrdinal(transaction.installmentNumber)} Installment · ${paymentMethod}`;
+  if (transaction?.type === "renewal" || source === "renewal") return "Renewal Payment";
+  if (transaction?.type === "refund") return "Wallet Refund";
+  if (transaction?.type === "deposit" || source === "wallet") return "Wallet Recharge";
+  if (transaction?.orderId) return `Full Payment · ${paymentMethod}`;
+  return `Payment · ${paymentMethod}`;
 };
 
 const getInvoiceLabel = (invoice) => {
@@ -65,7 +78,7 @@ export const buildLedgerItems = (transactions = [], invoices = []) => {
   return [
     ...transactions.map((transaction) => {
       const serviceName = transaction.orderId?.productId?.serviceName;
-      const paymentLabel = getPaymentLabel(transaction);
+      const paymentLabel = getTransactionPaymentLabel(transaction);
       return {
         id: `transaction-${transaction._id}`,
         kind: "transaction",

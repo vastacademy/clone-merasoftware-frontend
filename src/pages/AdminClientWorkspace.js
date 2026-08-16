@@ -48,7 +48,7 @@ import {
 const OVERVIEW_TAB = { id: "overview", label: "Overview", active: true };
 const PROJECTS_TAB = { id: "projects", label: "Projects", active: true };
 const PLANS_TAB = { id: "plans", label: "Plans", active: true };
-const PAYMENTS_TAB = { id: "payments", label: "Payment & Invoices", active: true };
+const PAYMENTS_TAB = { id: "payments", label: "Payments", active: true };
 const DOCUMENTS_TAB = { id: "documents", label: "Documents", active: true };
 const ACCESS_TAB = { id: "access", label: "Account & Access", active: true };
 
@@ -550,9 +550,9 @@ const AdminClientWorkspace = () => {
     deleteRequiredSections.length > 0 &&
     deleteRequiredSections.every((section) => deleteSelections[section.key]);
 
-  const handleOpenPaymentRecord = (item) => {
-    if (!item?.raw?._id || !customerId) return;
-    navigate(`/admin-panel/clients/${customerId}/payments/${item.kind}/${item.raw._id}`);
+  const handleOpenPaymentGroup = (group) => {
+    if (!group?.key || !customerId) return;
+    navigate(`/admin-panel/clients/${customerId}/payments/order/${group.key}`);
   };
 
   // --- Account & Access handlers ---
@@ -1109,7 +1109,7 @@ const AdminClientWorkspace = () => {
             invoices={allData.invoices}
             getBadgeClassName={getBadgeClassName}
             formatDateTime={formatDateTime}
-            onOpenRecord={handleOpenPaymentRecord}
+            onOpenGroup={handleOpenPaymentGroup}
             customerId={customerId}
             walletBalance={Number(allData.summary?.walletBalance ?? customer?.walletBalance ?? 0)}
             onRecharged={() => setWorkspaceRefreshKey((current) => current + 1)}
@@ -1651,7 +1651,7 @@ const PaymentInvoicesPanel = ({
   invoices,
   getBadgeClassName,
   formatDateTime,
-  onOpenRecord,
+  onOpenGroup,
   customerId,
   walletBalance = 0,
   onRecharged,
@@ -1749,8 +1749,8 @@ const PaymentInvoicesPanel = ({
       <div>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="text-xl font-bold text-slate-900">Payment Ledger</h2>
-            <p className="mt-1 text-sm text-slate-500">Single payment and invoice history from the customer backend.</p>
+            <h2 className="text-xl font-bold text-slate-900">Payments</h2>
+            <p className="mt-1 text-sm text-slate-500">Open a project or plan to see its complete payment history.</p>
           </div>
           <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
             {ledgerItems.length} records
@@ -1764,72 +1764,22 @@ const PaymentInvoicesPanel = ({
             </div>
           ) : (
             ledgerGroups.map((group) => (
-              <div key={group.key} className="overflow-hidden rounded-[1.5rem] border border-slate-200">
-                <div className="flex items-center justify-between gap-3 bg-slate-50 px-5 py-3">
-                  <h3 className="text-sm font-bold text-slate-900">{group.serviceName}</h3>
-                  <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-600">
-                    {group.items.length} record{group.items.length === 1 ? "" : "s"}
-                  </span>
+              <button
+                key={group.key}
+                type="button"
+                onClick={() => onOpenGroup?.(group)}
+                className="flex w-full items-center justify-between gap-4 rounded-[1.5rem] border border-slate-200 bg-white px-5 py-4 text-left transition hover:border-emerald-300 hover:bg-emerald-50/30"
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-base font-bold text-slate-900">{group.serviceName}</p>
+                  <p className="mt-1 text-sm text-slate-500">
+                    {group.items.length} payment or invoice record{group.items.length === 1 ? "" : "s"} · Latest activity {formatDateTime(group.items[0]?.date)}
+                  </p>
                 </div>
-                <div className="divide-y divide-slate-100 bg-white">
-                  {group.items.map((item) => {
-                    const isTransaction = item.kind === "transaction";
-                    const invoice = !isTransaction ? item.raw : null;
-
-                    return (
-                      <div
-                        key={item.id}
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => onOpenRecord?.(item)}
-                        onKeyDown={(event) => {
-                          if (event.key === "Enter" || event.key === " ") {
-                            event.preventDefault();
-                            onOpenRecord?.(item);
-                          }
-                        }}
-                        className="cursor-pointer px-5 py-4 transition hover:bg-slate-50"
-                      >
-                        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                          <div className="min-w-0 flex-1">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-bold uppercase text-slate-500">
-                                {isTransaction ? "Payment" : "Invoice"}
-                              </span>
-                              <p className="font-semibold text-slate-900">{item.label}</p>
-                              <span className={`rounded-full px-3 py-1 text-xs font-semibold capitalize ${getBadgeClassName(getLedgerStatusLabel(item.status))}`}>
-                                {getLedgerStatusLabel(item.status)}
-                              </span>
-                            </div>
-                            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
-                              <span>Method: {item.method}</span>
-                              <span>Reference: {item.reference}</span>
-                              <span>Date: {formatDateTime(item.date)}</span>
-                              {invoice?.dueDate ? <span>Due: {formatDateTime(invoice.dueDate)}</span> : null}
-                            </div>
-                            {isTransaction && item.raw?.rejectionReason ? (
-                              <div className="mt-3 rounded-2xl border border-rose-100 bg-rose-50 px-3 py-2 text-xs text-rose-700">
-                                Reason: {item.raw.rejectionReason}
-                              </div>
-                            ) : null}
-                          </div>
-
-                          <div className="flex shrink-0 flex-col items-start gap-3 lg:items-end">
-                            <div className="text-left lg:text-right">
-                              <p className="text-xs text-slate-500">Amount</p>
-                              <p className="text-lg font-bold text-slate-900">{formatCurrency(item.amount)}</p>
-                            </div>
-
-                            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
-                              Open detail
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
+                <span className="shrink-0 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+                  Open payments
+                </span>
+              </button>
             ))
           )}
         </div>
@@ -2977,7 +2927,7 @@ const WorkspaceDetailSubpage = ({
             <div className="min-w-0 flex-1">
               <p className="text-base font-bold text-sky-900">Payment submitted, awaiting approval</p>
               <p className="mt-1 text-sm text-sky-700">
-                The customer already submitted a payment for this project. Go to the Payment & Invoices tab to approve or reject it — this project does not need "Approve without Payment".
+                The customer already submitted a payment for this project. Go to the Payments tab to approve or reject it — this project does not need "Approve without Payment".
               </p>
             </div>
           </div>
@@ -3111,7 +3061,7 @@ const WorkspaceDetailSubpage = ({
             <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <h3 className="text-lg font-bold text-slate-900">Payments &amp; Invoices</h3>
+                  <h3 className="text-lg font-bold text-slate-900">Payments</h3>
                   <p className="mt-1 text-sm text-slate-500">This project's own payment and invoice history.</p>
                 </div>
                 <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
