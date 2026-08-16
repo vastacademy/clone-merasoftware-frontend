@@ -31,6 +31,25 @@ const getLedgerStatusLabel = (status) => {
   return status ? String(status).replace(/_/g, " ") : "N/A";
 };
 
+const shortId = (value) => (value ? String(value).slice(-5) : "");
+
+const ORDINALS = ["1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th", "10th"];
+const getOrdinal = (n) => ORDINALS[n - 1] || `${n}th`;
+
+const getPaymentLabel = (transaction, invoice) => {
+  const source = transaction?.sourceType || transaction?.type;
+  if (source === "installment" || transaction?.isInstallmentPayment) {
+    return transaction.installmentNumber
+      ? `${getOrdinal(transaction.installmentNumber)} Installment`
+      : "Installment Payment";
+  }
+  if (source === "renewal") return "Renewal Payment";
+  if (source === "wallet" || source === "deposit") return "Wallet Deposit";
+  if (invoice?.invoiceType === "plan_renewal") return "Plan Renewal";
+  if (invoice?.installmentNumber) return `${getOrdinal(invoice.installmentNumber)} Installment`;
+  return "Payment";
+};
+
 const getBadgeClassName = (label) => {
   switch ((label || "").toLowerCase()) {
     case "paid":
@@ -78,7 +97,10 @@ const AdminPaymentRecordDetail = () => {
   const canSendReminder = Boolean(invoice?._id && ["unpaid", "overdue"].includes(invoice?.status));
   const canMarkPaid = Boolean(invoice?._id && ["unpaid", "overdue"].includes(invoice?.status));
   const canApproveReject = Boolean(transaction?.transactionId && transaction?.status === "pending");
-  const title = transaction?.transactionId || invoice?.invoiceNumber || "Payment record";
+  const serviceName =
+    transaction?.orderId?.productId?.serviceName || invoice?.orderId?.productId?.serviceName;
+  const paymentLabel = getPaymentLabel(transaction, invoice);
+  const title = serviceName ? `${serviceName} — ${paymentLabel}` : paymentLabel;
   const amount = transaction?.amount ?? invoice?.amount ?? 0;
 
   const baseActionUrl = useMemo(
@@ -382,11 +404,12 @@ const AdminPaymentRecordDetail = () => {
                     <h2 className="text-lg font-bold text-slate-900">Transaction</h2>
                     {transaction ? (
                       <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                        <InfoLine label="Transaction ID" value={transaction.transactionId} />
                         <InfoLine label="Status" value={getLedgerStatusLabel(transaction.status)} />
-                        <InfoLine label="Source Type" value={transaction.sourceType || transaction.type} />
                         <InfoLine label="Payment Method" value={transaction.paymentMethod} />
-                        <InfoLine label="Reference" value={transaction.upiTransactionId || transaction.transactionId} />
+                        <InfoLine
+                          label="Reference"
+                          value={transaction.upiTransactionId || shortId(transaction.transactionId)}
+                        />
                         <InfoLine label="Date" value={formatDateTime(transaction.date || transaction.createdAt)} />
                         <InfoLine label="Verified By" value={transaction.verifiedBy?.name || transaction.verifiedBy?.email} />
                         <InfoLine label="Rejection Reason" value={transaction.rejectionReason} />

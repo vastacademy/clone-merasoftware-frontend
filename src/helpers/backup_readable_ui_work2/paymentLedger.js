@@ -81,8 +81,6 @@ export const buildLedgerItems = (transactions = [], invoices = []) => {
         sortDate: safeDateTime(transaction.date || transaction.createdAt)?.getTime() || 0,
         orderId: transaction.orderId?._id || transaction.orderId || null,
         serviceName: serviceName || null,
-        orderStartDate: transaction.orderId?.createdAt || null,
-        orderDeleted: Boolean(transaction.orderDeleted),
       };
     }),
     ...invoices
@@ -105,38 +103,20 @@ export const buildLedgerItems = (transactions = [], invoices = []) => {
           sortDate: safeDateTime(invoice.paidDate || invoice.invoiceDate || invoice.createdAt)?.getTime() || 0,
           orderId: invoice.orderId?._id || invoice.orderId || null,
           serviceName: serviceName || null,
-          orderStartDate: invoice.orderId?.createdAt || null,
-          orderDeleted: Boolean(invoice.orderDeleted),
         };
       }),
   ].sort((left, right) => right.sortDate - left.sortDate);
-};
-
-const formatGroupDate = (value) => {
-  const parsed = safeDateTime(value);
-  if (!parsed) return null;
-  return parsed.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 };
 
 export const groupLedgerItemsByProject = (ledgerItems = []) => {
   const groups = new Map();
 
   ledgerItems.forEach((item) => {
-    let key;
-    let baseName;
-    if (item.orderId) {
-      key = String(item.orderId);
-      baseName = item.serviceName || (item.orderDeleted ? "Deleted Project" : "Project");
-    } else {
-      key = "general";
-      baseName = "Wallet / General Payments";
-    }
-
+    const key = item.orderId ? String(item.orderId) : "general";
     if (!groups.has(key)) {
       groups.set(key, {
         key,
-        baseName,
-        startDate: item.orderStartDate || null,
+        serviceName: item.serviceName || "Wallet / General Payments",
         items: [],
         latestSortDate: 0,
       });
@@ -144,26 +124,12 @@ export const groupLedgerItemsByProject = (ledgerItems = []) => {
     const group = groups.get(key);
     group.items.push(item);
     group.latestSortDate = Math.max(group.latestSortDate, item.sortDate);
-    if (!group.startDate && item.orderStartDate) group.startDate = item.orderStartDate;
-  });
-
-  // When two different projects share the same service name (e.g. two "Standard Website"
-  // orders), append the project's start date to each so the admin can tell them apart.
-  const nameCounts = new Map();
-  groups.forEach((group) => {
-    nameCounts.set(group.baseName, (nameCounts.get(group.baseName) || 0) + 1);
   });
 
   return Array.from(groups.values())
-    .map((group) => {
-      const isAmbiguous = nameCounts.get(group.baseName) > 1 && group.key !== "general";
-      const startLabel = formatGroupDate(group.startDate);
-      const displayName = isAmbiguous && startLabel ? `${group.baseName} (Started ${startLabel})` : group.baseName;
-      return {
-        ...group,
-        serviceName: displayName,
-        items: group.items.slice().sort((a, b) => b.sortDate - a.sortDate),
-      };
-    })
+    .map((group) => ({
+      ...group,
+      items: group.items.slice().sort((a, b) => b.sortDate - a.sortDate),
+    }))
     .sort((a, b) => b.latestSortDate - a.latestSortDate);
 };

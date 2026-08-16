@@ -1078,6 +1078,7 @@ const AdminClientWorkspace = () => {
                 onDelete={handleRequestDelete}
                 deletingOrderId={deletingOrderId}
                 renderMeta={(plan) => [
+                  `Plan ID: ${plan._id?.slice(-8) || "N/A"}`,
                   `Type: ${getPlanTypeLabel(plan)}`,
                   `Usage: ${
                     plan.productId?.isMonthlyRenewablePlan || plan.productId?.isMonthlyLimitedPlan

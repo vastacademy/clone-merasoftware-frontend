@@ -367,6 +367,7 @@ const AdminProjectCheckpointDetail = ({
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-3">
+        <AdminInfoPill label="Node ID" value={node.nodeId || "N/A"} />
         <AdminInfoPill label="Cumulative Progress" value={`${node.cumulativeProgress || 0}%`} />
         <AdminInfoPill label="Visible To Client" value={node.visibleToClient === false ? "No" : "Yes"} />
         <AdminInfoPill label="Created At" value={formatDateTime(node.createdAt)} />
