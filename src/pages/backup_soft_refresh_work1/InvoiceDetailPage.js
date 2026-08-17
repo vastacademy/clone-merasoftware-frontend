@@ -96,19 +96,6 @@ const InvoiceDetailPage = () => {
   const orderIdForPay = invoice?.orderId?._id || invoice?.orderId;
   const isInstallmentInvoice = Boolean(invoice?.installmentNumber);
 
-  // Leaving this page after a payment. navigate(-1) restores the previous page from the history
-  // stack, which does NOT re-run that page's data fetch — so it would render the state from
-  // before this payment. A sessionStorage marker (rather than router state, which navigate(-1)
-  // cannot carry) lets whichever page we return to know its data is stale and refetch once.
-  const goBackAfterPayment = () => {
-    try {
-      sessionStorage.setItem('paymentJustSubmitted', String(Date.now()));
-    } catch (error) {
-      // Private-mode / storage-disabled browsers: the page still falls back to its own polling.
-    }
-    navigate(-1);
-  };
-
   const submitVerification = async ({ txnId, upiTransactionId, method }) => {
     const response = await fetch(SummaryApi.wallet.verifyPayment.url, {
       method: SummaryApi.wallet.verifyPayment.method,
@@ -166,11 +153,7 @@ const InvoiceDetailPage = () => {
         context?.fetchWalletBalance?.();
         toast.success('Payment successful! Your plan is now active.');
         setShowPayment(false);
-        // Tell the page we return to that its data is now stale. navigate(-1) restores the
-        // previous page from history without re-running its fetch, so without this flag the
-        // customer lands back on pre-payment data (e.g. ProjectDetails' "Payment Pending"
-        // banner) until its own polling happens to fire.
-        goBackAfterPayment();
+        navigate(-1);
         return;
       }
 
@@ -199,7 +182,7 @@ const InvoiceDetailPage = () => {
       toast.success('Payment submitted for admin approval.');
       setShowQR(false);
       setShowPayment(false);
-      goBackAfterPayment();
+      navigate(-1);
     } catch (error) {
       toast.error(error.message || 'Payment verification failed.');
     } finally {

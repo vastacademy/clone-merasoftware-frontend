@@ -354,32 +354,13 @@ const ProjectDetails = ({ isAdminView = false }) => {
     fetchOrderDetails();
   }, [fetchOrderDetails]);
 
-  // Add polling mechanism — covers changes made by SOMEONE ELSE (admin approving a payment,
-  // pushing project progress), which this tab has no way of knowing about.
+  // Add polling mechanism
   useEffect(() => {
     const intervalId = setInterval(() => {
       fetchOrderDetails();
     }, 30000); // Check every 30 seconds
-
+    
     return () => clearInterval(intervalId);
-  }, [fetchOrderDetails]);
-
-  // Soft refresh after the customer pays — covers a change THIS customer just made on another
-  // page. /invoice-detail ends with navigate(-1), which restores this component from the history
-  // stack WITHOUT re-running its data fetch, so the order rendered was the pre-payment one and
-  // the customer kept seeing the stale "Payment Pending" banner until the 30s poll happened to
-  // fire. InvoiceDetailPage sets a sessionStorage marker before navigating back (router state
-  // cannot travel through navigate(-1)); this consumes it exactly once and refetches.
-  useEffect(() => {
-    let paymentJustSubmitted = null;
-    try {
-      paymentJustSubmitted = sessionStorage.getItem('paymentJustSubmitted');
-      if (paymentJustSubmitted) sessionStorage.removeItem('paymentJustSubmitted');
-    } catch (error) {
-      // Storage unavailable — the 30s polling above still picks the change up.
-    }
-
-    if (paymentJustSubmitted) fetchOrderDetails();
   }, [fetchOrderDetails]);
 
   const formatDate = (date) => {

@@ -215,31 +215,44 @@ const ProjectDetails = ({ isAdminView = false }) => {
       return;
     }
 
-    // A payment the customer has already submitted but the admin hasn't verified yet.
-    // Sourced from the order payload itself (getOrderDetails.js derives `hasPendingPayment`
-    // from the pending transaction, alongside hasUnpaidInvoice) — no separate request.
-    //
-    // Before: this called `SummaryApi.checkPendingOrderTransactions`, a route that was never
-    // registered on the backend. Every call 404'd, threw on JSON.parse, and was swallowed by the
-    // catch below — so a submitted-but-unapproved payment never showed as pending anywhere.
-    if (order.hasPendingPayment) {
-      const installmentNumber = order.pendingPayment?.installmentNumber || 1;
-
-      const relevantInstallment =
-        (order.installments || []).find(
-          (inst) => inst.installmentNumber === installmentNumber
-        ) || {
-          installmentNumber,
-          amount: order.pendingPayment?.amount || 0,
-        };
-
-      setShouldShowPaymentAlert(true);
-      setIsProjectPaused(false); // Not paused while payment is being verified
-      setCurrentInstallment({
-        ...relevantInstallment,
-        paymentStatus: 'pending-approval'
+    try {
+      // Check if there are any pending transactions for this order first
+      const pendingTransResponse = await fetch(`${SummaryApi.checkPendingOrderTransactions.url}/${order._id}`, {
+        credentials: 'include',
       });
-      return;
+      
+      const pendingTransData = await pendingTransResponse.json();
+      const hasPendingTransaction = pendingTransData.success && pendingTransData.data.hasPending;
+      
+      // If there's a pending transaction, show the pending approval alert
+      if (hasPendingTransaction) {
+        // Get the installment number from the transaction
+        const installmentNumber = pendingTransData.data.installmentNumber || 1;
+        
+        // Find the corresponding installment or create one if it doesn't exist
+        let relevantInstallment = order.installments && order.installments.find(
+          inst => inst.installmentNumber === installmentNumber
+        );
+
+        // If we can't find a relevant installment, create a placeholder
+        if (!relevantInstallment) {
+          relevantInstallment = {
+            installmentNumber: installmentNumber || 1,
+            amount: pendingTransData.data.amount || 0,
+          };
+        }
+        
+        // Set the current installment with pending-approval status
+        setShouldShowPaymentAlert(true);
+        setIsProjectPaused(false); // Not paused while payment is being verified
+        setCurrentInstallment({
+          ...relevantInstallment,
+          paymentStatus: 'pending-approval'
+        });
+        return;
+      }
+    } catch (error) {
+      console.error('Error checking pending transactions:', error);
     }
 
     // Regular installment check flow
@@ -354,32 +367,13 @@ const ProjectDetails = ({ isAdminView = false }) => {
     fetchOrderDetails();
   }, [fetchOrderDetails]);
 
-  // Add polling mechanism — covers changes made by SOMEONE ELSE (admin approving a payment,
-  // pushing project progress), which this tab has no way of knowing about.
+  // Add polling mechanism
   useEffect(() => {
     const intervalId = setInterval(() => {
       fetchOrderDetails();
     }, 30000); // Check every 30 seconds
-
+    
     return () => clearInterval(intervalId);
-  }, [fetchOrderDetails]);
-
-  // Soft refresh after the customer pays — covers a change THIS customer just made on another
-  // page. /invoice-detail ends with navigate(-1), which restores this component from the history
-  // stack WITHOUT re-running its data fetch, so the order rendered was the pre-payment one and
-  // the customer kept seeing the stale "Payment Pending" banner until the 30s poll happened to
-  // fire. InvoiceDetailPage sets a sessionStorage marker before navigating back (router state
-  // cannot travel through navigate(-1)); this consumes it exactly once and refetches.
-  useEffect(() => {
-    let paymentJustSubmitted = null;
-    try {
-      paymentJustSubmitted = sessionStorage.getItem('paymentJustSubmitted');
-      if (paymentJustSubmitted) sessionStorage.removeItem('paymentJustSubmitted');
-    } catch (error) {
-      // Storage unavailable — the 30s polling above still picks the change up.
-    }
-
-    if (paymentJustSubmitted) fetchOrderDetails();
   }, [fetchOrderDetails]);
 
   const formatDate = (date) => {
@@ -583,16 +577,9 @@ const ProjectDetails = ({ isAdminView = false }) => {
   const currentStageLabel = inProgressNode?.title || selectedNode?.title || 'All stages completed';
   const totalUpdates = order?.messages?.length || 0;
 
-  // Whole-order pending-approval (admin hasn't approved the order yet) — no longer a
+  // Whole-order pending-approval (payment submitted, admin hasn't approved yet) — no longer a
   // full-page block; it gates the "Upload Data" action the same way hasUnpaidInvoice does.
   const isOrderPendingApproval = order.orderVisibility === 'pending-approval';
-
-  // Has the customer actually SUBMITTED money that is waiting on admin verification?
-  // This is NOT the same thing as isOrderPendingApproval: a "pay later" (decide_later) order is
-  // born 'pending-approval' with zero payment, so orderVisibility alone cannot tell "money sent,
-  // awaiting approval" apart from "nothing paid yet". Only a pending payment transaction proves
-  // money was submitted — derived by getOrderDetails.js as hasPendingPayment.
-  const hasPendingPayment = Boolean(order.hasPendingPayment);
   const isUploadLocked = Boolean(order.hasUnpaidInvoice) || isOrderPendingApproval;
 
   return (
@@ -642,18 +629,17 @@ const ProjectDetails = ({ isAdminView = false }) => {
             />
           )}
 
-          {/* Exactly ONE payment banner renders, chosen by what is actually true — never two.
-              Order matters: "money submitted, awaiting approval" is the more specific state and
-              wins over "payment still due".
-
-              The gate here is hasPendingPayment (a real pending transaction), NOT
-              isOrderPendingApproval. That distinction is the bug this replaced: a "pay later"
-              (decide_later) order is created 'pending-approval' with ZERO payment, so gating on
-              orderVisibility showed "Payment Submitted — Awaiting Approval" to a customer who had
-              not paid anything yet, and — because the invoice legitimately stays unpaid until an
-              admin approves — kept showing "Payment Pending" even right after they DID submit a
-              UPI payment. The two states were swapped in exactly the case that matters. */}
-          {!isAdminView && hasPendingPayment && (
+          {/* Single payment-pending banner covering both underlying causes — never two at once.
+              A whole-order pending-approval order (customerCreateCustomProjectOrder.js creates it
+              `pending-approval` by default; it only flips to `approved` when a UPI remainder is
+              nil) ALWAYS also has its due invoice sitting unpaid/partially_paid, because
+              markProjectInvoicePaid only settles the wallet-paid part until that UPI portion is
+              admin-approved — so hasUnpaidInvoice and isOrderPendingApproval are true together for
+              the same underlying reason on that order. isOrderPendingApproval is checked first
+              (it's the more specific, whole-order case); hasUnpaidInvoice alone (order already
+              approved, one later installment's invoice still unpaid — the original 38_...md case)
+              only renders when the order isn't itself pending. */}
+          {!isAdminView && isOrderPendingApproval && (
             <div className={g(
               'mb-6 rounded-2xl border border-emerald-300 bg-emerald-50 p-4',
               'mb-6 rounded-2xl border border-emerald-400/40 bg-emerald-500/15 p-4 backdrop-blur-md'
@@ -662,14 +648,12 @@ const ProjectDetails = ({ isAdminView = false }) => {
                 Payment Submitted — Awaiting Approval
               </p>
               <p className={g('mt-1 text-sm text-emerald-700', 'mt-1 text-sm text-emerald-100/90')}>
-                {order.pendingPayment?.amount
-                  ? `Your payment of ₹${Number(order.pendingPayment.amount).toLocaleString('en-IN')} has been submitted and is awaiting admin approval (usually 1-4 hours). Some actions are unavailable until it is approved.`
-                  : 'Your payment has been submitted and is awaiting admin approval (usually 1-4 hours). Some actions are unavailable until it is approved.'}
+                Your payment has been submitted and is awaiting admin approval (usually 1-4 hours). Some actions are unavailable until it is approved.
               </p>
             </div>
           )}
 
-          {!isAdminView && !hasPendingPayment && order.hasUnpaidInvoice && (
+          {!isAdminView && !isOrderPendingApproval && order.hasUnpaidInvoice && (
             <div className={g(
               'mb-6 rounded-2xl border border-amber-300 bg-amber-50 p-4',
               'mb-6 rounded-2xl border border-amber-400/40 bg-amber-500/15 p-4 backdrop-blur-md'
