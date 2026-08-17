@@ -48,6 +48,7 @@ const BILLING_CYCLE_LABELS = {
   every_4_years: 'billed every 4 years',
   every_5_years: 'billed every 5 years',
 };
+const BILLING_CYCLE_MONTHS = { monthly: 1, quarterly: 3, half_yearly: 6, yearly: 12, every_2_years: 24, every_3_years: 36, every_4_years: 48, every_5_years: 60 };
 
 const formatPrice = (value) =>
   new Intl.NumberFormat('en-IN', {
@@ -72,6 +73,14 @@ const getAccessLine = (servicePlan = {}) => {
 };
 
 const getValidityLine = (servicePlan = {}) => {
+  if (!servicePlan.billingCycle && !servicePlan.totalBillingCycles && !servicePlan.validityInDays) {
+    return 'No automatic expiry';
+  }
+  if (servicePlan.billingCycle && servicePlan.totalBillingCycles) {
+    const billing = BILLING_CYCLE_LABELS[servicePlan.billingCycle] || 'billing';
+    const cycles = Number(servicePlan.totalBillingCycles);
+    return `${cycles} ${billing.toLowerCase()} cycle${cycles === 1 ? '' : 's'}`;
+  }
   const unit = VALIDITY_UNIT_LABELS[servicePlan.validityUnit];
   if (!unit || !servicePlan.validityValue) return null;
   const plural = servicePlan.validityValue === 1 ? '' : 's';
@@ -91,6 +100,7 @@ const AddServiceModal = ({
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedIds, setSelectedIds] = useState([]);
+  const [selections, setSelections] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [purchasedSummary, setPurchasedSummary] = useState(null);
 
@@ -99,6 +109,7 @@ const AddServiceModal = ({
 
     // Reset per-open so a previous session's selection never carries over.
     setSelectedIds([]);
+    setSelections({});
     setPurchasedSummary(null);
     setLoading(true);
 
@@ -129,13 +140,22 @@ const AddServiceModal = ({
     [plans, selectedIds]
   );
 
-  const total = useMemo(
-    () => selectedPlans.reduce((sum, plan) => sum + getPriceOf(plan), 0),
-    [selectedPlans]
-  );
+  const getSelectedPrice = (plan) => {
+    const cycle = selections[plan._id]?.selectedBillingCycle;
+    const option = plan.servicePlan?.billingOptions?.find((item) => item.billingCycle === cycle);
+    return Number(option?.pricePerCycle ?? getPriceOf(plan));
+  };
+  const hasCompleteSelection = selectedPlans.every((plan) => {
+    const options = plan.servicePlan?.billingOptions || [];
+    if (!options.length) return true;
+    const choice = selections[plan._id] || {};
+    const cycleMonths = BILLING_CYCLE_MONTHS[choice.selectedBillingCycle] || 0;
+    return Boolean(cycleMonths) && (choice.tenureMonths === '' || choice.tenureMonths === undefined || (Number.isInteger(Number(choice.tenureMonths)) && Number(choice.tenureMonths) >= cycleMonths && Number(choice.tenureMonths) % cycleMonths === 0));
+  });
+  const total = useMemo(() => selectedPlans.reduce((sum, plan) => sum + getSelectedPrice(plan), 0), [selectedPlans, selections]);
 
   const shortfall = Math.max(0, total - Number(walletBalance || 0));
-  const canPay = selectedPlans.length > 0 && shortfall === 0;
+  const canPay = selectedPlans.length > 0 && hasCompleteSelection && shortfall === 0;
 
   const toggleSelection = (planId) => {
     setSelectedIds((current) =>
@@ -153,6 +173,7 @@ const AddServiceModal = ({
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
           planIds: selectedIds,
+          selections: selectedPlans.map((plan) => ({ planId: plan._id, selectedBillingCycle: selections[plan._id]?.selectedBillingCycle, tenureMonths: selections[plan._id]?.tenureMonths === '' ? undefined : Number(selections[plan._id]?.tenureMonths) })),
           linkedProjectOrderId: projectOrderId,
           addedDuringProjectPhase: isProjectFinished ? 'after_completion' : 'in_progress',
           transactionId: `SVCB${Date.now()}${Math.floor(Math.random() * 10000)}`,
@@ -238,9 +259,11 @@ const AddServiceModal = ({
 
                 return (
                   <li key={plan._id}>
-                    <button
-                      type="button"
+                    <div
+                      role="button"
+                      tabIndex={0}
                       onClick={() => toggleSelection(plan._id)}
+                      onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') toggleSelection(plan._id); }}
                       className={[
                         'flex w-full items-start gap-3 rounded-2xl border p-4 text-left transition',
                         isSelected
@@ -263,7 +286,7 @@ const AddServiceModal = ({
                         <span className="flex flex-wrap items-baseline justify-between gap-2">
                           <span className="text-base font-semibold text-white">{plan.serviceName}</span>
                           <span className="text-base font-semibold text-white">
-                            {formatPrice(getPriceOf(plan))}
+                            {formatPrice(getSelectedPrice(plan))}
                           </span>
                         </span>
                         <span className="mt-1 block text-sm text-white/60">
@@ -273,8 +296,14 @@ const AddServiceModal = ({
                         {validityLine && (
                           <span className="mt-0.5 block text-sm text-white/60">{validityLine}</span>
                         )}
+                        {isSelected && servicePlan.billingOptions?.length > 0 && (
+                          <span className="mt-3 grid gap-2 sm:grid-cols-2" onClick={(event) => event.stopPropagation()}>
+                            <label><span className="mb-1 block text-xs font-semibold text-white/70">Billing period</span><select className="w-full rounded-lg border border-white/20 bg-slate-950 px-2.5 py-2 text-sm text-white" value={selections[plan._id]?.selectedBillingCycle || ''} onChange={(event) => setSelections((current) => ({ ...current, [plan._id]: { ...current[plan._id], selectedBillingCycle: event.target.value, tenureMonths: '' } }))}><option value="">Select period</option>{servicePlan.billingOptions.map((option) => <option key={option.billingCycle} value={option.billingCycle}>{BILLING_CYCLE_LABELS[option.billingCycle]} — {formatPrice(option.pricePerCycle)}</option>)}</select></label>
+                            <label><span className="mb-1 block text-xs font-semibold text-white/70">Total tenure (optional)</span><input className="w-full rounded-lg border border-white/20 bg-slate-950 px-2.5 py-2 text-sm text-white disabled:opacity-50" type="number" min={BILLING_CYCLE_MONTHS[selections[plan._id]?.selectedBillingCycle] || 1} step={BILLING_CYCLE_MONTHS[selections[plan._id]?.selectedBillingCycle] || 1} disabled={!selections[plan._id]?.selectedBillingCycle} value={selections[plan._id]?.tenureMonths || ''} onChange={(event) => setSelections((current) => ({ ...current, [plan._id]: { ...current[plan._id], tenureMonths: event.target.value } }))} placeholder="Continue until stopped" /></label>
+                          </span>
+                        )}
                       </span>
-                    </button>
+                    </div>
                   </li>
                 );
               })}
@@ -306,6 +335,8 @@ const AddServiceModal = ({
               <p className="mt-1 text-sm text-white/60">
                 Wallet balance: {formatPrice(walletBalance)}
               </p>
+
+              {!hasCompleteSelection && <p className="mt-2 text-sm text-amber-200">Select a valid billing period and tenure for every selected service.</p>}
 
               {shortfall > 0 && (
                 <p className="mt-2 rounded-xl border border-amber-400/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-200">

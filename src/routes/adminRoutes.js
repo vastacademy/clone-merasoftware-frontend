@@ -10,6 +10,7 @@ import AdminProjectProductsPage from "../pages/AdminProjectProductsPage";
 import AdminCreateProjectPage from "../pages/AdminCreateProjectPage";
 import AdminPlanProductsPage from "../pages/AdminPlanProductsPage";
 import AdminCreatePlanPage from "../pages/AdminCreatePlanPage";
+import AdminCreateServicePage from "../pages/AdminCreateServicePage";
 import AdminCategoryBasePricePage from "../pages/AdminCategoryBasePricePage";
 import AdminFeatureProductsPage from "../pages/AdminFeatureProductsPage";
 import AdminTrashPage from "../pages/AdminTrashPage";
@@ -76,6 +77,14 @@ export const adminRoutes = [
     element: (
       <ProtectedRoute requireRole={['admin']}>
         <AdminProjectProductsPage/>
+      </ProtectedRoute>
+    )
+  },
+  {
+    path: "admin-panel/website-management/services/add",
+    element: (
+      <ProtectedRoute requireRole={['admin']}>
+        <AdminCreateServicePage />
       </ProtectedRoute>
     )
   },

@@ -31,8 +31,11 @@ const getPlanTypeLabel = (plan) => {
 
 const getPlanValidityLabel = (plan) => {
   if (plan.isServicePlan) {
-    const days = plan.servicePlan?.validityInDays;
-    return days ? `${days} day(s)` : "N/A";
+    const cycles = Number(plan.servicePlan?.totalBillingCycles);
+    const billingCycle = plan.servicePlan?.billingCycle;
+    if (billingCycle && cycles) return `${cycles} billing cycle${cycles === 1 ? "" : "s"}`;
+    if (!plan.servicePlan?.validityInDays) return "No automatic expiry";
+    return `${plan.servicePlan.validityInDays} day(s)`;
   }
   return plan.validityPeriod ? `${plan.validityPeriod} day(s)` : "N/A";
 };
@@ -61,6 +64,7 @@ const AdminPlanProductsPage = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [sortBy, setSortBy] = useState("dateAdded");
   const [groupBy, setGroupBy] = useState("none");
+  const [changingServiceId, setChangingServiceId] = useState("");
 
   const fetchPlans = useCallback(async () => {
     setLoading(true);
@@ -123,8 +127,33 @@ const AdminPlanProductsPage = () => {
     navigate("/admin-panel/website-management/plans/add");
   };
 
+  const handleAddService = () => {
+    navigate("/admin-panel/website-management/services/add");
+  };
+
   const handlePlanOpen = () => {
     toast.info("Plan detail sub-page will be connected in the next step.");
+  };
+
+  const handleServiceAvailabilityToggle = async (service) => {
+    setChangingServiceId(service._id);
+    const endpoint = service.isHidden ? SummaryApi.UnhideProduct : SummaryApi.hideProduct;
+    try {
+      const response = await fetch(endpoint.url, {
+        method: endpoint.method,
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ _id: service._id }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) throw new Error(result.message || "Service availability could not be updated.");
+      setPlans((current) => current.map((plan) => plan._id === service._id ? { ...plan, isHidden: !service.isHidden } : plan));
+      toast.success(service.isHidden ? "Service enabled in catalogue." : "Service disabled in catalogue.");
+    } catch (toggleError) {
+      toast.error(toggleError.message || "Service availability could not be updated.");
+    } finally {
+      setChangingServiceId("");
+    }
   };
 
   const visiblePlans = useMemo(() => {
@@ -199,7 +228,7 @@ const AdminPlanProductsPage = () => {
         <AdminWorkspaceHeader
           icon={Layers3}
           title="Plans"
-          subtitle="Manage reusable plan products."
+          subtitle="Manage reusable plans and service catalogue entries."
           actions={
             <div className="flex w-full flex-wrap justify-end gap-2">
               <AdminFilterDropdown
@@ -233,7 +262,7 @@ const AdminPlanProductsPage = () => {
         />
 
         <div className="border-b border-slate-200 bg-white px-5 py-4 sm:px-6">
-          <div className="flex justify-start">
+          <div className="flex flex-wrap justify-start gap-2">
             <button
               type="button"
               onClick={handleAddPlan}
@@ -241,6 +270,14 @@ const AdminPlanProductsPage = () => {
             >
               <Plus size={17} />
               Add Plan
+            </button>
+            <button
+              type="button"
+              onClick={handleAddService}
+              className="inline-flex items-center justify-center gap-2 rounded-2xl border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-900 transition hover:bg-emerald-100"
+            >
+              <Plus size={17} />
+              Add Service
             </button>
           </div>
 
@@ -295,10 +332,14 @@ const AdminPlanProductsPage = () => {
               (() => {
                 const { plan, planIndex } = row;
                 return (
-              <button
+              <div
                 key={plan._id || plan.id || planIndex}
-                type="button"
+                role="button"
+                tabIndex={0}
                 onClick={() => handlePlanOpen(plan)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") handlePlanOpen(plan);
+                }}
                 className={[
                   "grid w-full grid-cols-12 gap-3 px-5 py-4 text-left transition hover:bg-slate-100 sm:px-6",
                   planIndex % 2 === 0 ? "bg-white" : "bg-slate-50",
@@ -315,12 +356,24 @@ const AdminPlanProductsPage = () => {
                   <p className="text-sm font-semibold text-slate-900">{getPlanValidityLabel(plan)}</p>
                 </div>
                 <div className="col-span-6 lg:col-span-2 lg:flex lg:items-center">
-                  <span className="inline-flex rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-800">{plan.isHidden ? "Hidden" : "Visible"}</span>
+                  {plan.isServicePlan ? (
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        handleServiceAvailabilityToggle(plan);
+                      }}
+                      disabled={changingServiceId === plan._id}
+                      className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${plan.isHidden ? "bg-slate-200 text-slate-700 hover:bg-slate-300" : "bg-emerald-100 text-emerald-800 hover:bg-emerald-200"}`}
+                    >
+                      {changingServiceId === plan._id ? "Updating..." : plan.isHidden ? "Disabled — Enable" : "Active — Disable"}
+                    </button>
+                  ) : <span className="inline-flex rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-800">{plan.isHidden ? "Hidden" : "Visible"}</span>}
                 </div>
                 <div className="col-span-6 flex items-center justify-end lg:col-span-1">
                   <span className="text-xs font-semibold text-slate-500">Open</span>
                 </div>
-              </button>
+              </div>
                 );
               })()
             )}

@@ -5,6 +5,8 @@
 **Read this before touching**: `productModel.js`'s `servicePlan` fields, `orderProductModel.js`'s service/linkage fields, `createServicePlan.js`, `customerCreateServicePlanOrder.js` (new), `AdminCreatePlanPage.js`, `ServicePlanDetail.js`, `StartNewProject.js`, `ProjectDetails.js`'s Add-a-Service card, `PlanDetails.js`'s status derivation, or `getOrderDetails.js`'s populate list.
 **Read alongside**: `plansystem.md` (original requirement + the still-unbuilt enforcement/billing designs), `26_SERVICE_PLAN_SYSTEM_PHASE_1.md`, `27_SERVICE_PLAN_RENAME_AND_LEGACY_MIGRATION.md`, `52_INVOICE_PAYMENT_SSOT_CORRECTION_PLAN.md` (the invoice-settlement rules this session's purchase path follows).
 
+> **Superseded in part by `56_SERVICE_SYSTEM_REQUIREMENTS_AND_HANDOFF.md`.** After this session's work, the owner specified the full service-type model (timing / dependency / capability), dormant-until-activation semantics, upload-unlock, and project-click routing. Doc 56 records those requirements verbatim, re-verifies what exists here against them, and lists 13 gaps + 8 open questions. **Read doc 56 first** when resuming service work — this file remains accurate for *what was built*, but its `serviceBehavior` single-enum design and its purchase-time activation are both explicitly superseded there.
+
 ## 1. The decision: extend, don't rebuild
 
 The user asked whether the existing service structure should be scrapped and rebuilt for the add-on requirement. Verified against live code before answering — the existing `servicePlan{}` schema already models the requirement almost completely (service type, per-cycle allowance, limit window, files limit, validity, billing cycle, purchase-time snapshot, cycle-tracking fields). Only **three** things were genuinely missing:

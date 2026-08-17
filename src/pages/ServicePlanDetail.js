@@ -52,6 +52,8 @@ const BILLING_CYCLE_LABELS = {
   every_5_years: 'Billed Every 5 Years',
 };
 
+const BILLING_CYCLE_MONTHS = { monthly: 1, quarterly: 3, half_yearly: 6, yearly: 12, every_2_years: 24, every_3_years: 36, every_4_years: 48, every_5_years: 60 };
+
 const formatPrice = (value) =>
   new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(value);
 
@@ -73,6 +75,13 @@ const getPortalAccessLine = (servicePlan) => {
 
 const getValidityLine = (servicePlan) => {
   if (!servicePlan) return null;
+  if (!servicePlan.billingCycle && !servicePlan.totalBillingCycles && !servicePlan.validityInDays) {
+    return 'No automatic expiry';
+  }
+  if (servicePlan.billingCycle && servicePlan.totalBillingCycles) {
+    const cycles = Number(servicePlan.totalBillingCycles);
+    return `Ends after ${cycles} billing cycle${cycles === 1 ? '' : 's'}`;
+  }
   const unitLabel = VALIDITY_UNIT_LABELS[servicePlan.validityUnit] || '';
   return `${servicePlan.validityValue} ${unitLabel}`;
 };
@@ -101,6 +110,8 @@ const ServicePlanDetail = () => {
   const [upiTransactionId, setUpiTransactionId] = useState('');
   const [payProcessing, setPayProcessing] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [selectedBillingCycle, setSelectedBillingCycle] = useState('');
+  const [tenureMonths, setTenureMonths] = useState('');
 
   useEffect(() => {
     const fetchPlan = async () => {
@@ -132,6 +143,8 @@ const ServicePlanDetail = () => {
         // This page is the standalone purchase surface. Buying a service FOR a
         // project happens in AddServiceModal, opened from the project itself.
         planId: plan._id,
+        selectedBillingCycle: plan?.servicePlan?.billingOptions?.length ? selectedBillingCycle : undefined,
+        tenureMonths: tenureMonths === '' ? undefined : Number(tenureMonths),
         paymentDetails: {
           transactionId: txnId,
           upiTransactionId: upiRef || null,
@@ -148,14 +161,22 @@ const ServicePlanDetail = () => {
   // Wallet/UPI split for display + flow choice. The wallet is the customer's own
   // money so it applies first; only the remainder needs UPI. The backend
   // independently re-derives this same split from the real balance.
-  const planPrice = Number(plan?.sellingPrice ?? plan?.price ?? 0);
+  const catalogueBillingOptions = plan?.servicePlan?.billingOptions || [];
+  const selectedBillingOption = catalogueBillingOptions.find((option) => option.billingCycle === selectedBillingCycle);
+  const selectedCycleMonths = BILLING_CYCLE_MONTHS[selectedBillingCycle] || 0;
+  const planPrice = Number(selectedBillingOption?.pricePerCycle ?? plan?.sellingPrice ?? plan?.price ?? 0);
   const currentWalletBalance = Number(context?.walletBalance || 0);
   const currentWalletPart = Math.min(currentWalletBalance, planPrice);
   const currentUpiPart = Math.max(0, planPrice - currentWalletPart);
+  const handleOpenPayment = () => {
+    setShowPaymentModal(true);
+  };
 
   // Step 1: customer confirmed the summary → start the wallet/UPI flow.
   const handleConfirmPayment = async () => {
     if (payProcessing) return;
+    if (catalogueBillingOptions.length && !selectedBillingOption) return toast.error('Select a billing period first.');
+    if (tenureMonths !== '' && (!Number.isInteger(Number(tenureMonths)) || Number(tenureMonths) < selectedCycleMonths || Number(tenureMonths) % selectedCycleMonths !== 0)) return toast.error('Total tenure must be a whole multiple of the billing period.');
     try {
       setPayProcessing(true);
 
@@ -334,7 +355,7 @@ const ServicePlanDetail = () => {
             <div className="border-t border-slate-200 px-5 py-6 sm:px-8 sm:py-8">
               <button
                 type="button"
-                onClick={() => setShowPaymentModal(true)}
+                onClick={handleOpenPayment}
                 className="inline-flex w-full items-center justify-center rounded-2xl bg-slate-950 px-4 py-3 text-base font-semibold text-white transition hover:bg-slate-800 sm:w-auto"
               >
                 Proceed to Payment
@@ -352,6 +373,14 @@ const ServicePlanDetail = () => {
               <>
                 <h2 className="text-xl font-bold text-black">Confirm your purchase</h2>
                 <p className="mt-1 text-base text-slate-600">{plan.serviceName}</p>
+
+                {catalogueBillingOptions.length > 0 && (
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                    <label><span className="mb-1.5 block text-sm font-semibold text-slate-700">Billing period</span><select className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-black" value={selectedBillingCycle} onChange={(event) => { setSelectedBillingCycle(event.target.value); setTenureMonths(''); }}><option value="">Select billing period</option>{catalogueBillingOptions.map((option) => <option key={option.billingCycle} value={option.billingCycle}>{BILLING_CYCLE_LABELS[option.billingCycle]} — {formatPrice(option.pricePerCycle)}</option>)}</select></label>
+                    <label><span className="mb-1.5 block text-sm font-semibold text-slate-700">Total tenure (optional)</span><input className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-black" type="number" min={selectedCycleMonths || 1} step={selectedCycleMonths || 1} disabled={!selectedBillingCycle} value={tenureMonths} onChange={(event) => setTenureMonths(event.target.value)} placeholder="Leave blank to continue" /></label>
+                  </div>
+                )}
+                {catalogueBillingOptions.length > 0 && <p className="mt-2 text-xs text-slate-500">First selected period is paid now. {tenureMonths === '' ? 'It will continue until you stop renewal.' : 'Further invoices follow this billing period until the selected tenure ends.'}</p>}
 
                 <div className="mt-5 space-y-2 rounded-2xl border border-slate-200 bg-slate-50 p-4">
                   <div className="flex items-center justify-between text-base text-black">

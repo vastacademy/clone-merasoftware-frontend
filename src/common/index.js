@@ -177,6 +177,10 @@ const SummaryApi = {
         url : `${backendDomain}/api/customer/service-plan-orders-bulk`,
         method: "post"
     },
+    stopServiceRenewal : {
+        url : `${backendDomain}/api/customer/service-plan/stop-renewal`,
+        method: "post"
+    },
     customerCategoryBasePrice : {
         url : `${backendDomain}/api/customer/category-base-price`,
         method: "get"

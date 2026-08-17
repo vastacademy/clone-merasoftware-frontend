@@ -69,7 +69,8 @@ const getPlanVisualStatus = (plan) => {
 
     const base = { isServicePlan: true, isRecurring: false, daysLeft, accessLeft, accessUsed, accessLimit, isReminderOnly, isUnlimited };
 
-    if (status === 'cancelled') return { ...base, badge: 'Cancelled', tone: 'closed', canRequest: false };
+    if (status === 'pending_activation') return { ...base, badge: 'Waiting for project completion', tone: 'paused', canRequest: false };
+    if (status === 'inactive' || status === 'cancelled') return { ...base, badge: 'Inactive', tone: 'closed', canRequest: false };
     if (status === 'expired') return { ...base, badge: 'Expired', tone: 'expired', canRequest: false };
     if (status === 'paused') return { ...base, badge: 'Paused', tone: 'paused', canRequest: false };
     if (daysLeft === 0) return { ...base, badge: 'Expired', tone: 'expired', canRequest: false };
@@ -196,6 +197,8 @@ const PlanDetails = () => {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [selectedRequestId, setSelectedRequestId] = useState('');
+  const [stoppingRenewal, setStoppingRenewal] = useState(false);
+  const [serviceActionMessage, setServiceActionMessage] = useState('');
 
   const fetchPlanDetails = useCallback(async () => {
     try {
@@ -246,6 +249,16 @@ const PlanDetails = () => {
 
   const handleBack = () => {
     navigate('/projects-and-plans');
+  };
+  const handleStopRenewal = async () => {
+    try {
+      setStoppingRenewal(true);
+      const response = await fetch(SummaryApi.stopServiceRenewal.url, { method: SummaryApi.stopServiceRenewal.method, credentials: 'include', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ serviceOrderId: orderId }) });
+      const result = await response.json();
+      if (!result.success) throw new Error(result.message || 'Could not stop renewal');
+      setServiceActionMessage(result.message);
+      fetchPlanDetails();
+    } catch (error) { setServiceActionMessage(error.message || 'Could not stop renewal'); } finally { setStoppingRenewal(false); }
   };
 
   if (loading) {
@@ -328,6 +341,18 @@ const PlanDetails = () => {
           <div className="relative overflow-hidden rounded-[1.75rem] border border-white/20 bg-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.25)] backdrop-blur-2xl backdrop-saturate-150">
             <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/[0.12] to-transparent" />
 
+            {plan.isServicePlan && (
+              <section className="relative border-b border-white/15 px-5 py-4 text-white sm:px-6">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div><p className="font-semibold">{status.isReminderOnly ? 'Service information' : 'Service controls'}</p><p className="mt-1 text-sm text-slate-300">{product.formattedDescriptions?.[0]?.content?.replace(/<[^>]*>/g, '') || 'No additional service information.'}</p></div>
+                  {plan.serviceAutoRenew && status.tone === 'active' && <button type="button" onClick={handleStopRenewal} disabled={stoppingRenewal} className="rounded-xl border border-amber-300/50 px-3 py-2 text-sm font-semibold text-amber-200 disabled:opacity-50">{stoppingRenewal ? 'Stopping…' : 'Stop Renewal'}</button>}
+                </div>
+                {serviceActionMessage && <p className="mt-2 text-sm text-emerald-200">{serviceActionMessage}</p>}
+                {status.isReminderOnly && <p className="mt-3 text-sm text-slate-300">Upload Data is not available for this reminder service.</p>}
+                <div className="mt-3"><p className="text-sm font-semibold">Invoices</p>{plan.serviceInvoices?.length ? <ul className="mt-1 space-y-1 text-sm text-slate-300">{plan.serviceInvoices.map((invoice) => <li key={invoice._id}>{invoice.invoiceNumber} · {formatDate(invoice.invoiceDate)} · ₹{invoice.amount} · {invoice.status}</li>)}</ul> : <p className="mt-1 text-sm text-slate-400">No invoices yet.</p>}</div>
+              </section>
+            )}
+
             {/* Desktop 3-column layout, same skeleton as ProjectDetails.js */}
             <div className="relative hidden lg:grid lg:grid-cols-[280px_minmax(0,1fr)_360px] lg:items-stretch">
               <aside className="relative h-[620px] border-r border-white/15">
@@ -398,7 +423,7 @@ const PlanDetails = () => {
                       <p className="text-lg font-semibold text-white">Plan Snapshot</p>
                       <div className="mt-3 space-y-2.5">
                         <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/10 px-4 py-2.5">
-                          <span className="text-sm text-slate-300">{status.isRecurring ? 'Resets on' : 'Days left'}</span>
+                          <span className="text-sm text-slate-300">{status.isRecurring ? 'Resets on' : status.daysLeft === null ? 'Duration' : 'Days left'}</span>
                           <span className="flex items-center gap-1 text-base font-semibold text-white">
                             {status.isRecurring ? (
                               <>
@@ -408,7 +433,7 @@ const PlanDetails = () => {
                             ) : (
                               <>
                                 <Clock className="h-3.5 w-3.5" />
-                                {status.daysLeft} days
+                                {status.daysLeft === null ? 'No automatic expiry' : `${status.daysLeft} days`}
                               </>
                             )}
                           </span>

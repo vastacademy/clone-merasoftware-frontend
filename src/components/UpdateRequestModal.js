@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { X, Upload, Send, FileText, Image } from 'lucide-react';
 import SummaryApi from '../common';
 import { toast } from 'sonner';
@@ -13,14 +13,26 @@ const UpdateRequestModal = ({ plan, onClose, onSubmitSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadServices, setUploadServices] = useState(plan?.isServicePlan ? [plan] : []);
+  const [selectedServiceId, setSelectedServiceId] = useState(plan?.isServicePlan ? plan._id : '');
   const fileInputRef = useRef(null);
   const messageInputRef = useRef(null);
+
+  useEffect(() => {
+    if (plan?.isServicePlan) return;
+    fetch(SummaryApi.ordersList.url, { credentials: 'include' }).then((response) => response.json()).then((result) => {
+      const services = (result.data || []).filter((order) => order.isServicePlan && order.servicePlanStatus === 'active' && (order.servicePlanSnapshot?.capability === 'upload_data' || order.servicePlanSnapshot?.serviceBehavior === 'portal_access_control'));
+      setUploadServices(services);
+      setSelectedServiceId(services[0]?._id || '');
+    }).catch(() => toast.error('Could not load upload services.'));
+  }, [plan]);
+  const selectedService = uploadServices.find((service) => service._id === selectedServiceId) || null;
 
   // File upload handling
   const handleFileUpload = async (e) => {
     const uploadedFiles = Array.from(e.target.files);
     const maxFileSize = 5 * 1024 * 1024; // 5MB in bytes
-    const maxFileCount = 20; // Maximum 20 files allowed
+    const maxFileCount = Number(selectedService?.servicePlanSnapshot?.filesLimit || 20);
 
     // Check if adding these files would exceed the limit
     if (files.length + uploadedFiles.length > maxFileCount) {
@@ -161,7 +173,8 @@ const UpdateRequestModal = ({ plan, onClose, onSubmitSuccess }) => {
       
       // Create form data for the files
       const formData = new FormData();
-      formData.append('planId', plan._id);
+      formData.append('planId', selectedService?._id || plan._id);
+      if (selectedService) formData.append('serviceOrderId', selectedService._id);
       
       // Add all instructions as a JSON string
       formData.append('instructions', JSON.stringify(messages));
@@ -329,6 +342,7 @@ const getFileIcon = (fileType) => {
             {/* Content */}
             <div className="p-4 flex-1 overflow-auto">
               <div className="mb-6">
+                {uploadServices.length > 0 && <label className="mb-4 block"><span className="mb-1 block text-sm font-semibold text-white/80">Upload service</span><select className="w-full rounded-xl border border-white/20 bg-slate-950 px-3 py-2.5 text-sm text-white" value={selectedServiceId} onChange={(event) => setSelectedServiceId(event.target.value)}>{uploadServices.map((service) => <option key={service._id} value={service._id}>{service.productId?.serviceName || service.orderItems?.[0]?.name} · {Math.max(0, Number(service.servicePlanSnapshot?.portalAccessCount || 0) - Number(service.serviceAccessUsedInCycle || 0))} attempts left</option>)}</select></label>}
                 <h4 className="text-xs font-semibold uppercase tracking-wide text-white/60 mb-1">Upload Files</h4>
                 <p className="text-sm text-white/55 mb-4">
                 Only JPG images, PDF, DOC, TXT and RTF documents are supported. Max file size: 5MB. Maximum 20 files allowed. Images will be automatically compressed.
