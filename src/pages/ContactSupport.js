@@ -5,6 +5,7 @@ import Context from '../context';
 import CreateTicket from '../components/CreateTicket';
 import TicketsList from '../components/TicketsList';
 import DashboardLayout from '../components/DashboardLayout';
+import { AnimatedSection, getStaggerDelay } from '../components/PageMotion';
 import backgroundImage from '../assets/BG.png';
 
 const ContactSupportPage = () => {
@@ -61,7 +62,7 @@ const ContactSupportPage = () => {
 
           {/* Contact Options */}
           <div className="mt-10 grid grid-cols-1 gap-6 sm:mt-12 md:grid-cols-3">
-            <div className="group relative overflow-hidden rounded-3xl border border-white/20 bg-white/10 p-6 text-center shadow-[0_8px_32px_rgba(0,0,0,0.25)] backdrop-blur-2xl backdrop-saturate-150 transition-all duration-300 hover:-translate-y-1.5 hover:border-emerald-300/60 hover:bg-white/[0.16] hover:shadow-[0_24px_48px_rgba(16,185,129,0.28)]">
+            <AnimatedSection delay={getStaggerDelay(0)} className="group relative overflow-hidden rounded-3xl border border-white/20 bg-white/10 p-6 text-center shadow-[0_8px_32px_rgba(0,0,0,0.25)] backdrop-blur-2xl backdrop-saturate-150 transition-all duration-300 hover:-translate-y-1.5 hover:border-emerald-300/60 hover:bg-white/[0.16] hover:shadow-[0_24px_48px_rgba(16,185,129,0.28)]">
               <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/[0.12] to-transparent" />
               <div className="relative mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-white/20 bg-white/10 backdrop-blur-md">
                 <MessageSquare className="h-7 w-7 text-white" strokeWidth={1.75} />
@@ -76,9 +77,9 @@ const ContactSupportPage = () => {
               >
                 Create New Ticket
               </button>
-            </div>
+            </AnimatedSection>
 
-            <div className="relative overflow-hidden rounded-3xl border border-white/20 bg-white/10 p-6 text-center shadow-[0_8px_32px_rgba(0,0,0,0.25)] backdrop-blur-2xl backdrop-saturate-150">
+            <AnimatedSection delay={getStaggerDelay(1)} className="relative overflow-hidden rounded-3xl border border-white/20 bg-white/10 p-6 text-center shadow-[0_8px_32px_rgba(0,0,0,0.25)] backdrop-blur-2xl backdrop-saturate-150">
               <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/[0.12] to-transparent" />
               <div className="relative mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-white/20 bg-white/10 backdrop-blur-md">
                 <Phone className="h-7 w-7 text-white" strokeWidth={1.75} />
@@ -89,9 +90,9 @@ const ContactSupportPage = () => {
               </p>
               <p className="relative mt-4 text-lg font-semibold text-emerald-400">+91 92565 37003</p>
               <p className="relative mt-1 text-sm text-slate-400">Monday-Friday: 9AM-6PM IST</p>
-            </div>
+            </AnimatedSection>
 
-            <div className="relative overflow-hidden rounded-3xl border border-white/20 bg-white/10 p-6 text-center shadow-[0_8px_32px_rgba(0,0,0,0.25)] backdrop-blur-2xl backdrop-saturate-150">
+            <AnimatedSection delay={getStaggerDelay(2)} className="relative overflow-hidden rounded-3xl border border-white/20 bg-white/10 p-6 text-center shadow-[0_8px_32px_rgba(0,0,0,0.25)] backdrop-blur-2xl backdrop-saturate-150">
               <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/[0.12] to-transparent" />
               <div className="relative mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-white/20 bg-white/10 backdrop-blur-md">
                 <Mail className="h-7 w-7 text-white" strokeWidth={1.75} />
@@ -102,7 +103,7 @@ const ContactSupportPage = () => {
               </p>
               <p className="relative mt-4 text-lg font-semibold text-emerald-400">info@vacomputers.com</p>
               <p className="relative mt-1 text-sm text-slate-400">We typically respond within 24 hours</p>
-            </div>
+            </AnimatedSection>
           </div>
 
           {/* Tickets List */}

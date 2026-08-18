@@ -32,6 +32,7 @@ The public marketing/storefront site (`/home`, `/product/:id`, `/search`, `/cont
 - `/order` - `OrderPage`
 - `/order-detail/:orderId` - `OrderDetailPage`
 - `/project-details/:orderId` - `ProjectDetails` (project orders only)
+- `/project-details/:projectOrderId/services/:serviceOrderId` - project-contained service detail; Back returns to that project's workspace
 - `/plan-details/:orderId` - `PlanDetails` (plan/`website_updates` orders; new page, live-wired to `GET /api/order-details/:orderId` + `GET /api/get-update-requests`; see `20_PLAN_SYSTEM_AND_PLAN_DETAILS_PAGE.md`)
 - `/wallet`
 - `/my-updates`
@@ -43,9 +44,13 @@ The public marketing/storefront site (`/home`, `/product/:id`, `/search`, `/cont
 - `/profile`
 - `/support-tickets/:ticketId`
 - `/complete-profile`
-- `/start-new-project` - `StartNewProject` (live-wired project/plan list, `GET /api/get-product`)
+- `/start-new-project` - `StartProject` intake page
+- `/start-new-project/services?tab=plans` - `StartNewProject` standalone service catalog (live-wired to `GET /api/get-product`)
+- The standalone service flow uses the portal glass system end-to-end: the service catalog, service detail, wallet/UPI confirmation, QR/reference step, and success state all use the dark glass surface and emerald action-pill treatment. The project AddServiceModal already uses the same system.
+- The active `/start-new-project` intake surface is `startproject.js`: it presents two entry cards — `Start a Project` and `Start a Service or Add-ons`. The service card keeps the two genuinely different paths explicit: standalone services open `/start-new-project/services?tab=plans`; project add-ons open the customer's project list, then the selected project's Add a Service flow.
 - `/start-new-project/:projectId` - `StartNewProjectDetail` (project detail; "Add to Cart" adds to the customer Cart drawer — see `28_CART_SYSTEM_AND_ADD_MORE_PAGES.md`; no order/payment backend wiring yet)
 - `/project-details/:orderId` now opens a timeline-driven project view where the selected checkpoint shows only its own linked textual details below, and the latest active checkpoint is selected by default
+- A project with one or more add-on service orders now opens a project-contained workspace instead of separating those services into the global Plans area. It lists linked services first and the original project last; selecting the project opens its normal timeline, while selecting a service opens its existing detail surface under a project-scoped route. `linkedProjectOrderId` remains the only linkage source.
 - `/project-details/:orderId` desktop layout now uses three aligned cards with shared row height, inner scroll areas, and no runtime size measuring; the main page bottom spacing is handled on the page container so the footer follows naturally after content
 
 ### Admin routes

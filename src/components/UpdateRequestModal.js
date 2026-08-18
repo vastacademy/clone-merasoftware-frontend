@@ -6,6 +6,8 @@ import TriangleMazeLoader from '../components/TriangleMazeLoader';
 import imageCompression from 'browser-image-compression'; // You'll need to install this package
 import SpinningLoader from './SpinningLoader';
 
+const LEGACY_MAX_FILE_COUNT = 20;
+
 const UpdateRequestModal = ({ plan, onClose, onSubmitSuccess }) => {
   const [message, setMessage] = useState('');
   const [files, setFiles] = useState([]);
@@ -27,13 +29,12 @@ const UpdateRequestModal = ({ plan, onClose, onSubmitSuccess }) => {
     }).catch(() => toast.error('Could not load upload services.'));
   }, [plan]);
   const selectedService = uploadServices.find((service) => service._id === selectedServiceId) || null;
+  const maxFileCount = Number(selectedService?.servicePlanSnapshot?.filesLimit || LEGACY_MAX_FILE_COUNT);
 
   // File upload handling
   const handleFileUpload = async (e) => {
     const uploadedFiles = Array.from(e.target.files);
     const maxFileSize = 5 * 1024 * 1024; // 5MB in bytes
-    const maxFileCount = Number(selectedService?.servicePlanSnapshot?.filesLimit || 20);
-
     // Check if adding these files would exceed the limit
     if (files.length + uploadedFiles.length > maxFileCount) {
       toast.error(`Maximum ${maxFileCount} files allowed. You already have ${files.length} file${files.length !== 1 ? 's' : ''} uploaded.`);
@@ -345,7 +346,7 @@ const getFileIcon = (fileType) => {
                 {uploadServices.length > 0 && <label className="mb-4 block"><span className="mb-1 block text-sm font-semibold text-white/80">Upload service</span><select className="w-full rounded-xl border border-white/20 bg-slate-950 px-3 py-2.5 text-sm text-white" value={selectedServiceId} onChange={(event) => setSelectedServiceId(event.target.value)}>{uploadServices.map((service) => <option key={service._id} value={service._id}>{service.productId?.serviceName || service.orderItems?.[0]?.name} · {Math.max(0, Number(service.servicePlanSnapshot?.portalAccessCount || 0) - Number(service.serviceAccessUsedInCycle || 0))} attempts left</option>)}</select></label>}
                 <h4 className="text-xs font-semibold uppercase tracking-wide text-white/60 mb-1">Upload Files</h4>
                 <p className="text-sm text-white/55 mb-4">
-                Only JPG images, PDF, DOC, TXT and RTF documents are supported. Max file size: 5MB. Maximum 20 files allowed. Images will be automatically compressed.
+                Only JPG images, PDF, DOC, TXT and RTF documents are supported. Max file size: 5MB. Maximum {maxFileCount} files allowed. Images will be automatically compressed.
                 </p>
 
                 {/* File upload button */}
@@ -353,14 +354,14 @@ const getFileIcon = (fileType) => {
                   <label
                     htmlFor="file-upload"
                     className={`border-2 border-dashed rounded-2xl w-full p-6 flex flex-col items-center justify-center cursor-pointer transition ${
-                      files.length >= 20
+                      files.length >= maxFileCount
                         ? 'border-white/15 bg-white/[0.04] cursor-not-allowed'
                         : 'border-white/25 bg-white/[0.06] hover:bg-white/10'
                     }`}
                   >
-                    <Upload className={`w-10 h-10 mb-2 ${files.length >= 20 ? 'text-white/30' : 'text-emerald-400'}`} />
-                    <p className={`text-sm ${files.length >= 20 ? 'text-white/40' : 'text-white/70'}`}>
-                      {files.length >= 20 ? 'Maximum files reached (20/20)' : `Click to upload or drag and drop (${files.length}/20)`}
+                    <Upload className={`w-10 h-10 mb-2 ${files.length >= maxFileCount ? 'text-white/30' : 'text-emerald-400'}`} />
+                    <p className={`text-sm ${files.length >= maxFileCount ? 'text-white/40' : 'text-white/70'}`}>
+                      {files.length >= maxFileCount ? `Maximum files reached (${maxFileCount}/${maxFileCount})` : `Click to upload or drag and drop (${files.length}/${maxFileCount})`}
                     </p>
                     <input
                       id="file-upload"
@@ -370,7 +371,7 @@ const getFileIcon = (fileType) => {
                       accept=".jpg,.jpeg,.txt,.rtf,.pdf,.doc,.docx"
                       className="hidden"
                       onChange={handleFileUpload}
-                      disabled={files.length >= 20}
+                      disabled={files.length >= maxFileCount}
                     />
                   </label>
                 </div>

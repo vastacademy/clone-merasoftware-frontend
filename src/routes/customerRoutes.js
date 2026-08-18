@@ -66,6 +66,14 @@ export const customerRoutes = [
     )
   },
   {
+    path: "start-new-project/services",
+    element: (
+      <CustomerProtectedRoute>
+        <StartNewProject/>
+      </CustomerProtectedRoute>
+    )
+  },
+  {
     path: "start-new-project/:projectId",
     element: (
       <CustomerProtectedRoute>
@@ -118,6 +126,14 @@ export const customerRoutes = [
     element: (
       <CustomerProtectedRoute>
         <ProjectDetails/>
+      </CustomerProtectedRoute>
+    )
+  },
+  {
+    path: "project-details/:projectOrderId/services/:serviceOrderId",
+    element: (
+      <CustomerProtectedRoute>
+        <PlanDetails isProjectServiceView />
       </CustomerProtectedRoute>
     )
   },

@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { Check, Clock, Loader2, X } from 'lucide-react';
-import { QRCodeSVG } from 'qrcode.react';
+import { Check, Loader2, X } from 'lucide-react';
 import SummaryApi from '../common';
 
 // Add-on service picker, opened from a project's detail page.
@@ -10,18 +9,12 @@ import SummaryApi from '../common';
 // still visible behind the overlay), so no "which project am I buying for?"
 // banner or back-navigation context needs to be carried anywhere.
 //
-// Payment is hybrid — wallet, UPI, or both — using the same two-step shape the
-// project-start flow uses (StartNewWebsiteCustomize.js): if the wallet covers the
-// total, pay instantly; otherwise show a QR for the REMAINDER only and collect the
-// 12-digit UPI reference.
-//
-// The split shown here is only for display. The server re-derives it from the real
-// balance and is the authority (a client-sent split was the original loophole,
-// doc 51 Part B).
-//
-// A UPI payment covering several services becomes ONE parent transaction with one
-// child per service, so the admin approves the batch once and every service in it
-// activates together — see customerCreateServicePlanOrdersBulk.js.
+// Payment here is WALLET ONLY, by design. The approval engine settles exactly one
+// order per transaction, so a UPI payment covering several new orders would leave
+// all but one pending forever. Wallet money needs no approval, so each selected
+// service gets its own order/invoice/transaction and activates instantly. A
+// customer whose wallet can't cover the total is told to recharge — the
+// single-service page still accepts UPI and combined payments.
 
 const PLAN_TYPE_LABELS = {
   website_updates: 'Website Update',
@@ -110,11 +103,6 @@ const AddServiceModal = ({
   const [selections, setSelections] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [purchasedSummary, setPurchasedSummary] = useState(null);
-  // UPI step (only reached when the wallet doesn't cover the total)
-  const [showQR, setShowQR] = useState(false);
-  const [upiLink, setUpiLink] = useState('');
-  const [payTxnId, setPayTxnId] = useState('');
-  const [upiReference, setUpiReference] = useState('');
 
   useEffect(() => {
     if (!isOpen) return;
@@ -123,10 +111,6 @@ const AddServiceModal = ({
     setSelectedIds([]);
     setSelections({});
     setPurchasedSummary(null);
-    setShowQR(false);
-    setUpiLink('');
-    setPayTxnId('');
-    setUpiReference('');
     setLoading(true);
 
     const fetchPlans = async () => {
@@ -138,9 +122,6 @@ const AddServiceModal = ({
             product.category === 'service_plan' &&
             product.isServicePlan &&
             !product.isHidden &&
-            // Retired plans are already excluded server-side; filtered here too so a
-            // withdrawn plan can never be bought from a stale client payload.
-            !product.retiredAt &&
             getPriceOf(product) > 0
         );
         setPlans(servicePlans);
@@ -173,11 +154,8 @@ const AddServiceModal = ({
   });
   const total = useMemo(() => selectedPlans.reduce((sum, plan) => sum + getSelectedPrice(plan), 0), [selectedPlans, selections]);
 
-  // Display-only split. The server re-derives this from the real balance and is the
-  // authority — the client never tells the backend what to charge where.
-  const walletPart = Math.min(Number(walletBalance || 0), total);
-  const upiPart = Math.max(0, total - walletPart);
-  const canPay = selectedPlans.length > 0 && hasCompleteSelection && total > 0;
+  const shortfall = Math.max(0, total - Number(walletBalance || 0));
+  const canPay = selectedPlans.length > 0 && hasCompleteSelection && shortfall === 0;
 
   const toggleSelection = (planId) => {
     setSelectedIds((current) =>
@@ -185,72 +163,29 @@ const AddServiceModal = ({
     );
   };
 
-  // The single create call: orders + invoices + wallet debit + (if any) the pending
-  // parent/child UPI transactions, all in one atomic server-side request.
-  const createOrders = async ({ txnId, upiRef }) => {
-    const response = await fetch(SummaryApi.createServicePlanOrdersBulk.url, {
-      method: SummaryApi.createServicePlanOrdersBulk.method,
-      credentials: 'include',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        planIds: selectedIds,
-        selections: selectedPlans.map((plan) => ({ planId: plan._id, selectedBillingCycle: selections[plan._id]?.selectedBillingCycle, tenureMonths: selections[plan._id]?.tenureMonths === '' ? undefined : Number(selections[plan._id]?.tenureMonths) })),
-        linkedProjectOrderId: projectOrderId,
-        addedDuringProjectPhase: isProjectFinished ? 'after_completion' : 'in_progress',
-        transactionId: txnId,
-        upiTransactionId: upiRef || undefined,
-      }),
-    });
-    const result = await response.json();
-    if (!result.success) throw new Error(result.message || 'Could not add the services');
-    return result.data;
-  };
-
-  // Step 1 — wallet covers everything: pay instantly. Otherwise show a QR for the
-  // remainder only, exactly as the project-start flow does.
   const handlePay = async () => {
     if (!canPay || submitting) return;
-
-    const txnId = `SVCB${Date.now()}${Math.floor(Math.random() * 10000)}`;
-
-    if (upiPart === 0) {
-      try {
-        setSubmitting(true);
-        const data = await createOrders({ txnId });
-        setPurchasedSummary(data);
-        onPurchased?.();
-      } catch (error) {
-        toast.error(error.message || 'Could not add the services');
-      } finally {
-        setSubmitting(false);
-      }
-      return;
-    }
-
-    setPayTxnId(txnId);
-    const upiId = 'vacomputers.com@okhdfcbank';
-    const payeeName = 'VA Computer';
-    setUpiLink(
-      `upi://pay?pa=${upiId}&pn=${encodeURIComponent(payeeName)}&am=${upiPart}&cu=INR&tn=${encodeURIComponent(
-        `Service Payment - ${txnId}`
-      )}&tr=${txnId}`
-    );
-    setShowQR(true);
-  };
-
-  // Step 2 (UPI path) — the customer paid the remainder and entered their reference.
-  // A real UPI UTR is 12 digits, so anything shorter is rejected (doc 51 Bug 3).
-  const handleVerifyUpi = async () => {
-    if (submitting) return;
-    if (!/^\d{12,}$/.test(upiReference.trim())) {
-      toast.error('Enter the 12-digit UPI reference number');
-      return;
-    }
     try {
       setSubmitting(true);
-      const data = await createOrders({ txnId: payTxnId, upiRef: upiReference.trim() });
-      setShowQR(false);
-      setPurchasedSummary(data);
+      const response = await fetch(SummaryApi.createServicePlanOrdersBulk.url, {
+        method: SummaryApi.createServicePlanOrdersBulk.method,
+        credentials: 'include',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          planIds: selectedIds,
+          selections: selectedPlans.map((plan) => ({ planId: plan._id, selectedBillingCycle: selections[plan._id]?.selectedBillingCycle, tenureMonths: selections[plan._id]?.tenureMonths === '' ? undefined : Number(selections[plan._id]?.tenureMonths) })),
+          linkedProjectOrderId: projectOrderId,
+          addedDuringProjectPhase: isProjectFinished ? 'after_completion' : 'in_progress',
+          transactionId: `SVCB${Date.now()}${Math.floor(Math.random() * 10000)}`,
+        }),
+      });
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.message || 'Could not add the services');
+      }
+
+      setPurchasedSummary(result.data);
       onPurchased?.();
     } catch (error) {
       toast.error(error.message || 'Could not add the services');
@@ -269,23 +204,13 @@ const AddServiceModal = ({
           <div>
             <h2 className="text-xl font-bold text-white">
               {purchasedSummary
-                ? purchasedSummary.approved
-                  ? 'Services added'
-                  : 'Submitted for approval'
-                : showQR
-                ? 'Pay the remaining amount'
+                ? 'Services added'
                 : isProjectFinished
                 ? 'Ongoing servicing'
                 : 'Add a service'}
             </h2>
             <p className="mt-1 text-sm text-white/70">
-              {purchasedSummary
-                ? purchasedSummary.approved
-                  ? 'Your services are active now.'
-                  : 'Your services start as soon as this payment is approved.'
-                : showQR
-                ? `Scan and pay ${formatPrice(upiPart)}`
-                : `For ${projectName}`}
+              {purchasedSummary ? 'Your services are active now.' : `For ${projectName}`}
             </p>
           </div>
           <button
@@ -301,73 +226,20 @@ const AddServiceModal = ({
         {/* Body */}
         <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
           {purchasedSummary ? (
-            <>
-              <ul className="space-y-2">
-                {purchasedSummary.orders.map((item) => (
-                  <li
-                    key={item.orderId}
-                    className={[
-                      'flex items-center justify-between gap-3 rounded-2xl border px-4 py-3',
-                      purchasedSummary.approved
-                        ? 'border-emerald-400/30 bg-emerald-500/10'
-                        : 'border-amber-400/30 bg-amber-500/10',
-                    ].join(' ')}
-                  >
-                    <span className="flex items-center gap-2 text-base font-semibold text-white">
-                      {purchasedSummary.approved ? (
-                        <Check className="h-4 w-4 text-emerald-300" />
-                      ) : (
-                        <Clock className="h-4 w-4 text-amber-300" />
-                      )}
-                      {item.name}
-                    </span>
-                    <span className="text-base text-white/80">{formatPrice(item.amount)}</span>
-                  </li>
-                ))}
-              </ul>
-
-              {!purchasedSummary.approved && (
-                <p className="mt-4 rounded-xl border border-amber-400/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-100">
-                  We've received your payment reference. All {purchasedSummary.count} service
-                  {purchasedSummary.count === 1 ? '' : 's'} activate together once our team confirms
-                  it — you don't need to pay again.
-                </p>
-              )}
-            </>
-          ) : showQR ? (
-            <div className="flex flex-col items-center gap-4 py-2">
-              <div className="rounded-2xl bg-white p-4">
-                <QRCodeSVG value={upiLink} size={190} />
-              </div>
-
-              <div className="w-full rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white/80">
-                <div className="flex items-center justify-between">
-                  <span>Paid from wallet</span>
-                  <span className="text-white">{formatPrice(walletPart)}</span>
-                </div>
-                <div className="mt-1 flex items-center justify-between font-semibold">
-                  <span className="text-white">Pay by UPI now</span>
-                  <span className="text-white">{formatPrice(upiPart)}</span>
-                </div>
-              </div>
-
-              <label className="w-full">
-                <span className="mb-1 block text-sm font-semibold text-white/80">
-                  UPI reference number
-                </span>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  value={upiReference}
-                  onChange={(event) => setUpiReference(event.target.value.replace(/\D/g, ''))}
-                  placeholder="12-digit reference"
-                  className="w-full rounded-xl border border-white/20 bg-slate-950 px-3 py-2.5 text-base text-white placeholder:text-white/40"
-                />
-                <span className="mt-1 block text-xs text-white/50">
-                  Find this in your UPI app after paying.
-                </span>
-              </label>
-            </div>
+            <ul className="space-y-2">
+              {purchasedSummary.orders.map((item) => (
+                <li
+                  key={item.orderId}
+                  className="flex items-center justify-between gap-3 rounded-2xl border border-emerald-400/30 bg-emerald-500/10 px-4 py-3"
+                >
+                  <span className="flex items-center gap-2 text-base font-semibold text-white">
+                    <Check className="h-4 w-4 text-emerald-300" />
+                    {item.name}
+                  </span>
+                  <span className="text-base text-white/80">{formatPrice(item.amount)}</span>
+                </li>
+              ))}
+            </ul>
           ) : loading ? (
             <div className="flex items-center justify-center gap-2 py-10 text-white/70">
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -449,25 +321,6 @@ const AddServiceModal = ({
             >
               Done
             </button>
-          ) : showQR ? (
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={() => setShowQR(false)}
-                disabled={submitting}
-                className="rounded-2xl border border-white/20 bg-white/5 px-4 py-3 text-base font-semibold text-white transition hover:bg-white/10 disabled:opacity-50"
-              >
-                Back
-              </button>
-              <button
-                type="button"
-                onClick={handleVerifyUpi}
-                disabled={submitting || upiReference.trim().length < 12}
-                className="flex-1 rounded-2xl bg-emerald-500 px-4 py-3 text-base font-semibold text-white transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-white/15 disabled:text-white/50"
-              >
-                {submitting ? 'Submitting…' : 'Submit Payment'}
-              </button>
-            </div>
           ) : (
             <>
               <div className="flex items-center justify-between text-base text-white">
@@ -485,18 +338,11 @@ const AddServiceModal = ({
 
               {!hasCompleteSelection && <p className="mt-2 text-sm text-amber-200">Select a valid billing period and tenure for every selected service.</p>}
 
-              {/* Split breakdown — shown only when the payment actually is a split. */}
-              {selectedPlans.length > 0 && upiPart > 0 && (
-                <div className="mt-2 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm">
-                  <div className="flex items-center justify-between text-white/70">
-                    <span>From wallet</span>
-                    <span className="text-white">{formatPrice(walletPart)}</span>
-                  </div>
-                  <div className="mt-1 flex items-center justify-between text-white/70">
-                    <span>By UPI</span>
-                    <span className="text-white">{formatPrice(upiPart)}</span>
-                  </div>
-                </div>
+              {shortfall > 0 && (
+                <p className="mt-2 rounded-xl border border-amber-400/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-200">
+                  Add {formatPrice(shortfall)} to your wallet to buy these together, or open a service
+                  on its own to pay by UPI.
+                </p>
               )}
 
               <button
@@ -505,11 +351,7 @@ const AddServiceModal = ({
                 disabled={!canPay || submitting}
                 className="mt-3 w-full rounded-2xl bg-emerald-500 px-4 py-3 text-base font-semibold text-white transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-white/15 disabled:text-white/50"
               >
-                {submitting
-                  ? 'Processing…'
-                  : upiPart > 0
-                  ? `Pay ${formatPrice(total)}`
-                  : `Pay ${formatPrice(total)} from Wallet`}
+                {submitting ? 'Processing…' : `Pay ${formatPrice(total)} from Wallet`}
               </button>
             </>
           )}

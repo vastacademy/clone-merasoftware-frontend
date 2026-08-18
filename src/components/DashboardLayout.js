@@ -18,6 +18,7 @@ import PortalHeader from './PortalHeader';
 import DraftOrderSavedDrawer from './DraftOrderSavedDrawer';
 import FloatingCartButton from './FloatingCartButton';
 import backgroundImage from '../assets/BG.png';
+import { PageTransition } from './PageMotion';
 
 const DashboardLayout = ({ children, user, walletBalance, cartCount, isLoading, activeProject }) => {
   const location = useLocation();
@@ -320,7 +321,9 @@ const DashboardLayout = ({ children, user, walletBalance, cartCount, isLoading, 
             className="min-h-full bg-slate-950 bg-cover bg-center pb-16 lg:pb-0"
             style={{ backgroundImage: `url(${backgroundImage})` }}
           >
-            {children}
+            <PageTransition pageKey={location.key}>
+              {children}
+            </PageTransition>
           </main>
         </div>
       </div>

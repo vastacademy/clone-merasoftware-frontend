@@ -1,5 +1,3 @@
-import { getOrderDisplayName } from "./orderPresentation";
-
 const shortId = (value) => (value ? String(value).slice(-5) : "");
 
 const safeDateTime = (value) => {
@@ -80,9 +78,7 @@ export const buildLedgerItems = (transactions = [], invoices = []) => {
 
   return [
     ...transactions.map((transaction) => {
-      // Falls back to the name frozen on the order, so a retired/deleted plan still
-      // names the payment in the ledger instead of showing a bare amount.
-      const serviceName = getOrderDisplayName(transaction.orderId, null);
+      const serviceName = transaction.orderId?.productId?.serviceName;
       const paymentLabel = getTransactionPaymentLabel(transaction);
       return {
         id: `transaction-${transaction._id}`,
@@ -106,7 +102,7 @@ export const buildLedgerItems = (transactions = [], invoices = []) => {
     ...invoices
       .filter((invoice) => !transactionInvoiceIds.has(String(invoice._id)))
       .map((invoice) => {
-        const serviceName = getOrderDisplayName(invoice.orderId, null) || invoice.serviceName;
+        const serviceName = invoice.orderId?.productId?.serviceName || invoice.serviceName;
         const invoiceLabel = getInvoiceLabel(invoice);
         return {
           id: `invoice-${invoice._id}`,

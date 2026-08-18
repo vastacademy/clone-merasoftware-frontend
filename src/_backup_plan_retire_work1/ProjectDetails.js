@@ -6,7 +6,6 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { getOrderDisplayName } from '../helpers/orderPresentation';
 import SummaryApi from '../common';
 import TriangleMazeLoader from '../components/TriangleMazeLoader';
 import DashboardLayout from '../components/DashboardLayout';
@@ -597,7 +596,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
           isOpen={showAddServiceModal}
           onClose={() => setShowAddServiceModal(false)}
           projectOrderId={orderId}
-          projectName={getOrderDisplayName(order, 'your project')}
+          projectName={order?.productId?.serviceName || 'your project'}
           isProjectFinished={isProjectFinished}
           walletBalance={appContext?.walletBalance || 0}
           onPurchased={() => {
@@ -654,7 +653,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
 
             <div className="text-center">
               <h1 className={g('text-2xl font-bold tracking-tight text-black sm:text-3xl', 'text-2xl font-bold tracking-tight text-white sm:text-3xl lg:text-4xl')}>
-                {getOrderDisplayName(order)}
+                {order.productId?.serviceName}
               </h1>
               <p className={g('mt-1 text-base text-black', 'mt-1 text-base text-slate-300 sm:text-lg')}>
                 {order.productId?.category?.split('_').join(' ') || 'Project'}
@@ -1196,7 +1195,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
           isOpen={showAddServiceModal}
           onClose={() => setShowAddServiceModal(false)}
           projectOrderId={orderId}
-          projectName={getOrderDisplayName(order, 'your project')}
+          projectName={order?.productId?.serviceName || 'your project'}
           isProjectFinished={isProjectFinished}
           walletBalance={appContext?.walletBalance || 0}
           onPurchased={() => {

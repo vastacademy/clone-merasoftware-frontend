@@ -6,6 +6,29 @@
 import { isProjectItem, isPlanItem } from './orderType';
 import { isOrderApproved } from './orderVisibility';
 
+// The name to show for a purchased order, in order of trustworthiness.
+//
+// An order must never depend on its catalog product row still existing just to
+// render its own name — a plan that is retired (or was hard-deleted before that
+// existed) would otherwise blank out a customer's paid purchase history. Every
+// other purchase detail is already frozen on the order itself; the name is read
+// the same way:
+//   1. productId.serviceName        — the live template, while it exists
+//   2. servicePlanSnapshot.serviceName — frozen at purchase (service plans)
+//   3. orderItems[].name            — frozen at purchase (project orders)
+//
+// This is a display fallback only. It never changes what was bought or charged.
+export const getOrderDisplayName = (order, fallback = 'Untitled') => {
+  if (!order) return fallback;
+  return (
+    order.productId?.serviceName ||
+    order.servicePlanSnapshot?.serviceName ||
+    (order.orderItems || []).find((item) => item.type === 'main')?.name ||
+    order.orderItems?.[0]?.name ||
+    fallback
+  );
+};
+
 // Remaining validity days for a plan order. Monthly plans use currentMonthExpiryDate;
 // other plans derive from createdAt + validityPeriod.
 export const getRemainingDays = (order) => {

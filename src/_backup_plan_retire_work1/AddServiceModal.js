@@ -138,9 +138,6 @@ const AddServiceModal = ({
             product.category === 'service_plan' &&
             product.isServicePlan &&
             !product.isHidden &&
-            // Retired plans are already excluded server-side; filtered here too so a
-            // withdrawn plan can never be bought from a stale client payload.
-            !product.retiredAt &&
             getPriceOf(product) > 0
         );
         setPlans(servicePlans);

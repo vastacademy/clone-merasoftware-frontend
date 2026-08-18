@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import SummaryApi from '../common';
 import DashboardLayout from '../components/DashboardLayout';
+import { AnimatedSection } from '../components/PageMotion';
 import backgroundImage from '../assets/BG.png';
 import CustomerWorkspaceTabs from '../components/CustomerWorkspaceTabs';
 import OrderListRow, { OrderListHeader } from '../components/OrderListRow';
@@ -125,7 +126,7 @@ const ProjectsAndPlans = () => {
             </p>
           </div>
 
-          <div className="relative mt-10 overflow-hidden rounded-3xl border border-white/20 bg-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.25)] backdrop-blur-2xl backdrop-saturate-150">
+          <AnimatedSection className="relative mt-10 overflow-hidden rounded-3xl border border-white/20 bg-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.25)] backdrop-blur-2xl backdrop-saturate-150">
             <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/[0.12] to-transparent" />
 
             <div className="relative flex flex-col gap-3 border-b border-white/15 p-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:px-6">
@@ -200,7 +201,7 @@ const ProjectsAndPlans = () => {
                 </div>
               </div>
             )}
-          </div>
+          </AnimatedSection>
         </div>
       </div>
     </DashboardLayout>

@@ -147,7 +147,7 @@ Agreed in discussion. A reminder-only service changes no button and shows no cou
 
 | Area | State |
 |---|---|
-| Admin can create a service plan | ✅ `/admin-panel/website-management/plans/add` → `AdminCreatePlanPage.js` → `POST /api/admin/plans/create` → `createServicePlan.js` |
+| Admin can create a service | ✅ `/admin-panel/website-management/services/add` → `AdminCreateServicePage.js` → `POST /api/admin/services/create` → `createServicePlan.js`; admin selects one-time or recurring purchase |
 | Plans list | ✅ `/admin-panel/website-management/plans` |
 | Customer can browse | ✅ `/start-new-project` → "Service Plans" tab → `/service-plan-detail/:planId` |
 | Customer can buy one (wallet/UPI/combined) | ✅ `customerCreateServicePlanOrder.js` |
@@ -222,7 +222,7 @@ Ordered by dependency — each phase assumes the ones above it.
 
 ### Phase B — Admin create form + server validation
 
-`AdminCreatePlanPage.js` and `createServicePlan.js` must change **together** — the server already re-validates everything the form does, and that must stay true.
+`AdminCreateServicePage.js` and `createServicePlan.js` must change **together** — the server already re-validates everything the form does, and that must stay true.
 
 - Timing dropdown; dependency dropdown
 - Two checkboxes for capability, replacing the single behavior dropdown
@@ -304,7 +304,7 @@ The pre-existing, still-unbuilt work from `plansystem.md` §5.3 and §6. Read th
 - `routes/index.js` — routes + the boot-time multer config
 
 **Frontend**
-- `pages/AdminCreatePlanPage.js` — admin create form
+- `pages/AdminCreateServicePage.js` — admin create form
 - `pages/AdminPlanProductsPage.js` — admin plans list
 - `pages/ServicePlanDetail.js` — standalone purchase page
 - `components/AddServiceModal.js` — add-on picker opened from a project

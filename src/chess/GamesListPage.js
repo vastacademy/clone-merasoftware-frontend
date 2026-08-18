@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { ArrowRight, Gamepad2, Sparkles } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
+import { AnimatedSection, getStaggerDelay } from '../components/PageMotion';
 import backgroundImage from '../assets/BG.png';
 
 const GAMES = [
@@ -42,13 +43,12 @@ const GamesListPage = () => {
 
           <div className="mt-10 grid grid-cols-1 gap-6 sm:mt-12 sm:grid-cols-2 lg:grid-cols-3">
             {GAMES.map((game, index) => (
-              <button
-                key={game.id}
-                type="button"
-                onClick={() => navigate(game.to)}
-                style={{ animationDelay: `${index * 70}ms` }}
-                className="group animate-[fadeSlideUp_0.5s_ease-out_both] relative overflow-hidden rounded-3xl border border-white/20 bg-white/10 p-6 text-left shadow-[0_8px_32px_rgba(0,0,0,0.25)] backdrop-blur-2xl backdrop-saturate-150 transition-all duration-300 hover:-translate-y-1.5 hover:border-emerald-300/60 hover:bg-white/[0.16] hover:shadow-[0_24px_48px_rgba(16,185,129,0.28)] focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
-              >
+              <AnimatedSection key={game.id} delay={getStaggerDelay(index)}>
+                <button
+                  type="button"
+                  onClick={() => navigate(game.to)}
+                  className="group relative w-full overflow-hidden rounded-3xl border border-white/20 bg-white/10 p-6 text-left shadow-[0_8px_32px_rgba(0,0,0,0.25)] backdrop-blur-2xl backdrop-saturate-150 transition-all duration-300 hover:-translate-y-1.5 hover:border-emerald-300/60 hover:bg-white/[0.16] hover:shadow-[0_24px_48px_rgba(16,185,129,0.28)] focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+                >
                 <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/[0.15] to-transparent" />
                 <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-emerald-300/30 opacity-0 blur-3xl transition-opacity duration-500 group-hover:opacity-100" />
                 <div className="pointer-events-none absolute inset-0 rounded-3xl ring-1 ring-inset ring-white/10 transition-all duration-300 group-hover:ring-emerald-300/40" />
@@ -68,18 +68,13 @@ const GamesListPage = () => {
                   Play
                   <ArrowRight className="h-4 w-4" strokeWidth={2} />
                 </div>
-              </button>
+                </button>
+              </AnimatedSection>
             ))}
           </div>
         </div>
       </div>
 
-      <style>{`
-        @keyframes fadeSlideUp {
-          from { opacity: 0; transform: translateY(16px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
     </DashboardLayout>
   );
 };

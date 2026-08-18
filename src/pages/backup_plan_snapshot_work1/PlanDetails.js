@@ -185,9 +185,8 @@ const RequestHistoryItem = ({ request, isSelected, onSelect }) => {
   );
 };
 
-const PlanDetails = ({ isProjectServiceView = false }) => {
-  const { orderId: routeOrderId, projectOrderId, serviceOrderId } = useParams();
-  const orderId = serviceOrderId || routeOrderId;
+const PlanDetails = () => {
+  const { orderId } = useParams();
   const navigate = useNavigate();
   const user = useSelector((state) => state?.user?.user);
   const [timelineExpanded, setTimelineExpanded] = useState(false);
@@ -249,7 +248,7 @@ const PlanDetails = ({ isProjectServiceView = false }) => {
   }, [fetchPlanDetails]);
 
   const handleBack = () => {
-    navigate(isProjectServiceView && projectOrderId ? `/project-details/${projectOrderId}` : '/projects-and-plans');
+    navigate('/projects-and-plans');
   };
   const handleStopRenewal = async () => {
     try {
@@ -297,21 +296,6 @@ const PlanDetails = ({ isProjectServiceView = false }) => {
   const status = getPlanVisualStatus(plan);
   const selectedRequest = requests.find((r) => r._id === selectedRequestId) || null;
 
-  // What the customer bought is recorded ON THEIR ORDER, not only on the plan template:
-  // orderItems[] snapshots the name/price at purchase time and servicePlanSnapshot freezes the
-  // config (see orderProductModel.js). So when the admin retires a plan template, the order still
-  // knows everything about itself — the plan is a catalogue entry, the order is the contract.
-  // Reading productId FIRST keeps behaviour identical while the template exists; the snapshot is
-  // the fallback that keeps a retired plan's purchase fully readable instead of showing blanks.
-  const purchasedName =
-    product.serviceName ||
-    (plan.orderItems || []).find((item) => item.type === 'main')?.name ||
-    plan.orderItems?.[0]?.name ||
-    'Plan';
-
-  const purchasedCategory =
-    product.category || (plan.isServicePlan ? plan.servicePlanSnapshot?.planType : null);
-
   const totalUpdates = status.isRecurring
     ? (plan.currentMonthUpdatesLimit || product.monthlyUpdateLimit || 1)
     : (product.updateCount || 0);
@@ -342,14 +326,14 @@ const PlanDetails = ({ isProjectServiceView = false }) => {
             <div className="text-center">
               <div className="flex flex-wrap items-center justify-center gap-3">
                 <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl lg:text-4xl">
-                  {purchasedName}
+                  {product.serviceName}
                 </h1>
                 <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${BADGE_TONE_CLASSES[status.tone]}`}>
                   {status.badge}
                 </span>
               </div>
               <p className="mt-1 text-base text-slate-300 sm:text-lg">
-                {isProjectServiceView ? 'Service linked to this project' : (purchasedCategory?.split('_').join(' ') || 'Plan')}
+                {product.category?.split('_').join(' ') || 'Plan'}
               </p>
             </div>
           </div>

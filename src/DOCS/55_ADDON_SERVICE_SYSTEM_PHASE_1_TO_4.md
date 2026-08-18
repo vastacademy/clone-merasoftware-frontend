@@ -156,7 +156,7 @@ So one UPI payment covering N new service orders would settle exactly one of the
 - **No recurring billing.** A multi-year or monthly cadence is stored and displayed but only the **first** payment is ever collected. Cycle 2+ invoices do not exist. See `plansystem.md` §6 for the (still unbuilt) design.
 - **No reminder delivery** for `reminder_only` services — the behavior is recorded, nothing sends anything.
 - **Cart "Pay Now" remains a stub** (`DraftOrderSavedDrawer.js`) — untouched this session; the service-plan page now bypasses the cart entirely.
-- **Multi-service UPI / combined payment.** Bulk purchase is wallet-only by design (§6b) — buying several services at once with UPI needs the approval engine to support one transaction settling many orders, which is a deliberate future decision, not an oversight.
+- ~~**Multi-service UPI / combined payment.**~~ **Built in `58_SERVICE_HYBRID_PAYMENT_PARENT_CHILD.md`.** Bulk purchase now accepts wallet/UPI/combined via a parent-child transaction model (one parent the admin approves, one child per service carrying its own order/invoice). The wallet-only reasoning in §6b remains an accurate record of why it was deferred, but the constraint is now solved — read doc 58 before assuming this path is wallet-only.
 - **No admin UI** to view/pause/cancel a customer's live service, or to see which services are attached to a project.
 - **Legacy plan system untouched**, as in every prior phase.
 

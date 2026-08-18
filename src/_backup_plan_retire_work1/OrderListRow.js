@@ -6,7 +6,6 @@ import {
   getItemSummary,
   getItemTypeLabel,
   getItemTypeAccent,
-  getOrderDisplayName,
 } from '../helpers/orderPresentation';
 
 const formatDate = (date) => {
@@ -72,9 +71,13 @@ const OrderListRow = ({ order, index = 0, onClick }) => {
               )}
             </div>
             <h3 className="mt-2 truncate text-lg font-semibold text-white">
-              {/* Shared SSOT: productId while it exists, else the name frozen on the order
-                  itself, so a retired or deleted plan never blanks a purchase history row. */}
-              {getOrderDisplayName(order)}
+              {/* orderItems[] snapshots the purchased name on the order itself, so a retired
+                  (deleted) plan template still shows what the customer actually bought instead
+                  of collapsing to 'Untitled'. productId is read first: unchanged while it exists. */}
+              {order.productId?.serviceName ||
+                (order.orderItems || []).find((item) => item.type === 'main')?.name ||
+                order.orderItems?.[0]?.name ||
+                'Untitled'}
             </h3>
             <p className="mt-1 truncate text-sm text-slate-300">{category}</p>
             <p className="mt-2 text-sm text-slate-300 sm:hidden">

@@ -12,7 +12,6 @@ import {
   BadgeCheck,
 } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
-import { AnimatedSection, getStaggerDelay } from '../components/PageMotion';
 import backgroundImage from '../assets/BG.png';
 import SummaryApi from '../common';
 import Context from '../context';
@@ -20,7 +19,7 @@ import OrderListRow, { OrderListHeader } from '../components/OrderListRow';
 import displayINRCurrency from '../helpers/displayCurrency';
 import { isOrderApproved } from '../helpers/orderVisibility';
 import { isProjectItem, isPlanItem, sortItemsLatestFirst } from '../helpers/orderType';
-import { getRemainingDays, getOrderDisplayName } from '../helpers/orderPresentation';
+import { getRemainingDays } from '../helpers/orderPresentation';
 
 const getItemLink = (order) =>
   isPlanItem(order) ? `/plan-details/${order._id}` : `/project-details/${order._id}`;
@@ -231,16 +230,46 @@ const CustomerDashboard = () => {
           </div>
 
           <div className="mt-10 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <AnimatedSection delay={getStaggerDelay(0)}><MetricCard
+            <MetricCard
               icon={LayoutDashboard}
               label={primaryWorkItem ? 'Live project' : 'Start New Project'}
-              value={primaryWorkItem ? getOrderDisplayName(primaryWorkItem, 'Active work') : primaryAction.label}
-              helper={primaryWorkItem ? activeWorkItemsCount > 1 ? `${activeWorkItemsCount} active items` : primaryAction.label : 'No active project running'}
-              tone="emerald" to={primaryAction.to} highlight={!primaryWorkItem}
-            /></AnimatedSection>
-            <AnimatedSection delay={getStaggerDelay(1)}><MetricCard icon={Wallet} label="Wallet balance" value={displayINRCurrency(context?.walletBalance || 0)} helper="Available wallet amount" tone="emerald" /></AnimatedSection>
-            <AnimatedSection delay={getStaggerDelay(2)}><MetricCard icon={BadgeCheck} label="Completed items" value={String(completedCount)} helper="Finished projects and closed plans" tone="blue" /></AnimatedSection>
-            <AnimatedSection delay={getStaggerDelay(3)}><MetricCard icon={TriangleAlert} label="Open alerts" value={String(pendingApprovalCount + rejectedCount)} helper="Pending approvals and rejected payments" tone="violet" /></AnimatedSection>
+              value={
+                primaryWorkItem
+                  ? primaryWorkItem.productId?.serviceName || 'Active work'
+                  : primaryAction.label
+              }
+              helper={
+                primaryWorkItem
+                  ? activeWorkItemsCount > 1
+                    ? `${activeWorkItemsCount} active items`
+                    : primaryAction.label
+                  : 'No active project running'
+              }
+              tone="emerald"
+              to={primaryAction.to}
+              highlight={!primaryWorkItem}
+            />
+            <MetricCard
+              icon={Wallet}
+              label="Wallet balance"
+              value={displayINRCurrency(context?.walletBalance || 0)}
+              helper="Available wallet amount"
+              tone="emerald"
+            />
+            <MetricCard
+              icon={BadgeCheck}
+              label="Completed items"
+              value={String(completedCount)}
+              helper="Finished projects and closed plans"
+              tone="blue"
+            />
+            <MetricCard
+              icon={TriangleAlert}
+              label="Open alerts"
+              value={String(pendingApprovalCount + rejectedCount)}
+              helper="Pending approvals and rejected payments"
+              tone="violet"
+            />
           </div>
 
           <div className="relative mt-10 overflow-hidden rounded-3xl border border-white/20 bg-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.25)] backdrop-blur-2xl backdrop-saturate-150">

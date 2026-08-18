@@ -30,7 +30,7 @@ const AdminCreateServicePage = () => {
   const [form, setForm] = useState({
     serviceName: "", serviceType: "", timing: "", dependency: "", visibility: "visible",
     controlsUpload: false, sendsReminders: false, accessScope: "", uploadAttempts: "", filesPerUpload: "",
-    monthlyReferencePrice: "",
+    purchaseType: "recurring", monthlyReferencePrice: "", oneTimePrice: "",
     billing: Object.fromEntries(BILLING_OPTIONS.map((option) => [option.id, { enabled: false, discount: "0" }])),
   });
   const update = (field, value) => setForm((current) => ({ ...current, [field]: value }));
@@ -41,6 +41,7 @@ const AdminCreateServicePage = () => {
     controlsUpload: value === "upload",
     sendsReminders: value === "reminders",
   }));
+  const isOneTimeService = form.purchaseType === "one_time";
   const enabledBillingOptions = useMemo(() => BILLING_OPTIONS.filter((option) => form.billing[option.id]?.enabled), [form.billing]);
   const getOptionPrice = (option) => {
     const referencePrice = Number(form.monthlyReferencePrice || 0);
@@ -55,22 +56,28 @@ const AdminCreateServicePage = () => {
     if (!form.serviceName.trim() || !form.serviceType || !form.dependency || !capability) return toast.error("Complete all required service details.");
     if (form.dependency !== "standalone_only" && !form.timing) return toast.error("Select when this project-linked service can work.");
     if (form.controlsUpload && (!form.accessScope || !form.filesPerUpload || (form.accessScope !== "unlimited" && !form.uploadAttempts))) return toast.error("Complete the upload limits.");
-    if (Number(form.monthlyReferencePrice) < 0 || form.monthlyReferencePrice === "") return toast.error("Enter a valid monthly reference price.");
-    if (!enabledBillingOptions.length) return toast.error("Enable at least one customer billing option.");
+    if (isOneTimeService) {
+      if (!(Number(form.oneTimePrice) > 0)) return toast.error("Enter a one-time price greater than zero.");
+    } else {
+      if (Number(form.monthlyReferencePrice) < 0 || form.monthlyReferencePrice === "") return toast.error("Enter a valid monthly reference price.");
+      if (!enabledBillingOptions.length) return toast.error("Enable at least one customer billing option.");
+    }
     try {
       setIsSaving(true);
-      const response = await fetch(SummaryApi.createServicePlan.url, {
-        method: SummaryApi.createServicePlan.method,
+      const response = await fetch(SummaryApi.createService.url, {
+        method: SummaryApi.createService.method,
         credentials: "include",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           serviceName: form.serviceName, planType: form.serviceType, timing: form.dependency === "standalone_only" ? undefined : form.timing,
           dependency: form.dependency, capability: form.controlsUpload ? "upload_data" : "send_reminders", visibility: form.visibility,
+          purchaseType: form.purchaseType,
           limitScope: form.controlsUpload ? form.accessScope : undefined,
           portalAccessCount: form.controlsUpload && form.accessScope !== "unlimited" ? Number(form.uploadAttempts) : undefined,
           filesLimit: form.controlsUpload ? Number(form.filesPerUpload) : undefined,
-          monthlyReferencePrice: Number(form.monthlyReferencePrice),
-          billingOptions: enabledBillingOptions.map((option) => ({ billingCycle: option.id, discountPercent: Number(form.billing[option.id].discount || 0) })),
+          oneTimePrice: isOneTimeService ? Number(form.oneTimePrice) : undefined,
+          monthlyReferencePrice: isOneTimeService ? undefined : Number(form.monthlyReferencePrice),
+          billingOptions: isOneTimeService ? [] : enabledBillingOptions.map((option) => ({ billingCycle: option.id, discountPercent: Number(form.billing[option.id].discount || 0) })),
           description: descriptionRef.current,
         }),
       });
@@ -111,9 +118,9 @@ const AdminCreateServicePage = () => {
             </section>
 
             <section className={sectionClass}>
-              <div className="flex flex-wrap items-center justify-between gap-2"><p className="text-sm font-bold uppercase tracking-wide text-slate-500">4. Customer billing options</p><span className="text-xs text-slate-500">Customer sees only enabled options.</span></div>
-              <div className="mt-3 grid gap-3 md:grid-cols-3"><label><span className={labelClass}>Monthly Reference Price</span><input className={inputClass} type="number" min="0" value={form.monthlyReferencePrice} onChange={(event) => update("monthlyReferencePrice", event.target.value)} placeholder="e.g. 1000" /></label><div className="md:col-span-2 rounded-xl border border-sky-200 bg-sky-50 px-3 py-2.5 text-xs leading-5 text-sky-900"><Calculator className="mr-1 inline h-3.5 w-3.5" />Final price = monthly reference price × months − admin discount.</div></div>
-              <div className="mt-3 grid gap-2 xl:grid-cols-2">
+              <div className="flex flex-wrap items-center justify-between gap-2"><p className="text-sm font-bold uppercase tracking-wide text-slate-500">4. Purchase and billing</p><span className="text-xs text-slate-500">Choose how often a customer can be charged.</span></div>
+              <div className="mt-3 grid gap-3 md:grid-cols-2"><label><span className={labelClass}>Purchase type</span><select className={inputClass} value={form.purchaseType} onChange={(event) => update("purchaseType", event.target.value)}><option value="recurring">Recurring service</option><option value="one_time">One-time service</option></select></label>{isOneTimeService ? <label><span className={labelClass}>One-time price</span><input className={inputClass} type="number" min="1" value={form.oneTimePrice} onChange={(event) => update("oneTimePrice", event.target.value)} placeholder="e.g. 2500" /></label> : <><label><span className={labelClass}>Monthly Reference Price</span><input className={inputClass} type="number" min="0" value={form.monthlyReferencePrice} onChange={(event) => update("monthlyReferencePrice", event.target.value)} placeholder="e.g. 1000" /></label><div className="rounded-xl border border-sky-200 bg-sky-50 px-3 py-2.5 text-xs leading-5 text-sky-900"><Calculator className="mr-1 inline h-3.5 w-3.5" />Final price = monthly reference price × months − admin discount.</div></>}</div>
+              {isOneTimeService ? <p className="mt-3 text-sm text-slate-500">Customer pays this price once. No billing period, renewal, or future invoice is created.</p> : <div className="mt-3 grid gap-2 xl:grid-cols-2">
                 {BILLING_OPTIONS.map((option) => {
                   const isEnabled = form.billing[option.id].enabled;
                   return (
@@ -125,8 +132,8 @@ const AdminCreateServicePage = () => {
                     </div>
                   );
                 })}
-              </div>
-              <p className="mt-2 text-xs text-slate-500">Enabled: {enabledBillingOptions.length || "none"}. Customer duration and advance-payment selection will use these options in the next wiring phase.</p>
+              </div>}
+              {!isOneTimeService && <p className="mt-2 text-xs text-slate-500">Enabled: {enabledBillingOptions.length || "none"}. Customer duration and advance-payment selection will use these options in the next wiring phase.</p>}
             </section>
 
             <section className={sectionClass}><span className={labelClass}>Description / Specifications</span><RichTextEditor onChange={handleDescriptionChange} placeholder="Describe what this service includes" wrapperClassName="bg-white" /></section>

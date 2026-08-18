@@ -6,6 +6,7 @@ import DashboardLayout from '../components/DashboardLayout';
 import backgroundImage from '../assets/BG.png';
 import CustomerWorkspaceTabs from '../components/CustomerWorkspaceTabs';
 import SummaryApi from '../common';
+import GlassPageState from '../components/GlassPageState';
 
 const CATEGORY_STYLE = {
   standard_websites: { icon: Globe, color: 'text-blue-600' },
@@ -56,13 +57,24 @@ const StartNewProject = () => {
 
   const [view, setView] = useState(requestedTab && TAB_CATEGORIES[requestedTab] ? requestedTab : 'websites');
   const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
 
   useEffect(() => {
     const fetchProducts = async () => {
-      const response = await fetch(SummaryApi.allProduct.url);
-      const dataResponse = await response.json();
-      const allProducts = dataResponse?.data || [];
-      setProjects(allProducts.filter((product) => !EXCLUDED_CATEGORIES.includes(product.category)));
+      try {
+        setLoading(true);
+        setLoadError('');
+        const response = await fetch(SummaryApi.allProduct.url);
+        if (!response.ok) throw new Error('Could not load the catalogue');
+        const dataResponse = await response.json();
+        const allProducts = dataResponse?.data || [];
+        setProjects(allProducts.filter((product) => !EXCLUDED_CATEGORIES.includes(product.category)));
+      } catch (error) {
+        setLoadError(error.message || 'Could not load the catalogue.');
+      } finally {
+        setLoading(false);
+      }
     };
     fetchProducts();
   }, []);
@@ -88,13 +100,15 @@ const StartNewProject = () => {
   return (
     <DashboardLayout user={user}>
       <div
-        className="min-h-full bg-slate-950 bg-cover bg-center px-4 py-5 sm:px-6 lg:px-8 lg:py-8"
+        className="relative min-h-[calc(100vh-4rem)] overflow-hidden bg-slate-950 bg-cover bg-center px-4 py-8 sm:px-6 lg:px-8 lg:py-12"
         style={{ backgroundImage: `url(${backgroundImage})` }}
       >
-        <section className="mx-auto max-w-7xl rounded-[2rem] border border-slate-200 bg-white/95 shadow-[0_25px_80px_-35px_rgba(15,23,42,0.35)] backdrop-blur">
-          <div className="rounded-t-[2rem] bg-gradient-to-r from-slate-950 via-slate-900 to-blue-950 px-5 py-5 text-white sm:px-6 lg:px-8">
+        <div className="pointer-events-none absolute inset-0 bg-slate-950/40" />
+        <section className="relative mx-auto max-w-7xl overflow-hidden rounded-[2rem] border border-white/20 bg-white/10 shadow-[0_25px_80px_-35px_rgba(0,0,0,0.55)] backdrop-blur-2xl backdrop-saturate-150">
+          <div className="relative bg-slate-950/45 px-5 py-5 text-white sm:px-6 lg:px-8">
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/[0.14] to-transparent" />
             <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-              <div className="max-w-3xl">
+              <div className="relative max-w-3xl">
                 <div className="inline-flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-sm font-semibold uppercase text-emerald-300">
                   <Sparkles className="h-3.5 w-3.5" />
                   Start New Project
@@ -107,7 +121,7 @@ const StartNewProject = () => {
                 </p>
               </div>
 
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="relative flex flex-wrap items-center gap-2">
                 <div className="rounded-2xl border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-white">
                   Total: {projects.length}
                 </div>
@@ -120,16 +134,21 @@ const StartNewProject = () => {
             activeTab={view}
             onChange={setView}
             ariaLabel="Start new project categories"
+            variant="inline"
           />
 
-          <div className="border-t border-slate-200">
-            <div className="grid grid-cols-12 gap-3 border-b border-slate-200 px-5 py-3 text-sm font-semibold text-black sm:px-6">
+          <div className="border-t border-white/15">
+            <div className="grid grid-cols-12 gap-3 border-b border-white/15 bg-white/5 px-5 py-3 text-sm font-semibold text-white sm:px-6">
               <div className="col-span-8 lg:col-span-10">Project</div>
               <div className="col-span-4 lg:col-span-2 text-right">Open</div>
             </div>
 
-            {visibleProjects.length > 0 ? (
-              <div className="divide-y divide-slate-200">
+            {loading ? (
+              <div className="p-5 sm:p-6"><GlassPageState message="Loading projects and services…" /></div>
+            ) : loadError ? (
+              <div className="p-5 sm:p-6"><GlassPageState type="error" message={loadError} onRetry={() => window.location.reload()} /></div>
+            ) : visibleProjects.length > 0 ? (
+              <div className="divide-y divide-white/10">
                 {visibleProjects.map((project, index) => {
                   const style = CATEGORY_STYLE[project.category] || CATEGORY_STYLE.standard_websites;
                   const Icon = style.icon;
@@ -149,43 +168,43 @@ const StartNewProject = () => {
                       }
                       className={[
                         'grid w-full grid-cols-12 gap-3 px-5 py-4 text-left transition hover:bg-slate-100 sm:px-6',
-                        index % 2 === 0 ? 'bg-white' : 'bg-slate-50',
+                        index % 2 === 0 ? 'bg-white/[0.04]' : 'bg-white/[0.08]',
                       ].join(' ')}
                     >
                       <div className="col-span-8 lg:col-span-10">
                         <div className="flex items-start gap-3">
-                          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-slate-100">
+                          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/15 bg-white/10">
                             <Icon className={`h-5 w-5 ${style.color}`} />
                           </div>
                           <div className="min-w-0">
-                            <h3 className="truncate text-lg font-semibold text-black">
+                            <h3 className="truncate text-lg font-semibold text-white">
                               {project.serviceName}
                               {['standard_websites', 'dynamic_websites'].includes(project.category) && project.totalPages > 0 && (
-                                <span className="ml-2 text-sm font-medium text-slate-500">
+                                  <span className="ml-2 text-sm font-medium text-slate-300">
                                   ({project.totalPages} pages)
                                 </span>
                               )}
                             </h3>
                             {project.category === 'dynamic_websites' && project.packageIncludes?.[0] && (
-                              <p className="mt-0.5 text-sm font-medium text-emerald-700">
+                              <p className="mt-0.5 text-sm font-medium text-emerald-200">
                                 {project.packageIncludes[0]}
                               </p>
                             )}
-                            <p className="mt-1 line-clamp-2 text-sm text-black">{description}</p>
+                            <p className="mt-1 line-clamp-2 text-sm text-slate-300">{description}</p>
                           </div>
                         </div>
                       </div>
 
                       <div className="col-span-4 flex items-center justify-end gap-2 lg:col-span-2">
-                        <span className="text-base font-semibold text-black">View Details</span>
-                        <ArrowRight className="h-4 w-4 text-slate-400" />
+                        <span className="text-base font-semibold text-white">View Details</span>
+                        <ArrowRight className="h-4 w-4 text-slate-300" />
                       </div>
                     </button>
                   );
                 })}
               </div>
             ) : (
-              <div className="px-5 py-10 text-center text-base text-black sm:px-6">No projects found.</div>
+              <div className="px-5 py-10 text-center text-base text-slate-300 sm:px-6">No projects found.</div>
             )}
           </div>
         </section>

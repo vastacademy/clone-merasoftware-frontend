@@ -9,7 +9,6 @@ import CookieManager from "../utils/cookieManager";
 import StorageService from "../utils/storageService";
 import AdminLayout from "../components/AdminLayout";
 import AdminWorkspaceShell, { AdminWorkspaceHeader } from "../components/admin/AdminWorkspaceShell";
-import AdminWorkspaceTabs from "../components/admin/AdminWorkspaceTabs";
 import AdminWorkspaceList from "../components/admin/AdminWorkspaceList";
 import AdminFilterDropdown from "../components/admin/AdminFilterDropdown";
 
@@ -66,10 +65,8 @@ const AdminPlanProductsPage = () => {
   const [sortBy, setSortBy] = useState("dateAdded");
   const [groupBy, setGroupBy] = useState("none");
   const [changingServiceId, setChangingServiceId] = useState("");
-  // Retired plans live in their own tab rather than mixed into the active list —
-  // they are a separate archive, not a filtered view of the working catalogue.
-  const [activeTab, setActiveTab] = useState("active");
-  const showRetired = activeTab === "retired";
+  // Retired plans are kept forever but stay out of the working list until asked for.
+  const [showRetired, setShowRetired] = useState(false);
   // Removal is a two-step confirm: the modal states what will actually happen,
   // which depends on whether anyone has bought the plan.
   const [removeTarget, setRemoveTarget] = useState(null);
@@ -208,9 +205,7 @@ const AdminPlanProductsPage = () => {
 
   const visiblePlans = useMemo(() => {
     const query = searchTerm.trim().toLowerCase();
-    // The Retired tab requests includeRetired=true, which returns active AND retired
-    // rows, so each tab still has to narrow to its own set.
-    let result = plans.filter((plan) => (showRetired ? Boolean(plan.retiredAt) : !plan.retiredAt));
+    let result = plans;
 
     if (query) {
       result = result.filter((plan) => (
@@ -240,7 +235,7 @@ const AdminPlanProductsPage = () => {
 
       return getTimestamp(right.createdAt) - getTimestamp(left.createdAt) || getPlanName(left).localeCompare(getPlanName(right));
     });
-  }, [plans, searchTerm, sortBy, showRetired]);
+  }, [plans, searchTerm, sortBy]);
 
   const displayRows = useMemo(() => {
     if (groupBy === "none") {
@@ -313,18 +308,6 @@ const AdminPlanProductsPage = () => {
           }
         />
 
-        {/* Retired plans get their own tab: they are an archive of withdrawn
-            catalogue entries, kept forever, not a filter over the working list. */}
-        <AdminWorkspaceTabs
-          tabs={[
-            { id: "active", label: "Active Plans" },
-            { id: "retired", label: "Retired Plans" },
-          ]}
-          activeTab={activeTab}
-          onChange={setActiveTab}
-          ariaLabel="Plan catalogue sections"
-        />
-
         <div className="border-b border-slate-200 bg-white px-5 py-4 sm:px-6">
           <div className="flex flex-wrap justify-start gap-2">
             <button
@@ -374,7 +357,7 @@ const AdminPlanProductsPage = () => {
               { label: "Open", className: "col-span-6 text-right lg:col-span-1" },
             ]}
             loading={loading}
-            emptyText={showRetired ? "No retired plans. Removing a plan customers have bought will file it here." : "No plans found."}
+            emptyText="No plans found."
             items={displayRows}
             footer={`Showing ${visiblePlans.length} of ${plans.length} plans`}
             renderRow={(row) => row.kind === "group" ? (
@@ -458,6 +441,16 @@ const AdminPlanProductsPage = () => {
               })()
             )}
           />
+        </div>
+        {/* Retired plans are kept forever, so they need a way back into view. */}
+        <div className="mt-4 flex justify-end">
+          <button
+            type="button"
+            onClick={() => setShowRetired((current) => !current)}
+            className="text-xs font-semibold text-slate-600 underline-offset-2 hover:underline"
+          >
+            {showRetired ? "Hide retired plans" : "Show retired plans"}
+          </button>
         </div>
       </AdminWorkspaceShell>
 
