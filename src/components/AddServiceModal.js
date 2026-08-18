@@ -10,8 +10,7 @@ import SummaryApi from '../common';
 // still visible behind the overlay), so no "which project am I buying for?"
 // banner or back-navigation context needs to be carried anywhere.
 //
-// Payment is hybrid — wallet, UPI, or both — using the same two-step shape the
-// project-start flow uses (StartNewWebsiteCustomize.js): if the wallet covers the
+// Payment is hybrid — wallet, UPI, or both — using the same two-step service purchase shape: if the wallet covers the
 // total, pay instantly; otherwise show a QR for the REMAINDER only and collect the
 // 12-digit UPI reference.
 //

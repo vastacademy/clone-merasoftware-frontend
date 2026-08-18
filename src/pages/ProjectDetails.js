@@ -657,7 +657,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
                 {getOrderDisplayName(order)}
               </h1>
               <p className={g('mt-1 text-base text-black', 'mt-1 text-base text-slate-300 sm:text-lg')}>
-                {order.productId?.category?.split('_').join(' ') || 'Project'}
+                {order.projectSnapshot?.category?.split('_').join(' ') || order.productId?.category?.split('_').join(' ') || 'Project'}
               </p>
             </div>
           </div>

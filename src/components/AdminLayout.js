@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   BarChart3,
-  BriefcaseBusiness,
   IndianRupee,
   Layers3,
   ListChecks,
@@ -23,12 +22,11 @@ export const adminSidebarModules = [
   { id: "leads", label: "Leads", icon: UserPlus, live: true, to: "/admin-panel/leads" },
   { id: "clients", label: "Clients", icon: Users2, live: true, to: "/admin-panel/clients" },
   {
-    id: "website-management",
-    label: "Website Management",
+    id: "service-management",
+    label: "Services",
     icon: PanelsTopLeft,
     group: true,
     children: [
-      { id: "projects", label: "Projects", icon: BriefcaseBusiness, live: true, to: "/admin-panel/website-management/projects" },
       { id: "plans", label: "Plans", icon: Layers3, live: true, to: "/admin-panel/website-management/plans" },
     ],
   },
@@ -72,7 +70,7 @@ const AdminLayout = ({
     { to: "/admin-panel/dashboard", label: "Dashboard", icon: BarChart3, active: currentPath === "/admin-panel/dashboard" },
     { to: "/admin-panel/leads", label: "Leads", icon: UserPlus, active: currentPath.startsWith("/admin-panel/leads") },
     { to: "/admin-panel/clients", label: "Clients", icon: Users2, active: currentPath.startsWith("/admin-panel/clients") },
-    { to: "/admin-panel/website-management/projects", label: "Projects", icon: BriefcaseBusiness, active: currentPath.startsWith("/admin-panel/website-management/projects") },
+    { to: "/admin-panel/website-management/plans", label: "Services", icon: Layers3, active: currentPath.startsWith("/admin-panel/website-management") },
   ];
 
   const sidebarContent = (

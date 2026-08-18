@@ -199,7 +199,7 @@ const CustomerDashboard = () => {
       return { label: `${activePlans.length} Active Plans`, to: '/projects-and-plans' };
     }
 
-    return { label: 'Start New Project', to: '/start-new-project' };
+    return { label: 'Explore Services', to: '/start-new-project' };
   })();
 
   useEffect(() => {
@@ -233,9 +233,9 @@ const CustomerDashboard = () => {
           <div className="mt-10 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <AnimatedSection delay={getStaggerDelay(0)}><MetricCard
               icon={LayoutDashboard}
-              label={primaryWorkItem ? 'Live project' : 'Start New Project'}
+              label={primaryWorkItem ? 'Live project' : 'Services'}
               value={primaryWorkItem ? getOrderDisplayName(primaryWorkItem, 'Active work') : primaryAction.label}
-              helper={primaryWorkItem ? activeWorkItemsCount > 1 ? `${activeWorkItemsCount} active items` : primaryAction.label : 'No active project running'}
+              helper={primaryWorkItem ? activeWorkItemsCount > 1 ? `${activeWorkItemsCount} active items` : primaryAction.label : 'No active work running'}
               tone="emerald" to={primaryAction.to} highlight={!primaryWorkItem}
             /></AnimatedSection>
             <AnimatedSection delay={getStaggerDelay(1)}><MetricCard icon={Wallet} label="Wallet balance" value={displayINRCurrency(context?.walletBalance || 0)} helper="Available wallet amount" tone="emerald" /></AnimatedSection>
@@ -292,7 +292,7 @@ const CustomerDashboard = () => {
                 </div>
                 <h3 className="mt-4 text-lg font-semibold text-white">No projects or plans yet</h3>
                 <p className="mt-2 text-base text-slate-300">
-                  Start a new project from the dashboard and the latest tracking info will show here.
+                  Your admin-created projects and purchased services will appear here.
                 </p>
                 <div className="mt-5">
                   <Link
@@ -300,7 +300,7 @@ const CustomerDashboard = () => {
                     className="inline-flex items-center gap-2 rounded-2xl bg-white px-4 py-3 text-base font-semibold text-slate-900 transition hover:bg-slate-100"
                   >
                     <PlusCircle className="h-4 w-4" />
-                    Start New Project
+                    Explore Services
                   </Link>
                 </div>
               </div>

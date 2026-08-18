@@ -103,8 +103,7 @@ const ServicePlanDetail = () => {
   const [loaded, setLoaded] = useState(false);
   const [loadError, setLoadError] = useState('');
 
-  // In-page payment step — same proven wallet/UPI pattern as
-  // StartNewWebsiteCustomize.js: the order and its payment are created together
+  // In-page payment step: the order and its payment are created together
   // in one backend call, so a payment-less order can never exist.
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showQR, setShowQR] = useState(false);
@@ -137,7 +136,7 @@ const ServicePlanDetail = () => {
     fetchPlan();
   }, [planId]);
 
-  const handleBack = () => navigate('/start-new-project?tab=plans');
+  const handleBack = () => navigate('/start-new-project/services?tab=services');
 
   const generateTransactionId = () =>
     `SVC${Date.now()}${Math.floor(Math.random() * 10000)}`;

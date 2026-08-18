@@ -41,10 +41,6 @@ const SummaryApi = {
         url : `${backendDomain}/api/admin/clients`,
         method : "get"
     },
-    adminProjectProducts : {
-        url : `${backendDomain}/api/admin/project-products`,
-        method : "get"
-    },
     adminFeatureProducts : {
         url : `${backendDomain}/api/admin/feature-products`,
         method : "get"
@@ -88,18 +84,6 @@ const SummaryApi = {
     getAllProducts: {
       url : `${backendDomain}/api/all-products`,
       method : "get"
-    },
-    perfectForSuggestionsSearch : {
-        url : `${backendDomain}/api/perfect-for-suggestions`,
-        method : "get"
-    },
-    perfectForSuggestionSaveOrIncrement : {
-        url : `${backendDomain}/api/perfect-for-suggestions/save-or-increment`,
-        method : "post"
-    },
-    perfectForSuggestionDelete : {
-        url : `${backendDomain}/api/perfect-for-suggestions`,
-        method : "delete"
     },
     updateProduct : {
         url : `${backendDomain}/api/update-product`,
@@ -181,10 +165,6 @@ const SummaryApi = {
         url : `${backendDomain}/api/create-order`,
         method: "post"
     },
-    createCustomProjectOrder : {
-        url : `${backendDomain}/api/customer/custom-project-order`,
-        method: "post"
-    },
     createServicePlanOrder : {
         url : `${backendDomain}/api/customer/service-plan-order`,
         method: "post"
@@ -196,10 +176,6 @@ const SummaryApi = {
     stopServiceRenewal : {
         url : `${backendDomain}/api/customer/service-plan/stop-renewal`,
         method: "post"
-    },
-    customerCategoryBasePrice : {
-        url : `${backendDomain}/api/customer/category-base-price`,
-        method: "get"
     },
     ordersList : {
         url : `${backendDomain}/api/get-order`,

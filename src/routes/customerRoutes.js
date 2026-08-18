@@ -18,8 +18,6 @@ import ProjectsAndPlans from "../pages/ProjectsAndPlans";
 import StartNewProject from "../pages/StartNewProject";
 import StartProject from "../pages/startproject";
 import StartNewProjectDetail from "../pages/StartNewProjectDetail";
-import StartNewWebsiteBuild from "../pages/StartNewWebsiteBuild";
-import StartNewWebsiteCustomize from "../pages/StartNewWebsiteCustomize";
 import ServicePlanDetail from "../pages/ServicePlanDetail";
 import GamesListPage from "../chess/GamesListPage";
 import ChessPage from "../chess/ChessPage";
@@ -78,22 +76,6 @@ export const customerRoutes = [
     element: (
       <CustomerProtectedRoute>
         <StartNewProjectDetail/>
-      </CustomerProtectedRoute>
-    )
-  },
-  {
-    path: "start-new-project/build/new_website",
-    element: (
-      <CustomerProtectedRoute>
-        <StartNewWebsiteBuild/>
-      </CustomerProtectedRoute>
-    )
-  },
-  {
-    path: "start-new-project/build/new_website/customize",
-    element: (
-      <CustomerProtectedRoute>
-        <StartNewWebsiteCustomize/>
       </CustomerProtectedRoute>
     )
   },

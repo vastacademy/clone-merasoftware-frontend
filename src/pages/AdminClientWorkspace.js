@@ -75,6 +75,12 @@ const formatDateTime = (value) => {
 const isWebsiteUpdateOrder = (order) =>
   Boolean(order?.productId?.isWebsiteUpdate || order?.productId?.category?.toLowerCase() === "website_updates");
 
+const getWorkspaceItemName = (item) =>
+  item?.projectSnapshot?.displayName || item?.productId?.serviceName || "N/A";
+
+const getProjectCategory = (order) =>
+  order?.projectSnapshot?.category || order?.productId?.category;
+
 const isCompletedOrder = (order) =>
   (order?.projectProgress || 0) >= 100 ||
   order?.currentPhase === "completed" ||
@@ -1028,7 +1034,7 @@ const AdminClientWorkspace = () => {
                   </button>
                 }
                 renderMeta={(order) => [
-                  `Category: ${getCategoryLabel(order.productId?.category)}`,
+                  `Category: ${getCategoryLabel(getProjectCategory(order))}`,
                   `Phase: ${getPhaseLabel(order.currentPhase)}`,
                   `Progress: ${order.projectProgress || 0}%`,
                 ]}
@@ -1921,7 +1927,7 @@ const CompactWorkspaceCard = ({ title, subtitle, items, emptyText, onRowClick, o
                 ].join(" ")}
               >
                 <div className="col-span-12 lg:col-span-5">
-                  <p className="truncate text-base font-semibold text-slate-900">{item.productId?.serviceName || "N/A"}</p>
+                  <p className="truncate text-base font-semibold text-slate-900">{getWorkspaceItemName(item)}</p>
                 </div>
 
                 <div className="col-span-12 lg:col-span-4 lg:flex lg:items-center">
@@ -2904,7 +2910,7 @@ const WorkspaceDetailSubpage = ({
 
         <div className="min-w-0 flex-1">
           <h2 className="truncate text-2xl font-bold text-slate-900">
-            {item?.productId?.serviceName || `${detailLabel} Details`}
+            {getWorkspaceItemName(item) || `${detailLabel} Details`}
           </h2>
         </div>
 
@@ -3416,7 +3422,7 @@ const WorkspaceDetailSubpage = ({
             <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
               <p className="text-sm font-medium text-slate-500">{detailLabel} Info</p>
               <div className="mt-4 space-y-4 text-sm text-slate-700">
-                <InfoLine label="Category" value={getCategoryLabel(item?.productId?.category)} />
+                <InfoLine label="Category" value={getCategoryLabel(getProjectCategory(item))} />
                 <InfoLine label="Current Phase" value={getPhaseLabel(item?.currentPhase)} />
                 <InfoLine label="Created" value={formatDateTime(item?.createdAt)} />
                 <InfoLine label="Updated" value={formatDateTime(item?.updatedAt || item?.createdAt)} />

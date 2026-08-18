@@ -10,7 +10,7 @@ export const PROJECT_CATEGORIES = new Set([
 export const PLAN_CATEGORIES = new Set(['website_updates', 'service_plan']);
 
 export const isProjectItem = (order) =>
-  PROJECT_CATEGORIES.has(order?.productId?.category?.toLowerCase());
+  Boolean(order?.isWebsiteProject) || PROJECT_CATEGORIES.has(order?.projectSnapshot?.category?.toLowerCase()) || PROJECT_CATEGORIES.has(order?.productId?.category?.toLowerCase());
 
 export const isPlanItem = (order) =>
   PLAN_CATEGORIES.has(order?.productId?.category?.toLowerCase());
