@@ -114,6 +114,137 @@ The two mechanisms mean different things:
 
 ---
 
+## 4b. Phase 3 — the full lifecycle (Delete Forever + a restore bug fix)
+
+A follow-up audit of the Phase 2 result found two real problems, and the owner then specified the lifecycle they actually wanted.
+
+### The two problems found
+
+**Problem 1 — the Retired tab was a one-way door.** There was no permanent-delete path at all, and `deleteProduct.js`'s guard refuses anything with purchases. So a retired plan that customers had bought could **never** be removed — only restored. That directly contradicted the requirement.
+
+**Problem 2 — restore silently lost state.** Retiring forces `isHidden = true`, but nothing recorded what `isHidden` had been. A plan that was live before retiring came back **hidden**, and the admin had to re-enable it by hand. This had been rationalised as a safety feature; the audit showed it is simply data loss.
+
+### What the owner chose
+
+Remove is always the safe archive; a truly irreversible delete stays available but **privileged**, and only from the Retired tab.
+
+### Schema — `models/productModel.js`
+- `hiddenBeforeRetire: Boolean (null)` — what `isHidden` was before retiring.
+- `archivedAt: Date (null)` / `archivedBy: ref user (null)` — "Delete Forever" in archive mode.
+
+### `retireOrDeletePlan.js` / `reactivatePlan.js`
+- **Before**: retire overwrote `isHidden`; reactivate cleared only `retiredAt`, leaving the plan hidden.
+- **After**: retire stores `hiddenBeforeRetire`; reactivate restores it (`null` ⇒ stay hidden, the safe read for plans retired before the field existed) and clears it. Restore now means restore. The response message says which state it came back in.
+
+### `controller/product/purgePlan.js` (new) — `POST /api/admin/plans/:planId/purge`
+Gated on `plan.retiredAt` being set — destruction is only ever reachable from the Retired tab, never straight from the working catalogue. Two modes:
+
+| mode | effect | recoverable |
+|---|---|---|
+| `archive` (default) | sets `archivedAt`; row kept, gone from **every** list including Retired | yes, in the DB |
+| `hard` (privileged) | `findByIdAndDelete` | **no** |
+
+`hard` additionally requires `confirmName` to equal the plan's exact name, so it cannot happen by a stray click. Both modes report `purchaseCount` back so the UI states the real consequence.
+
+**Why archive is the default**: this system has already been damaged by unguarded hard deletes (§2 — 4 orphaned orders, one with money paid). Phase 1 means a hard delete no longer blanks a customer's history, but keeping the row costs nothing and keeps a mistake recoverable.
+
+### Read paths — `archivedAt: null` added
+`getProduct.js`, `getAllProducts.js`, and `getAdminPlanProducts.js` (where it sits **outside** the `includeRetired` branch, so an archived plan is hidden from the Retired tab too).
+
+### Frontend — `AdminPlanProductsPage.js`
+- Retired rows now offer **Restore** (renamed from "Reactivate", matching the owner's wording) and **Delete Forever**.
+- The Delete Forever modal explains that purchases, invoices and running services are unaffected, and carries an opt-in checkbox — *"Also erase it from the database"* — which reveals a type-the-name field and switches the button to "Erase permanently". The button stays disabled until the typed name matches exactly.
+- `common/index.js`: `purgePlan` entry (body `{ mode, confirmName }`).
+
+### The resulting lifecycle
+```
+Active Plans --Remove--> Retired Plans --Restore--> Active Plans (original state)
+                              |
+                              +--Delete Forever--> archived (invisible, recoverable)
+                              +--(privileged)-----> erased from the database
+```
+
+---
+
+## 4c. Phase 4 — the availability toggle had to leave the Retired tab
+
+The owner spotted it while using the page: *"agar retire ho gaya hai to kya retired tab mein enable hona sahi hai?"* It was not — and it was worse than a cosmetic slip.
+
+### What the Status column is
+`Active — Disable` / `Disabled — Enable` toggles `isHidden` via `hideProduct.js` / `unhideProduct.js`. It answers "are we selling this right now?" — a different axis from retirement.
+
+### Two real defects, proven by running it
+On a throwaway plan: retire it, then click Enable.
+
+1. **The badge lied.** It flipped to `Active — Disable` on a plan sitting in the Retired tab. (It was not actually sellable, but only because the catalogue query separately filters `retiredAt` — the UI was contradicting itself and surviving on defence-in-depth.)
+2. **It corrupted Restore.** `hideProduct.js` / `unhideProduct.js` know nothing about retirement — they flip `isHidden` and never touch `hiddenBeforeRetire`. So toggling availability behind retirement's back left `hiddenBeforeRetire` stale, and a later Restore would put the plan back in the wrong state — silently breaking the §4b fix.
+
+> **Superseded by §4d.** The fix below hid the toggle on the Retired tab only. The owner then identified the deeper problem: the toggle was a *second* way to take a plan off sale anywhere, duplicating Remove. §4d removes it entirely.
+
+### Fixed on both sides
+
+**UI** — `AdminPlanProductsPage.js`: a retired row renders a static **`Retired`** badge instead of the toggle. The duplicate "Retired" chip beside the plan name was removed at the same time (the row only exists under the Retired tab, and the status column now states it). Each tab offers only actions that mean something there:
+
+| Tab | Status | Actions |
+|---|---|---|
+| Active Plans | `Active — Disable` / `Disabled — Enable` | Remove |
+| Retired Plans | `Retired` (static) | Restore · Delete Forever |
+
+**Server** — `hideProduct.js` and `unhideProduct.js` now reject a retired **or** archived plan: *"This plan is retired. Restore it before changing its availability."* Enforced server-side because those routes are reachable directly — the same lesson as the unguarded `deleteProduct` route in §4.
+
+### Verified
+The guard executed across all three states — not retired → allowed; retired → blocked; archived → blocked — with `hiddenBeforeRetire` confirmed unchanged afterwards, so Restore can no longer be corrupted.
+
+---
+
+## 4d. Phase 5 — one lifecycle: Remove *is* disable, Restore *is* enable
+
+Hiding the toggle on the Retired tab (§4c) treated a symptom. The owner named the real fault: *"2 alag tarike se working nahi honi chahiye… disable enable badge iss working ko bypass kar raha hai."*
+
+### Proven duplication
+Run against a throwaway plan, both paths were measured:
+
+```
+Path A — Disable :  hidden=true  retired=null | tab=ACTIVE  | sellable=no
+Path B — Remove  :  hidden=true  retired=SET  | tab=RETIRED | sellable=no
+```
+
+Same customer-facing outcome by two different controls. Worse, Path A left the plan **off sale while still sitting in Active Plans** — an off-sale state the tabs could not represent, invisible to the lifecycle.
+
+### The model the owner specified
+Remove and Restore *are* the availability control. No separate switch, and no third tab:
+
+```
+Active Plans (enabled) ──Remove──► Retired Plans (disabled)
+                       ◄─Restore──
+```
+
+- **Remove** = disable + move to Retired, in one action
+- **Restore** = enable + move to Active, in one action
+- The admin can no longer set availability by hand at all; `isHidden` is now driven **only** by this lifecycle.
+
+### Changes
+- **`retireOrDeletePlan.js`**: still sets `isHidden = true`, but now as *the* disable rather than a side effect. Comment rewritten to say so.
+- **`reactivatePlan.js`**: **before** — restored `hiddenBeforeRetire`, so a plan could come back hidden; **after** — always `isHidden = false`, because a plan in Retired is disabled by definition and Restore is its mirror.
+- **`productModel.js`**: `hiddenBeforeRetire` **removed**. It existed to remember a state that can no longer vary — retired always means disabled.
+- **`AdminPlanProductsPage.js`**: the Enable/Disable button is gone; Status is now a static badge, **`Active`** or **`Disabled`**. The orphaned `handleServiceAvailabilityToggle` handler was deleted with it (`changingServiceId` stays — Restore still uses it).
+- **`hideProduct.js` / `unhideProduct.js`**: the §4c guard stays, with its reasoning updated — a retired plan's `isHidden` is owned by the lifecycle, so flipping it from outside would produce disabled-but-Active or live-but-Retired.
+
+### Not changed on purpose
+`isHidden` itself, and the `hideProduct` / `unhideProduct` routes and `SummaryApi` entries: `AdminProductCard.js` still uses them for website/app products, and order controllers still check `isHidden` at purchase. Only the **plans page** lost its manual control.
+
+### Final shape
+
+| Tab | Status | Actions |
+|---|---|---|
+| Active Plans | `Active` | Remove |
+| Retired Plans | `Disabled` | Restore · Delete Forever |
+
+### Verified
+Full lifecycle executed against the live DB on a throwaway plan: created (Active/sellable) → Remove (one action ⇒ `isHidden=true`, `retiredAt` set, Retired tab, not sellable) → Restore (one action ⇒ `isHidden=false`, Active tab, sellable again) → guard confirmed blocking hide/unhide while retired. No test row left; all three real plans verified Active and sellable afterwards.
+
+---
+
 ## 5. Verification performed
 
 - `node --check` on all 11 changed/new backend files; `@babel/core` parse on all 8 changed frontend files; `routes/index.js` **actually loaded**; `/admin/plans/:planId` confirmed not to shadow the existing `POST /admin/plans/create`.
@@ -122,6 +253,8 @@ The two mechanisms mean different things:
 - **Backfill run for real** (3 filled from invoices), then re-run to prove idempotency.
 - **Retire tested end-to-end against the live DB and rolled back**: after retiring, the plan left the customer catalogue and the admin list, stayed findable with `includeRetired`, the hard-delete guard reported blocked, and **both orders kept their name, status and paid amount**. Original state restored and re-confirmed.
 - **Tab filtering executed** over a 3-plan fixture: Active shows only non-retired, Retired shows only retired, and a retired row cannot leak into Active even if the server returns it.
+- **Full lifecycle run against the live DB on a throwaway plan** (`ZZ_TEST_PLAN`, created and destroyed by the test, no real row touched): live → retire → **restore returned it to `sellable`, proving the `hiddenBeforeRetire` fix** → retire → archive (invisible in both tabs, still present in the DB) → hard delete (row gone). Confirmed afterwards that no test row remained and all three real service plans were untouched.
+- **Hard-delete confirmation gate executed** over 5 cases (archive with nothing typed / hard with nothing typed / wrong name / trailing whitespace / exact name) against *both* the client's disabled-rule and the server's `confirmName` check — 5/5, and the two agree because both trim.
 - **No `npm run build`** (standing instruction).
 
 ---

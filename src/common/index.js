@@ -63,6 +63,12 @@ const SummaryApi = {
         url : (planId) => `${backendDomain}/api/admin/plans/${planId}/reactivate`,
         method : "post"
     },
+    // "Delete Forever" from the Retired tab. Body { mode: "archive" | "hard",
+    // confirmName } — hard mode also requires the plan's exact name to be retyped.
+    purgePlan : {
+        url : (planId) => `${backendDomain}/api/admin/plans/${planId}/purge`,
+        method : "post"
+    },
     createService : {
         url : `${backendDomain}/api/admin/services/create`,
         method : "post"

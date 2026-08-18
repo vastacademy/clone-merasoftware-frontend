@@ -149,6 +149,27 @@ const AdminPlanProductsPage = () => {
     toast.info("Plan detail sub-page will be connected in the next step.");
   };
 
+  const handleServiceAvailabilityToggle = async (service) => {
+    setChangingServiceId(service._id);
+    const endpoint = service.isHidden ? SummaryApi.UnhideProduct : SummaryApi.hideProduct;
+    try {
+      const response = await fetch(endpoint.url, {
+        method: endpoint.method,
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ _id: service._id }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) throw new Error(result.message || "Service availability could not be updated.");
+      setPlans((current) => current.map((plan) => plan._id === service._id ? { ...plan, isHidden: !service.isHidden } : plan));
+      toast.success(service.isHidden ? "Service enabled in catalogue." : "Service disabled in catalogue.");
+    } catch (toggleError) {
+      toast.error(toggleError.message || "Service availability could not be updated.");
+    } finally {
+      setChangingServiceId("");
+    }
+  };
+
   // Removal. The SERVER decides between delete and retire from the real purchase
   // count — this only reports back what it did. A plan nobody bought is deleted;
   // one with purchases is retired so its orders and invoices keep their record.
@@ -429,19 +450,27 @@ const AdminPlanProductsPage = () => {
                   <p className="text-sm font-semibold text-slate-900">{getPlanValidityLabel(plan)}</p>
                 </div>
                 <div className="col-span-6 lg:col-span-2 lg:flex lg:items-center">
-                  {/* Status is a fact, not a switch. There is exactly one way to take a
-                      plan off sale — Remove, which disables it into the Retired tab — and
-                      one way back, Restore. A separate Enable/Disable control would be a
-                      second route to the same outcome that bypasses that lifecycle. */}
+                  {/* A retired plan is off sale by definition, so catalogue availability
+                      is a fact to state, not a switch to offer. Showing the Enable/Disable
+                      toggle here would let the badge read "Active" on a retired plan and
+                      would leave hiddenBeforeRetire stale, breaking a later Restore. */}
                   {plan.retiredAt ? (
                     <span className="inline-flex rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold text-slate-700">
-                      Disabled
+                      Retired
                     </span>
-                  ) : (
-                    <span className="inline-flex rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-800">
-                      Active
-                    </span>
-                  )}
+                  ) : plan.isServicePlan ? (
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        handleServiceAvailabilityToggle(plan);
+                      }}
+                      disabled={changingServiceId === plan._id}
+                      className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${plan.isHidden ? "bg-slate-200 text-slate-700 hover:bg-slate-300" : "bg-emerald-100 text-emerald-800 hover:bg-emerald-200"}`}
+                    >
+                      {changingServiceId === plan._id ? "Updating..." : plan.isHidden ? "Disabled — Enable" : "Active — Disable"}
+                    </button>
+                  ) : <span className="inline-flex rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-800">{plan.isHidden ? "Hidden" : "Visible"}</span>}
                 </div>
                 <div className="col-span-6 flex items-center justify-end gap-2 lg:col-span-1">
                   {plan.retiredAt ? (
