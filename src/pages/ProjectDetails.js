@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef, useCallback, useContext, useMemo } from 'react';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { 
   X, ArrowLeft, Clock, Check, List, Upload,
   ExternalLink
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { getOrderDisplayName } from '../helpers/orderPresentation';
+import { getOrderCategory, getOrderDisplayName } from '../helpers/orderPresentation';
 import SummaryApi from '../common';
 import TriangleMazeLoader from '../components/TriangleMazeLoader';
 import DashboardLayout from '../components/DashboardLayout';
@@ -22,6 +22,7 @@ import { isPlanItem } from '../helpers/orderType';
 import AddServiceModal from '../components/AddServiceModal';
 import ProjectServiceWorkspace from '../components/ProjectServiceWorkspace';
 import Context from '../context';
+import { customerReturnState, goToCustomerReturn } from '../helpers/customerReturnNavigation';
 
 const normalizeNodeKey = (value) => {
   if (value === null || value === undefined) {
@@ -158,6 +159,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
   const { orderId } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const dispatch = useDispatch();
   const user = useSelector((state) => state?.user?.user);
   const { isOnline } = useOnlineStatus();
@@ -299,7 +301,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
         const order = orderData.data;
 
         if (!isAdminView && isPlanItem(order)) {
-          navigate(`/plan-details/${orderId}`, { replace: true });
+          navigate(`/plan-details/${orderId}`, { replace: true, state: location.state });
           return;
         }
 
@@ -367,12 +369,9 @@ const ProjectDetails = ({ isAdminView = false }) => {
     return () => clearInterval(intervalId);
   }, [fetchOrderDetails]);
 
-  // Soft refresh after the customer pays — covers a change THIS customer just made on another
-  // page. /invoice-detail ends with navigate(-1), which restores this component from the history
-  // stack WITHOUT re-running its data fetch, so the order rendered was the pre-payment one and
-  // the customer kept seeing the stale "Payment Pending" banner until the 30s poll happened to
-  // fire. InvoiceDetailPage sets a sessionStorage marker before navigating back (router state
-  // cannot travel through navigate(-1)); this consumes it exactly once and refetches.
+  // Soft refresh after the customer pays — InvoiceDetailPage sets a sessionStorage
+  // marker before returning through the shared customer-navigation contract. This
+  // consumes it exactly once so the page never shows pre-payment data until polling.
   useEffect(() => {
     let paymentJustSubmitted = null;
     try {
@@ -411,7 +410,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
       return;
     }
 
-    navigate('/dashboard');
+    goToCustomerReturn(navigate, location, '/projects-and-plans');
   };
 
   // SSOT: all payment goes through the canonical invoice page. This project page never
@@ -419,9 +418,13 @@ const ProjectDetails = ({ isAdminView = false }) => {
   // the single place an invoice is paid.
   const handleMakePayment = () => {
     if (order?.unpaidInvoice?._id) {
-      navigate(`/invoice-detail/${order.unpaidInvoice._id}`);
+      navigate(`/invoice-detail/${order.unpaidInvoice._id}`, {
+        state: customerReturnState(`/project-details/${orderId}`),
+      });
     } else {
-      navigate(`/order-detail/${orderId}`);
+      navigate(`/order-detail/${orderId}`, {
+        state: customerReturnState(`/project-details/${orderId}`),
+      });
     }
   };
 
@@ -544,9 +547,13 @@ const ProjectDetails = ({ isAdminView = false }) => {
                       // SSOT: retry pays the same invoice via the canonical invoice page —
                       // no re-order through DirectPayment.js (which would create a duplicate).
                       if (order?.unpaidInvoice?._id) {
-                        navigate(`/invoice-detail/${order.unpaidInvoice._id}`);
+                        navigate(`/invoice-detail/${order.unpaidInvoice._id}`, {
+                          state: customerReturnState(`/project-details/${orderId}`),
+                        });
                       } else {
-                        navigate(`/order-detail/${order._id}`);
+                        navigate(`/order-detail/${order._id}`, {
+                          state: customerReturnState(`/project-details/${order._id}`),
+                        });
                       }
                     }}
                     className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-base font-semibold"
@@ -657,7 +664,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
                 {getOrderDisplayName(order)}
               </h1>
               <p className={g('mt-1 text-base text-black', 'mt-1 text-base text-slate-300 sm:text-lg')}>
-                {order.projectSnapshot?.category?.split('_').join(' ') || order.productId?.category?.split('_').join(' ') || 'Project'}
+                {getOrderCategory(order, 'Project').split('_').join(' ')}
               </p>
             </div>
           </div>
@@ -715,7 +722,9 @@ const ProjectDetails = ({ isAdminView = false }) => {
               {order.unpaidInvoice?._id && (
                 <button
                   type="button"
-                  onClick={() => navigate(`/invoice-detail/${order.unpaidInvoice._id}`)}
+                  onClick={() => navigate(`/invoice-detail/${order.unpaidInvoice._id}`, {
+                    state: customerReturnState(`/project-details/${orderId}`),
+                  })}
                   className={g(
                     'mt-2 text-sm font-semibold text-amber-800 underline underline-offset-2 transition hover:text-amber-900',
                     'mt-2 text-sm font-semibold text-amber-200 underline underline-offset-2 transition hover:text-amber-100'

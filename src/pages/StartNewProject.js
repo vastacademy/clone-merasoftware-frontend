@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { ArrowRight, Layers3, Sparkles } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
 import backgroundImage from '../assets/BG.png';
+import { customerReturnState, getCustomerPath } from '../helpers/customerReturnNavigation';
 import CustomerWorkspaceTabs from '../components/CustomerWorkspaceTabs';
 import SummaryApi from '../common';
 import GlassPageState from '../components/GlassPageState';
@@ -30,6 +31,7 @@ const formatPrice = (value) =>
 const StartNewProject = () => {
   const user = useSelector((state) => state?.user?.user);
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
 
   // Allows deep-linking straight to the service tab.
@@ -133,7 +135,8 @@ const StartNewProject = () => {
                         navigate(
                           project.category === 'service_plan'
                             ? `/service-plan-detail/${project._id}`
-                            : `/start-new-project/${project._id}`
+                            : `/start-new-project/${project._id}`,
+                          { state: customerReturnState(getCustomerPath(location)) }
                         )
                       }
                       className={[

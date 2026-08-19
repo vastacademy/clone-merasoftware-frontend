@@ -1,8 +1,9 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { toast } from 'sonner';
 import { QRCodeSVG } from 'qrcode.react';
+import { goToCustomerReturn } from '../helpers/customerReturnNavigation';
 import { ArrowLeft, CheckCircle2 } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
 import SummaryApi from '../common';
@@ -97,6 +98,7 @@ const SectionHeading = ({ children }) => (
 const ServicePlanDetail = () => {
   const user = useSelector((state) => state?.user?.user);
   const navigate = useNavigate();
+  const location = useLocation();
   const { planId } = useParams();
   const context = useContext(Context);
   const [plan, setPlan] = useState(null);
@@ -136,7 +138,7 @@ const ServicePlanDetail = () => {
     fetchPlan();
   }, [planId]);
 
-  const handleBack = () => navigate('/start-new-project/services?tab=services');
+  const handleBack = () => goToCustomerReturn(navigate, location, '/start-new-project/services?tab=services');
 
   const generateTransactionId = () =>
     `SVC${Date.now()}${Math.floor(Math.random() * 10000)}`;

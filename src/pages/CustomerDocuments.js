@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { ArrowLeft, FileText, Download } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
 import SummaryApi from '../common';
 import backgroundImage from '../assets/BG.png';
+import { goToCustomerReturn } from '../helpers/customerReturnNavigation';
 
 const formatFileSize = (bytes) => {
   const n = Number(bytes) || 0;
@@ -43,6 +44,7 @@ const getDocMeta = (doc) => {
 
 const CustomerDocuments = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const user = useSelector((state) => state?.user?.user);
 
   const [documents, setDocuments] = useState([]);
@@ -75,7 +77,7 @@ const CustomerDocuments = () => {
     };
   }, []);
 
-  const handleBack = () => navigate('/dashboard');
+  const handleBack = () => goToCustomerReturn(navigate, location, '/dashboard');
 
   return (
     <DashboardLayout user={user}>

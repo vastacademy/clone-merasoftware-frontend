@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 // import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
+import { customerReturnState } from '../helpers/customerReturnNavigation';
 import { Ticket, Plus, ArrowRight, Filter } from 'lucide-react';
 import { toast } from 'sonner';
 import SummaryApi from '../common';
@@ -288,7 +289,9 @@ const TicketsList = () => {
                 {tickets.map((ticket) => (
                   <tr
                     key={ticket.ticketId}
-                    onClick={() => navigate(`/support-tickets/${ticket.ticketId}`)}
+                    onClick={() => navigate(`/support-tickets/${ticket.ticketId}`, {
+                      state: customerReturnState('/support'),
+                    })}
                     className="cursor-pointer hover:bg-white/[0.06]"
                   >
                     <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-white">

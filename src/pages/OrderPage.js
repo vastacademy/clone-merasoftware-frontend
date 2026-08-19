@@ -19,6 +19,8 @@ import displayINRCurrency from '../helpers/displayCurrency';
 import { isOrderApproved } from '../helpers/orderVisibility';
 import PaymentStatusChip from '../components/PaymentStatusChip';
 import { isProjectItem, isPlanItem, PROJECT_CATEGORIES } from '../helpers/orderType';
+import { getOrderCategory, getOrderDisplayName } from '../helpers/orderPresentation';
+import { customerReturnState } from '../helpers/customerReturnNavigation';
 
 const getOrderStatus = (order) => {
   if (!order) return 'Processing';
@@ -92,14 +94,14 @@ const getPurchaseTypeLabel = (order) => {
 
 const OrderRow = ({ order, navigate, formatDate, index }) => {
   const handleClick = () => {
-    navigate(`/order-detail/${order._id}`);
+    navigate(`/order-detail/${order._id}`, { state: customerReturnState('/order') });
   };
 
   const status = getOrderStatus(order);
   const purchaseType = getPurchaseTypeLabel(order);
   const isProject = isProjectItem(order);
   const isPlan = isPlanItem(order);
-  const category = order.productId?.category?.split('_').join(' ') || 'Unknown type';
+  const category = getOrderCategory(order, 'Unknown type').split('_').join(' ');
   const price = displayINRCurrency(order.price || order.totalPrice || 0);
 
   return (
@@ -123,7 +125,7 @@ const OrderRow = ({ order, navigate, formatDate, index }) => {
               </span>
             </div>
             <h3 className="mt-2 truncate text-lg font-semibold text-white">
-              {order.productId?.serviceName || 'Untitled'}
+              {getOrderDisplayName(order)}
             </h3>
             <p className="mt-1 truncate text-sm text-slate-300">{category}</p>
             <p className="mt-2 text-sm text-slate-300 sm:hidden">
@@ -202,7 +204,7 @@ const OrdersPage = () => {
         setOrders(allOrders);
 
         const activeProj = allOrders.find((order) => {
-          const category = order.productId?.category?.toLowerCase();
+          const category = getOrderCategory(order).toLowerCase();
           if (!category) return false;
 
           if (PROJECT_CATEGORIES.has(category)) {

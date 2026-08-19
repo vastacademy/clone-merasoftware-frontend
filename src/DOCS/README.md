@@ -30,8 +30,9 @@ Fast lookup for files, routes, and common development tasks.
 ### `12_CLIENT_ACTIVITY_SORT_AUDIT.md`
 Current audit and implementation routing for admin client working-activity sorting and the pending node-update write path.
 
-### `13_PROJECT_CREATION_AND_APPROVAL_PLAN.md`
-Verified project categories, product fields, customer purchase flow, admin `Website Management > Projects` UI scaffold, approval integration, and regression guardrails.
+### Historical project-catalogue docs
+
+Docs such as `13_PROJECT_CREATION_AND_APPROVAL_PLAN.md` and `14_CODEBASE_AUDIT_INDEX.md` describe the retired project-catalogue approach. Current project architecture is documented in `00_CURRENT_SYSTEM.md`.
 
 ### `14_CODEBASE_AUDIT_INDEX.md`
 Central AI handoff index containing the audited route/file/model map, real database evidence, current implementation state, pending work, and regression boundaries.

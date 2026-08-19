@@ -13,22 +13,28 @@ import { isOrderApproved } from './orderVisibility';
 // existed) would otherwise blank out a customer's paid purchase history. Every
 // other purchase detail is already frozen on the order itself; the name is read
 // the same way:
-//   1. productId.serviceName        — the live template, while it exists
-//   2. servicePlanSnapshot.serviceName — frozen at purchase (service plans)
-//   3. orderItems[].name            — frozen at purchase (project orders)
+//   1. projectSnapshot.displayName — frozen client-project contract
+//   2. productId.serviceName        — reusable catalogue service/legacy fallback
+//   3. servicePlanSnapshot.serviceName — frozen at purchase (service plans)
+//   4. orderItems[].name            — frozen purchase fallback
 //
 // This is a display fallback only. It never changes what was bought or charged.
 export const getOrderDisplayName = (order, fallback = 'Untitled') => {
   if (!order) return fallback;
   return (
-    order.productId?.serviceName ||
     order.projectSnapshot?.displayName ||
+    order.productId?.serviceName ||
     order.servicePlanSnapshot?.serviceName ||
     (order.orderItems || []).find((item) => item.type === 'main')?.name ||
     order.orderItems?.[0]?.name ||
     fallback
   );
 };
+
+// A private client project must retain its type after its legacy catalogue
+// product is detached. Service and legacy orders continue to read productId.
+export const getOrderCategory = (order, fallback = '') =>
+  order?.projectSnapshot?.category || order?.productId?.category || fallback;
 
 // Remaining validity days for a plan order. Monthly plans use currentMonthExpiryDate;
 // other plans derive from createdAt + validityPeriod.

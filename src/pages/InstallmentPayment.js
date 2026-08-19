@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import { toast } from 'sonner';
 import SummaryApi from '../common';
@@ -8,10 +8,13 @@ import TriangleMazeLoader from '../components/TriangleMazeLoader';
 import displayINRCurrency from '../helpers/displayCurrency';
 import DashboardLayout from '../components/DashboardLayout';
 import backgroundImage from '../assets/BG.png';
+import { goToCustomerReturn } from '../helpers/customerReturnNavigation';
+import { getOrderDisplayName } from '../helpers/orderPresentation';
 
 const InstallmentPayment = () => {
   const { orderId, installmentNumber } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const context = useContext(Context);
   
   const [loading, setLoading] = useState(true);
@@ -23,6 +26,12 @@ const InstallmentPayment = () => {
   const [upiTransactionId, setUpiTransactionId] = useState('');
   const [verificationStatus, setVerificationStatus] = useState('');
   const [paymentProcessed, setPaymentProcessed] = useState(false);
+
+  const returnToParent = () => goToCustomerReturn(
+    navigate,
+    location,
+    `/project-details/${orderId}`
+  );
   const [remainingAmount, setRemainingAmount] = useState(0);
   const [user, setUser] = useState(null);
   // const [isPartialPayment, setIsPartialPayment] = useState(false);
@@ -74,15 +83,15 @@ const InstallmentPayment = () => {
           } else {
             // Installment not found or already paid
             toast.error('This installment is not available or has already been paid');
-            navigate(`/project-details/${orderId}`);
+            returnToParent();
           }
         } else {
           toast.error('No installment information found');
-          navigate(`/project-details/${orderId}`);
+          returnToParent();
         }
       } else {
         toast.error('Failed to load order details');
-        navigate('/');
+        returnToParent();
       }
     } catch (error) {
       console.error('Error fetching order details:', error);
@@ -126,7 +135,7 @@ const InstallmentPayment = () => {
         // Refresh the just-debited wallet balance and take the customer back to the project.
         context.fetchWalletBalance();
         toast.success('Payment successful! Your project will continue now.');
-        navigate(`/project-details/${orderId}`);
+        returnToParent();
       } else {
         // Partial: the wallet doesn't cover the whole installment. The wallet part is debited only
         // when the UPI remainder is verified (see verifyPayment) so a half-paid state can't be left
@@ -258,7 +267,7 @@ const InstallmentPayment = () => {
       
       // Redirect to project details after a brief delay
       setTimeout(() => {
-        navigate(`/project-details/${orderId}`);
+        returnToParent();
       }, 3000);
     } catch (error) {
       console.error('Error verifying payment:', error);
@@ -304,7 +313,7 @@ const InstallmentPayment = () => {
             <h2 className="text-lg font-semibold text-red-600 mb-2">Payment Error</h2>
             <p className="text-base text-black mb-4">This installment is not available or has already been paid.</p>
             <button
-              onClick={() => navigate(`/project-details/${orderId}`)}
+              onClick={returnToParent}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg text-base font-semibold"
             >
               Back to Project
@@ -336,7 +345,7 @@ const InstallmentPayment = () => {
               </div>
             </div>
             <div className="text-base text-white">
-              <p>Project: {order.productId?.serviceName}</p>
+              <p>Project: {getOrderDisplayName(order, 'Project')}</p>
               <p className="mt-1">Progress: {Math.round(order.projectProgress)}%</p>
             </div>
           </div>
@@ -398,7 +407,7 @@ const InstallmentPayment = () => {
               {/* Payment Buttons */}
               <div className="flex justify-between mt-6">
                 <button
-                  onClick={() => navigate(`/project-details/${orderId}`)}
+                  onClick={returnToParent}
                   className="bg-gray-100 text-black px-6 py-3 rounded-lg text-base font-medium hover:bg-gray-200 transition-colors"
                 >
                   Cancel

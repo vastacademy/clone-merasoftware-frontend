@@ -22,6 +22,7 @@ import TriangleMazeLoader from '../components/TriangleMazeLoader';
 import DashboardLayout from '../components/DashboardLayout';
 import backgroundImage from '../assets/BG.png';
 import { isOrderApproved } from '../helpers/orderVisibility';
+import { getOrderCategory, getOrderDisplayName } from '../helpers/orderPresentation';
 
 const WalletDetails = () => {
   const [walletHistory, setWalletHistory] = useState([]);
@@ -88,7 +89,7 @@ const WalletDetails = () => {
       const data = await response.json();
       if (data.success) {
         const activeProj = (data.data || []).find(order => {
-          const category = order.productId?.category?.toLowerCase();
+          const category = getOrderCategory(order).toLowerCase();
           const supportedCategory = ['standard_websites', 'dynamic_websites', 'cloud_software_development', 'app_development'].includes(category);
           return supportedCategory && isOrderApproved(order) && order.orderVisibility !== 'payment-rejected' && (order.projectProgress < 100 || order.currentPhase !== 'completed');
         });
@@ -113,7 +114,7 @@ const WalletDetails = () => {
   };
 
   const getTransactionDisplay = transaction => {
-    const serviceName = transaction.productId?.serviceName || transaction.orderId?.productId?.serviceName;
+    const serviceName = transaction.productId?.serviceName || getOrderDisplayName(transaction.orderId, '');
     if (transaction.type === 'refund') {
       return { sign: '+', color: 'text-emerald-600', title: 'Refund received', icon: <ArrowDownLeft size={17} />, iconBg: 'bg-emerald-100 text-emerald-700' };
     }

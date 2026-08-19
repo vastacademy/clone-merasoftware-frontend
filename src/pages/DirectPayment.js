@@ -9,6 +9,7 @@ import backgroundImage from '../assets/BG.png';
 import displayINRCurrency from '../helpers/displayCurrency';
 import { toast } from 'sonner';
 import { QRCodeSVG } from 'qrcode.react';
+import { goToCustomerReturn } from '../helpers/customerReturnNavigation';
 
 const DirectPayment = () => {
   const navigate = useNavigate();
@@ -49,9 +50,10 @@ const DirectPayment = () => {
         setRemainingAmount(paymentAmount - context.walletBalance);
       }
     } else {
-      // No payment data, redirect to home
+      // A refresh/direct URL loses transient payment data. Return safely instead
+      // of routing through root, which redirects every logged-in customer to Dashboard.
       toast.error('Payment information not found');
-      navigate('/');
+      goToCustomerReturn(navigate, location, '/order', { replace: true });
     }
     if (location.state?.retryPaymentId) {
       // This is a retry payment scenario
@@ -80,7 +82,7 @@ const DirectPayment = () => {
   const handleBackToProductDetails = () => {
     // No need to remove sessionStorage here
     // Just navigate back, product details will load selections from sessionStorage
-    navigate(-1);
+    goToCustomerReturn(navigate, location, '/order');
   };
 
   // Add this helper function at the top of your component

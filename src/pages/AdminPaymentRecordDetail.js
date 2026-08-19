@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import SummaryApi from "../common";
 import AdminLayout from "../components/AdminLayout";
 import { getTransactionPaymentLabel } from "../helpers/paymentLedger";
+import { getOrderDisplayName } from "../helpers/orderPresentation";
 
 const safeDateTime = (value) => {
   if (!value) return null;
@@ -91,8 +92,7 @@ const SinglePaymentRecordDetail = () => {
   const canSendReminder = Boolean(invoice?._id && ["unpaid", "overdue"].includes(invoice?.status));
   const canMarkPaid = Boolean(invoice?._id && ["unpaid", "overdue"].includes(invoice?.status));
   const canApproveReject = Boolean(transaction?.transactionId && transaction?.status === "pending");
-  const serviceName =
-    transaction?.orderId?.productId?.serviceName || invoice?.orderId?.productId?.serviceName;
+  const serviceName = getOrderDisplayName(transaction?.orderId || invoice?.orderId, "");
   const paymentLabel = getPaymentLabel(transaction, invoice);
   const title = serviceName ? `${serviceName} — ${paymentLabel}` : paymentLabel;
   const amount = transaction?.amount ?? invoice?.amount ?? 0;
@@ -421,7 +421,7 @@ const SinglePaymentRecordDetail = () => {
                       <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <InfoLine label="Invoice Number" value={invoice.invoiceNumber} />
                         <InfoLine label="Status" value={getLedgerStatusLabel(invoice.status)} />
-                        <InfoLine label="Plan" value={invoice.orderId?.productId?.serviceName} />
+                        <InfoLine label="Plan" value={getOrderDisplayName(invoice.orderId, "N/A")} />
                         <InfoLine label="Due Date" value={formatDateTime(invoice.dueDate)} />
                         <InfoLine label="Invoice Date" value={formatDateTime(invoice.invoiceDate)} />
                         <InfoLine label="Paid Date" value={formatDateTime(invoice.paidDate)} />
@@ -673,7 +673,7 @@ const PaymentOrderHistory = ({ customerId, orderId }) => {
       : allOrders.find((candidate) => String(candidate?._id) === String(orderId)) || null;
     const resolvedServiceName = isGeneralPayments
       ? "Wallet & General Payments"
-      : matchingOrder?.productId?.serviceName || matchingInvoices[0]?.orderId?.productId?.serviceName || matchingTransactions[0]?.orderId?.productId?.serviceName || "Payment History";
+      : getOrderDisplayName(matchingOrder || matchingInvoices[0]?.orderId || matchingTransactions[0]?.orderId, "Payment History");
     const projectFinalInvoice = matchingInvoices.find((current) => current.invoiceType === "project_final") || null;
     const paymentInvoices = matchingInvoices.filter((current) => current.invoiceType !== "project_final");
     const totalInvoiceValue = paymentInvoices.reduce((sum, current) => sum + Number(current.amount || 0), 0);

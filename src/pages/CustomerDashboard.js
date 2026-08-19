@@ -21,11 +21,12 @@ import displayINRCurrency from '../helpers/displayCurrency';
 import { isOrderApproved } from '../helpers/orderVisibility';
 import { isProjectItem, isPlanItem, sortItemsLatestFirst } from '../helpers/orderType';
 import { getRemainingDays, getOrderDisplayName } from '../helpers/orderPresentation';
+import { customerReturnState } from '../helpers/customerReturnNavigation';
 
 const getItemLink = (order) =>
   isPlanItem(order) ? `/plan-details/${order._id}` : `/project-details/${order._id}`;
 
-const MetricCard = ({ icon: Icon, label, value, helper, tone = 'slate', to, highlight = false }) => {
+const MetricCard = ({ icon: Icon, label, value, helper, tone = 'slate', to, state, highlight = false }) => {
   const glowMap = {
     slate: 'bg-slate-400/25',
     blue: 'bg-blue-400/30',
@@ -34,7 +35,7 @@ const MetricCard = ({ icon: Icon, label, value, helper, tone = 'slate', to, high
   };
 
   const Wrapper = to ? Link : 'div';
-  const wrapperProps = to ? { to } : {};
+  const wrapperProps = to ? { to, state } : {};
 
   return (
     <Wrapper
@@ -209,7 +210,7 @@ const CustomerDashboard = () => {
   }, [activeProject, context]);
 
   const openItem = (order) => {
-    navigate(getItemLink(order));
+    navigate(getItemLink(order), { state: customerReturnState('/dashboard') });
   };
 
   return (
@@ -236,7 +237,7 @@ const CustomerDashboard = () => {
               label={primaryWorkItem ? 'Live project' : 'Services'}
               value={primaryWorkItem ? getOrderDisplayName(primaryWorkItem, 'Active work') : primaryAction.label}
               helper={primaryWorkItem ? activeWorkItemsCount > 1 ? `${activeWorkItemsCount} active items` : primaryAction.label : 'No active work running'}
-              tone="emerald" to={primaryAction.to} highlight={!primaryWorkItem}
+              tone="emerald" to={primaryAction.to} state={customerReturnState('/dashboard')} highlight={!primaryWorkItem}
             /></AnimatedSection>
             <AnimatedSection delay={getStaggerDelay(1)}><MetricCard icon={Wallet} label="Wallet balance" value={displayINRCurrency(context?.walletBalance || 0)} helper="Available wallet amount" tone="emerald" /></AnimatedSection>
             <AnimatedSection delay={getStaggerDelay(2)}><MetricCard icon={BadgeCheck} label="Completed items" value={String(completedCount)} helper="Finished projects and closed plans" tone="blue" /></AnimatedSection>

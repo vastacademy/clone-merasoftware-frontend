@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useContext } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { format } from 'date-fns';
 import { ArrowLeft, Send, Clock, User, Check, X, AlertTriangle, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
@@ -9,10 +9,19 @@ import TriangleMazeLoader from '../components/TriangleMazeLoader';
 import DashboardLayout from '../components/DashboardLayout';
 import backgroundImage from '../assets/BG.png';
 import { useSelector } from 'react-redux';
+import { customerReturnState, goToCustomerReturn } from '../helpers/customerReturnNavigation';
 
 const TicketDetail = ({ isAdmin = false }) => {
   const { ticketId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const handleBack = () => {
+    if (isAdmin) {
+      navigate(-1);
+      return;
+    }
+    goToCustomerReturn(navigate, location, '/support');
+  };
   // const { userDetails } = useContext(Context);
   // Context के बजाय Redux का उपयोग करें
   const userDetails = useSelector((state) => state.user.user);
@@ -205,7 +214,7 @@ const TicketDetail = ({ isAdmin = false }) => {
               <p className="text-base text-slate-300 mb-4">{error}</p>
               <div className="flex gap-4">
                 <button
-                  onClick={() => navigate(-1)}
+                  onClick={handleBack}
                   className="px-4 py-2 rounded-xl border border-white/15 bg-white/[0.03] text-white hover:bg-white/[0.07] transition-colors text-base font-medium"
                 >
                   Go Back
@@ -236,7 +245,7 @@ const TicketDetail = ({ isAdmin = false }) => {
               <h3 className="text-lg font-semibold text-white mb-2">Ticket Not Found</h3>
               <p className="text-base text-slate-300 mb-4">The ticket you're looking for doesn't exist or you don't have permission to view it.</p>
               <button
-                onClick={() => navigate(-1)}
+                onClick={handleBack}
                 className="px-4 py-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors text-base font-medium"
               >
                 Go Back
@@ -258,7 +267,7 @@ const TicketDetail = ({ isAdmin = false }) => {
       <div className="relative flex items-center justify-center">
         <button
           type="button"
-          onClick={() => navigate(-1)}
+          onClick={handleBack}
           className="absolute left-0 inline-flex w-fit shrink-0 items-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-5 py-3 text-lg font-semibold text-white backdrop-blur-md transition hover:bg-white/15"
         >
           <ArrowLeft className="h-5 w-5" />

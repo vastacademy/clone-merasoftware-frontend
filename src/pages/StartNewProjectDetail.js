@@ -1,14 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import DashboardLayout from '../components/DashboardLayout';
 import ProjectDetailView from '../components/ProjectDetailView';
 import SummaryApi from '../common';
 import { useDraftOrders } from '../context/DraftOrdersContext';
+import { goToCustomerReturn } from '../helpers/customerReturnNavigation';
 
 const StartNewProjectDetail = () => {
   const user = useSelector((state) => state?.user?.user);
   const navigate = useNavigate();
+  const location = useLocation();
   const { projectId } = useParams();
   const { saveDraftOrder, openCartDrawer } = useDraftOrders();
   const [project, setProject] = useState(null);
@@ -28,7 +30,7 @@ const StartNewProjectDetail = () => {
     fetchProduct();
   }, [projectId]);
 
-  const handleBack = () => navigate('/start-new-project');
+  const handleBack = () => goToCustomerReturn(navigate, location, '/start-new-project/services');
 
   const handleProceedWithPayment = (selectedFeatureIds, pageSelection) => {
     const additionalFeatures = project.additionalFeaturesData || [];

@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import {
   ArrowLeft, Clock, CalendarClock, AlertTriangle, Lock, Upload,
@@ -11,6 +11,7 @@ import UpdateRequestModal from '../components/UpdateRequestModal';
 import SummaryApi from '../common';
 import backgroundImage from '../assets/BG.png';
 import { isPlanItem } from '../helpers/orderType';
+import { goToCustomerReturn } from '../helpers/customerReturnNavigation';
 
 const formatDate = (date) => {
   if (!date) return 'N/A';
@@ -189,6 +190,7 @@ const PlanDetails = ({ isProjectServiceView = false }) => {
   const { orderId: routeOrderId, projectOrderId, serviceOrderId } = useParams();
   const orderId = serviceOrderId || routeOrderId;
   const navigate = useNavigate();
+  const location = useLocation();
   const user = useSelector((state) => state?.user?.user);
   const [timelineExpanded, setTimelineExpanded] = useState(false);
   const [showRequestModal, setShowRequestModal] = useState(false);
@@ -222,7 +224,7 @@ const PlanDetails = ({ isProjectServiceView = false }) => {
       }
 
       if (!isPlanItem(orderData.data)) {
-        navigate(`/project-details/${orderId}`, { replace: true });
+        navigate(`/project-details/${orderId}`, { replace: true, state: location.state });
         return;
       }
 
@@ -249,7 +251,11 @@ const PlanDetails = ({ isProjectServiceView = false }) => {
   }, [fetchPlanDetails]);
 
   const handleBack = () => {
-    navigate(isProjectServiceView && projectOrderId ? `/project-details/${projectOrderId}` : '/projects-and-plans');
+    goToCustomerReturn(
+      navigate,
+      location,
+      isProjectServiceView && projectOrderId ? `/project-details/${projectOrderId}` : '/projects-and-plans'
+    );
   };
   const handleStopRenewal = async () => {
     try {

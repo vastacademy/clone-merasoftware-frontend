@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import SummaryApi from '../../common';
+import { getOrderDisplayName } from '../../helpers/orderPresentation';
 
 const ProjectWorkspaceModal = ({ project, developers = [], onClose, onProjectUpdated, isReadOnly = false }) => {
   const [currentProject, setCurrentProject] = useState(project);
@@ -208,7 +209,7 @@ const ProjectWorkspaceModal = ({ project, developers = [], onClose, onProjectUpd
         <div className="mb-6 flex items-center justify-between">
           <div>
             <h3 className="text-xl font-semibold">
-              {shouldBeReadOnly ? 'Project Details: ' : 'Edit Project: '}{currentProject.productId?.serviceName}
+              {shouldBeReadOnly ? 'Project Details: ' : 'Edit Project: '}{getOrderDisplayName(currentProject, 'Project')}
             </h3>
             {shouldBeReadOnly && (
               <p className="mt-1 text-sm text-gray-600">

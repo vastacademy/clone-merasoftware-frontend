@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { ArrowRight, BriefcaseBusiness, Clock3, Layers3, Plus, ShieldCheck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import backgroundImage from '../assets/BG.png';
+import { getOrderDisplayName } from '../helpers/orderPresentation';
 
 const formatDate = (date) => {
   if (!date) return 'Not started';
@@ -39,7 +40,7 @@ const ProjectServiceWorkspace = ({ project, onAddService }) => {
     [project.linkedServices]
   );
 
-  const projectName = project.productId?.serviceName || 'Project';
+  const projectName = getOrderDisplayName(project, 'Project');
 
   return (
     <div

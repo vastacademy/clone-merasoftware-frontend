@@ -16,6 +16,7 @@ import Context from '../context';
 import { isOrderApproved } from '../helpers/orderVisibility';
 import { isProjectItem, isPlanItem, sortItemsLatestFirst } from '../helpers/orderType';
 import { getRemainingDays } from '../helpers/orderPresentation';
+import { customerReturnState } from '../helpers/customerReturnNavigation';
 
 const ProjectsAndPlans = () => {
   const navigate = useNavigate();
@@ -97,9 +98,9 @@ const ProjectsAndPlans = () => {
 
   const openDetails = (order) => {
     if (isPlanItem(order)) {
-      navigate(`/plan-details/${order._id}`);
+      navigate(`/plan-details/${order._id}`, { state: customerReturnState('/projects-and-plans') });
     } else {
-      navigate(`/project-details/${order._id}`);
+      navigate(`/project-details/${order._id}`, { state: customerReturnState('/projects-and-plans') });
     }
   };
 

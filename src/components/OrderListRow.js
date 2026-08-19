@@ -6,6 +6,7 @@ import {
   getItemSummary,
   getItemTypeLabel,
   getItemTypeAccent,
+  getOrderCategory,
   getOrderDisplayName,
 } from '../helpers/orderPresentation';
 
@@ -38,7 +39,7 @@ const OrderListRow = ({ order, index = 0, onClick }) => {
   const isPlan = isPlanItem(order);
   const accent = getItemTypeAccent(order);
   const summary = getItemSummary(order);
-  const category = order.productId?.category?.split('_').join(' ') || 'Unknown type';
+  const category = getOrderCategory(order, 'Unknown type').split('_').join(' ');
   const currentValue = isPlan
     ? (order.productId?.isMonthlyRenewablePlan || order.productId?.isMonthlyLimitedPlan
       ? `${order.totalYearlyDaysRemaining || 0} day(s) left`

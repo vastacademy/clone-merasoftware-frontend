@@ -1,4 +1,6 @@
-# Codebase Audit Index and AI Handoff
+# Historical Codebase Audit Index
+
+> Superseded for current project architecture on 2026-08-19. Start with `00_CURRENT_SYSTEM.md`: projects are private, admin-created client orders with a frozen `projectSnapshot`; there is no project catalogue, project-product route, or customer self-created project flow. This document remains only as pre-migration history.
 
 **Audit scope**: Full project-product, customer purchase, payment approval, admin workspace, node timeline, customer project view, activity sorting, and documentation flow.  
 **Original audit date**: 2026-07-19 (sections below refreshed as of the node-system migration/schema-cleanup session — see the note under each stale section for what changed)  

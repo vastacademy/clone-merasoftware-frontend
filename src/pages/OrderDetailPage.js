@@ -1,11 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft, CheckCircle2, Clock3, XCircle, CalendarClock, ChevronRight } from 'lucide-react';
 import SummaryApi from '../common';
 import DashboardLayout from '../components/DashboardLayout';
 import backgroundImage from '../assets/BG.png';
 import TriangleMazeLoader from '../components/TriangleMazeLoader';
 import { isOrderApproved } from '../helpers/orderVisibility';
+import { getOrderCategory, getOrderDisplayName } from '../helpers/orderPresentation';
+import {
+  customerReturnState,
+  goToCustomerReturn,
+} from '../helpers/customerReturnNavigation';
 
 const formatDate = (date) => {
   if (!date) return 'N/A';
@@ -49,6 +54,7 @@ const DUMMY_INVOICES = [
 const OrderDetailPage = () => {
   const { orderId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [order, setOrder] = useState(null);
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -105,12 +111,17 @@ const OrderDetailPage = () => {
   // this used to send, so every click there landed on "Payment information not found" and bounced
   // to the dashboard without ever reaching a payment endpoint.
   const handlePayInstallment = (installment) => {
-    navigate(`/installment-payment/${order._id}/${installment.installmentNumber}`);
+    navigate(`/installment-payment/${order._id}/${installment.installmentNumber}`, {
+      state: customerReturnState(`/order-detail/${order._id}`),
+    });
   };
+
+  const handleBack = () => goToCustomerReturn(navigate, location, '/order');
 
   const handleRetryPayment = () => {
     navigate(`/direct-payment`, {
       state: {
+        ...customerReturnState(`/order-detail/${order._id}`),
         retryPaymentId: order._id,
         productId: order.productId?._id,
         paymentData: {
@@ -151,7 +162,7 @@ const OrderDetailPage = () => {
             <h2 className="text-lg font-semibold text-red-400 mb-2">Order Not Found</h2>
             <p className="text-base text-slate-300 mb-4">The order you're looking for doesn't exist or you don't have access to it.</p>
             <button
-              onClick={() => navigate('/order')}
+              onClick={handleBack}
               className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-base font-semibold"
             >
               Back to Orders
@@ -184,7 +195,7 @@ const OrderDetailPage = () => {
           <div className="relative flex items-center justify-center">
             <button
               type="button"
-              onClick={() => navigate('/order')}
+              onClick={handleBack}
               className="absolute left-0 inline-flex w-fit shrink-0 items-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-5 py-3 text-lg font-semibold text-white backdrop-blur-md transition hover:bg-white/15"
             >
               <ArrowLeft className="h-5 w-5" />
@@ -193,10 +204,10 @@ const OrderDetailPage = () => {
 
             <div className="text-center">
               <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl lg:text-4xl">
-                {order.productId?.serviceName || 'Plan'}
+                {getOrderDisplayName(order, 'Plan')}
               </h1>
               <p className="mt-1 text-base text-slate-300 sm:text-lg">
-                {order.productId?.category?.split('_').join(' ') || 'General'}
+                {getOrderCategory(order, 'General').split('_').join(' ')}
               </p>
             </div>
           </div>
@@ -293,7 +304,9 @@ const OrderDetailPage = () => {
                       return (
                         <div
                           key={invoice._id}
-                          onClick={() => navigate(`/invoice-detail/${invoice._id}`)}
+                          onClick={() => navigate(`/invoice-detail/${invoice._id}`, {
+                            state: customerReturnState(`/order-detail/${order._id}`),
+                          })}
                           className="flex cursor-pointer items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 hover:border-white/20 hover:bg-white/[0.07]"
                         >
                           <div>

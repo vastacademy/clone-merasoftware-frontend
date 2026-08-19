@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { ChevronLeft, Sparkles, CheckCircle2, CalendarClock, XCircle } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { toast } from 'react-toastify';
@@ -9,6 +9,9 @@ import displayINRCurrency from '../helpers/displayCurrency';
 import DashboardLayout from '../components/DashboardLayout';
 import TriangleMazeLoader from '../components/TriangleMazeLoader';
 import backgroundImage from '../assets/BG.png';
+import { getOrderDisplayName } from '../helpers/orderPresentation';
+import { isPlanItem } from '../helpers/orderType';
+import { goToCustomerReturn } from '../helpers/customerReturnNavigation';
 
 const generateTransactionId = () =>
   `TXN${Date.now()}${Math.floor(Math.random() * 1000)}`;
@@ -40,6 +43,7 @@ const DUMMY_INVOICES = {
 const InvoiceDetailPage = () => {
   const { invoiceId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [invoice, setInvoice] = useState(null);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
@@ -96,17 +100,29 @@ const InvoiceDetailPage = () => {
   const orderIdForPay = invoice?.orderId?._id || invoice?.orderId;
   const isInstallmentInvoice = Boolean(invoice?.installmentNumber);
 
-  // Leaving this page after a payment. navigate(-1) restores the previous page from the history
-  // stack, which does NOT re-run that page's data fetch — so it would render the state from
-  // before this payment. A sessionStorage marker (rather than router state, which navigate(-1)
-  // cannot carry) lets whichever page we return to know its data is stale and refetch once.
+  const getInvoiceFallback = () => {
+    const order = invoice?.orderId;
+    const orderId = order?._id || order;
+
+    if (!orderId) return '/order';
+    if (order && typeof order === 'object' && isPlanItem(order)) {
+      return `/plan-details/${orderId}`;
+    }
+
+    return `/order-detail/${orderId}`;
+  };
+
+  const handleBack = () => goToCustomerReturn(navigate, location, getInvoiceFallback());
+
+  // Leaving this page after a payment returns through the customer-navigation SSOT.
+  // The marker lets the explicit return page know its data is stale and refetch once.
   const goBackAfterPayment = () => {
     try {
       sessionStorage.setItem('paymentJustSubmitted', String(Date.now()));
     } catch (error) {
       // Private-mode / storage-disabled browsers: the page still falls back to its own polling.
     }
-    navigate(-1);
+    handleBack();
   };
 
   const submitVerification = async ({ txnId, upiTransactionId, method }) => {
@@ -166,10 +182,8 @@ const InvoiceDetailPage = () => {
         context?.fetchWalletBalance?.();
         toast.success('Payment successful! Your plan is now active.');
         setShowPayment(false);
-        // Tell the page we return to that its data is now stale. navigate(-1) restores the
-        // previous page from history without re-running its fetch, so without this flag the
-        // customer lands back on pre-payment data (e.g. ProjectDetails' "Payment Pending"
-        // banner) until its own polling happens to fire.
+        // Tell the explicit return page that its data is stale, so it does not show
+        // pre-payment data (for example, ProjectDetails' "Payment Pending" banner).
         goBackAfterPayment();
         return;
       }
@@ -229,7 +243,7 @@ const InvoiceDetailPage = () => {
             <h2 className="text-lg font-semibold text-red-400 mb-2">Invoice Not Found</h2>
             <p className="text-base text-slate-300 mb-4">The invoice you're looking for doesn't exist or you don't have access to it.</p>
             <button
-              onClick={() => navigate(-1)}
+              onClick={handleBack}
               className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-base font-semibold"
             >
               Back
@@ -254,7 +268,7 @@ const InvoiceDetailPage = () => {
           <div className="relative flex items-center justify-center">
             <button
               type="button"
-              onClick={() => navigate(-1)}
+              onClick={handleBack}
               className="absolute left-0 inline-flex w-fit shrink-0 items-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-5 py-3 text-lg font-semibold text-white backdrop-blur-md transition hover:bg-white/15"
             >
               <ChevronLeft className="h-5 w-5" />
@@ -270,7 +284,7 @@ const InvoiceDetailPage = () => {
                 {invoice.invoiceNumber}
               </h1>
               <p className="mt-1 text-base text-slate-300 sm:text-lg">
-                {invoice.orderId?.productId?.serviceName || 'Plan'}
+                {getOrderDisplayName(invoice.orderId, 'Plan')}
               </p>
             </div>
           </div>

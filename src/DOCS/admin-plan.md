@@ -1,4 +1,6 @@
-# Admin Plan
+# Admin Plan (Historical)
+
+> Superseded on 2026-08-19. Project catalogue creation/listing has been removed. Admin creates a private project directly inside the selected client's workspace; services remain reusable catalogue items. Read `00_CURRENT_SYSTEM.md` for current architecture.
 
 ## Goal
 Admin ko same SSOT backend/data par customer ka full read + manage access dena hai, bina separate backend system banaye.
