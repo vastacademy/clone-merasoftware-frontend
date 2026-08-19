@@ -45,9 +45,11 @@ The public marketing/storefront site (`/home`, `/product/:id`, `/search`, `/cont
 - `/support-tickets/:ticketId`
 - `/complete-profile`
 - `/start-new-project` - `StartProject` intake page
-- `/start-new-project/services?tab=plans` - `StartNewProject` standalone service catalog (live-wired to `GET /api/get-product`)
+- `/start-new-project/services?tab=services` - `StartNewProject` standalone service catalog (live-wired to `GET /api/get-product`)
+- `/start-new-project/build/new_website` - restored interactive customer website/project question flow (`StartNewWebsiteBuild`)
+- `/start-new-project/build/new_website/customize` - restored customer customization and payment flow (`StartNewWebsiteCustomize`)
 - The standalone service flow uses the portal glass system end-to-end: the service catalog, service detail, wallet/UPI confirmation, QR/reference step, and success state all use the dark glass surface and emerald action-pill treatment. The project AddServiceModal already uses the same system.
-- The active `/start-new-project` intake surface is `startproject.js`: it offers services only. Standalone services open `/start-new-project/services?tab=plans`; project add-ons open the customer's existing project list, then the selected project's Add a Service flow. Customers cannot create projects themselves.
+- The active `/start-new-project` intake surface is `startproject.js`: it offers `Create a Custom Project` and `Start a Service or Add-ons`. The custom-project choice opens the restored interactive flow; services continue through the existing service/add-on flow. Customer navigation labels use `Explore Services` while route IDs remain unchanged.
 - `/start-new-project/:projectId` - legacy plan detail used by existing `website_updates` products; it is not a project-catalogue route.
 - `/project-details/:orderId` now opens a timeline-driven project view where the selected checkpoint shows only its own linked textual details below, and the latest active checkpoint is selected by default
 - A project with one or more add-on service orders now opens a project-contained workspace instead of separating those services into the global Plans area. It lists linked services first and the original project last; selecting the project opens its normal timeline, while selecting a service opens its existing detail surface under a project-scoped route. `linkedProjectOrderId` remains the only linkage source.
@@ -66,7 +68,7 @@ The public marketing/storefront site (`/home`, `/product/:id`, `/search`, `/cont
 
 ### Client project model
 
-- Projects have no catalogue/listing system. Admin creates a private project only from the selected client's workspace.
+- Projects have no catalogue/listing system. Admin creates a private project from the selected client's workspace; the customer custom-project flow also creates a private order directly after its own interaction/payment flow.
 - One `orderProductModel` record is the project SSOT: it owns the client reference, frozen `projectSnapshot`, timeline, pricing, payment and invoices. `isWebsiteProject` enables project workflows; it is not a Website Management visibility flag.
 - `categoryBasePriceModel` and `feature_upgrades` remain internal admin configuration for the client-project form, not project catalogue entries.
 
@@ -95,7 +97,7 @@ The public marketing/storefront site (`/home`, `/product/:id`, `/search`, `/cont
 - Main content now lives in `CustomerDashboard`
 - Left panel UI comes from `DashboardLayout`
 - The dashboard is a launchpad for key customer information and next actions, not a workflow-heavy control panel
-- Primary sidebar quick links are Dashboard, Projects and Plans, Start New Project, and Wallet, with Orders/Profile/Support kept as secondary links; the `Start New Project` quick link points to `/start-new-project`
+- Primary sidebar quick links are Dashboard, Projects and Plans, Explore Services, and Wallet, with Orders/Profile/Support kept as secondary links; the `Explore Services` quick link points to `/start-new-project`
 - Wallet balance is treated as a single source of truth from `current_user` / `userDetails`; `AppContent` reads that value and the dashboard does not own a separate wallet fetch
 - Dashboard recent items use a row-based list layout with status and progress-only-at-the-far-right presentation
 

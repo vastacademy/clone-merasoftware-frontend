@@ -1,6 +1,10 @@
 const backendDomain = process.env.REACT_APP_BACKEND_URL //"http://localhost:8080"
 
 const SummaryApi = {
+    createCustomProjectOrder: {
+        url: `${backendDomain}/api/customer/custom-project-order`,
+        method: "post"
+    },
     signUP : {
         url : `${backendDomain}/api/signup`,
         method: "post"

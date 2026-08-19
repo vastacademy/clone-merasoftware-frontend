@@ -49,7 +49,7 @@ const DashboardLayout = ({ children, user, walletBalance, cartCount, isLoading, 
     if (currentPath.startsWith('/projects-and-plans')) return 'Projects and Plans';
     if (currentPath.startsWith('/order')) return 'Your Orders';
     if (currentPath.startsWith('/project-details')) return 'Your Project';
-    if (currentPath.startsWith('/start-new-project')) return 'Services';
+    if (currentPath.startsWith('/start-new-project')) return 'Explore Services';
     if (currentPath.startsWith('/profile')) return 'Account Details';
     if (currentPath.startsWith('/wallet')) return 'Wallet Details';
     if (currentPath.startsWith('/support-tickets')) return 'Support Tickets';
@@ -81,7 +81,7 @@ const DashboardLayout = ({ children, user, walletBalance, cartCount, isLoading, 
     },
     {
       to: '/start-new-project',
-      label: 'Services',
+      label: 'Explore Services',
       icon: PlusCircle,
       active: currentPath.startsWith('/start-new-project'),
     },

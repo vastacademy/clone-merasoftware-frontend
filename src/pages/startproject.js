@@ -13,6 +13,13 @@ import backgroundImage from '../assets/BG.png';
 
 const CATEGORIES = [
   {
+    id: 'custom-project',
+    title: 'Create a Custom Project',
+    description: 'Build a private website, software, or app project for your own workspace.',
+    action: 'Customize Project',
+    icon: BriefcaseBusiness,
+  },
+  {
     id: 'services',
     title: 'Start a Service or Add-ons',
     description: 'Start a standalone service or add a service to an existing project.',
@@ -26,7 +33,13 @@ const StartProject = () => {
   const user = useSelector((state) => state?.user?.user);
   const [serviceChoiceOpen, setServiceChoiceOpen] = useState(false);
 
-  const handleSelect = () => setServiceChoiceOpen(true);
+  const handleSelect = (category) => {
+    if (category.id === 'custom-project') {
+      navigate('/start-new-project/build/new_website');
+      return;
+    }
+    setServiceChoiceOpen(true);
+  };
 
   return (
     <DashboardLayout user={user}>
@@ -39,7 +52,7 @@ const StartProject = () => {
         <div className="relative mx-auto max-w-6xl">
           <div className="text-center">
             <span className="inline-flex items-center rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-sm font-medium text-white shadow-[0_8px_32px_rgba(0,0,0,0.35)] backdrop-blur-2xl">
-              Services
+              Explore Services
             </span>
             <h1 className="mt-5 text-2xl font-bold tracking-tight text-white sm:text-3xl lg:text-4xl">
               Choose a service
@@ -56,7 +69,7 @@ const StartProject = () => {
                 <AnimatedSection key={category.id} delay={getStaggerDelay(index)}>
                   <button
                     type="button"
-                    onClick={handleSelect}
+                    onClick={() => handleSelect(category)}
                     className="group relative w-full overflow-hidden rounded-3xl border border-white/20 bg-white/10 p-6 text-left shadow-[0_8px_32px_rgba(0,0,0,0.25)] backdrop-blur-2xl backdrop-saturate-150 transition-all duration-300 hover:-translate-y-1.5 hover:border-emerald-300/60 hover:bg-white/[0.16] hover:shadow-[0_24px_48px_rgba(16,185,129,0.28)] focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
                   >
                   {/* glass sheen */}

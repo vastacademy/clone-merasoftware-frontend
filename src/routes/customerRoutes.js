@@ -23,6 +23,8 @@ import GamesListPage from "../chess/GamesListPage";
 import ChessPage from "../chess/ChessPage";
 import SetNewPassword from "../pages/SetNewPassword";
 import CustomerDocuments from "../pages/CustomerDocuments";
+import StartNewWebsiteBuild from "../pages/StartNewWebsiteBuild";
+import StartNewWebsiteCustomize from "../pages/StartNewWebsiteCustomize";
 
 const CustomerProtectedRoute = ({ children }) => (
   <ProtectedRoute requireRole={['customer']}>
@@ -70,6 +72,14 @@ export const customerRoutes = [
         <StartNewProject/>
       </CustomerProtectedRoute>
     )
+  },
+  {
+    path: "start-new-project/build/new_website",
+    element: <CustomerProtectedRoute><StartNewWebsiteBuild/></CustomerProtectedRoute>
+  },
+  {
+    path: "start-new-project/build/new_website/customize",
+    element: <CustomerProtectedRoute><StartNewWebsiteCustomize/></CustomerProtectedRoute>
   },
   {
     path: "start-new-project/:projectId",

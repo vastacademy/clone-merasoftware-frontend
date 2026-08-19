@@ -14,7 +14,7 @@ const CATEGORY_STYLE = {
   service_plan: { icon: Layers3, color: 'text-teal-600' },
 };
 
-const BASE_TABS = [{ id: 'services', label: 'Services' }];
+const BASE_TABS = [{ id: 'services', label: 'Explore Services' }];
 
 const TAB_CATEGORIES = {
   services: ['website_updates', 'service_plan'],
@@ -83,7 +83,7 @@ const StartNewProject = () => {
               <div className="relative max-w-3xl">
                 <div className="inline-flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-sm font-semibold uppercase text-emerald-300">
                   <Sparkles className="h-3.5 w-3.5" />
-                  Services
+                  Explore Services
                 </div>
                 <h1 className="mt-3 text-2xl font-bold tracking-tight text-white">
                   Choose a service

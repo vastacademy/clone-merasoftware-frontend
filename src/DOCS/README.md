@@ -27,6 +27,9 @@ Backend structure, routes, models, and helpers.
 ### `05_QUICK_REFERENCE.md`
 Fast lookup for files, routes, and common development tasks.
 
+### `60_PROJECT_CATALOGUE_RETIREMENT_AND_CUSTOMER_CUSTOMIZE_RESTORATION.md`
+Current handoff for the private-project snapshot architecture, service-only catalogue, restored customer interactive custom-project flow, service upload-limit enforcement, `Explore Services` terminology, and the verified missing frontend base-price API mapping.
+
 ### `12_CLIENT_ACTIVITY_SORT_AUDIT.md`
 Current audit and implementation routing for admin client working-activity sorting and the pending node-update write path.
 
