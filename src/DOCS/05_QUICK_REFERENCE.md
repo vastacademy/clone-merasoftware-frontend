@@ -13,7 +13,6 @@ Fast lookup for the current codebase.
 | `src/components/AdminLayout.js` | Shared admin shell |
 | `src/pages/CustomerDashboard.js` | Active customer dashboard launchpad |
 | `src/pages/ProjectsAndPlans.js` | Active project/plan tracking list |
-| `src/pages/UserDashboard.js` | Legacy customer dashboard content |
 | `src/pages/AdminDashboard.js` | Admin dashboard content |
 | `src/pages/AdminClientsPage.js` | Admin client list page |
 | `src/pages/AdminClientWorkspace.js` | Admin client detail page |
@@ -71,7 +70,7 @@ Fast lookup for the current codebase.
 ## Current Dashboard Roles
 
 - Customer dashboard work belongs in `CustomerDashboard.js`
-- `UserDashboard.js` is legacy and should not be extended for the current dashboard experience
+- `UserDashboard.js` no longer exists — the customer dashboard is `CustomerDashboard.js` inside `DashboardLayout`
 - Customer shell work belongs in `DashboardLayout.js`
 - Wallet balance ownership belongs in `AppContent.js` + backend `current_user`
 - Do not add a separate dashboard-owned wallet fetch path

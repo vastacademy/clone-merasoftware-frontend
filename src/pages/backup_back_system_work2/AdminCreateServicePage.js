@@ -1,13 +1,12 @@
 import React, { useCallback, useMemo, useRef, useState } from "react";
 import { useSelector } from "react-redux";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { ArrowLeft, Calculator, Save } from "lucide-react";
 import AdminLayout from "../components/AdminLayout";
 import AdminWorkspaceShell, { AdminWorkspaceHeader } from "../components/admin/AdminWorkspaceShell";
 import RichTextEditor from "../helpers/richTextEditor";
 import SummaryApi from "../common";
-import { goToAdminReturn } from "../helpers/adminReturnNavigation";
 
 const SERVICE_TYPES = [["website_updates", "Website Update"], ["digital_marketing", "Digital Marketing"], ["google_business_setup", "Google Business Setup"], ["social_media_marketing", "Social Media Marketing"], ["other", "Other"]];
 const TIMINGS = [["during", "During Project"], ["during_and_after", "During + After Project"], ["after", "After Project"]];
@@ -27,12 +26,6 @@ const sectionClass = "mt-5 border-t border-slate-200 pt-4";
 const AdminCreateServicePage = () => {
   const user = useSelector((state) => state?.user?.user);
   const navigate = useNavigate();
-  const location = useLocation();
-
-  // Back, Cancel and a completed save all leave this form the same way: back to the plans
-  // list, replacing the form's entry so it cannot be re-entered with Back (and, after a
-  // save, so Back does not land on a form whose service already exists).
-  const leaveForm = () => goToAdminReturn(navigate, location, "/admin-panel/website-management/plans", { replace: true });
   const descriptionRef = useRef("");
   const [form, setForm] = useState({
     serviceName: "", serviceType: "", timing: "", dependency: "", visibility: "visible",
@@ -91,14 +84,14 @@ const AdminCreateServicePage = () => {
       const result = await response.json();
       if (!result.success) throw new Error(result.message || "Service could not be created.");
       toast.success("Service added to the catalogue.");
-      leaveForm();
+      navigate("/admin-panel/website-management/plans");
     } catch (error) { toast.error(error.message || "Service could not be created."); } finally { setIsSaving(false); }
   };
 
   return (
     <AdminLayout user={user}>
       <AdminWorkspaceShell>
-        <AdminWorkspaceHeader title="Add Service" subtitle="Define how customers can buy and use a catalogue service." leadingAction={<button type="button" onClick={leaveForm} className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-white transition hover:bg-white/10" aria-label="Go back"><ArrowLeft size={18} /></button>} />
+        <AdminWorkspaceHeader title="Add Service" subtitle="Define how customers can buy and use a catalogue service." leadingAction={<button type="button" onClick={() => navigate("/admin-panel/website-management/plans")} className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-white transition hover:bg-white/10" aria-label="Go back"><ArrowLeft size={18} /></button>} />
         <div className="p-3 sm:p-4">
           <form className="rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm sm:p-5" onSubmit={handlePreviewSubmit}>
             <section>
@@ -144,7 +137,7 @@ const AdminCreateServicePage = () => {
             </section>
 
             <section className={sectionClass}><span className={labelClass}>Description / Specifications</span><RichTextEditor onChange={handleDescriptionChange} placeholder="Describe what this service includes" wrapperClassName="bg-white" /></section>
-            <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-4"><p className="text-sm text-slate-500">Only enabled billing options will be available to customers.</p><div className="flex gap-3"><button type="button" onClick={leaveForm} className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-50">Cancel</button><button type="submit" disabled={isSaving} className="inline-flex items-center gap-2 rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-bold text-slate-950 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-slate-300"><Save size={16} />{isSaving ? "Saving..." : "Add Service"}</button></div></div>
+            <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-4"><p className="text-sm text-slate-500">Only enabled billing options will be available to customers.</p><div className="flex gap-3"><button type="button" onClick={() => navigate("/admin-panel/website-management/plans")} className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-50">Cancel</button><button type="submit" disabled={isSaving} className="inline-flex items-center gap-2 rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-bold text-slate-950 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-slate-300"><Save size={16} />{isSaving ? "Saving..." : "Add Service"}</button></div></div>
           </form>
         </div>
       </AdminWorkspaceShell>

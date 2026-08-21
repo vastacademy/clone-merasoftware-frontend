@@ -51,11 +51,6 @@ This guide focuses on the active components that matter most in the current code
 - Single-order detail page
 - Left unchanged while the order list UI was redesigned
 
-### `UserDashboard.js`
-
-- Legacy customer dashboard page
-- Kept in the codebase for reference only
-
 ### `AdminDashboard.js`
 
 - Main admin dashboard page
@@ -72,12 +67,8 @@ This guide focuses on the active components that matter most in the current code
 
 ### `NotificationBell.js`
 
-- No longer rendered in `SharedHeader.js` (removed at explicit user request; backend notification APIs/models untouched, component file still exists unused)
-- Was previously used in the customer header, kept notifications separate from the account dropdown
-
-### `LoginPopup.js`
-
-- Used when protected navigation needs login
+- **Unused.** The component file still exists, but the header that rendered it (`SharedHeader.js`) was deleted with the public site — see `44_PUBLIC_SITE_REMOVAL.md`. Backend notification APIs/models were left untouched.
+- Was previously used in the customer header, keeping notifications separate from the account dropdown
 
 ## Current Working Pattern
 

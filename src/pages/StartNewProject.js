@@ -4,7 +4,7 @@ import { useSelector } from 'react-redux';
 import { ArrowRight, Layers3, Sparkles } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
 import backgroundImage from '../assets/BG.png';
-import { customerReturnState, getCustomerPath } from '../helpers/customerReturnNavigation';
+import { customerChildState } from '../helpers/customerReturnNavigation';
 import CustomerWorkspaceTabs from '../components/CustomerWorkspaceTabs';
 import SummaryApi from '../common';
 import GlassPageState from '../components/GlassPageState';
@@ -136,7 +136,7 @@ const StartNewProject = () => {
                           project.category === 'service_plan'
                             ? `/service-plan-detail/${project._id}`
                             : `/start-new-project/${project._id}`,
-                          { state: customerReturnState(getCustomerPath(location)) }
+                          { state: customerChildState(location) }
                         )
                       }
                       className={[

@@ -9,7 +9,6 @@ import CookieManager from "../utils/cookieManager";
 import StorageService from "../utils/storageService";
 import { useOnlineStatus } from "../App";
 import AdminLayout from "../components/AdminLayout";
-import { adminReturnState } from "../helpers/adminReturnNavigation";
 
 const AdminDashboard = () => {
   const user = useSelector((state) => state?.user?.user);
@@ -213,9 +212,7 @@ const AdminDashboard = () => {
                   <button
                     key={client._id}
                     type="button"
-                    onClick={() => navigate(`/admin-panel/clients/${client._id}`, {
-                      state: { client, ...adminReturnState("/admin-panel/dashboard") },
-                    })}
+                    onClick={() => navigate(`/admin-panel/clients/${client._id}`, { state: { client } })}
                     className={[
                       "grid w-full grid-cols-12 gap-3 px-5 py-4 text-left transition hover:bg-slate-100 sm:px-6",
                       index % 2 === 0 ? "bg-white" : "bg-slate-50",

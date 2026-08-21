@@ -755,7 +755,7 @@ const SummaryApi = {
     },
     // Client documents (agreements etc.). uploadClientDocument: admin POST to
     // /api/admin/clients/:customerId/documents (append customerId at call site).
-    // myDocuments: customer GET — merged newest-first documents + lead proposals.
+    // myDocuments: customer GET — merged newest-first client documents + lead-stage files.
     uploadClientDocument: {
         url: `${backendDomain}/api/admin/clients`,
         method: "post"

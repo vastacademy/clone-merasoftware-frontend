@@ -21,13 +21,19 @@ const formatDateTime = (value) => {
   return Number.isNaN(parsed.getTime()) ? '' : parsed.toLocaleString('en-IN');
 };
 
-// Presentation for each document row. Only two kinds ever appear here — both are
-// admin-sent: an agreement/document (client stage) or a proposal (lead stage).
+// Every row is an admin-sent document: client-stage agreement/general documents,
+// or lead-stage proposals and follow-up attachments.
 const getDocMeta = (doc) => {
   if (doc?.kind === 'proposal') {
     return {
       label: `Proposal v${doc.version}`,
       badge: 'border-amber-300/40 bg-amber-400/15 text-amber-200',
+    };
+  }
+  if (doc?.kind === 'follow-up') {
+    return {
+      label: 'Follow-up Document',
+      badge: 'border-sky-300/40 bg-sky-400/15 text-sky-200',
     };
   }
   if (doc?.source === 'agreement') {
@@ -125,7 +131,7 @@ const CustomerDocuments = () => {
                 <p className="mt-6 text-sm text-rose-300">{error}</p>
               ) : documents.length === 0 ? (
                 <p className="mt-6 text-sm text-slate-300">
-                  No documents yet. Any proposal or agreement shared with you will appear here.
+                  No documents yet. Any document shared with you before or after becoming a client will appear here.
                 </p>
               ) : (
                 <ul className="mt-6 space-y-3">

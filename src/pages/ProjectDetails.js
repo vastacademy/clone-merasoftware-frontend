@@ -22,7 +22,7 @@ import { isPlanItem } from '../helpers/orderType';
 import AddServiceModal from '../components/AddServiceModal';
 import ProjectServiceWorkspace from '../components/ProjectServiceWorkspace';
 import Context from '../context';
-import { customerReturnState, goToCustomerReturn } from '../helpers/customerReturnNavigation';
+import { customerChildState, goToCustomerReturn } from '../helpers/customerReturnNavigation';
 
 const normalizeNodeKey = (value) => {
   if (value === null || value === undefined) {
@@ -419,11 +419,11 @@ const ProjectDetails = ({ isAdminView = false }) => {
   const handleMakePayment = () => {
     if (order?.unpaidInvoice?._id) {
       navigate(`/invoice-detail/${order.unpaidInvoice._id}`, {
-        state: customerReturnState(`/project-details/${orderId}`),
+        state: customerChildState(location),
       });
     } else {
       navigate(`/order-detail/${orderId}`, {
-        state: customerReturnState(`/project-details/${orderId}`),
+        state: customerChildState(location),
       });
     }
   };
@@ -540,7 +540,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
                     onClick={handleBack}
                     className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-base font-semibold"
                   >
-                    Back to Dashboard
+                    Back
                   </button>
                   <button
                     onClick={() => {
@@ -548,11 +548,11 @@ const ProjectDetails = ({ isAdminView = false }) => {
                       // no re-order through DirectPayment.js (which would create a duplicate).
                       if (order?.unpaidInvoice?._id) {
                         navigate(`/invoice-detail/${order.unpaidInvoice._id}`, {
-                          state: customerReturnState(`/project-details/${orderId}`),
+                          state: customerChildState(location),
                         });
                       } else {
                         navigate(`/order-detail/${order._id}`, {
-                          state: customerReturnState(`/project-details/${order._id}`),
+                          state: customerChildState(location),
                         });
                       }
                     }}
@@ -580,7 +580,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
                     onClick={handleBack}
               className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-base font-semibold"
             >
-              Back to Dashboard
+              Back
             </button>
           </div>
         </div>
@@ -599,6 +599,15 @@ const ProjectDetails = ({ isAdminView = false }) => {
         <ProjectServiceWorkspace
           project={order}
           onAddService={handleAddService}
+          onBack={handleBack}
+          onOpenService={(serviceOrderId) => navigate(
+            `/project-details/${order._id}/services/${serviceOrderId}`,
+            { state: customerChildState(location) }
+          )}
+          onOpenProject={() => navigate(
+            `/project-details/${order._id}?view=project`,
+            { state: customerChildState(location) }
+          )}
         />
         <AddServiceModal
           isOpen={showAddServiceModal}
@@ -723,7 +732,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
                 <button
                   type="button"
                   onClick={() => navigate(`/invoice-detail/${order.unpaidInvoice._id}`, {
-                    state: customerReturnState(`/project-details/${orderId}`),
+                    state: customerChildState(location),
                   })}
                   className={g(
                     'mt-2 text-sm font-semibold text-amber-800 underline underline-offset-2 transition hover:text-amber-900',

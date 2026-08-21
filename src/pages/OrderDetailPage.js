@@ -8,7 +8,7 @@ import TriangleMazeLoader from '../components/TriangleMazeLoader';
 import { isOrderApproved } from '../helpers/orderVisibility';
 import { getOrderCategory, getOrderDisplayName } from '../helpers/orderPresentation';
 import {
-  customerReturnState,
+  customerChildState,
   goToCustomerReturn,
 } from '../helpers/customerReturnNavigation';
 
@@ -112,7 +112,7 @@ const OrderDetailPage = () => {
   // to the dashboard without ever reaching a payment endpoint.
   const handlePayInstallment = (installment) => {
     navigate(`/installment-payment/${order._id}/${installment.installmentNumber}`, {
-      state: customerReturnState(`/order-detail/${order._id}`),
+      state: customerChildState(location),
     });
   };
 
@@ -121,7 +121,7 @@ const OrderDetailPage = () => {
   const handleRetryPayment = () => {
     navigate(`/direct-payment`, {
       state: {
-        ...customerReturnState(`/order-detail/${order._id}`),
+        ...customerChildState(location),
         retryPaymentId: order._id,
         productId: order.productId?._id,
         paymentData: {
@@ -305,7 +305,7 @@ const OrderDetailPage = () => {
                         <div
                           key={invoice._id}
                           onClick={() => navigate(`/invoice-detail/${invoice._id}`, {
-                            state: customerReturnState(`/order-detail/${order._id}`),
+                            state: customerChildState(location),
                           })}
                           className="flex cursor-pointer items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 hover:border-white/20 hover:bg-white/[0.07]"
                         >

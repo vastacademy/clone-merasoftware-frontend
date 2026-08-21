@@ -452,11 +452,6 @@ Sends all email notifications.
 - `helpers/fileCleanupScheduler.js` - Delete old uploads
 - `helpers/googleDriveService.js` - Upload to Google Drive
 
-### Workspace Activity (`helpers/workspaceActivityRules.js`)
-- Log admin/developer actions
-- Calculate workspace metrics
-- Track completion rates
-
 ---
 
 ## ⏰ Cron Jobs

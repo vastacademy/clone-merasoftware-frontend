@@ -10,7 +10,6 @@ import StorageService from "../utils/storageService";
 import { useOnlineStatus } from "../App";
 import AdminLayout from "../components/AdminLayout";
 import AdminWorkspaceShell, { AdminWorkspaceHeader } from "../components/admin/AdminWorkspaceShell";
-import { adminReturnState } from "../helpers/adminReturnNavigation";
 import AdminWorkspaceList from "../components/admin/AdminWorkspaceList";
 import AdminFilterDropdown from "../components/admin/AdminFilterDropdown";
 
@@ -108,14 +107,9 @@ const AdminClientsPage = () => {
     await fetchClients();
   };
 
-  // The workspace is reachable from here and from the dashboard, so it is told where
-  // Back should return to rather than being left to guess from history.
-  // `client` stays as the workspace's fallback display data — unrelated to navigation.
   const handleClientOpen = (client) => {
     if (!client?._id) return;
-    navigate(`/admin-panel/clients/${client._id}`, {
-      state: { client, ...adminReturnState("/admin-panel/clients") },
-    });
+    navigate(`/admin-panel/clients/${client._id}`, { state: { client } });
   };
 
   const displayedClients = useMemo(() => {

@@ -1,6 +1,5 @@
 import React, { useMemo } from 'react';
-import { ArrowRight, BriefcaseBusiness, Clock3, Layers3, Plus, ShieldCheck } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { ArrowLeft, ArrowRight, BriefcaseBusiness, Clock3, Layers3, Plus, ShieldCheck } from 'lucide-react';
 import backgroundImage from '../assets/BG.png';
 import { getOrderDisplayName } from '../helpers/orderPresentation';
 
@@ -29,8 +28,7 @@ const toneClasses = {
   slate: 'border-white/20 bg-white/10 text-slate-200',
 };
 
-const ProjectServiceWorkspace = ({ project, onAddService }) => {
-  const navigate = useNavigate();
+const ProjectServiceWorkspace = ({ project, onAddService, onBack, onOpenService, onOpenProject }) => {
   const services = useMemo(
     () => [...(project.linkedServices || [])].sort((left, right) => {
       const priority = getServicePresentation(left).priority - getServicePresentation(right).priority;
@@ -50,6 +48,14 @@ const ProjectServiceWorkspace = ({ project, onAddService }) => {
       <div className="pointer-events-none absolute inset-0 bg-slate-950/40" />
       <div className="relative mx-auto flex w-full max-w-5xl flex-col gap-5">
         <header className="rounded-[1.75rem] border border-white/20 bg-white/10 p-5 shadow-[0_8px_32px_rgba(0,0,0,0.25)] backdrop-blur-2xl sm:p-7">
+          <button
+            type="button"
+            onClick={onBack}
+            className="mb-5 inline-flex items-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-4 py-2.5 text-base font-semibold text-white backdrop-blur-md transition hover:bg-white/15"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back
+          </button>
           <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-sm font-semibold uppercase tracking-[0.16em] text-emerald-200">Project workspace</p>
@@ -79,7 +85,7 @@ const ProjectServiceWorkspace = ({ project, onAddService }) => {
                 <button
                   key={service._id}
                   type="button"
-                  onClick={() => navigate(`/project-details/${project._id}/services/${service._id}`)}
+                  onClick={() => onOpenService(service._id)}
                   className="flex w-full items-center gap-4 rounded-2xl border border-white/15 bg-slate-950/25 p-4 text-left transition hover:border-emerald-300/50 hover:bg-white/10"
                 >
                   <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-400/15 text-emerald-200"><ShieldCheck className="h-5 w-5" /></span>
@@ -102,7 +108,7 @@ const ProjectServiceWorkspace = ({ project, onAddService }) => {
             <BriefcaseBusiness className="h-5 w-5 text-sky-200" />
             <div><h2 className="text-lg font-bold text-white">Original project</h2><p className="text-sm text-slate-300">Open the project timeline, progress and project records.</p></div>
           </div>
-          <button type="button" onClick={() => navigate(`/project-details/${project._id}?view=project`)} className="mt-4 flex w-full items-center gap-4 rounded-2xl border border-white/15 bg-slate-950/25 p-4 text-left transition hover:border-sky-300/50 hover:bg-white/10">
+          <button type="button" onClick={onOpenProject} className="mt-4 flex w-full items-center gap-4 rounded-2xl border border-white/15 bg-slate-950/25 p-4 text-left transition hover:border-sky-300/50 hover:bg-white/10">
             <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-sky-400/15 text-sky-200"><BriefcaseBusiness className="h-5 w-5" /></span>
             <span className="min-w-0 flex-1"><span className="block truncate text-base font-semibold text-white">{projectName}</span><span className="mt-1 block text-sm text-slate-300">{Math.round(Number(project.projectProgress || 0))}% complete · project timeline</span></span>
             <ArrowRight className="h-5 w-5 shrink-0 text-slate-300" />

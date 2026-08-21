@@ -1,12 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Download, Eye, Mail, Send, Share2, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import SummaryApi from "../common";
 import AdminLayout from "../components/AdminLayout";
 import { getTransactionPaymentLabel } from "../helpers/paymentLedger";
 import { getOrderDisplayName } from "../helpers/orderPresentation";
-import { adminReturnState, getAdminReturnTarget } from "../helpers/adminReturnNavigation";
 
 const safeDateTime = (value) => {
   if (!value) return null;
@@ -74,7 +73,6 @@ const InfoLine = ({ label, value }) => (
 
 const SinglePaymentRecordDetail = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const { customerId, recordType, recordId } = useParams();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -350,28 +348,13 @@ const SinglePaymentRecordDetail = () => {
     }
   };
 
-  // Returning to the workspace's Payments tab is a step BACK, not a new screen, so it
-  // replaces this entry instead of pushing another one. Pushing was why Back appeared to
-  // do nothing on the first press and then jumped past the workspace on the second.
-  // The workspace's own return target is carried through, so Back from there still
-  // reaches whichever parent opened the client (clients list or dashboard).
-  const handleBackToPayments = () => {
-    navigate(`/admin-panel/clients/${customerId}`, {
-      replace: true,
-      state: {
-        activeTab: "payments",
-        ...adminReturnState(getAdminReturnTarget(location, "/admin-panel/clients")),
-      },
-    });
-  };
-
   return (
     <AdminLayout>
       <div className="min-h-screen bg-slate-100 px-4 py-6 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-6xl space-y-5">
           <button
             type="button"
-            onClick={() => handleBackToPayments()}
+            onClick={() => navigate(`/admin-panel/clients/${customerId}`, { state: { activeTab: "payments" } })}
             className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
           >
             <ArrowLeft size={16} />
@@ -628,7 +611,6 @@ const getInvoiceLabel = (invoice) => {
 
 const PaymentOrderHistory = ({ customerId, orderId }) => {
   const navigate = useNavigate();
-  const location = useLocation();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [workspace, setWorkspace] = useState(null);
@@ -717,14 +699,8 @@ const PaymentOrderHistory = ({ customerId, orderId }) => {
     };
   }, [isGeneralPayments, orderId, workspace]);
 
-  // Opening another record from this list is sideways movement at the same level, not a
-  // drill-down, so it replaces this entry rather than stacking one per record viewed.
-  // Back then still returns to Payments in a single press, however many records were opened.
   const openRecord = (kind, recordId) => {
-    navigate(`/admin-panel/clients/${customerId}/payments/${kind}/${recordId}`, {
-      replace: true,
-      state: adminReturnState(getAdminReturnTarget(location, "/admin-panel/clients")),
-    });
+    navigate(`/admin-panel/clients/${customerId}/payments/${kind}/${recordId}`);
   };
 
   const handleFinalInvoiceDownload = async () => {
@@ -871,25 +847,13 @@ const PaymentOrderHistory = ({ customerId, orderId }) => {
     }
   };
 
-  // Same contract as the single-record view: Back to Payments is a step back, so it
-  // replaces this history entry and forwards the workspace's own return target.
-  const handleBackToPayments = () => {
-    navigate(`/admin-panel/clients/${customerId}`, {
-      replace: true,
-      state: {
-        activeTab: "payments",
-        ...adminReturnState(getAdminReturnTarget(location, "/admin-panel/clients")),
-      },
-    });
-  };
-
   return (
     <AdminLayout>
       <div className="min-h-screen bg-slate-100 px-4 py-6 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-6xl space-y-5">
           <button
             type="button"
-            onClick={() => handleBackToPayments()}
+            onClick={() => navigate(`/admin-panel/clients/${customerId}`, { state: { activeTab: "payments" } })}
             className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
           >
             <ArrowLeft size={16} />

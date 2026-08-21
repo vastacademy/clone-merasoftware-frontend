@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { ArrowLeft, Download, Mail, MessageSquarePlus, Phone, UserCheck, UserPlus } from "lucide-react";
 import SummaryApi from "../common";
@@ -11,7 +11,6 @@ import { useOnlineStatus } from "../App";
 import AdminLayout from "../components/AdminLayout";
 import AdminWorkspaceShell, { AdminWorkspaceHeader } from "../components/admin/AdminWorkspaceShell";
 import AdminInfoPill from "../components/admin/AdminInfoPill";
-import { goToAdminReturn } from "../helpers/adminReturnNavigation";
 
 const PIPELINE_STAGES = ["New", "Contacted", "Qualified", "Proposal Sent", "Won", "Lost"];
 
@@ -33,7 +32,6 @@ const AdminLeadDetailPage = () => {
   const user = useSelector((state) => state?.user?.user);
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const location = useLocation();
   const { leadId } = useParams();
   const { isOnline } = useOnlineStatus();
 
@@ -196,7 +194,7 @@ const AdminLeadDetailPage = () => {
           leadingAction={
             <button
               type="button"
-              onClick={() => goToAdminReturn(navigate, location, "/admin-panel/leads")}
+              onClick={() => navigate(-1)}
               className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-white transition hover:bg-white/10"
               aria-label="Go back"
             >

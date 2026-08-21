@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import {
   FileText,
@@ -16,10 +16,11 @@ import Context from '../context';
 import { isOrderApproved } from '../helpers/orderVisibility';
 import { isProjectItem, isPlanItem, sortItemsLatestFirst } from '../helpers/orderType';
 import { getRemainingDays } from '../helpers/orderPresentation';
-import { customerReturnState } from '../helpers/customerReturnNavigation';
+import { customerChildState } from '../helpers/customerReturnNavigation';
 
 const ProjectsAndPlans = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const user = useSelector((state) => state?.user?.user);
   const context = useContext(Context);
   const [orders, setOrders] = useState([]);
@@ -98,9 +99,9 @@ const ProjectsAndPlans = () => {
 
   const openDetails = (order) => {
     if (isPlanItem(order)) {
-      navigate(`/plan-details/${order._id}`, { state: customerReturnState('/projects-and-plans') });
+      navigate(`/plan-details/${order._id}`, { state: customerChildState(location) });
     } else {
-      navigate(`/project-details/${order._id}`, { state: customerReturnState('/projects-and-plans') });
+      navigate(`/project-details/${order._id}`, { state: customerChildState(location) });
     }
   };
 

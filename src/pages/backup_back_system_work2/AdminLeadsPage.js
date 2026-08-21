@@ -12,7 +12,6 @@ import AdminLayout from "../components/AdminLayout";
 import AdminWorkspaceShell, { AdminWorkspaceHeader } from "../components/admin/AdminWorkspaceShell";
 import AdminWorkspaceList from "../components/admin/AdminWorkspaceList";
 import AdminFilterDropdown from "../components/admin/AdminFilterDropdown";
-import { adminReturnState } from "../helpers/adminReturnNavigation";
 
 const STATUS_STYLES = {
   New: "bg-slate-100 text-slate-700",
@@ -108,15 +107,6 @@ const AdminLeadsPage = () => {
   useEffect(() => {
     fetchLeads();
   }, []);
-
-  // Lead detail is told where Back should return to instead of relying on history,
-  // matching how the clients list opens the client workspace.
-  const openLead = (lead) => {
-    if (!lead?._id) return;
-    navigate(`/admin-panel/leads/${lead._id}`, {
-      state: adminReturnState("/admin-panel/leads"),
-    });
-  };
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -327,11 +317,11 @@ const AdminLeadsPage = () => {
                 key={lead._id}
                 role="button"
                 tabIndex={0}
-                onClick={() => openLead(lead)}
+                onClick={() => navigate(`/admin-panel/leads/${lead._id}`)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" || e.key === " ") {
                     e.preventDefault();
-                    openLead(lead);
+                    navigate(`/admin-panel/leads/${lead._id}`);
                   }
                 }}
                 className={[

@@ -12,6 +12,7 @@ import AdminWorkspaceShell, { AdminWorkspaceHeader } from "../components/admin/A
 import AdminWorkspaceTabs from "../components/admin/AdminWorkspaceTabs";
 import AdminWorkspaceList from "../components/admin/AdminWorkspaceList";
 import AdminFilterDropdown from "../components/admin/AdminFilterDropdown";
+import { adminReturnState } from "../helpers/adminReturnNavigation";
 
 const SERVICE_PLAN_TYPE_LABELS = {
   website_updates: "Website Update",
@@ -142,7 +143,9 @@ const AdminPlanProductsPage = () => {
   };
 
   const handleAddService = () => {
-    navigate("/admin-panel/website-management/services/add");
+    navigate("/admin-panel/website-management/services/add", {
+      state: adminReturnState("/admin-panel/website-management/plans"),
+    });
   };
 
   const handlePlanOpen = () => {

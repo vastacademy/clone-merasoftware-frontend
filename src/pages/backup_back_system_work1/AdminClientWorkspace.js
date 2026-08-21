@@ -44,7 +44,6 @@ import {
   buildLedgerItems,
   groupLedgerItemsByProject,
 } from "../helpers/paymentLedger";
-import { adminReturnState, getAdminReturnTarget, goToAdminReturn } from "../helpers/adminReturnNavigation";
 
 const OVERVIEW_TAB = { id: "overview", label: "Overview", active: true };
 const PROJECTS_TAB = { id: "projects", label: "Projects", active: true };
@@ -488,11 +487,24 @@ const AdminClientWorkspace = () => {
     setSelectedProjectCheckpointId(lastNode ? getNodeSelectionKey(lastNode) : null);
   }, [activeProject, selectedProjectCheckpointId]);
 
-  // Leaving a subpage is now an explicit action in exactly one place: handleTabChange
-  // clears the open project/plan before switching tabs. The two effects that used to
-  // watch activeTab and clear the subpage after the fact are gone — they reacted to a
-  // state change instead of owning it, so the tab rendered once against a subpage that
-  // was still open, and they raced the Back handlers that clear the same state.
+  useEffect(() => {
+    if (activeTab !== "projects" && activeProjectId) {
+      setActiveProjectId(null);
+      setActiveProject(null);
+      setActiveProjectError("");
+      setActiveProjectLoading(false);
+      setSelectedProjectCheckpointId(null);
+    }
+  }, [activeTab, activeProjectId]);
+
+  useEffect(() => {
+    if (activeTab !== "plans" && activePlanId) {
+      setActivePlanId(null);
+      setActivePlan(null);
+      setActivePlanError("");
+      setActivePlanLoading(false);
+    }
+  }, [activeTab, activePlanId]);
 
   const handleConfirmDelete = async () => {
     if (!deleteTarget?._id || !deleteScan) return;
@@ -544,14 +556,9 @@ const AdminClientWorkspace = () => {
     deleteRequiredSections.length > 0 &&
     deleteRequiredSections.every((section) => deleteSelections[section.key]);
 
-  // The payments page returns here with replace:true, so this client entry must survive
-  // that round trip with its own return target intact — otherwise Back from the workspace
-  // would forget which parent (clients list or dashboard) opened this client.
   const handleOpenPaymentGroup = (group) => {
     if (!group?.key || !customerId) return;
-    navigate(`/admin-panel/clients/${customerId}/payments/order/${group.key}`, {
-      state: adminReturnState(getAdminReturnTarget(location, "/admin-panel/clients")),
-    });
+    navigate(`/admin-panel/clients/${customerId}/payments/order/${group.key}`);
   };
 
   // --- Account & Access handlers ---
@@ -890,36 +897,8 @@ const AdminClientWorkspace = () => {
     }
   };
 
-  // Switching tabs closes whatever project/plan subpage is open. This is the single
-  // owner of that rule (it replaced two after-the-fact effects); every tab change goes
-  // through here, so a subpage can never survive into a tab that does not render it.
-  const handleTabChange = (tabId) => {
-    if (tabId === activeTab) return;
-
-    if (activeProjectId) handleBackToProjects();
-    if (activePlanId) handleBackToPlans();
-    setActiveTab(tabId);
-  };
-
-  // Back is one step, never a history jump. Inside an open project/plan subpage the
-  // first Back closes that subpage (the same thing the subpage's own Back does), so the
-  // header and in-page Back can never disagree. At workspace level it returns to the
-  // parent that opened this client — the clients list or the dashboard, whichever it
-  // actually was — instead of navigate(-1), which pointed at whatever happened to be
-  // previous in history. A direct URL or refresh has no return target and falls back to
-  // the clients list. See helpers/adminReturnNavigation.js.
   const handleBack = () => {
-    if (activeProjectId) {
-      handleBackToProjects();
-      return;
-    }
-
-    if (activePlanId) {
-      handleBackToPlans();
-      return;
-    }
-
-    goToAdminReturn(navigate, location, "/admin-panel/clients");
+    navigate(-1);
   };
 
   return (
@@ -960,7 +939,7 @@ const AdminClientWorkspace = () => {
         <AdminWorkspaceTabs
           tabs={tabs}
           activeTab={activeTab || tabs[0].id}
-          onChange={handleTabChange}
+          onChange={setActiveTab}
           ariaLabel="Client workspace sections"
         />
 
@@ -1382,9 +1361,6 @@ const getDocKindMeta = (doc) => {
   if (doc?.kind === "proposal") {
     return { label: `Proposal v${doc.version}`, badge: "bg-amber-50 text-amber-700 border-amber-200" };
   }
-  if (doc?.kind === "follow-up") {
-    return { label: "Follow-up Document", badge: "bg-sky-50 text-sky-700 border-sky-200" };
-  }
   if (doc?.source === "agreement") {
     return { label: "Agreement", badge: "bg-emerald-50 text-emerald-700 border-emerald-200" };
   }
@@ -1459,7 +1435,7 @@ const ClientDocumentsPanel = ({ documents, loading, error, uploading, onUpload, 
           <p className="mt-4 text-sm text-rose-600">{error}</p>
         ) : !documents || documents.length === 0 ? (
           <p className="mt-4 text-sm text-slate-500">
-            No documents yet. Any document sent while this client was a lead, and any document you upload after conversion, will appear here.
+            No documents yet. Proposals sent while this client was a lead, and any agreements you upload, will appear here.
           </p>
         ) : (
           <ul className="mt-4 space-y-3">

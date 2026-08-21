@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   ArrowRight,
   Calendar,
@@ -20,7 +20,7 @@ import { isOrderApproved } from '../helpers/orderVisibility';
 import PaymentStatusChip from '../components/PaymentStatusChip';
 import { isProjectItem, isPlanItem, PROJECT_CATEGORIES } from '../helpers/orderType';
 import { getOrderCategory, getOrderDisplayName } from '../helpers/orderPresentation';
-import { customerReturnState } from '../helpers/customerReturnNavigation';
+import { customerChildState } from '../helpers/customerReturnNavigation';
 
 const getOrderStatus = (order) => {
   if (!order) return 'Processing';
@@ -92,9 +92,9 @@ const getPurchaseTypeLabel = (order) => {
   return 'Order';
 };
 
-const OrderRow = ({ order, navigate, formatDate, index }) => {
+const OrderRow = ({ order, navigate, location, formatDate, index }) => {
   const handleClick = () => {
-    navigate(`/order-detail/${order._id}`, { state: customerReturnState('/order') });
+    navigate(`/order-detail/${order._id}`, { state: customerChildState(location) });
   };
 
   const status = getOrderStatus(order);
@@ -179,6 +179,7 @@ const OrdersPage = () => {
   const [activeTab, setActiveTab] = useState('all');
   const [activeProject, setActiveProject] = useState(null);
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     fetchOrders();
@@ -361,6 +362,7 @@ const OrdersPage = () => {
                     order={order}
                     index={index}
                     navigate={navigate}
+                    location={location}
                     formatDate={formatDate}
                   />
                 ))}
