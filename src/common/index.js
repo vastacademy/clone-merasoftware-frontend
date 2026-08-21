@@ -13,6 +13,14 @@ const SummaryApi = {
        url : `${backendDomain}/api/signin`,
         method: "post"
     },
+    guestLogin: {
+        url: `${backendDomain}/api/guest-login`,
+        method: "post"
+    },
+    guestDummyWalletCredit: {
+        url: `${backendDomain}/api/guest/demo-wallet-credit`,
+        method: "post"
+    },
     customerSignIn: {
        url: `${backendDomain}/api/auth/customer/login`,
        method: "post"

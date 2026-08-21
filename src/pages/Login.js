@@ -7,10 +7,12 @@ import { useDispatch } from "react-redux";
 import SummaryApi from "../common";
 import Context from "../context";
 import postLogin from "../helpers/postLogin";
+import GuestLoginModal from "../components/GuestLoginModal";
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showGuestModal, setShowGuestModal] = useState(false);
   const [data, setData] = useState({
     email: "",
     password: "",
@@ -206,6 +208,22 @@ const Login = () => {
             </button>
           </form>
 
+          {/* Guest Login */}
+          <div className="mt-6">
+            <div className="relative flex items-center">
+              <div className="flex-grow border-t border-slate-200"></div>
+              <span className="mx-3 text-xs text-slate-400 uppercase">or</span>
+              <div className="flex-grow border-t border-slate-200"></div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowGuestModal(true)}
+              className="w-full mt-4 border border-slate-300 text-slate-700 font-semibold py-3 px-4 rounded-lg hover:bg-slate-50 transition"
+            >
+              Login as Guest
+            </button>
+          </div>
+
           {/* Footer */}
           <div className="mt-8 text-center text-sm text-slate-600">
             <p>
@@ -217,6 +235,16 @@ const Login = () => {
           </div>
         </div>
       </div>
+
+      {showGuestModal && (
+        <GuestLoginModal
+          onClose={() => setShowGuestModal(false)}
+          onSuccess={(dataApi) => {
+            setShowGuestModal(false);
+            postLogin({ dataApi, dispatch, navigate, toast, fetchUserDetails });
+          }}
+        />
+      )}
     </section>
   );
 };

@@ -355,7 +355,13 @@ const AdminLeadsPage = () => {
                   </span>
                 </div>
                 <div className="col-span-6 lg:col-span-1 lg:flex lg:items-center">
-                  <p className="truncate text-sm text-slate-700">{lead.source || "—"}</p>
+                  {lead.source === "guest" ? (
+                    <span className="inline-flex rounded-full bg-purple-100 px-2.5 py-1 text-xs font-semibold text-purple-700">
+                      Guest
+                    </span>
+                  ) : (
+                    <p className="truncate text-sm text-slate-700">{lead.source || "—"}</p>
+                  )}
                 </div>
                 <div className="col-span-6 lg:col-span-1 lg:flex lg:items-center">
                   <p className="text-sm font-semibold text-slate-900">{formatDate(lead.createdAt)}</p>
