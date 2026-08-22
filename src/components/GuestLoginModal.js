@@ -27,10 +27,21 @@ const GuestLoginModal = ({ onClose, onSuccess }) => {
       const dataApi = await response.json();
 
       if (!dataApi.success) {
-        toast.error(dataApi.message || "Could not start guest session");
+        // Distinct toast per outcome so the user immediately understands why,
+        // instead of every rejection looking like a generic failure.
+        if (dataApi.outcomeType === "real_user") {
+          toast.info(dataApi.message || "This account already exists. Please sign in.");
+        } else if (dataApi.outcomeType === "conflict") {
+          toast.warning(dataApi.message || "This email or phone is already in use.");
+        } else {
+          toast.error(dataApi.message || "Could not start guest session");
+        }
         return;
       }
 
+      // Success toast is left to postLogin() (via onSuccess), which already
+      // shows the backend's own distinct message ("Guest session resumed" vs
+      // "Guest account created") — avoids a duplicate toast here.
       onSuccess(dataApi);
     } catch (error) {
       console.error("Guest login error:", error);

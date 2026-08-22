@@ -126,3 +126,33 @@ All items from Sections 4-6 were implemented exactly as planned, no scope change
 - No admin-facing UI shows `buildGuestDeletePlan()`'s counts before a manual purge — expiry/purge is fully automatic (lazy, on the two trigger points above), so this was never required by the approved scope.
 - A full-repo grep for every other `userModel.find({ roles: "customer" ... })` call site (beyond `getAdminClients.js`, which is fixed, and `getTrash.js`, which is unaffected since guests are hard-deleted not soft-deleted) was flagged in Section 7 as worth a pass but was not exhaustively re-verified in this implementation session.
 - Chess "active game" defer only blocks deletion — it does not proactively notify the guest or the real opponent that expiry is pending; this matches the approved decision (Section 2, item 7) exactly, just noting the UX is silent-defer, not defer-with-notice.
+
+## 10. Identity-safety follow-up (found after initial ship, fixed same session)
+
+**Gap found**: the original `guestLogin.js` resume-check only ever looked at `leadModel` rows tagged `source: "guest"` — it never checked whether the submitted email/phone belonged to an existing **real customer** or partially matched **any** other record. In practice this meant a real customer typing their own real email+phone into the guest popup would hit `userModel`'s hard unique-email index mid-transaction and get an opaque error, and a partial match (e.g. someone else's phone, different email) would silently create a duplicate lead/guest instead of being flagged.
+
+**Fixed with a new SSOT helper, `backend/helpers/guestIdentityMatch.js`** (`findIdentityMatch(email, phone)`), modeled on the existing dual-collection parallel-query pattern already used by `backend/controller/lead/globalSearch.js` (`Promise.all` over `userModel` + `leadModel`, not sequential awaits). It classifies the submitted identity into exactly one of four outcomes, and `guestLogin.js`'s resume/create logic was rewritten to branch on it:
+
+- **`guest_resume`** — one record has **both** email and phone matching, and it's a live guest (`isGuest: true`) → safe, resumes exactly as before.
+- **`real_user`** — one record has **both** matching, and it's a real customer (`isGuest: false`) → **hard rule: never auto-login without a password**, this is a security boundary, not a UX shortcut. Rejected with `409` and "Please sign in with your password."
+- **`conflict`** — some record matches only **one** of email/phone (any record, guest or real, in either collection) → ambiguous (could be a different person sharing one field), rejected with `409` and "This email or phone is already in use," rather than guessed at.
+- **`none`** — nothing matches at all → proceeds to the original fresh lead+guest creation, unchanged.
+
+**Defensive guard included**: `leadModel.email`/`.phone` default to `""` for old admin-created leads with missing contact info (verified); the helper only ever pushes **non-empty** submitted fields into its `$or` query, so it can never accidentally "match" every contact-less legacy lead — same defensive pattern `createLead.js` already uses for its own duplicate check.
+
+**Known, documented limitation (not fixed, matches existing codebase behavior)**: phone is compared as a raw trimmed string. No phone-normalization (stripping `+91`, spaces, dashes) exists anywhere in this codebase (verified across `createLead.js`, `convertLead.js`, and the original `guestLogin.js` too) — `"9876543210"` and `"+919876543210"` are treated as different numbers by this check, same as every other phone-matching code path here.
+
+**Live-tested against the real DB, all 5 cases, all cleaned up afterward**: real-user exact match → 409 reject; phone-only match against a real user → 409 conflict; email-only match against a real user → 409 conflict; no match → fresh guest created; same guest resubmitted → resumed to the same `_id`.
+
+Read this section (and `guestIdentityMatch.js` itself) before touching `guestLogin.js`'s resume/create branching, or before adding any other endpoint that needs to check "does this email/phone already belong to someone."
+
+## 11. Distinct toasts per outcome (owner-tested, then requested this refinement)
+
+After the owner tested the feature directly, the feedback was that every rejection looked like the same generic error toast. Fixed by having `guestLogin.js` include an additive `outcomeType` field (`"real_user"`, `"conflict"`, `"guest_resume"`, `"created"`) on every response, and `GuestLoginModal.js` now branches on it:
+
+- `real_user` → `toast.info` ("this account already exists, sign in")
+- `conflict` → `toast.warning` ("this email or phone is already in use")
+- any other failure (validation, network) → `toast.error`
+- `guest_resume` / `created` (success) → **no toast fired in the modal itself** — deliberately left to `postLogin()` (already called via `onSuccess`), which shows the backend's own distinct message ("Guest session resumed" vs "Guest account created") as `toast.success`. An earlier version of this fix fired its own success toast in the modal too, which was caught before shipping as a duplicate-toast bug (two success toasts stacking) and removed.
+
+Verified live against the real DB: all 4 `outcomeType` values come back correctly on the corresponding request shape (real-user match, phone-only conflict, fresh create, resume) — test records cleaned up after.
