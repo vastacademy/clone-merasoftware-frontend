@@ -49,6 +49,7 @@ const AdminLeadsPage = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("lastUpdatedDesc");
+  const [sourceFilter, setSourceFilter] = useState("all");
   const [showAddModal, setShowAddModal] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
@@ -220,6 +221,12 @@ const AdminLeadsPage = () => {
     const query = searchTerm.trim().toLowerCase();
     let result = leads;
 
+    if (sourceFilter === "guest") {
+      result = result.filter((lead) => lead.source === "guest");
+    } else if (sourceFilter === "normal") {
+      result = result.filter((lead) => lead.source !== "guest");
+    }
+
     if (query) {
       result = result.filter((lead) => {
         return (
@@ -250,7 +257,13 @@ const AdminLeadsPage = () => {
     });
 
     return result;
-  }, [leads, searchTerm, sortBy]);
+  }, [leads, searchTerm, sortBy, sourceFilter]);
+
+  const sourceFilterOptions = [
+    { value: "all", label: "All" },
+    { value: "normal", label: "Normal" },
+    { value: "guest", label: "Guest" },
+  ];
 
   return (
     <AdminLayout
@@ -305,6 +318,27 @@ const AdminLeadsPage = () => {
               placeholder="Search leads by name, email, or phone"
               className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3 pl-10 pr-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
             />
+          </div>
+
+          <div className="mt-3 flex flex-wrap gap-2">
+            {sourceFilterOptions.map((option) => {
+              const isActive = sourceFilter === option.value;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => setSourceFilter(option.value)}
+                  className={[
+                    "rounded-full px-4 py-1.5 text-xs font-semibold transition",
+                    isActive
+                      ? "bg-emerald-600 text-white"
+                      : "bg-slate-100 text-slate-600 hover:bg-slate-200",
+                  ].join(" ")}
+                >
+                  {option.label}
+                </button>
+              );
+            })}
           </div>
         </div>
 
