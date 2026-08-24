@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, HelpCircle } from "lucide-react";
 
 /**
  * Slim portal top bar: MeraSoftware logo (left) + profile dropdown (right).
@@ -15,6 +15,7 @@ const PortalHeader = ({ user, portalLabel = "Portal", dashboardTo = "/dashboard"
   const menuRef = useRef(null);
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [demoInfoOpen, setDemoInfoOpen] = useState(false);
   const userInitial = (user?.name || "A").trim().charAt(0).toUpperCase();
 
   const isLinkActive = (to) =>
@@ -42,6 +43,40 @@ const PortalHeader = ({ user, portalLabel = "Portal", dashboardTo = "/dashboard"
             <p className="text-[11px] leading-tight text-slate-400">{portalLabel}</p>
           </div>
         </Link>
+
+        {user?.isGuest ? (
+          <div
+            className="relative hidden shrink-0 sm:block"
+            onMouseEnter={() => setDemoInfoOpen(true)}
+            onMouseLeave={() => setDemoInfoOpen(false)}
+          >
+            <span className="inline-flex items-center gap-2 rounded-full border border-purple-400/50 bg-purple-500/20 px-4 py-1.5 text-sm font-bold uppercase tracking-wide text-purple-100 shadow-[0_0_16px_rgba(168,85,247,0.35)]">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-purple-300" />
+              Demo Mode
+            </span>
+
+            <button
+              type="button"
+              onClick={() => setDemoInfoOpen((open) => !open)}
+              aria-label="What is Demo Mode?"
+              className="absolute -right-2.5 -top-2.5 flex h-6 w-6 items-center justify-center rounded-full border-2 border-slate-950 bg-slate-900 text-yellow-300 transition hover:text-yellow-200"
+            >
+              <HelpCircle size={17} />
+            </button>
+
+            {demoInfoOpen ? (
+              <div className="absolute left-1/2 top-11 z-50 w-72 -translate-x-1/2 rounded-2xl border border-yellow-400/30 bg-slate-900 p-4 text-left shadow-xl">
+                <p className="text-sm font-semibold text-white">You're in a Guest Demo Account</p>
+                <p className="mt-1.5 text-xs leading-relaxed text-slate-300">
+                  This is a temporary account with ₹50,000 of demo wallet money so you can explore
+                  the full portal — create a project, buy a service, pay invoices — with no real
+                  money and no approval needed. It's automatically cleared after 24 hours of
+                  inactivity.
+                </p>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
 
         {links.length > 0 ? (
           <nav className="hidden flex-1 items-center justify-center gap-1 overflow-x-auto lg:flex" aria-label="Primary navigation">
@@ -105,7 +140,14 @@ const PortalHeader = ({ user, portalLabel = "Portal", dashboardTo = "/dashboard"
           {menuOpen && user ? (
             <div className="absolute right-0 top-12 w-56 rounded-2xl border border-white/10 bg-slate-900 p-2 shadow-xl">
               <div className="border-b border-white/10 px-3 py-2">
-                <p className="truncate text-sm font-semibold text-white">{user.name || "Account"}</p>
+                <div className="flex items-center gap-2">
+                  <p className="truncate text-sm font-semibold text-white">{user.name || "Account"}</p>
+                  {user.isGuest ? (
+                    <span className="shrink-0 rounded-full bg-purple-500/20 px-2 py-0.5 text-[10px] font-semibold text-purple-200">
+                      Guest
+                    </span>
+                  ) : null}
+                </div>
                 <p className="truncate text-xs text-slate-400">{user.email || ""}</p>
               </div>
               <Link

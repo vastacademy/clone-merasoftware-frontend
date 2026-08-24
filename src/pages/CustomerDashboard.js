@@ -222,6 +222,15 @@ const CustomerDashboard = () => {
         <div className="pointer-events-none absolute inset-0 bg-slate-950/40" />
 
         <div className="relative mx-auto max-w-7xl">
+          {user?.isGuest ? (
+            <div className="mx-auto mb-6 flex max-w-2xl items-center justify-center gap-2 rounded-2xl border border-purple-400/40 bg-purple-500/10 px-4 py-2.5 text-center">
+              <span className="h-2 w-2 shrink-0 rounded-full bg-purple-300" />
+              <p className="text-sm font-medium text-purple-100">
+                You're exploring a <span className="font-bold">Guest Demo Account</span> with ₹50,000 demo wallet money. Nothing here is real, and this account is cleared after 24 hours of inactivity.
+              </p>
+            </div>
+          ) : null}
+
           <div className="text-center">
             <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl lg:text-4xl">
               Dashboard

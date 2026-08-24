@@ -34,6 +34,14 @@ const PAYMENT_OPTIONS = [
   { value: 'decide_later', label: 'Decide payment later' },
 ];
 
+// Guests explore with demo wallet money only — installments exist to spread a
+// real payment over time, which doesn't apply here, and progress-threshold
+// gates on partial payment would otherwise stall a guest's demo project at
+// 50%/90%. Full payment (wallet-covered, approved instantly) and Decide
+// Later (guest can pay from their own order page afterward) both still work.
+const paymentOptionsFor = (isGuest) =>
+  isGuest ? PAYMENT_OPTIONS.filter((option) => option.value !== 'partial') : PAYMENT_OPTIONS;
+
 const labelOf = (options, value) => options.find((o) => o.value === value)?.label || '';
 
 // Installment plans for partial payment. Must stay byte-aligned with the backend
@@ -275,6 +283,7 @@ const StartNewWebsiteCustomize = () => {
   const location = useLocation();
   const context = useContext(Context);
   const user = useSelector((state) => state?.user?.user);
+  const paymentOptions = useMemo(() => paymentOptionsFor(user?.isGuest), [user?.isGuest]);
 
   const state = location.state || {};
 
@@ -653,7 +662,7 @@ const StartNewWebsiteCustomize = () => {
                   <Field label="Payment option">
                     <SelectDropdown
                       value={paymentOption}
-                      options={PAYMENT_OPTIONS}
+                      options={paymentOptions}
                       onChange={setPaymentOption}
                     />
                   </Field>
