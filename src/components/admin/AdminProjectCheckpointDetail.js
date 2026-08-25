@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import AdminInfoPill from "./AdminInfoPill";
+import SummaryApi from "../../common";
 
 const getStatusLabel = (node) => {
   if (node?.status === "deleted") return "Deleted";
@@ -30,11 +31,7 @@ const AdminProjectCheckpointDetail = ({
   onSaveCorrection,
   onCancelEdit,
 }) => {
-  const [templates, setTemplates] = useState([
-    { id: "progress", name: "Progress Update", message: "Your project has moved forward. We are continuing work on the selected node(s)." },
-    { id: "completed", name: "Node Completed", message: "The selected node(s) have been completed successfully." },
-    { id: "review", name: "Ready for Review", message: "The selected work is ready for your review. Please share any feedback." },
-  ]);
+  const [templates, setTemplates] = useState([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
   const [isTemplateDirty, setIsTemplateDirty] = useState(false);
   const [isSaveAsOpen, setIsSaveAsOpen] = useState(false);
@@ -52,6 +49,28 @@ const AdminProjectCheckpointDetail = ({
       setNewNodePercentage("");
     }
   }, [editingNode]);
+
+  useEffect(() => {
+    const fetchTemplates = async () => {
+      try {
+        const response = await fetch(SummaryApi.getMessageTemplates.url, {
+          method: SummaryApi.getMessageTemplates.method.toUpperCase(),
+          credentials: "include",
+        });
+        const result = await response.json();
+        if (result.success) {
+          setTemplates(Array.isArray(result.data) ? result.data.map((template) => ({
+            id: template._id,
+            name: template.name,
+            message: template.message,
+          })) : []);
+        }
+      } catch (error) {
+        console.error("Error fetching message templates:", error);
+      }
+    };
+    fetchTemplates();
+  }, []);
 
   const enteredPercentage = Number(newNodePercentage);
   const isStartingNodeEdit = Boolean(editingNode && editBounds?.isStartingNode);
@@ -92,34 +111,68 @@ const AdminProjectCheckpointDetail = ({
       const template = templates.find((item) => item.id === templateId);
       onUpdateMessageChange?.(template?.message || "");
     };
-    const handleSaveTemplate = () => {
+    const handleSaveTemplate = async () => {
       if (!selectedTemplate || !isTemplateDirty) return;
-      setTemplates((current) => current.map((template) => (
-        template.id === selectedTemplate.id
-          ? { ...template, message: updateMessage }
-          : template
-      )));
-      setIsTemplateDirty(false);
+      try {
+        const response = await fetch(`${SummaryApi.updateMessageTemplate.url}/${selectedTemplate.id}`, {
+          method: SummaryApi.updateMessageTemplate.method.toUpperCase(),
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: updateMessage }),
+        });
+        const result = await response.json();
+        if (!result.success) throw new Error(result.message || "Failed to save template");
+        setTemplates((current) => current.map((template) => (
+          template.id === selectedTemplate.id
+            ? { ...template, message: updateMessage }
+            : template
+        )));
+        setIsTemplateDirty(false);
+      } catch (error) {
+        console.error("Error saving message template:", error);
+      }
     };
-    const handleSaveAsTemplate = () => {
+    const handleSaveAsTemplate = async () => {
       if (!saveAsName.trim() || !updateMessage.trim()) return;
-      const template = {
-        id: `custom-${Date.now()}`,
-        name: saveAsName.trim(),
-        message: updateMessage,
-      };
-      setTemplates((current) => [...current, template]);
-      setSelectedTemplateId(template.id);
-      setIsTemplateDirty(false);
-      setIsSaveAsOpen(false);
-      setSaveAsName("");
+      try {
+        const response = await fetch(SummaryApi.createMessageTemplate.url, {
+          method: SummaryApi.createMessageTemplate.method.toUpperCase(),
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: saveAsName.trim(), message: updateMessage }),
+        });
+        const result = await response.json();
+        if (!result.success) throw new Error(result.message || "Failed to save template");
+        const template = {
+          id: result.data._id,
+          name: result.data.name,
+          message: result.data.message,
+        };
+        setTemplates((current) => [...current, template]);
+        setSelectedTemplateId(template.id);
+        setIsTemplateDirty(false);
+        setIsSaveAsOpen(false);
+        setSaveAsName("");
+      } catch (error) {
+        console.error("Error saving new message template:", error);
+      }
     };
-    const handleDeleteTemplate = () => {
+    const handleDeleteTemplate = async () => {
       if (!selectedTemplate) return;
-      setTemplates((current) => current.filter((template) => template.id !== selectedTemplate.id));
-      setSelectedTemplateId("");
-      setIsTemplateDirty(false);
-      setIsDeleteConfirmOpen(false);
+      try {
+        const response = await fetch(`${SummaryApi.deleteMessageTemplate.url}/${selectedTemplate.id}`, {
+          method: SummaryApi.deleteMessageTemplate.method.toUpperCase(),
+          credentials: "include",
+        });
+        const result = await response.json();
+        if (!result.success) throw new Error(result.message || "Failed to delete template");
+        setTemplates((current) => current.filter((template) => template.id !== selectedTemplate.id));
+        setSelectedTemplateId("");
+        setIsTemplateDirty(false);
+        setIsDeleteConfirmOpen(false);
+      } catch (error) {
+        console.error("Error deleting message template:", error);
+      }
     };
     return (
       <div className="rounded-[1.25rem] border border-slate-300 bg-slate-100 p-4">

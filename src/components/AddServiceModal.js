@@ -218,6 +218,7 @@ const AddServiceModal = ({
         const data = await createOrders({ txnId });
         setPurchasedSummary(data);
         onPurchased?.();
+        setTimeout(() => onClose?.(), 1800);
       } catch (error) {
         toast.error(error.message || 'Could not add the services');
       } finally {
@@ -251,6 +252,7 @@ const AddServiceModal = ({
       setShowQR(false);
       setPurchasedSummary(data);
       onPurchased?.();
+      setTimeout(() => onClose?.(), 1800);
     } catch (error) {
       toast.error(error.message || 'Could not add the services');
     } finally {

@@ -51,6 +51,7 @@ const TimelineCheckpointItem = ({
   checkpoint: node,
   isCompleted,
   isInProgress,
+  isDeleted = false,
   isSelected,
   messageCount,
   formatDate,
@@ -58,57 +59,71 @@ const TimelineCheckpointItem = ({
   compact = false,
   isGlass = false,
 }) => {
-  const statusLabel = compact
-    ? isCompleted
-      ? 'Done'
-      : isInProgress
-        ? 'Live'
-        : 'Soon'
-    : isCompleted
-      ? 'Completed'
-      : isInProgress
-        ? 'In Progress'
-        : 'Upcoming';
-
-  const statusTone = isGlass
-    ? isCompleted
-      ? 'border-emerald-400/40 bg-emerald-500/20 text-emerald-300'
-      : isInProgress
-        ? 'border-white/25 bg-white/15 text-white'
-        : 'border-white/15 bg-white/10 text-slate-300'
-    : isCompleted
-      ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-      : isInProgress
-        ? 'border-slate-300 bg-slate-100 text-slate-700'
-        : 'border-slate-200 bg-white text-slate-600';
-
-  const cardTone = isGlass
-    ? isSelected
-      ? compact
-        ? 'border-white/40 bg-white/[0.1] ring-2 ring-white/20'
-        : 'border-white/40 bg-white/[0.1] shadow-md ring-2 ring-white/20'
-      : 'border-white/10 bg-white/[0.03] hover:border-white/20 hover:bg-white/[0.07]'
-    : isSelected
-      ? compact
-        ? 'border-slate-300 bg-slate-50 ring-2 ring-slate-200'
-        : 'border-slate-300 bg-white shadow-md ring-2 ring-slate-200'
-      : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50';
-
-  const badgeTone = isGlass
-    ? isSelected
-      ? 'border-white/40 bg-white/15'
-      : isCompleted
-        ? 'border-emerald-400/60 bg-emerald-500/20'
+  const statusLabel = isDeleted
+    ? 'Deleted'
+    : compact
+      ? isCompleted
+        ? 'Done'
         : isInProgress
-          ? 'border-white/30 bg-white/15'
-          : 'border-white/15 bg-white/10'
-    : isSelected
-      ? 'border-slate-400 bg-slate-100'
+          ? 'Live'
+          : 'Soon'
       : isCompleted
-        ? 'border-emerald-500 bg-emerald-50'
+        ? 'Completed'
         : isInProgress
-          ? 'border-slate-400 bg-slate-100'
-          : 'border-slate-300 bg-white';
+          ? 'In Progress'
+          : 'Upcoming';
+
+  const statusTone = isDeleted
+    ? isGlass
+      ? 'border-white/15 bg-white/10 text-slate-300'
+      : 'border-slate-300 bg-slate-100 text-slate-500'
+    : isGlass
+      ? isCompleted
+        ? 'border-emerald-400/40 bg-emerald-500/20 text-emerald-300'
+        : isInProgress
+          ? 'border-white/25 bg-white/15 text-white'
+          : 'border-white/15 bg-white/10 text-slate-300'
+      : isCompleted
+        ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+        : isInProgress
+          ? 'border-slate-300 bg-slate-100 text-slate-700'
+          : 'border-slate-200 bg-white text-slate-600';
+
+  const cardTone = isDeleted
+    ? isGlass
+      ? 'border-white/5 bg-white/[0.02]'
+      : 'border-slate-200 bg-slate-50'
+    : isGlass
+      ? isSelected
+        ? compact
+          ? 'border-white/40 bg-white/[0.1] ring-2 ring-white/20'
+          : 'border-white/40 bg-white/[0.1] shadow-md ring-2 ring-white/20'
+        : 'border-white/10 bg-white/[0.03] hover:border-white/20 hover:bg-white/[0.07]'
+      : isSelected
+        ? compact
+          ? 'border-slate-300 bg-slate-50 ring-2 ring-slate-200'
+          : 'border-slate-300 bg-white shadow-md ring-2 ring-slate-200'
+        : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50';
+
+  const badgeTone = isDeleted
+    ? isGlass
+      ? 'border-white/20 bg-white/15'
+      : 'border-slate-300 bg-slate-200'
+    : isGlass
+      ? isSelected
+        ? 'border-white/40 bg-white/15'
+        : isCompleted
+          ? 'border-emerald-400/60 bg-emerald-500/20'
+          : isInProgress
+            ? 'border-white/30 bg-white/15'
+            : 'border-white/15 bg-white/10'
+      : isSelected
+        ? 'border-slate-400 bg-slate-100'
+        : isCompleted
+          ? 'border-emerald-500 bg-emerald-50'
+          : isInProgress
+            ? 'border-slate-400 bg-slate-100'
+            : 'border-slate-300 bg-white';
 
   return (
     <button
@@ -128,7 +143,9 @@ const TimelineCheckpointItem = ({
           badgeTone,
         ].join(' ')}
       >
-        {isCompleted ? (
+        {isDeleted ? (
+          <X className={isGlass ? 'h-4 w-4 text-slate-200' : 'h-4 w-4 text-slate-600'} />
+        ) : isCompleted ? (
           <Check className={isGlass ? 'h-4 w-4 text-emerald-400' : 'h-4 w-4 text-emerald-500'} />
         ) : isInProgress ? (
           <Clock className={isGlass ? 'h-4 w-4 text-white' : 'h-4 w-4 text-slate-600'} />
@@ -139,7 +156,11 @@ const TimelineCheckpointItem = ({
 
       <div className="min-w-0 flex-1">
         <div className={compact ? 'flex items-center justify-between gap-2' : 'flex flex-wrap items-center gap-2'}>
-          <h3 className={isGlass ? 'truncate text-base font-semibold text-white' : 'truncate text-base font-semibold text-black'}>
+          <h3 className={[
+            'truncate text-base font-semibold',
+            isDeleted ? 'line-through' : '',
+            isDeleted ? (isGlass ? 'text-slate-300' : 'text-slate-500') : (isGlass ? 'text-white' : 'text-black'),
+          ].join(' ')}>
             {node.title}
           </h3>
           <span className={["rounded-full border px-2 py-0.5 text-sm font-semibold", statusTone].join(' ')}>
@@ -880,6 +901,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
                       <div className="relative pl-2">
                         <div className="space-y-2">
                           {timelineNodes.map((node) => {
+                            const isDeleted = node.status === 'deleted';
                             const isInProgress = node === inProgressNode;
                             const isCompleted = node.status === 'active' && !isInProgress;
                             const isSelected = normalizeNodeKey(selectedNodeId) === normalizeNodeKey(node.nodeId);
@@ -890,6 +912,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
                                 checkpoint={node}
                               isCompleted={isCompleted}
                               isInProgress={isInProgress}
+                              isDeleted={isDeleted}
                               isSelected={isSelected}
                               messageCount={nodeMessageCounts[node.nodeId] || 0}
                               formatDate={formatDate}
@@ -919,11 +942,13 @@ const ProjectDetails = ({ isAdminView = false }) => {
                         {selectedNode ? (
                           <span className={[
                             "rounded-full px-3 py-1 text-sm font-semibold",
-                            selectedNode === inProgressNode
-                              ? g('bg-slate-100 text-slate-700', 'border border-white/25 bg-white/15 text-white')
-                              : g('bg-emerald-100 text-emerald-700', 'border border-emerald-400/40 bg-emerald-500/20 text-emerald-300'),
+                            selectedNode.status === 'deleted'
+                              ? g('bg-slate-100 text-slate-400', 'border border-white/10 bg-white/5 text-slate-500')
+                              : selectedNode === inProgressNode
+                                ? g('bg-slate-100 text-slate-700', 'border border-white/25 bg-white/15 text-white')
+                                : g('bg-emerald-100 text-emerald-700', 'border border-emerald-400/40 bg-emerald-500/20 text-emerald-300'),
                           ].join(" ")}>
-                            {selectedNode === inProgressNode ? 'Active' : 'Completed'}
+                            {selectedNode.status === 'deleted' ? 'Deleted' : selectedNode === inProgressNode ? 'Active' : 'Completed'}
                           </span>
                         ) : null}
                       </div>
@@ -1098,6 +1123,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
                     >
                       <div className="space-y-2.5">
                         {timelineNodes.map((node) => {
+                          const isDeleted = node.status === 'deleted';
                           const isInProgress = node === inProgressNode;
                           const isCompleted = node.status === 'active' && !isInProgress;
                           const isSelected = normalizeNodeKey(selectedNodeId) === normalizeNodeKey(node.nodeId);
@@ -1108,6 +1134,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
                               checkpoint={node}
                               isCompleted={isCompleted}
                               isInProgress={isInProgress}
+                              isDeleted={isDeleted}
                               isSelected={isSelected}
                               messageCount={nodeMessageCounts[node.nodeId] || 0}
                               formatDate={formatDate}
@@ -1138,11 +1165,13 @@ const ProjectDetails = ({ isAdminView = false }) => {
                     {selectedNode ? (
                       <span className={[
                         "rounded-full px-3 py-1 text-sm font-semibold",
-                        selectedNode === inProgressNode
-                          ? g('bg-slate-100 text-slate-700', 'border border-white/25 bg-white/15 text-white')
-                          : g('bg-emerald-100 text-emerald-700', 'border border-emerald-400/40 bg-emerald-500/20 text-emerald-300'),
+                        selectedNode.status === 'deleted'
+                          ? g('bg-slate-100 text-slate-400', 'border border-white/10 bg-white/5 text-slate-500')
+                          : selectedNode === inProgressNode
+                            ? g('bg-slate-100 text-slate-700', 'border border-white/25 bg-white/15 text-white')
+                            : g('bg-emerald-100 text-emerald-700', 'border border-emerald-400/40 bg-emerald-500/20 text-emerald-300'),
                       ].join(" ")}>
-                        {selectedNode === inProgressNode ? 'Active' : 'Completed'}
+                        {selectedNode.status === 'deleted' ? 'Deleted' : selectedNode === inProgressNode ? 'Active' : 'Completed'}
                       </span>
                     ) : null}
                   </div>

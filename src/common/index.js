@@ -706,6 +706,22 @@ const SummaryApi = {
         url: `${backendDomain}/api/admin/category-base-prices`,
         method: "post"
     },
+    getMessageTemplates: {
+        url: `${backendDomain}/api/admin/message-templates`,
+        method: "get"
+    },
+    createMessageTemplate: {
+        url: `${backendDomain}/api/admin/message-templates`,
+        method: "post"
+    },
+    updateMessageTemplate: {
+        url: `${backendDomain}/api/admin/message-templates`,
+        method: "put"
+    },
+    deleteMessageTemplate: {
+        url: `${backendDomain}/api/admin/message-templates`,
+        method: "delete"
+    },
     adminLeads: {
         url: `${backendDomain}/api/admin/leads`,
         method: "get"

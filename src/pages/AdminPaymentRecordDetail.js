@@ -86,6 +86,7 @@ const SinglePaymentRecordDetail = () => {
   const [markPaidReference, setMarkPaidReference] = useState("");
   const [markPaidNote, setMarkPaidNote] = useState("");
   const [rejectionReason, setRejectionReason] = useState("");
+  const [confirmAction, setConfirmAction] = useState(null);
 
   const transaction = record?.transaction || null;
   const invoice = record?.invoice || null;
@@ -485,7 +486,7 @@ const SinglePaymentRecordDetail = () => {
                       <div className="mt-4 space-y-4">
                         <button
                           type="button"
-                          onClick={handleApproveTransaction}
+                          onClick={() => setConfirmAction("approve")}
                           disabled={Boolean(actionLoading)}
                           className="inline-flex w-full items-center justify-center rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
                         >
@@ -504,7 +505,7 @@ const SinglePaymentRecordDetail = () => {
                         </label>
                         <button
                           type="button"
-                          onClick={handleRejectTransaction}
+                          onClick={() => setConfirmAction("reject")}
                           disabled={Boolean(actionLoading) || !rejectionReason.trim()}
                           className="inline-flex w-full items-center justify-center rounded-2xl border border-rose-200 px-4 py-3 text-sm font-semibold text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-60"
                         >
@@ -613,6 +614,55 @@ const SinglePaymentRecordDetail = () => {
           )}
         </div>
       </div>
+
+      {confirmAction ? (
+        <div
+          className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm"
+          onClick={() => setConfirmAction(null)}
+        >
+          <div
+            className="w-full max-w-sm rounded-[1.5rem] bg-white p-5 shadow-2xl sm:p-6"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h2 className="text-lg font-bold text-slate-900">
+              {confirmAction === "approve" ? "Approve this payment?" : "Reject this payment?"}
+            </h2>
+            <p className="mt-2 text-sm text-slate-500">
+              {confirmAction === "approve"
+                ? `This will accept the payment of ${formatCurrency(amount)} and cannot be undone from here.`
+                : "This will reject the payment with the reason entered above."}
+            </p>
+            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => setConfirmAction(null)}
+                disabled={Boolean(actionLoading)}
+                className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  if (confirmAction === "approve") {
+                    await handleApproveTransaction();
+                  } else {
+                    await handleRejectTransaction();
+                  }
+                  setConfirmAction(null);
+                }}
+                disabled={Boolean(actionLoading)}
+                className={[
+                  "rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition disabled:opacity-60",
+                  confirmAction === "approve" ? "bg-emerald-600 hover:bg-emerald-700" : "bg-rose-600 hover:bg-rose-700",
+                ].join(" ")}
+              >
+                {actionLoading ? "Please wait..." : "Yes, Confirm"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </AdminLayout>
   );
 };
