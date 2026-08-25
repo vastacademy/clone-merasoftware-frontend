@@ -2039,9 +2039,9 @@ const PAYMENT_METHOD_OPTIONS = [
 const CreateProjectForClientForm = ({ clientName, customerId, onCancel, onCreated }) => {
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [projectName, setProjectName] = useState("");
   const [startingNodeTitle, setStartingNodeTitle] = useState("");
   const [category, setCategory] = useState("");
+  const [totalPages, setTotalPages] = useState("");
   const [sellingPrice, setSellingPrice] = useState("");
   const [paymentType, setPaymentType] = useState("full");
   const [installmentCount, setInstallmentCount] = useState("2");
@@ -2059,11 +2059,10 @@ const CreateProjectForClientForm = ({ clientName, customerId, onCancel, onCreate
   const [featuresLoading, setFeaturesLoading] = useState(true);
   const [featuresError, setFeaturesError] = useState("");
   const [selectedFeatureIds, setSelectedFeatureIds] = useState([]);
-  const [featureQuantities, setFeatureQuantities] = useState({});
   const [isFeatureDropdownOpen, setIsFeatureDropdownOpen] = useState(false);
   const featureDropdownRef = useRef(null);
 
-  const ADD_NEW_PAGE_FEATURE_NAME = "Add New Page";
+  const isWebsiteCategory = category === "standard_websites" || category === "dynamic_websites";
 
   useEffect(() => {
     const fetchFeatures = async () => {
@@ -2133,17 +2132,6 @@ const CreateProjectForClientForm = ({ clientName, customerId, onCancel, onCreate
         ? current.filter((id) => id !== featureId)
         : [...current, featureId]
     );
-    setFeatureQuantities((current) => {
-      if (current[featureId]) return current;
-      return { ...current, [featureId]: 1 };
-    });
-  };
-
-  const updatePageQuantity = (featureId, delta) => {
-    setFeatureQuantities((current) => {
-      const nextValue = Math.max(1, (current[featureId] || 1) + delta);
-      return { ...current, [featureId]: nextValue };
-    });
   };
 
   const selectableFeatures = availableFeatures.filter(
@@ -2152,12 +2140,10 @@ const CreateProjectForClientForm = ({ clientName, customerId, onCancel, onCreate
   const selectedFeatures = selectedFeatureIds
     .map((id) => availableFeatures.find((feature) => feature._id === id))
     .filter(Boolean);
-  const featuresTotal = selectedFeatures.reduce((sum, feature) => {
-    const quantity = feature.serviceName === ADD_NEW_PAGE_FEATURE_NAME
-      ? (featureQuantities[feature._id] || 1)
-      : 1;
-    return sum + (Number(feature.sellingPrice) || 0) * quantity;
-  }, 0);
+  const featuresTotal = selectedFeatures.reduce(
+    (sum, feature) => sum + (Number(feature.sellingPrice) || 0),
+    0
+  );
   const referenceTotal = Number(basePrice) + featuresTotal;
 
   const firstInstallmentAmount = paymentType === "partial" && sellingPrice
@@ -2165,8 +2151,8 @@ const CreateProjectForClientForm = ({ clientName, customerId, onCancel, onCreate
     : Number(sellingPrice) || 0;
 
   const handleGoToPaymentStep = () => {
-    if (!category || !sellingPrice) {
-      toast.error("Category and selling price are required.");
+    if (!startingNodeTitle.trim() || !category || !sellingPrice) {
+      toast.error("Starting node title, category, and selling price are required.");
       return;
     }
     setStep(2);
@@ -2176,12 +2162,11 @@ const CreateProjectForClientForm = ({ clientName, customerId, onCancel, onCreate
     event.preventDefault();
 
     const formData = {
-      projectName: projectName.trim() || null,
-      startingNodeTitle: startingNodeTitle.trim() || null,
+      startingNodeTitle,
       category,
+      totalPages: isWebsiteCategory ? totalPages : null,
       sellingPrice,
       featureIds: selectedFeatureIds,
-      featureQuantities,
       paymentType,
       installmentCount: paymentType === "partial" ? installmentCount : null,
       recordPayment: paymentAction === "record"
@@ -2247,6 +2232,17 @@ const CreateProjectForClientForm = ({ clientName, customerId, onCancel, onCreate
       <>
       <div className="mt-6 grid grid-cols-1 gap-5 md:grid-cols-2">
         <div>
+          <label className={projectFormLabelClassName}>Starting Node Title *</label>
+          <input
+            type="text"
+            className={projectFormInputClassName}
+            value={startingNodeTitle}
+            onChange={(event) => setStartingNodeTitle(event.target.value)}
+            placeholder="e.g. Project Kickoff"
+          />
+        </div>
+
+        <div>
           <label className={projectFormLabelClassName}>Category</label>
           <select
             className={projectFormInputClassName}
@@ -2262,30 +2258,32 @@ const CreateProjectForClientForm = ({ clientName, customerId, onCancel, onCreate
           </select>
         </div>
 
-        <div>
-          <label className={projectFormLabelClassName}>
-            Project Name <span className="font-normal normal-case tracking-normal text-slate-400">(optional)</span>
-          </label>
-          <input
-            type="text"
-            className={projectFormInputClassName}
-            value={projectName}
-            onChange={(event) => setProjectName(event.target.value)}
-            placeholder="Defaults to category name"
-          />
-        </div>
+        {isWebsiteCategory ? (
+          <div>
+            <label className={projectFormLabelClassName}>Total Pages</label>
+            <input
+              type="number"
+              min={4}
+              max={50}
+              className={projectFormInputClassName}
+              value={totalPages}
+              onChange={(event) => setTotalPages(event.target.value)}
+              placeholder="4-50"
+            />
+          </div>
+        ) : null}
 
         <div>
           <label className={projectFormLabelClassName}>
-            Starting Node Title <span className="font-normal normal-case tracking-normal text-slate-400">(optional)</span>
+            Base Price <span className="font-normal normal-case tracking-normal text-slate-400">(fixed per category)</span>
           </label>
-          <input
-            type="text"
-            className={projectFormInputClassName}
-            value={startingNodeTitle}
-            onChange={(event) => setStartingNodeTitle(event.target.value)}
-            placeholder="Defaults to 'Project Started'"
-          />
+          <div className={`${projectFormInputClassName} bg-slate-100 text-slate-700`}>
+            {!category
+              ? "Select a category first"
+              : basePriceLoading
+                ? "Loading…"
+                : `₹${Number(basePrice).toLocaleString("en-IN")}`}
+          </div>
         </div>
 
         {category && !basePriceLoading && categoryDescription ? (
@@ -2293,12 +2291,38 @@ const CreateProjectForClientForm = ({ clientName, customerId, onCancel, onCreate
             <p className="text-sm font-semibold text-slate-500">Category Description</p>
             <p className="mt-1 text-sm text-slate-700">{categoryDescription}</p>
           </div>
-        ) : null}
+        ) : (
+          <div />
+        )}
 
-        <div className="md:col-span-2 grid grid-cols-1 gap-5 md:grid-cols-2">
-        <div ref={featureDropdownRef}>
+        <div className="md:col-span-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+          <p className="text-sm font-semibold text-slate-600">
+            Reference Total (Base Price + Features): ₹{referenceTotal.toLocaleString("en-IN")}
+          </p>
+        </div>
+
+        <div>
+          <label className={projectFormLabelClassName}>
+            Selling Price <span className="font-normal normal-case tracking-normal text-slate-400">(what the client pays)</span>
+          </label>
+          <input
+            type="number"
+            min={0}
+            className={projectFormInputClassName}
+            value={sellingPrice}
+            onChange={(event) => setSellingPrice(event.target.value)}
+            placeholder="e.g. 12000"
+          />
+          {sellingPrice && Number(sellingPrice) < referenceTotal ? (
+            <p className="mt-1.5 text-sm font-semibold text-emerald-600">
+              Discount: ₹{(referenceTotal - Number(sellingPrice)).toLocaleString("en-IN")}
+            </p>
+          ) : null}
+        </div>
+
+        <div ref={featureDropdownRef} className="md:col-span-2">
           <span className={projectFormLabelClassName}>
-            Additional Features / Upgrades
+            Additional Features / Upgrades <span className="font-normal normal-case tracking-normal text-slate-400">(optional, used for invoice/billing)</span>
           </span>
 
           {featuresLoading && (
@@ -2328,54 +2352,25 @@ const CreateProjectForClientForm = ({ clientName, customerId, onCancel, onCreate
                 <div className="absolute z-10 mt-1 max-h-56 w-full overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-lg">
                   {selectedFeatures.length > 0 && (
                     <div className="flex flex-wrap gap-2 border-b border-slate-100 p-2">
-                      {selectedFeatures.map((feature) => {
-                        const isAddNewPage = feature.serviceName === ADD_NEW_PAGE_FEATURE_NAME;
-                        const quantity = featureQuantities[feature._id] || 1;
-                        return (
-                          <span
-                            key={feature._id}
-                            className="inline-flex items-center gap-2 rounded-full border border-emerald-300 bg-emerald-50 py-1 pl-3 pr-2 text-sm font-semibold text-emerald-800"
+                      {selectedFeatures.map((feature) => (
+                        <span
+                          key={feature._id}
+                          className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300 bg-emerald-50 px-3 py-1 text-base font-semibold text-emerald-800"
+                        >
+                          {feature.serviceName}
+                          {typeof feature.sellingPrice === "number" && (
+                            <span className="text-emerald-600">₹{feature.sellingPrice}</span>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => toggleFeature(feature._id)}
+                            className="text-emerald-500 transition hover:text-red-500"
+                            aria-label={`Remove ${feature.serviceName}`}
                           >
-                            <span>{feature.serviceName}</span>
-
-                            {typeof feature.sellingPrice === "number" && !isAddNewPage && (
-                              <span className="text-emerald-600">₹{feature.sellingPrice}</span>
-                            )}
-
-                            {isAddNewPage ? (
-                              <span className="flex items-center gap-1.5 rounded-full border border-emerald-300 bg-white px-1.5 py-0.5">
-                                <span className="text-xs text-emerald-600">₹{feature.sellingPrice}</span>
-                                <button
-                                  type="button"
-                                  onClick={() => updatePageQuantity(feature._id, -1)}
-                                  className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 transition hover:bg-emerald-200"
-                                  aria-label="Decrease page count"
-                                >
-                                  −
-                                </button>
-                                <span className="w-5 text-center text-sm">{quantity}</span>
-                                <button
-                                  type="button"
-                                  onClick={() => updatePageQuantity(feature._id, 1)}
-                                  className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 transition hover:bg-emerald-200"
-                                  aria-label="Increase page count"
-                                >
-                                  +
-                                </button>
-                              </span>
-                            ) : null}
-
-                            <button
-                              type="button"
-                              onClick={() => toggleFeature(feature._id)}
-                              className="flex h-5 w-5 items-center justify-center rounded-full text-emerald-500 transition hover:bg-red-100 hover:text-red-600"
-                              aria-label={`Remove ${feature.serviceName}`}
-                            >
-                              ×
-                            </button>
-                          </span>
-                        );
-                      })}
+                            ×
+                          </button>
+                        </span>
+                      ))}
                     </div>
                   )}
                   {selectableFeatures.map((feature) => (
@@ -2402,32 +2397,6 @@ const CreateProjectForClientForm = ({ clientName, customerId, onCancel, onCreate
             </p>
           )}
         </div>
-
-        <div>
-          <label className={projectFormLabelClassName}>
-            Selling Price <span className="font-normal normal-case tracking-normal text-slate-400">(what the client pays)</span>
-          </label>
-          <input
-            type="number"
-            min={0}
-            className={projectFormInputClassName}
-            value={sellingPrice}
-            onChange={(event) => setSellingPrice(event.target.value)}
-            placeholder="e.g. 12000"
-          />
-          {sellingPrice && Number(sellingPrice) < referenceTotal ? (
-            <p className="mt-1.5 text-sm font-semibold text-emerald-600">
-              Discount: ₹{(referenceTotal - Number(sellingPrice)).toLocaleString("en-IN")}
-            </p>
-          ) : null}
-        </div>
-        </div>
-      </div>
-
-      <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-        <p className="text-sm font-semibold text-slate-600">
-          Reference Total: Category Price (₹{Number(basePrice).toLocaleString("en-IN")}) + Features (₹{featuresTotal.toLocaleString("en-IN")}) = ₹{referenceTotal.toLocaleString("en-IN")}
-        </p>
       </div>
 
       <div className="mt-6 border-t border-slate-200 pt-5">

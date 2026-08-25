@@ -23,13 +23,6 @@ const STATUS_STYLES = {
   Lost: "bg-red-100 text-red-800",
 };
 
-// "Won" is the stored/backend status value (leadModel enum); "Matured" is the
-// display-only rename. Never change the stored value, only what is rendered.
-const STATUS_LABELS = {
-  Won: "Matured",
-};
-const statusLabel = (status) => STATUS_LABELS[status] || status;
-
 const formatDate = (value) => {
   if (!value) return "N/A";
   return new Date(value).toLocaleDateString("en-IN");
@@ -57,7 +50,6 @@ const AdminLeadsPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("lastUpdatedDesc");
   const [sourceFilter, setSourceFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("all");
   const [showAddModal, setShowAddModal] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
@@ -235,12 +227,6 @@ const AdminLeadsPage = () => {
       result = result.filter((lead) => lead.source !== "guest");
     }
 
-    if (statusFilter === "matured") {
-      result = result.filter((lead) => lead.status === "Won");
-    } else if (statusFilter === "not-matured") {
-      result = result.filter((lead) => lead.status !== "Won");
-    }
-
     if (query) {
       result = result.filter((lead) => {
         return (
@@ -271,18 +257,12 @@ const AdminLeadsPage = () => {
     });
 
     return result;
-  }, [leads, searchTerm, sortBy, sourceFilter, statusFilter]);
+  }, [leads, searchTerm, sortBy, sourceFilter]);
 
   const sourceFilterOptions = [
     { value: "all", label: "All" },
     { value: "normal", label: "Normal" },
     { value: "guest", label: "Guest" },
-  ];
-
-  const statusFilterOptions = [
-    { value: "all", label: "All" },
-    { value: "matured", label: "Matured" },
-    { value: "not-matured", label: "Not Matured" },
   ];
 
   return (
@@ -359,27 +339,6 @@ const AdminLeadsPage = () => {
                 </button>
               );
             })}
-
-            <span className="mx-1 w-px self-stretch bg-slate-200" aria-hidden="true" />
-
-            {statusFilterOptions.map((option) => {
-              const isActive = statusFilter === option.value;
-              return (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => setStatusFilter(option.value)}
-                  className={[
-                    "rounded-full px-4 py-1.5 text-xs font-semibold transition",
-                    isActive
-                      ? "bg-emerald-600 text-white"
-                      : "bg-slate-100 text-slate-600 hover:bg-slate-200",
-                  ].join(" ")}
-                >
-                  {option.label}
-                </button>
-              );
-            })}
           </div>
         </div>
 
@@ -426,7 +385,7 @@ const AdminLeadsPage = () => {
                 </div>
                 <div className="col-span-6 lg:col-span-2 lg:flex lg:items-center">
                   <span className={["inline-flex rounded-full px-3 py-1 text-xs font-semibold", STATUS_STYLES[lead.status] || STATUS_STYLES.New].join(" ")}>
-                    {statusLabel(lead.status || "New")}
+                    {lead.status || "New"}
                   </span>
                 </div>
                 <div className="col-span-6 lg:col-span-1 lg:flex lg:items-center">

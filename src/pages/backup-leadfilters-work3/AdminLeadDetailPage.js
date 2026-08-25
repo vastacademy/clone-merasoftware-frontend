@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
-import { ArrowLeft, Download, Loader2, Mail, MessageSquarePlus, Phone, UserCheck, UserPlus } from "lucide-react";
+import { ArrowLeft, Download, Mail, MessageSquarePlus, Phone, UserCheck, UserPlus } from "lucide-react";
 import SummaryApi from "../common";
 import { logout } from "../store/userSlice";
 import CookieManager from "../utils/cookieManager";
@@ -24,13 +24,6 @@ const STATUS_STYLES = {
   Lost: "bg-red-100 text-red-800 border-red-200",
 };
 
-// "Won" is the stored/backend status value (leadModel enum); "Matured" is the
-// display-only rename. Never change the stored value, only what is rendered.
-const STATUS_LABELS = {
-  Won: "Matured",
-};
-const statusLabel = (status) => STATUS_LABELS[status] || status;
-
 const formatDateTime = (value) => {
   if (!value) return "N/A";
   return new Date(value).toLocaleString("en-IN");
@@ -51,7 +44,6 @@ const AdminLeadDetailPage = () => {
   const [followUpFile, setFollowUpFile] = useState(null);
   const [followUpSaving, setFollowUpSaving] = useState(false);
   const [converting, setConverting] = useState(false);
-  const [showConvertConfirm, setShowConvertConfirm] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -151,7 +143,7 @@ const AdminLeadDetailPage = () => {
     }
   };
 
-  const requestConvert = () => {
+  const handleConvert = async () => {
     if (!lead || converting || isConverted) return;
     if (!lead.phone?.trim()) {
       toast.error("This lead has no phone number. Add a phone before converting.");
@@ -161,16 +153,10 @@ const AdminLeadDetailPage = () => {
       toast.error("This lead has no email. An email is required to create a client account.");
       return;
     }
-    setShowConvertConfirm(true);
-  };
-
-  const closeConvertConfirm = () => {
-    if (converting) return;
-    setShowConvertConfirm(false);
-  };
-
-  const handleConvert = async () => {
-    if (!lead || converting) return;
+    const ok = window.confirm(
+      `Convert "${lead.name}" into a client?\n\nA customer account will be created with the default password 1234. The client can set their own password on first login.`
+    );
+    if (!ok) return;
 
     try {
       setConverting(true);
@@ -185,7 +171,6 @@ const AdminLeadDetailPage = () => {
         return;
       }
       toast.success(`Client created. Login email: ${result.data?.email} · Password: ${result.data?.defaultPassword}`);
-      setShowConvertConfirm(false);
       await fetchLead();
     } catch (error) {
       console.error("Error converting lead:", error);
@@ -220,7 +205,7 @@ const AdminLeadDetailPage = () => {
           }
           meta={
             <>
-              <AdminInfoPill label="Status" value={statusLabel(lead?.status || "New")} variant="dark" />
+              <AdminInfoPill label="Status" value={lead?.status || "New"} variant="dark" />
               <AdminInfoPill label="Source" value={lead?.source || "N/A"} variant="dark" />
               <AdminInfoPill label="Added" value={lead?.createdAt ? new Date(lead.createdAt).toLocaleDateString("en-IN") : "N/A"} variant="dark" />
             </>
@@ -275,7 +260,7 @@ const AdminLeadDetailPage = () => {
                       STATUS_STYLES[lead?.status] || STATUS_STYLES.New,
                     ].join(" ")}
                   >
-                    {statusLabel(lead?.status || "New")}
+                    {lead?.status || "New"}
                   </span>
                   <p className="text-xs text-slate-500">
                     Stage updates automatically from the badge on each follow-up below.
@@ -292,12 +277,12 @@ const AdminLeadDetailPage = () => {
                 </p>
                 <button
                   type="button"
-                  onClick={requestConvert}
+                  onClick={handleConvert}
                   disabled={converting || !lead?.phone?.trim() || !lead?.email?.trim()}
                   className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <UserCheck size={16} />
-                  Convert to Client
+                  {converting ? "Converting..." : "Convert to Client"}
                 </button>
                 {(!lead?.phone?.trim() || !lead?.email?.trim()) ? (
                   <p className="mt-2 text-xs text-amber-600">
@@ -332,7 +317,7 @@ const AdminLeadDetailPage = () => {
                       >
                         {PIPELINE_STAGES.map((stage) => (
                           <option key={stage} value={stage}>
-                            {statusLabel(stage)}
+                            {stage}
                           </option>
                         ))}
                       </select>
@@ -389,7 +374,7 @@ const AdminLeadDetailPage = () => {
                               STATUS_STYLES[item.badge] || STATUS_STYLES.New,
                             ].join(" ")}
                           >
-                            {statusLabel(item.badge)}
+                            {item.badge}
                           </span>
                         ) : null}
                       </div>
@@ -417,44 +402,6 @@ const AdminLeadDetailPage = () => {
           </div>
         </div>
       </AdminWorkspaceShell>
-
-      {showConvertConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4">
-          <div className="w-full max-w-md rounded-3xl bg-white shadow-2xl">
-            <div className="px-6 pt-6">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600">
-                <UserCheck size={24} />
-              </div>
-              <h2 className="mt-4 text-center text-lg font-bold text-slate-900">Convert lead to client?</h2>
-              <p className="mt-2 text-center text-sm text-slate-600">
-                <span className="font-semibold text-slate-900">{lead?.name || "This lead"}</span> will get a new
-                customer account with the default password <span className="font-semibold">1234</span>. The client
-                can set their own password on first login.
-              </p>
-            </div>
-
-            <div className="flex justify-center gap-3 px-6 py-6">
-              <button
-                type="button"
-                onClick={closeConvertConfirm}
-                disabled={converting}
-                className="rounded-2xl border border-slate-200 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 disabled:opacity-60"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleConvert}
-                disabled={converting}
-                className="inline-flex items-center gap-2 rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {converting ? <Loader2 size={16} className="animate-spin" /> : <UserCheck size={16} />}
-                {converting ? "Converting..." : "Convert to Client"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </AdminLayout>
   );
 };

@@ -2295,10 +2295,9 @@ const CreateProjectForClientForm = ({ clientName, customerId, onCancel, onCreate
           </div>
         ) : null}
 
-        <div className="md:col-span-2 grid grid-cols-1 gap-5 md:grid-cols-2">
-        <div ref={featureDropdownRef}>
+        <div ref={featureDropdownRef} className="md:col-span-2">
           <span className={projectFormLabelClassName}>
-            Additional Features / Upgrades
+            Additional Features / Upgrades <span className="font-normal normal-case tracking-normal text-slate-400">(optional, used for invoice/billing)</span>
           </span>
 
           {featuresLoading && (
@@ -2334,41 +2333,39 @@ const CreateProjectForClientForm = ({ clientName, customerId, onCancel, onCreate
                         return (
                           <span
                             key={feature._id}
-                            className="inline-flex items-center gap-2 rounded-full border border-emerald-300 bg-emerald-50 py-1 pl-3 pr-2 text-sm font-semibold text-emerald-800"
+                            className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300 bg-emerald-50 px-3 py-1 text-base font-semibold text-emerald-800"
                           >
-                            <span>{feature.serviceName}</span>
-
-                            {typeof feature.sellingPrice === "number" && !isAddNewPage && (
-                              <span className="text-emerald-600">₹{feature.sellingPrice}</span>
+                            {feature.serviceName}
+                            {typeof feature.sellingPrice === "number" && (
+                              <span className="text-emerald-600">
+                                ₹{feature.sellingPrice}{isAddNewPage ? ` × ${quantity}` : ""}
+                              </span>
                             )}
-
                             {isAddNewPage ? (
-                              <span className="flex items-center gap-1.5 rounded-full border border-emerald-300 bg-white px-1.5 py-0.5">
-                                <span className="text-xs text-emerald-600">₹{feature.sellingPrice}</span>
+                              <span className="flex items-center gap-1">
                                 <button
                                   type="button"
                                   onClick={() => updatePageQuantity(feature._id, -1)}
-                                  className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 transition hover:bg-emerald-200"
+                                  className="flex h-5 w-5 items-center justify-center rounded-full border border-emerald-400 text-emerald-700 transition hover:bg-emerald-100"
                                   aria-label="Decrease page count"
                                 >
                                   −
                                 </button>
-                                <span className="w-5 text-center text-sm">{quantity}</span>
+                                <span className="w-4 text-center">{quantity}</span>
                                 <button
                                   type="button"
                                   onClick={() => updatePageQuantity(feature._id, 1)}
-                                  className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 transition hover:bg-emerald-200"
+                                  className="flex h-5 w-5 items-center justify-center rounded-full border border-emerald-400 text-emerald-700 transition hover:bg-emerald-100"
                                   aria-label="Increase page count"
                                 >
                                   +
                                 </button>
                               </span>
                             ) : null}
-
                             <button
                               type="button"
                               onClick={() => toggleFeature(feature._id)}
-                              className="flex h-5 w-5 items-center justify-center rounded-full text-emerald-500 transition hover:bg-red-100 hover:text-red-600"
+                              className="text-emerald-500 transition hover:text-red-500"
                               aria-label={`Remove ${feature.serviceName}`}
                             >
                               ×
@@ -2405,6 +2402,25 @@ const CreateProjectForClientForm = ({ clientName, customerId, onCancel, onCreate
 
         <div>
           <label className={projectFormLabelClassName}>
+            Base Price <span className="font-normal normal-case tracking-normal text-slate-400">(fixed per category)</span>
+          </label>
+          <div className={`${projectFormInputClassName} bg-slate-100 text-slate-700`}>
+            {!category
+              ? "Select a category first"
+              : basePriceLoading
+                ? "Loading…"
+                : `₹${Number(basePrice).toLocaleString("en-IN")}`}
+          </div>
+        </div>
+
+        <div className="md:col-span-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+          <p className="text-sm font-semibold text-slate-600">
+            Reference Total (Base Price + Features): ₹{referenceTotal.toLocaleString("en-IN")}
+          </p>
+        </div>
+
+        <div className="md:col-span-2">
+          <label className={projectFormLabelClassName}>
             Selling Price <span className="font-normal normal-case tracking-normal text-slate-400">(what the client pays)</span>
           </label>
           <input
@@ -2421,13 +2437,6 @@ const CreateProjectForClientForm = ({ clientName, customerId, onCancel, onCreate
             </p>
           ) : null}
         </div>
-        </div>
-      </div>
-
-      <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-        <p className="text-sm font-semibold text-slate-600">
-          Reference Total: Category Price (₹{Number(basePrice).toLocaleString("en-IN")}) + Features (₹{featuresTotal.toLocaleString("en-IN")}) = ₹{referenceTotal.toLocaleString("en-IN")}
-        </p>
       </div>
 
       <div className="mt-6 border-t border-slate-200 pt-5">
