@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { ArrowLeft, ArrowRight, BriefcaseBusiness, Clock3, Layers3, Plus, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Clock3, Layers3, ShieldCheck } from 'lucide-react';
 import backgroundImage from '../assets/BG.png';
 import { getOrderDisplayName } from '../helpers/orderPresentation';
 
@@ -46,74 +46,66 @@ const ProjectServiceWorkspace = ({ project, onAddService, onBack, onOpenService,
       style={{ backgroundImage: `url(${backgroundImage})` }}
     >
       <div className="pointer-events-none absolute inset-0 bg-slate-950/40" />
-      <div className="relative mx-auto flex w-full max-w-5xl flex-col gap-5">
-        <header className="rounded-[1.75rem] border border-white/20 bg-white/10 p-5 shadow-[0_8px_32px_rgba(0,0,0,0.25)] backdrop-blur-2xl sm:p-7">
-          <button
-            type="button"
-            onClick={onBack}
-            className="mb-5 inline-flex items-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-4 py-2.5 text-base font-semibold text-white backdrop-blur-md transition hover:bg-white/15"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back
-          </button>
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.16em] text-emerald-200">Project workspace</p>
-              <h1 className="mt-2 text-2xl font-bold tracking-tight text-white sm:text-3xl">{projectName}</h1>
-              <p className="mt-2 max-w-2xl text-sm text-slate-300 sm:text-base">Project progress and every service purchased for this project stay together here.</p>
-            </div>
-            <button type="button" onClick={onAddService} className="inline-flex shrink-0 items-center justify-center gap-2 rounded-2xl bg-emerald-500 px-5 py-3 text-base font-semibold text-white transition hover:bg-emerald-400">
-              <Plus className="h-5 w-5" />
-              Add a Service
+      <div className="relative mx-auto flex w-full max-w-7xl flex-col gap-5">
+        <button
+          type="button"
+          onClick={onBack}
+          className="inline-flex w-fit items-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-4 py-2.5 text-base font-semibold text-white backdrop-blur-md transition hover:bg-white/15"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back
+        </button>
+
+        <div className="rounded-[1.75rem] border border-white/20 bg-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.25)] backdrop-blur-2xl">
+          <div className="p-5 sm:p-7">
+            <button
+              type="button"
+              onClick={onOpenProject}
+              className="group flex w-full items-center gap-4 rounded-2xl border border-white/15 bg-slate-950/25 p-4 text-left transition hover:border-emerald-300/50 hover:bg-white/10 sm:p-5"
+            >
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold uppercase tracking-[0.16em] text-emerald-200">Project workspace</p>
+                <h1 className="mt-2 text-2xl font-bold tracking-tight text-white sm:text-3xl">{projectName}</h1>
+                <p className="mt-2 max-w-2xl text-sm text-slate-300 sm:text-base">{Math.round(Number(project.projectProgress || 0))}% complete · open project timeline</p>
+              </div>
+              <ArrowRight className="h-5 w-5 shrink-0 text-slate-300 transition group-hover:translate-x-1 group-hover:text-white" />
             </button>
           </div>
-        </header>
 
-        <section className="rounded-[1.75rem] border border-white/20 bg-white/10 p-5 shadow-[0_8px_32px_rgba(0,0,0,0.25)] backdrop-blur-2xl sm:p-6">
-          <div className="flex items-center gap-3 border-b border-white/15 pb-4">
-            <Layers3 className="h-5 w-5 text-emerald-300" />
-            <div>
-              <h2 className="text-lg font-bold text-white">Linked services</h2>
-              <p className="text-sm text-slate-300">Active services appear first; their history remains attached to this project.</p>
+          <div className="border-t border-white/15 p-5 sm:p-6">
+            <div className="flex items-center gap-3">
+              <Layers3 className="h-5 w-5 text-emerald-300" />
+              <div>
+                <h2 className="text-lg font-bold text-white">Linked services</h2>
+                <p className="text-sm text-slate-300">Active services appear first; their history remains attached to this project.</p>
+              </div>
+            </div>
+            <div className="mt-4 space-y-3">
+              {services.map((service) => {
+                const presentation = getServicePresentation(service);
+                const name = service.productId?.serviceName || service.orderItems?.[0]?.name || 'Service';
+                return (
+                  <button
+                    key={service._id}
+                    type="button"
+                    onClick={() => onOpenService(service._id)}
+                    className="flex w-full items-center gap-4 rounded-2xl border border-white/15 bg-slate-950/25 p-4 text-left transition hover:border-emerald-300/50 hover:bg-white/10"
+                  >
+                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-400/15 text-emerald-200"><ShieldCheck className="h-5 w-5" /></span>
+                    <span className="min-w-0 flex-1">
+                      <span className="flex flex-wrap items-center gap-2">
+                        <span className="truncate text-base font-semibold text-white">{name}</span>
+                        <span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${toneClasses[presentation.tone]}`}>{presentation.label}</span>
+                      </span>
+                      <span className="mt-1 flex items-center gap-1.5 text-sm text-slate-300"><Clock3 className="h-4 w-4" />{service.servicePlanStartDate ? `Started ${formatDate(service.servicePlanStartDate)}` : 'Starts when the project is eligible'}</span>
+                    </span>
+                    <ArrowRight className="h-5 w-5 shrink-0 text-slate-300" />
+                  </button>
+                );
+              })}
             </div>
           </div>
-          <div className="mt-4 space-y-3">
-            {services.map((service) => {
-              const presentation = getServicePresentation(service);
-              const name = service.productId?.serviceName || service.orderItems?.[0]?.name || 'Service';
-              return (
-                <button
-                  key={service._id}
-                  type="button"
-                  onClick={() => onOpenService(service._id)}
-                  className="flex w-full items-center gap-4 rounded-2xl border border-white/15 bg-slate-950/25 p-4 text-left transition hover:border-emerald-300/50 hover:bg-white/10"
-                >
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-400/15 text-emerald-200"><ShieldCheck className="h-5 w-5" /></span>
-                  <span className="min-w-0 flex-1">
-                    <span className="flex flex-wrap items-center gap-2">
-                      <span className="truncate text-base font-semibold text-white">{name}</span>
-                      <span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${toneClasses[presentation.tone]}`}>{presentation.label}</span>
-                    </span>
-                    <span className="mt-1 flex items-center gap-1.5 text-sm text-slate-300"><Clock3 className="h-4 w-4" />{service.servicePlanStartDate ? `Started ${formatDate(service.servicePlanStartDate)}` : 'Starts when the project is eligible'}</span>
-                  </span>
-                  <ArrowRight className="h-5 w-5 shrink-0 text-slate-300" />
-                </button>
-              );
-            })}
-          </div>
-        </section>
-
-        <section className="rounded-[1.75rem] border border-white/20 bg-white/10 p-5 shadow-[0_8px_32px_rgba(0,0,0,0.25)] backdrop-blur-2xl sm:p-6">
-          <div className="flex items-center gap-3 border-b border-white/15 pb-4">
-            <BriefcaseBusiness className="h-5 w-5 text-sky-200" />
-            <div><h2 className="text-lg font-bold text-white">Original project</h2><p className="text-sm text-slate-300">Open the project timeline, progress and project records.</p></div>
-          </div>
-          <button type="button" onClick={onOpenProject} className="mt-4 flex w-full items-center gap-4 rounded-2xl border border-white/15 bg-slate-950/25 p-4 text-left transition hover:border-sky-300/50 hover:bg-white/10">
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-sky-400/15 text-sky-200"><BriefcaseBusiness className="h-5 w-5" /></span>
-            <span className="min-w-0 flex-1"><span className="block truncate text-base font-semibold text-white">{projectName}</span><span className="mt-1 block text-sm text-slate-300">{Math.round(Number(project.projectProgress || 0))}% complete · project timeline</span></span>
-            <ArrowRight className="h-5 w-5 shrink-0 text-slate-300" />
-          </button>
-        </section>
+        </div>
       </div>
     </div>
   );
