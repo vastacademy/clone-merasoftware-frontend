@@ -130,3 +130,21 @@ Global search (sidebar) → finds leads + clients, badge-tagged, one box
 - **New (frontend)**: `frontend/src/pages/AdminLeadsPage.js`, `frontend/src/pages/AdminLeadDetailPage.js`, `frontend/src/pages/SetNewPassword.js`, `frontend/src/components/admin/AdminGlobalSearch.js`.
 - **Changed (frontend)**: `frontend/src/common/index.js` (`adminLeads`, `createLead`, `leadDetail`, `updateLead`, `adminGlobalSearch`, `convertLead`, `setNewPassword`, `uploadProposal`); `frontend/src/components/AdminLayout.js` (sidebar `Leads` entry + `AdminGlobalSearch` mount); `frontend/src/routes/adminRoutes.js` (`/admin-panel/leads`, `/admin-panel/leads/:leadId`); `frontend/src/routes/customerRoutes.js` (`/set-new-password`); `frontend/src/helpers/postLogin.js` (first-login gate).
 - **Not touched**: `getAdminClients.js`, `AdminClientsPage.js`, `AdminClientWorkspace.js`, `createOrder.js`, `adminCreateProjectOrder.js`, `userSignUp.js` (logic reused, not edited); no `npm run build` run.
+
+---
+
+## 10. Session update (2026-08-25) — status filter, "Matured" rename, convert-modal fix
+
+**Before/after, exact code location:**
+
+- **`AdminLeadsPage.js`** (`displayedLeads` filter + badge row, before the search input's `useMemo`):
+  - **Before**: only a `sourceFilter` badge row existed (All/Normal/Guest, from an earlier same-session pass), no status filter at all.
+  - **After**: a second, independent badge group added — `statusFilter` (`all` / `matured` / `not-matured`), filters `lead.status === "Won"` vs `!== "Won"`. Combines with `sourceFilter` (e.g. Guest + Matured together). Rendered as a second row of pill buttons, separated by a `border-l` divider from the source-filter pills.
+  - **Rename (display-only)**: added `STATUS_LABELS = { Won: "Matured" }` + `statusLabel()` helper. Every place `lead.status`/`"Won"` was rendered as text (row badge) now goes through `statusLabel()`. **The stored/backend value is still `"Won"`** — `leadModel.js`'s enum, `convertLead.js`, `updateLead.js`, `uploadProposal.js` were **not touched**. This was deliberate: an earlier attempt in this same session mistakenly removed backend `totalPages` handling while trying to satisfy a "remove this field" request (a different feature, see `33_ADMIN_CREATE_PROJECT_FOR_CLIENT.md` §Session update) — the lesson carried into this rename was to touch only the display layer, never the stored enum value, unless explicitly asked.
+
+- **`AdminLeadDetailPage.js`** (`STATUS_STYLES`/`PIPELINE_STAGES` render sites, `handleConvert`):
+  - Same `statusLabel()` helper duplicated locally (this file doesn't import from `AdminLeadsPage.js`) — applied to the pipeline-stage badge, the follow-up stage dropdown options, and each follow-up timeline item's badge.
+  - **Convert flow — before**: `handleConvert` used a native `window.confirm(...)` popup (browser-default, no loader) before calling `POST /admin/leads/:leadId/convert`.
+  - **Convert flow — after**: replaced with a custom modal (`showConvertConfirm` state), styled identically to `AdminLeadsPage.js`'s existing "Move to Trash?" confirm modal (rounded-3xl card, icon circle, Cancel/Confirm). The Confirm button now shows a `Loader2` spinner + "Converting..." text while the request is in flight, and Cancel is disabled during that window — previously there was no loading indicator on convert at all.
+
+**Not changed**: `convertLead.js`, `leadModel.js`'s status enum, `updateLead.js`'s `ALLOWED_STATUSES`, `uploadProposal.js` — all still operate on `"Won"` as the stored value; only the two frontend files' rendering changed.

@@ -26,9 +26,6 @@ import {
   ShieldAlert,
   Upload,
   Download,
-  Mail,
-  Send,
-  Share2,
 } from "lucide-react";
 import SummaryApi from "../common";
 import { logout } from "../store/userSlice";
@@ -48,7 +45,6 @@ import {
   groupLedgerItemsByProject,
 } from "../helpers/paymentLedger";
 import { adminReturnState, getAdminReturnTarget, goToAdminReturn } from "../helpers/adminReturnNavigation";
-import { getOrderDisplayName } from "../helpers/orderPresentation";
 
 const OVERVIEW_TAB = { id: "overview", label: "Overview", active: true };
 const PROJECTS_TAB = { id: "projects", label: "Projects", active: true };
@@ -245,7 +241,6 @@ const AdminClientWorkspace = () => {
   const [activePlanId, setActivePlanId] = useState(null);
   const [activePlan, setActivePlan] = useState(null);
   const [activePlanLoading, setActivePlanLoading] = useState(false);
-  const [activePaymentGroupId, setActivePaymentGroupId] = useState(null);
   const [activePlanError, setActivePlanError] = useState("");
   // Account & Access section state
   const [accessData, setAccessData] = useState(null);
@@ -550,15 +545,14 @@ const AdminClientWorkspace = () => {
     deleteRequiredSections.length > 0 &&
     deleteRequiredSections.every((section) => deleteSelections[section.key]);
 
-  // In-place subpage, same pattern as Projects/Plans (activeProjectId/activePlanId) — no route
-  // navigation, so opening a payment group's history no longer leaves AdminClientWorkspace.
+  // The payments page returns here with replace:true, so this client entry must survive
+  // that round trip with its own return target intact — otherwise Back from the workspace
+  // would forget which parent (clients list or dashboard) opened this client.
   const handleOpenPaymentGroup = (group) => {
-    if (!group?.key) return;
-    setActivePaymentGroupId(group.key);
-  };
-
-  const handleBackToPayments = () => {
-    setActivePaymentGroupId(null);
+    if (!group?.key || !customerId) return;
+    navigate(`/admin-panel/clients/${customerId}/payments/order/${group.key}`, {
+      state: adminReturnState(getAdminReturnTarget(location, "/admin-panel/clients")),
+    });
   };
 
   // --- Account & Access handlers ---
@@ -905,7 +899,6 @@ const AdminClientWorkspace = () => {
 
     if (activeProjectId) handleBackToProjects();
     if (activePlanId) handleBackToPlans();
-    if (activePaymentGroupId) handleBackToPayments();
     setActiveTab(tabId);
   };
 
@@ -924,11 +917,6 @@ const AdminClientWorkspace = () => {
 
     if (activePlanId) {
       handleBackToPlans();
-      return;
-    }
-
-    if (activePaymentGroupId) {
-      handleBackToPayments();
       return;
     }
 
@@ -1144,24 +1132,16 @@ const AdminClientWorkspace = () => {
         )}
 
         {activeTab === "payments" && (
-          activePaymentGroupId ? (
-            <PaymentOrderHistorySubpage
-              customerId={customerId}
-              orderId={activePaymentGroupId}
-              onBack={handleBackToPayments}
-            />
-          ) : (
-            <PaymentInvoicesPanel
-              transactions={allData.transactions}
-              invoices={allData.invoices}
-              getBadgeClassName={getBadgeClassName}
-              formatDateTime={formatDateTime}
-              onOpenGroup={handleOpenPaymentGroup}
-              customerId={customerId}
-              walletBalance={Number(allData.summary?.walletBalance ?? customer?.walletBalance ?? 0)}
-              onRecharged={() => setWorkspaceRefreshKey((current) => current + 1)}
-            />
-          )
+          <PaymentInvoicesPanel
+            transactions={allData.transactions}
+            invoices={allData.invoices}
+            getBadgeClassName={getBadgeClassName}
+            formatDateTime={formatDateTime}
+            onOpenGroup={handleOpenPaymentGroup}
+            customerId={customerId}
+            walletBalance={Number(allData.summary?.walletBalance ?? customer?.walletBalance ?? 0)}
+            onRecharged={() => setWorkspaceRefreshKey((current) => current + 1)}
+          />
         )}
 
         {activeTab === "deleted-projects" && (
@@ -1994,550 +1974,6 @@ const DeletedProjectsPanel = ({ transactions, invoices, formatDateTime, onOpenGr
           ))
         )}
       </div>
-    </section>
-  );
-};
-
-const ORDINALS = ["1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th", "10th"];
-const getOrdinal = (n) => ORDINALS[n - 1] || `${n}th`;
-const shortId = (value) => (value ? String(value).slice(-5) : "");
-const getOrderReference = (value) => String(value?._id || value || "");
-
-const getInvoiceLabel = (invoice) => {
-  if (invoice?.invoiceType === "project_final") return "Final Project Invoice";
-  if (invoice?.installmentNumber) return `${getOrdinal(invoice.installmentNumber)} Installment Invoice`;
-  if (invoice?.invoiceType === "plan_renewal") return "Plan Renewal Invoice";
-  return "Invoice";
-};
-
-const getPaymentLabel = (transaction) => {
-  if (transaction?.installmentNumber) return `${getOrdinal(transaction.installmentNumber)} Installment`;
-  if (transaction?.type === "renewal") return "Renewal Payment";
-  if (transaction?.type === "deposit") return "Wallet Recharge";
-  return "Payment";
-};
-
-// In-place payment-group subpage — same pattern as the Projects/Plans subpages
-// (activeProjectId/activePlanId): no route navigation, Back is a simple state-clear via
-// the onBack prop. Adapted from AdminPaymentRecordDetail.js's PaymentOrderHistory, which
-// remains a standalone routed page (used by any direct link) but is no longer how this
-// workspace's own Payments tab opens a project's history.
-const PaymentOrderHistorySubpage = ({ customerId, orderId, onBack }) => {
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [workspace, setWorkspace] = useState(null);
-  const [reloadKey, setReloadKey] = useState(0);
-  const [actionTarget, setActionTarget] = useState(null);
-  const [actionSubmitting, setActionSubmitting] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState("upi");
-  const [paymentReference, setPaymentReference] = useState("");
-  const [paymentNote, setPaymentNote] = useState("");
-  const [rejectionReason, setRejectionReason] = useState("");
-  const [finalInvoiceAction, setFinalInvoiceAction] = useState("");
-  const isGeneralPayments = orderId === "general";
-
-  useEffect(() => {
-    let isMounted = true;
-
-    const loadWorkspace = async () => {
-      try {
-        setLoading(true);
-        setError("");
-        const response = await fetch(`${SummaryApi.adminUserWorkspace.url}?customerId=${customerId}`, {
-          method: SummaryApi.adminUserWorkspace.method,
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-        });
-        const result = await response.json();
-        if (!result.success) throw new Error(result.message || "Failed to load payment history");
-        if (isMounted) setWorkspace(result.data || null);
-      } catch (loadError) {
-        if (!isMounted) return;
-        console.error("Error loading payment history:", loadError);
-        setError(loadError.message || "Failed to load payment history");
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    };
-
-    loadWorkspace();
-    return () => {
-      isMounted = false;
-    };
-  }, [customerId, orderId, reloadKey]);
-
-  const { order, invoices, finalInvoice, transactions, combinedRecords, serviceName, invoiceValue, recordedPayments, pendingRecords, initialProjectInvoiceId } = useMemo(() => {
-    const allOrders = workspace?.orders || [];
-    const allInvoices = workspace?.invoices || [];
-    const allTransactions = workspace?.transactions || [];
-    const matchesOrder = (record) => {
-      const linkedOrderId = getOrderReference(record?.orderId);
-      return isGeneralPayments ? !linkedOrderId : linkedOrderId === String(orderId);
-    };
-    const matchingInvoices = allInvoices.filter(matchesOrder).sort(
-      (left, right) => new Date(right.invoiceDate || right.createdAt || 0) - new Date(left.invoiceDate || left.createdAt || 0)
-    );
-    const matchingTransactions = allTransactions.filter(matchesOrder).sort(
-      (left, right) => new Date(right.date || right.createdAt || 0) - new Date(left.date || left.createdAt || 0)
-    );
-    const matchingOrder = isGeneralPayments
-      ? null
-      : allOrders.find((candidate) => String(candidate?._id) === String(orderId)) || null;
-    const resolvedServiceName = isGeneralPayments
-      ? "Wallet & General Payments"
-      : getOrderDisplayName(matchingOrder || matchingInvoices[0]?.orderId || matchingTransactions[0]?.orderId, "Payment History");
-    const projectFinalInvoice = matchingInvoices.find((current) => current.invoiceType === "project_final") || null;
-    const paymentInvoices = matchingInvoices.filter((current) => current.invoiceType !== "project_final");
-    const totalInvoiceValue = paymentInvoices.reduce((sum, current) => sum + Number(current.amount || 0), 0);
-    const totalRecordedPayments = matchingTransactions
-      .filter((current) => current.status === "completed")
-      .reduce((sum, current) => sum + Number(current.amount || 0), 0);
-    const totalPendingRecords = matchingInvoices.filter((current) => ["unpaid", "partially_paid", "overdue"].includes(current.status)).length
-      + matchingTransactions.filter((current) => current.status === "pending").length;
-    const firstPendingProjectInvoice = matchingInvoices
-      .filter((current) => current.invoiceType === "project" && ["unpaid", "overdue"].includes(current.status))
-      .sort((left, right) => Number(left.installmentNumber || 1) - Number(right.installmentNumber || 1))[0];
-
-    // Combine invoice + transaction into one row per real-world payment event, same intent
-    // as paymentLedger.js's buildLedgerItems() dedup (transaction.invoiceId links the two).
-    // An invoice with a linked transaction shows the transaction's status/method/reference
-    // (the actual payment attempt) alongside the invoice's own number/due date; an invoice
-    // with no transaction yet, or a transaction with no invoice (e.g. wallet-only general
-    // payment), each get their own row.
-    const transactionsByInvoiceId = new Map();
-    matchingTransactions.forEach((transaction) => {
-      const linkedInvoiceId = getOrderReference(transaction?.invoiceId);
-      if (linkedInvoiceId) transactionsByInvoiceId.set(linkedInvoiceId, transaction);
-    });
-    const linkedTransactionIds = new Set(
-      [...transactionsByInvoiceId.values()].map((transaction) => String(transaction._id))
-    );
-
-    const combinedFromInvoices = paymentInvoices.map((invoice) => ({
-      key: `invoice-${invoice._id}`,
-      invoice,
-      transaction: transactionsByInvoiceId.get(String(invoice._id)) || null,
-      sortDate: new Date(invoice.invoiceDate || invoice.createdAt || 0).getTime(),
-    }));
-    const combinedFromUnlinkedTransactions = matchingTransactions
-      .filter((transaction) => !linkedTransactionIds.has(String(transaction._id)) && !getOrderReference(transaction?.invoiceId))
-      .map((transaction) => ({
-        key: `transaction-${transaction._id}`,
-        invoice: null,
-        transaction,
-        sortDate: new Date(transaction.date || transaction.createdAt || 0).getTime(),
-      }));
-    const combinedRecords = [...combinedFromInvoices, ...combinedFromUnlinkedTransactions].sort(
-      (left, right) => right.sortDate - left.sortDate
-    );
-
-    return {
-      order: matchingOrder,
-      invoices: paymentInvoices,
-      finalInvoice: projectFinalInvoice,
-      transactions: matchingTransactions,
-      combinedRecords,
-      serviceName: resolvedServiceName,
-      invoiceValue: totalInvoiceValue,
-      recordedPayments: totalRecordedPayments,
-      pendingRecords: totalPendingRecords,
-      initialProjectInvoiceId: firstPendingProjectInvoice?._id || null,
-    };
-  }, [isGeneralPayments, orderId, workspace]);
-
-  const handleFinalInvoiceDownload = async () => {
-    if (!finalInvoice || finalInvoiceAction) return;
-    try {
-      setFinalInvoiceAction("download");
-      const response = await fetch(`${SummaryApi.projectFinalInvoice.url}/${finalInvoice._id}/download`, { credentials: "include" });
-      if (!response.ok) throw new Error((await response.json().catch(() => ({}))).message || "Failed to download final invoice");
-      const url = window.URL.createObjectURL(await response.blob());
-      const anchor = document.createElement("a");
-      anchor.href = url;
-      anchor.download = `${finalInvoice.invoiceNumber || "final-project-invoice"}.pdf`;
-      document.body.appendChild(anchor);
-      anchor.click();
-      anchor.remove();
-      window.URL.revokeObjectURL(url);
-      toast.success("Final invoice download started");
-    } catch (error) {
-      toast.error(error.message || "Failed to download final invoice");
-    } finally {
-      setFinalInvoiceAction("");
-    }
-  };
-
-  const handleFinalInvoiceView = () => {
-    if (!finalInvoice || finalInvoiceAction) return;
-    window.open(`${SummaryApi.projectFinalInvoice.url}/${finalInvoice._id}/view`, "_blank", "noopener,noreferrer");
-  };
-
-  const handleFinalInvoiceNativeShare = async () => {
-    if (!finalInvoice || finalInvoiceAction) return;
-    if (!navigator.share || !navigator.canShare) {
-      toast.error("Native PDF sharing is not supported on this browser. Use Download instead.");
-      return;
-    }
-    try {
-      setFinalInvoiceAction("nativeShare");
-      const response = await fetch(`${SummaryApi.projectFinalInvoice.url}/${finalInvoice._id}/download`, { credentials: "include" });
-      if (!response.ok) throw new Error((await response.json().catch(() => ({}))).message || "Failed to prepare final invoice");
-      const file = new File([await response.blob()], `${finalInvoice.invoiceNumber || "final-project-invoice"}.pdf`, { type: "application/pdf" });
-      if (!navigator.canShare({ files: [file] })) throw new Error("Native PDF sharing is not supported on this device");
-      await navigator.share({ title: "Final Project Invoice", files: [file] });
-    } catch (error) {
-      if (error.name !== "AbortError") toast.error(error.message || "Failed to share final invoice");
-    } finally {
-      setFinalInvoiceAction("");
-    }
-  };
-
-  const handleFinalInvoiceShare = async () => {
-    if (!finalInvoice || finalInvoiceAction) return;
-    try {
-      setFinalInvoiceAction("share");
-      const response = await fetch(`${SummaryApi.projectFinalInvoice.url}/${finalInvoice._id}/resend`, { method: "post", credentials: "include" });
-      const result = await response.json();
-      if (!result.success) throw new Error(result.message || "Failed to share final invoice");
-      toast.success(result.message || "Final invoice shared by email");
-    } catch (error) {
-      toast.error(error.message || "Failed to share final invoice");
-    } finally {
-      setFinalInvoiceAction("");
-    }
-  };
-
-  // Per-record (regular, non-final) invoice download/resend — same download-invoice /
-  // resend-invoice endpoints AdminPaymentRecordDetail.js's single-record page uses, now
-  // called directly from a row here instead of requiring a navigate-away.
-  const [invoiceRowAction, setInvoiceRowAction] = useState(null);
-
-  const handleInvoiceDownload = async (invoice) => {
-    if (!invoice?._id || invoiceRowAction) return;
-    try {
-      setInvoiceRowAction(`download-${invoice._id}`);
-      const response = await fetch(
-        `${SummaryApi.adminPaymentRecord.url}/${customerId}/payment-records/invoice/${invoice._id}/download-invoice`,
-        { credentials: "include" }
-      );
-      if (!response.ok) throw new Error((await response.json().catch(() => ({}))).message || "Failed to download invoice");
-      const url = window.URL.createObjectURL(await response.blob());
-      const anchor = document.createElement("a");
-      anchor.href = url;
-      anchor.download = `Invoice-${invoice.invoiceNumber || invoice._id}.pdf`;
-      document.body.appendChild(anchor);
-      anchor.click();
-      anchor.remove();
-      window.URL.revokeObjectURL(url);
-      toast.success("Invoice download started");
-    } catch (error) {
-      toast.error(error.message || "Failed to download invoice");
-    } finally {
-      setInvoiceRowAction(null);
-    }
-  };
-
-  const handleInvoiceResend = async (invoice) => {
-    if (!invoice?._id || invoiceRowAction) return;
-    try {
-      setInvoiceRowAction(`resend-${invoice._id}`);
-      const response = await fetch(
-        `${SummaryApi.adminPaymentRecord.url}/${customerId}/payment-records/invoice/${invoice._id}/resend-invoice`,
-        { method: "post", credentials: "include", headers: { "Content-Type": "application/json" } }
-      );
-      const result = await response.json();
-      if (!result.success) throw new Error(result.message || "Failed to resend invoice");
-      toast.success(result.message || "Invoice email resent");
-    } catch (error) {
-      toast.error(error.message || "Failed to resend invoice");
-    } finally {
-      setInvoiceRowAction(null);
-    }
-  };
-
-  const openAction = (type, record) => {
-    setActionTarget({ type, record });
-    setPaymentMethod(record?.paymentMethod || "upi");
-    setPaymentReference(record?.transactionReference || record?.upiTransactionId || "");
-    setPaymentNote("");
-    setRejectionReason("");
-  };
-
-  const closeAction = () => {
-    if (!actionSubmitting) setActionTarget(null);
-  };
-
-  const completeAction = async (decision) => {
-    if (!actionTarget || actionSubmitting) return;
-    const { type, record } = actionTarget;
-
-    if (["transaction", "projectApproval"].includes(type) && decision === "reject" && !rejectionReason.trim()) {
-      toast.error("Rejection reason is required");
-      return;
-    }
-
-    try {
-      setActionSubmitting(true);
-      let response;
-
-      if (type === "transaction") {
-        response = await fetch(
-          decision === "approve" ? SummaryApi.wallet.approveTransaction.url : SummaryApi.wallet.rejectTransaction.url,
-          {
-            method: decision === "approve" ? SummaryApi.wallet.approveTransaction.method : SummaryApi.wallet.rejectTransaction.method,
-            credentials: "include",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(
-              decision === "approve"
-                ? { transactionId: record.transactionId }
-                : { transactionId: record.transactionId, rejectionReason: rejectionReason.trim() }
-            ),
-          }
-        );
-      } else if (type === "planInvoice") {
-        response = await fetch(`${SummaryApi.invoices.markInvoiceAsPaid.url}/${record._id}/mark-paid`, {
-          method: SummaryApi.invoices.markInvoiceAsPaid.method,
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            paymentMethod,
-            transactionReference: paymentReference.trim(),
-            internalNote: paymentNote.trim(),
-          }),
-        });
-      } else {
-        response = await fetch(`${SummaryApi.approveProjectOrder.url}/${order._id}/approval`, {
-          method: SummaryApi.approveProjectOrder.method,
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(
-            decision === "record"
-              ? {
-                  mode: "approve_with_payment",
-                  paymentMethod,
-                  transactionReference: paymentReference.trim(),
-                  notes: paymentNote.trim(),
-                }
-              : { mode: "reject", rejectionReason: rejectionReason.trim() }
-          ),
-        });
-      }
-
-      const result = await response.json();
-      if (!result.success) throw new Error(result.message || "Payment action failed");
-
-      toast.success(result.message || "Payment record updated");
-      setActionTarget(null);
-      setReloadKey((current) => current + 1);
-    } catch (actionError) {
-      console.error("Error updating payment record:", actionError);
-      toast.error(actionError.message || "Payment action failed");
-    } finally {
-      setActionSubmitting(false);
-    }
-  };
-
-  const totalAmount = Number(order?.totalAmount ?? order?.price ?? 0);
-  const paidAmount = Number(order?.paidAmount ?? 0);
-  const remainingAmount = Math.max(0, totalAmount - paidAmount);
-  const installmentProgress = order?.isPartialPayment && Array.isArray(order?.installments)
-    ? `Installment ${order?.currentInstallment || 1} of ${order.installments.length}`
-    : null;
-
-  return (
-    <section className="space-y-5">
-      <button
-        type="button"
-        onClick={onBack}
-        className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
-      >
-        <ArrowLeft size={16} />
-        Back to Payments
-      </button>
-
-      {loading ? (
-        <div className="rounded-[2rem] border border-slate-200 bg-white p-6 text-center text-sm text-slate-500 shadow-sm">Loading payment history...</div>
-      ) : error ? (
-        <div className="rounded-[2rem] border border-rose-200 bg-rose-50 p-5 text-sm text-rose-700">{error}</div>
-      ) : (
-        <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
-          {/* Header — project/plan identity + payment summary, document-style, no boxed panels. */}
-          <div className="p-5 sm:p-6">
-            <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Project / Plan Payment History</p>
-            <h1 className="mt-2 text-2xl font-bold text-slate-900">{serviceName}</h1>
-            <p className="mt-2 text-sm text-slate-500">All invoices and payment requests linked to this {isGeneralPayments ? "customer account" : "project or plan"}.</p>
-
-            {!isGeneralPayments && order ? (
-              <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
-                <InfoLine label="Category" value={getCategoryLabel(getProjectCategory(order))} />
-                <InfoLine label="Phase" value={getPhaseLabel(order.currentPhase)} />
-                <InfoLine label="Started" value={formatDateTime(order.createdAt)} />
-              </div>
-            ) : null}
-
-            <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
-              <InfoLine label="Total amount" value={formatCurrency(totalAmount)} />
-              <InfoLine label="Paid" value={formatCurrency(paidAmount)} />
-              <InfoLine label="Remaining" value={formatCurrency(remainingAmount)} />
-            </div>
-
-            <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
-              <InfoLine label="Payment type" value={order?.isPartialPayment ? "Partial (Installments)" : "One-time (Full)"} />
-              {installmentProgress ? <InfoLine label="Installment progress" value={installmentProgress} /> : <div />}
-              <InfoLine label="Pending records" value={pendingRecords} />
-            </div>
-          </div>
-
-          {/* Payment records — one row per real payment event (invoice + its linked transaction
-              combined), each with its own invoice view/download/share actions inline, instead of
-              a separate "final invoice" box floating above an actionless list. */}
-          <div className="border-t border-slate-200 p-5 sm:p-6">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <h2 className="text-lg font-bold text-slate-900">Payment Records</h2>
-                <p className="mt-1 text-sm text-slate-500">Every invoice and its payment, combined into one record per payment event.</p>
-              </div>
-              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{combinedRecords.length} records</span>
-            </div>
-            {combinedRecords.length === 0 ? (
-              <p className="mt-4 rounded-2xl bg-slate-50 p-4 text-sm text-slate-500">No payment records found.</p>
-            ) : (
-              <div className="mt-4 divide-y divide-slate-100">
-                {combinedRecords.map(({ key, invoice, transaction }) => {
-                  const isRecurringPlanInvoice = invoice && invoice.invoiceType !== "project";
-                  const canRecordPlanInvoice = invoice && isRecurringPlanInvoice && ["unpaid", "overdue"].includes(invoice.status);
-                  const canResolvePendingProject = invoice
-                    && invoice.invoiceType === "project"
-                    && order?.orderVisibility === "pending-approval"
-                    && transactions.length === 0
-                    && String(invoice._id) === String(initialProjectInvoiceId);
-                  const canReviewTransaction = transaction && transaction.status === "pending";
-                  const isFinalInvoice = invoice?.invoiceType === "project_final";
-
-                  // Transaction is the actual payment attempt, so its status/method/reference
-                  // take priority when both exist; invoice-only rows fall back to invoice status.
-                  const displayLabel = invoice ? getInvoiceLabel(invoice) : getPaymentLabel(transaction);
-                  const displayStatus = getLedgerStatusLabel(transaction?.status || invoice?.status);
-                  const displayAmount = transaction?.amount ?? invoice?.amount ?? 0;
-                  const isBusyDownload = invoiceRowAction === `download-${invoice?._id}`;
-                  const isBusyResend = invoiceRowAction === `resend-${invoice?._id}`;
-                  const isBusyFinal = Boolean(finalInvoiceAction);
-
-                  return (
-                  <div key={key} className="flex flex-col gap-3 py-4 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="font-semibold text-slate-900">{displayLabel}</p>
-                        <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getBadgeClassName(displayStatus)}`}>{displayStatus}</span>
-                      </div>
-                      <p className="mt-1 text-xs text-slate-500">
-                        {invoice ? `${invoice.invoiceNumber ? `Invoice ${invoice.invoiceNumber} · ` : ""}Due ${formatDateTime(invoice.dueDate)} · Issued ${formatDateTime(invoice.invoiceDate)}` : null}
-                        {invoice && transaction ? " · " : null}
-                        {transaction ? `${transaction.paymentMethod || "N/A"} · Ref: ${transaction.upiTransactionId || shortId(transaction.transactionId)} · ${formatDateTime(transaction.date || transaction.createdAt)}` : null}
-                      </p>
-                      {transaction?.rejectionReason ? <p className="mt-1 text-xs text-rose-700">Reason: {transaction.rejectionReason}</p> : null}
-                      {isFinalInvoice ? (
-                        <p className="mt-1 text-xs font-semibold text-emerald-700">
-                          {Number(invoice.amount || 0) - Number(invoice.amountPaid || 0) > 0
-                            ? `Pending ${formatCurrency(Number(invoice.amount || 0) - Number(invoice.amountPaid || 0))} of full statement`
-                            : "Full statement fully paid"}
-                        </p>
-                      ) : null}
-                    </div>
-                    <div className="flex shrink-0 flex-col items-start gap-2 sm:items-end">
-                      <p className="text-base font-bold text-slate-900">{formatCurrency(displayAmount)}</p>
-
-                      {canReviewTransaction ? (
-                        <button type="button" onClick={() => openAction("transaction", transaction)} className="rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white transition hover:bg-slate-800">Review Payment</button>
-                      ) : canRecordPlanInvoice ? (
-                        <button type="button" onClick={() => openAction("planInvoice", invoice)} className="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-emerald-700">Review & Record Payment</button>
-                      ) : canResolvePendingProject ? (
-                        <button type="button" onClick={() => openAction("projectApproval", invoice)} className="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-emerald-700">Review Initial Payment</button>
-                      ) : null}
-
-                      {invoice?.invoiceNumber ? (
-                        isFinalInvoice ? (
-                          <div className="flex flex-wrap gap-2">
-                            <button type="button" onClick={handleFinalInvoiceView} disabled={isBusyFinal} className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-800 disabled:opacity-60"><Eye size={13} />View</button>
-                            <button type="button" onClick={handleFinalInvoiceDownload} disabled={isBusyFinal} className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-800 disabled:opacity-60"><Download size={13} />{finalInvoiceAction === "download" ? "Preparing..." : "Download"}</button>
-                            <button type="button" onClick={handleFinalInvoiceNativeShare} disabled={isBusyFinal} className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-800 disabled:opacity-60"><Share2 size={13} />{finalInvoiceAction === "nativeShare" ? "Preparing..." : "Share"}</button>
-                            <button type="button" onClick={handleFinalInvoiceShare} disabled={isBusyFinal} className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-800 disabled:opacity-60"><Mail size={13} />{finalInvoiceAction === "share" ? "Sharing..." : "Email"}</button>
-                          </div>
-                        ) : (
-                          <div className="flex flex-wrap gap-2">
-                            <button type="button" onClick={() => handleInvoiceDownload(invoice)} disabled={Boolean(invoiceRowAction)} className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-800 disabled:opacity-60"><Download size={13} />{isBusyDownload ? "Preparing..." : "Download"}</button>
-                            <button type="button" onClick={() => handleInvoiceResend(invoice)} disabled={Boolean(invoiceRowAction)} className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-800 disabled:opacity-60"><Mail size={13} />{isBusyResend ? "Sending..." : "Email"}</button>
-                          </div>
-                        )
-                      ) : null}
-                    </div>
-                  </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {actionTarget ? (
-            <div className="fixed inset-0 z-[70] flex items-end bg-slate-950/45 p-4 backdrop-blur-sm sm:items-center sm:justify-center" onClick={closeAction}>
-              <div className="w-full max-w-xl rounded-[2rem] bg-white p-5 shadow-2xl sm:p-6" onClick={(event) => event.stopPropagation()}>
-                <p className="text-xs font-bold uppercase tracking-[0.16em] text-emerald-700">Payment review</p>
-                <h2 className="mt-2 text-xl font-bold text-slate-900">
-                  {actionTarget.type === "transaction"
-                    ? "Review submitted payment"
-                    : actionTarget.type === "planInvoice"
-                    ? "Record plan invoice payment"
-                    : "Review initial project payment"}
-                </h2>
-                <p className="mt-2 text-sm text-slate-500">
-                  {actionTarget.type === "transaction"
-                    ? `${formatCurrency(actionTarget.record.amount)} submitted via ${actionTarget.record.paymentMethod || "N/A"}. Verify the reference before accepting.`
-                    : `${formatCurrency(actionTarget.record.amount)} · ${getInvoiceLabel(actionTarget.record)}${actionTarget.record.invoiceNumber ? ` · ${actionTarget.record.invoiceNumber}` : ""}`}
-                </p>
-
-                {actionTarget.type !== "transaction" ? (
-                  <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <label>
-                      <span className="text-sm font-semibold text-slate-700">Payment method</span>
-                      <select value={paymentMethod} onChange={(event) => setPaymentMethod(event.target.value)} disabled={actionSubmitting} className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-emerald-400">
-                        <option value="upi">UPI</option>
-                        <option value="bank_transfer">Bank transfer</option>
-                        <option value="cash">Cash</option>
-                        <option value="wallet">Wallet</option>
-                      </select>
-                    </label>
-                    <label>
-                      <span className="text-sm font-semibold text-slate-700">Reference</span>
-                      <input value={paymentReference} onChange={(event) => setPaymentReference(event.target.value)} disabled={actionSubmitting} placeholder="UPI or bank reference" className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-emerald-400" />
-                    </label>
-                    <label className="sm:col-span-2">
-                      <span className="text-sm font-semibold text-slate-700">Internal note</span>
-                      <textarea value={paymentNote} onChange={(event) => setPaymentNote(event.target.value)} disabled={actionSubmitting} rows={3} placeholder="Optional internal verification note" className="mt-2 w-full resize-none rounded-xl border border-slate-200 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-emerald-400" />
-                    </label>
-                  </div>
-                ) : null}
-
-                {(actionTarget.type === "transaction" || actionTarget.type === "projectApproval") ? (
-                  <label className="mt-5 block">
-                    <span className="text-sm font-semibold text-slate-700">Rejection reason</span>
-                    <textarea value={rejectionReason} onChange={(event) => setRejectionReason(event.target.value)} disabled={actionSubmitting} rows={3} placeholder="Required only when rejecting" className="mt-2 w-full resize-none rounded-xl border border-slate-200 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-rose-400" />
-                  </label>
-                ) : null}
-
-                <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-                  <button type="button" onClick={closeAction} disabled={actionSubmitting} className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-60">Cancel</button>
-                  {(actionTarget.type === "transaction" || actionTarget.type === "projectApproval") ? (
-                    <button type="button" onClick={() => completeAction("reject")} disabled={actionSubmitting || !rejectionReason.trim()} className="rounded-xl border border-rose-200 px-4 py-2.5 text-sm font-semibold text-rose-700 transition hover:bg-rose-50 disabled:opacity-60">{actionSubmitting ? "Saving..." : "Reject"}</button>
-                  ) : null}
-                  <button type="button" onClick={() => completeAction(actionTarget.type === "transaction" ? "approve" : actionTarget.type === "planInvoice" ? "record" : "record")} disabled={actionSubmitting} className="rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-60">
-                    {actionSubmitting ? "Saving..." : actionTarget.type === "transaction" ? "Accept Payment" : actionTarget.type === "planInvoice" ? "Record Payment" : "Record Payment & Approve"}
-                  </button>
-                </div>
-              </div>
-            </div>
-      ) : null}
     </section>
   );
 };

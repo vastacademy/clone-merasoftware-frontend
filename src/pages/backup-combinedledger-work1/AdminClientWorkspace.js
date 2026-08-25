@@ -2066,7 +2066,7 @@ const PaymentOrderHistorySubpage = ({ customerId, orderId, onBack }) => {
     };
   }, [customerId, orderId, reloadKey]);
 
-  const { order, invoices, finalInvoice, transactions, combinedRecords, serviceName, invoiceValue, recordedPayments, pendingRecords, initialProjectInvoiceId } = useMemo(() => {
+  const { order, invoices, finalInvoice, transactions, serviceName, invoiceValue, recordedPayments, pendingRecords, initialProjectInvoiceId } = useMemo(() => {
     const allOrders = workspace?.orders || [];
     const allInvoices = workspace?.invoices || [];
     const allTransactions = workspace?.transactions || [];
@@ -2098,45 +2098,11 @@ const PaymentOrderHistorySubpage = ({ customerId, orderId, onBack }) => {
       .filter((current) => current.invoiceType === "project" && ["unpaid", "overdue"].includes(current.status))
       .sort((left, right) => Number(left.installmentNumber || 1) - Number(right.installmentNumber || 1))[0];
 
-    // Combine invoice + transaction into one row per real-world payment event, same intent
-    // as paymentLedger.js's buildLedgerItems() dedup (transaction.invoiceId links the two).
-    // An invoice with a linked transaction shows the transaction's status/method/reference
-    // (the actual payment attempt) alongside the invoice's own number/due date; an invoice
-    // with no transaction yet, or a transaction with no invoice (e.g. wallet-only general
-    // payment), each get their own row.
-    const transactionsByInvoiceId = new Map();
-    matchingTransactions.forEach((transaction) => {
-      const linkedInvoiceId = getOrderReference(transaction?.invoiceId);
-      if (linkedInvoiceId) transactionsByInvoiceId.set(linkedInvoiceId, transaction);
-    });
-    const linkedTransactionIds = new Set(
-      [...transactionsByInvoiceId.values()].map((transaction) => String(transaction._id))
-    );
-
-    const combinedFromInvoices = paymentInvoices.map((invoice) => ({
-      key: `invoice-${invoice._id}`,
-      invoice,
-      transaction: transactionsByInvoiceId.get(String(invoice._id)) || null,
-      sortDate: new Date(invoice.invoiceDate || invoice.createdAt || 0).getTime(),
-    }));
-    const combinedFromUnlinkedTransactions = matchingTransactions
-      .filter((transaction) => !linkedTransactionIds.has(String(transaction._id)) && !getOrderReference(transaction?.invoiceId))
-      .map((transaction) => ({
-        key: `transaction-${transaction._id}`,
-        invoice: null,
-        transaction,
-        sortDate: new Date(transaction.date || transaction.createdAt || 0).getTime(),
-      }));
-    const combinedRecords = [...combinedFromInvoices, ...combinedFromUnlinkedTransactions].sort(
-      (left, right) => right.sortDate - left.sortDate
-    );
-
     return {
       order: matchingOrder,
       invoices: paymentInvoices,
       finalInvoice: projectFinalInvoice,
       transactions: matchingTransactions,
-      combinedRecords,
       serviceName: resolvedServiceName,
       invoiceValue: totalInvoiceValue,
       recordedPayments: totalRecordedPayments,
@@ -2204,54 +2170,6 @@ const PaymentOrderHistorySubpage = ({ customerId, orderId, onBack }) => {
       toast.error(error.message || "Failed to share final invoice");
     } finally {
       setFinalInvoiceAction("");
-    }
-  };
-
-  // Per-record (regular, non-final) invoice download/resend — same download-invoice /
-  // resend-invoice endpoints AdminPaymentRecordDetail.js's single-record page uses, now
-  // called directly from a row here instead of requiring a navigate-away.
-  const [invoiceRowAction, setInvoiceRowAction] = useState(null);
-
-  const handleInvoiceDownload = async (invoice) => {
-    if (!invoice?._id || invoiceRowAction) return;
-    try {
-      setInvoiceRowAction(`download-${invoice._id}`);
-      const response = await fetch(
-        `${SummaryApi.adminPaymentRecord.url}/${customerId}/payment-records/invoice/${invoice._id}/download-invoice`,
-        { credentials: "include" }
-      );
-      if (!response.ok) throw new Error((await response.json().catch(() => ({}))).message || "Failed to download invoice");
-      const url = window.URL.createObjectURL(await response.blob());
-      const anchor = document.createElement("a");
-      anchor.href = url;
-      anchor.download = `Invoice-${invoice.invoiceNumber || invoice._id}.pdf`;
-      document.body.appendChild(anchor);
-      anchor.click();
-      anchor.remove();
-      window.URL.revokeObjectURL(url);
-      toast.success("Invoice download started");
-    } catch (error) {
-      toast.error(error.message || "Failed to download invoice");
-    } finally {
-      setInvoiceRowAction(null);
-    }
-  };
-
-  const handleInvoiceResend = async (invoice) => {
-    if (!invoice?._id || invoiceRowAction) return;
-    try {
-      setInvoiceRowAction(`resend-${invoice._id}`);
-      const response = await fetch(
-        `${SummaryApi.adminPaymentRecord.url}/${customerId}/payment-records/invoice/${invoice._id}/resend-invoice`,
-        { method: "post", credentials: "include", headers: { "Content-Type": "application/json" } }
-      );
-      const result = await response.json();
-      if (!result.success) throw new Error(result.message || "Failed to resend invoice");
-      toast.success(result.message || "Invoice email resent");
-    } catch (error) {
-      toast.error(error.message || "Failed to resend invoice");
-    } finally {
-      setInvoiceRowAction(null);
     }
   };
 
@@ -2337,13 +2255,6 @@ const PaymentOrderHistorySubpage = ({ customerId, orderId, onBack }) => {
     }
   };
 
-  const totalAmount = Number(order?.totalAmount ?? order?.price ?? 0);
-  const paidAmount = Number(order?.paidAmount ?? 0);
-  const remainingAmount = Math.max(0, totalAmount - paidAmount);
-  const installmentProgress = order?.isPartialPayment && Array.isArray(order?.installments)
-    ? `Installment ${order?.currentInstallment || 1} of ${order.installments.length}`
-    : null;
-
   return (
     <section className="space-y-5">
       <button
@@ -2360,115 +2271,72 @@ const PaymentOrderHistorySubpage = ({ customerId, orderId, onBack }) => {
       ) : error ? (
         <div className="rounded-[2rem] border border-rose-200 bg-rose-50 p-5 text-sm text-rose-700">{error}</div>
       ) : (
-        <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
-          {/* Header — project/plan identity + payment summary, document-style, no boxed panels. */}
-          <div className="p-5 sm:p-6">
+        <>
+          <div className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">Project / Plan Payment History</p>
             <h1 className="mt-2 text-2xl font-bold text-slate-900">{serviceName}</h1>
             <p className="mt-2 text-sm text-slate-500">All invoices and payment requests linked to this {isGeneralPayments ? "customer account" : "project or plan"}.</p>
-
-            {!isGeneralPayments && order ? (
-              <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
-                <InfoLine label="Category" value={getCategoryLabel(getProjectCategory(order))} />
-                <InfoLine label="Phase" value={getPhaseLabel(order.currentPhase)} />
-                <InfoLine label="Started" value={formatDateTime(order.createdAt)} />
-              </div>
-            ) : null}
-
-            <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
-              <InfoLine label="Total amount" value={formatCurrency(totalAmount)} />
-              <InfoLine label="Paid" value={formatCurrency(paidAmount)} />
-              <InfoLine label="Remaining" value={formatCurrency(remainingAmount)} />
-            </div>
-
-            <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
-              <InfoLine label="Payment type" value={order?.isPartialPayment ? "Partial (Installments)" : "One-time (Full)"} />
-              {installmentProgress ? <InfoLine label="Installment progress" value={installmentProgress} /> : <div />}
+            <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <InfoLine label="Invoice value" value={formatCurrency(invoiceValue)} />
+              <InfoLine label="Recorded payments" value={formatCurrency(recordedPayments)} />
               <InfoLine label="Pending records" value={pendingRecords} />
             </div>
           </div>
 
-          {/* Payment records — one row per real payment event (invoice + its linked transaction
-              combined), each with its own invoice view/download/share actions inline, instead of
-              a separate "final invoice" box floating above an actionless list. */}
-          <div className="border-t border-slate-200 p-5 sm:p-6">
+          {finalInvoice ? (
+            <div className="rounded-[2rem] border border-emerald-200 bg-emerald-50 p-5 shadow-sm sm:p-6">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.16em] text-emerald-700">Live cumulative statement</p>
+                  <h2 className="mt-2 text-lg font-bold text-slate-900">Final Project Invoice</h2>
+                  <p className="mt-1 text-sm text-slate-600">{finalInvoice.invoiceNumber} · Paid {formatCurrency(finalInvoice.amountPaid)} of {formatCurrency(finalInvoice.amount)}</p>
+                  <p className="mt-1 text-sm font-semibold text-emerald-800">{Number(finalInvoice.amount || 0) - Number(finalInvoice.amountPaid || 0) > 0 ? `Pending ${formatCurrency(Number(finalInvoice.amount || 0) - Number(finalInvoice.amountPaid || 0))}` : "Fully paid"}</p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <button type="button" onClick={handleFinalInvoiceView} disabled={Boolean(finalInvoiceAction)} className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-800 disabled:opacity-60"><Eye size={15} />View</button>
+                  <button type="button" onClick={handleFinalInvoiceDownload} disabled={Boolean(finalInvoiceAction)} className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white disabled:opacity-60"><Download size={15} />{finalInvoiceAction === "download" ? "Preparing..." : "Download"}</button>
+                  <button type="button" onClick={handleFinalInvoiceNativeShare} disabled={Boolean(finalInvoiceAction)} className="inline-flex items-center gap-2 rounded-xl border border-emerald-300 bg-white px-3 py-2 text-xs font-semibold text-emerald-800 disabled:opacity-60"><Share2 size={15} />{finalInvoiceAction === "nativeShare" ? "Preparing..." : "Share PDF"}</button>
+                  <button type="button" onClick={handleFinalInvoiceShare} disabled={Boolean(finalInvoiceAction)} className="inline-flex items-center gap-2 rounded-xl border border-emerald-300 bg-white px-3 py-2 text-xs font-semibold text-emerald-800 disabled:opacity-60"><Mail size={15} />{finalInvoiceAction === "share" ? "Sharing..." : "Email"}</button>
+                </div>
+              </div>
+            </div>
+          ) : null}
+
+          <div className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <h2 className="text-lg font-bold text-slate-900">Payment Records</h2>
-                <p className="mt-1 text-sm text-slate-500">Every invoice and its payment, combined into one record per payment event.</p>
+                <h2 className="text-lg font-bold text-slate-900">Invoices</h2>
+                <p className="mt-1 text-sm text-slate-500">Every invoice for this project or plan.</p>
               </div>
-              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{combinedRecords.length} records</span>
+              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{invoices.length} records</span>
             </div>
-            {combinedRecords.length === 0 ? (
-              <p className="mt-4 rounded-2xl bg-slate-50 p-4 text-sm text-slate-500">No payment records found.</p>
+            {invoices.length === 0 ? (
+              <p className="mt-4 rounded-2xl bg-slate-50 p-4 text-sm text-slate-500">No invoices found.</p>
             ) : (
-              <div className="mt-4 divide-y divide-slate-100">
-                {combinedRecords.map(({ key, invoice, transaction }) => {
-                  const isRecurringPlanInvoice = invoice && invoice.invoiceType !== "project";
-                  const canRecordPlanInvoice = invoice && isRecurringPlanInvoice && ["unpaid", "overdue"].includes(invoice.status);
-                  const canResolvePendingProject = invoice
-                    && invoice.invoiceType === "project"
+              <div className="mt-4 divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200">
+                {invoices.map((current) => {
+                  const isRecurringPlanInvoice = current.invoiceType !== "project";
+                  const canRecordPlanInvoice = isRecurringPlanInvoice && ["unpaid", "overdue"].includes(current.status);
+                  const canResolvePendingProject = current.invoiceType === "project"
                     && order?.orderVisibility === "pending-approval"
                     && transactions.length === 0
-                    && String(invoice._id) === String(initialProjectInvoiceId);
-                  const canReviewTransaction = transaction && transaction.status === "pending";
-                  const isFinalInvoice = invoice?.invoiceType === "project_final";
-
-                  // Transaction is the actual payment attempt, so its status/method/reference
-                  // take priority when both exist; invoice-only rows fall back to invoice status.
-                  const displayLabel = invoice ? getInvoiceLabel(invoice) : getPaymentLabel(transaction);
-                  const displayStatus = getLedgerStatusLabel(transaction?.status || invoice?.status);
-                  const displayAmount = transaction?.amount ?? invoice?.amount ?? 0;
-                  const isBusyDownload = invoiceRowAction === `download-${invoice?._id}`;
-                  const isBusyResend = invoiceRowAction === `resend-${invoice?._id}`;
-                  const isBusyFinal = Boolean(finalInvoiceAction);
+                    && String(current._id) === String(initialProjectInvoiceId);
 
                   return (
-                  <div key={key} className="flex flex-col gap-3 py-4 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="min-w-0">
+                  <div key={current._id} className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
                       <div className="flex flex-wrap items-center gap-2">
-                        <p className="font-semibold text-slate-900">{displayLabel}</p>
-                        <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getBadgeClassName(displayStatus)}`}>{displayStatus}</span>
+                        <p className="font-semibold text-slate-900">{getInvoiceLabel(current)}</p>
+                        <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getBadgeClassName(getLedgerStatusLabel(current.status))}`}>{getLedgerStatusLabel(current.status)}</span>
                       </div>
-                      <p className="mt-1 text-xs text-slate-500">
-                        {invoice ? `${invoice.invoiceNumber ? `Invoice ${invoice.invoiceNumber} · ` : ""}Due ${formatDateTime(invoice.dueDate)} · Issued ${formatDateTime(invoice.invoiceDate)}` : null}
-                        {invoice && transaction ? " · " : null}
-                        {transaction ? `${transaction.paymentMethod || "N/A"} · Ref: ${transaction.upiTransactionId || shortId(transaction.transactionId)} · ${formatDateTime(transaction.date || transaction.createdAt)}` : null}
-                      </p>
-                      {transaction?.rejectionReason ? <p className="mt-1 text-xs text-rose-700">Reason: {transaction.rejectionReason}</p> : null}
-                      {isFinalInvoice ? (
-                        <p className="mt-1 text-xs font-semibold text-emerald-700">
-                          {Number(invoice.amount || 0) - Number(invoice.amountPaid || 0) > 0
-                            ? `Pending ${formatCurrency(Number(invoice.amount || 0) - Number(invoice.amountPaid || 0))} of full statement`
-                            : "Full statement fully paid"}
-                        </p>
-                      ) : null}
+                      <p className="mt-1 text-xs text-slate-500">{current.invoiceNumber ? `Invoice ${current.invoiceNumber} · ` : ""}Due {formatDateTime(current.dueDate)} · Issued {formatDateTime(current.invoiceDate)}</p>
                     </div>
-                    <div className="flex shrink-0 flex-col items-start gap-2 sm:items-end">
-                      <p className="text-base font-bold text-slate-900">{formatCurrency(displayAmount)}</p>
-
-                      {canReviewTransaction ? (
-                        <button type="button" onClick={() => openAction("transaction", transaction)} className="rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white transition hover:bg-slate-800">Review Payment</button>
-                      ) : canRecordPlanInvoice ? (
-                        <button type="button" onClick={() => openAction("planInvoice", invoice)} className="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-emerald-700">Review & Record Payment</button>
+                    <div className="text-left sm:text-right">
+                      <p className="text-base font-bold text-slate-900">{formatCurrency(current.amount)}</p>
+                      {canRecordPlanInvoice ? (
+                        <button type="button" onClick={() => openAction("planInvoice", current)} className="mt-2 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-emerald-700">Review & Record Payment</button>
                       ) : canResolvePendingProject ? (
-                        <button type="button" onClick={() => openAction("projectApproval", invoice)} className="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-emerald-700">Review Initial Payment</button>
-                      ) : null}
-
-                      {invoice?.invoiceNumber ? (
-                        isFinalInvoice ? (
-                          <div className="flex flex-wrap gap-2">
-                            <button type="button" onClick={handleFinalInvoiceView} disabled={isBusyFinal} className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-800 disabled:opacity-60"><Eye size={13} />View</button>
-                            <button type="button" onClick={handleFinalInvoiceDownload} disabled={isBusyFinal} className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-800 disabled:opacity-60"><Download size={13} />{finalInvoiceAction === "download" ? "Preparing..." : "Download"}</button>
-                            <button type="button" onClick={handleFinalInvoiceNativeShare} disabled={isBusyFinal} className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-800 disabled:opacity-60"><Share2 size={13} />{finalInvoiceAction === "nativeShare" ? "Preparing..." : "Share"}</button>
-                            <button type="button" onClick={handleFinalInvoiceShare} disabled={isBusyFinal} className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-800 disabled:opacity-60"><Mail size={13} />{finalInvoiceAction === "share" ? "Sharing..." : "Email"}</button>
-                          </div>
-                        ) : (
-                          <div className="flex flex-wrap gap-2">
-                            <button type="button" onClick={() => handleInvoiceDownload(invoice)} disabled={Boolean(invoiceRowAction)} className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-800 disabled:opacity-60"><Download size={13} />{isBusyDownload ? "Preparing..." : "Download"}</button>
-                            <button type="button" onClick={() => handleInvoiceResend(invoice)} disabled={Boolean(invoiceRowAction)} className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-800 disabled:opacity-60"><Mail size={13} />{isBusyResend ? "Sending..." : "Email"}</button>
-                          </div>
-                        )
+                        <button type="button" onClick={() => openAction("projectApproval", current)} className="mt-2 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-emerald-700">Review Initial Payment</button>
                       ) : null}
                     </div>
                   </div>
@@ -2477,10 +2345,42 @@ const PaymentOrderHistorySubpage = ({ customerId, orderId, onBack }) => {
               </div>
             )}
           </div>
-        </div>
-      )}
 
-      {actionTarget ? (
+          <div className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-bold text-slate-900">Payment Requests & History</h2>
+                <p className="mt-1 text-sm text-slate-500">Every submitted, completed, rejected, or wallet payment record.</p>
+              </div>
+              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{transactions.length} records</span>
+            </div>
+            {transactions.length === 0 ? (
+              <p className="mt-4 rounded-2xl bg-slate-50 p-4 text-sm text-slate-500">No payment requests found.</p>
+            ) : (
+              <div className="mt-4 divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200">
+                {transactions.map((current) => (
+                  <div key={current._id} className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="font-semibold text-slate-900">{getPaymentLabel(current)}</p>
+                        <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getBadgeClassName(getLedgerStatusLabel(current.status))}`}>{getLedgerStatusLabel(current.status)}</span>
+                      </div>
+                      <p className="mt-1 text-xs text-slate-500">{current.paymentMethod || "N/A"} · Ref: {current.upiTransactionId || shortId(current.transactionId)} · {formatDateTime(current.date || current.createdAt)}</p>
+                      {current.rejectionReason ? <p className="mt-1 text-xs text-rose-700">Reason: {current.rejectionReason}</p> : null}
+                    </div>
+                    <div className="text-left sm:text-right">
+                      <p className="text-base font-bold text-slate-900">{formatCurrency(current.amount)}</p>
+                      {current.status === "pending" ? (
+                        <button type="button" onClick={() => openAction("transaction", current)} className="mt-2 rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white transition hover:bg-slate-800">Review Payment</button>
+                      ) : null}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {actionTarget ? (
             <div className="fixed inset-0 z-[70] flex items-end bg-slate-950/45 p-4 backdrop-blur-sm sm:items-center sm:justify-center" onClick={closeAction}>
               <div className="w-full max-w-xl rounded-[2rem] bg-white p-5 shadow-2xl sm:p-6" onClick={(event) => event.stopPropagation()}>
                 <p className="text-xs font-bold uppercase tracking-[0.16em] text-emerald-700">Payment review</p>
@@ -2537,7 +2437,9 @@ const PaymentOrderHistorySubpage = ({ customerId, orderId, onBack }) => {
                 </div>
               </div>
             </div>
-      ) : null}
+          ) : null}
+        </>
+      )}
     </section>
   );
 };
