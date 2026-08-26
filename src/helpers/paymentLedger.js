@@ -106,7 +106,7 @@ export const buildLedgerItems = (transactions = [], invoices = []) => {
     ...invoices
       .filter((invoice) => !transactionInvoiceIds.has(String(invoice._id)))
       .map((invoice) => {
-        const serviceName = getOrderDisplayName(invoice.orderId, null) || invoice.serviceName;
+        const serviceName = getOrderDisplayName(invoice.orderId, null) || invoice.serviceName || invoice.deletedProjectName;
         const invoiceLabel = getInvoiceLabel(invoice);
         return {
           id: `invoice-${invoice._id}`,
@@ -125,6 +125,7 @@ export const buildLedgerItems = (transactions = [], invoices = []) => {
           serviceName: serviceName || null,
           orderStartDate: invoice.orderId?.createdAt || null,
           orderDeleted: Boolean(invoice.orderDeleted),
+          deletedProjectType: invoice.deletedProjectType || null,
         };
       }),
   ].sort((left, right) => right.sortDate - left.sortDate);
@@ -155,6 +156,7 @@ export const groupLedgerItemsByProject = (ledgerItems = []) => {
         key,
         baseName,
         startDate: item.orderStartDate || null,
+        deletedProjectType: item.deletedProjectType || null,
         items: [],
         latestSortDate: 0,
       });
@@ -163,6 +165,7 @@ export const groupLedgerItemsByProject = (ledgerItems = []) => {
     group.items.push(item);
     group.latestSortDate = Math.max(group.latestSortDate, item.sortDate);
     if (!group.startDate && item.orderStartDate) group.startDate = item.orderStartDate;
+    if (!group.deletedProjectType && item.deletedProjectType) group.deletedProjectType = item.deletedProjectType;
   });
 
   // When two different projects share the same service name (e.g. two "Standard Website"

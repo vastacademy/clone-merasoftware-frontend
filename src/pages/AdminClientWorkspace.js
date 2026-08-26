@@ -1973,24 +1973,31 @@ const DeletedProjectsPanel = ({ transactions, invoices, formatDateTime, onOpenGr
             No deleted projects with payment records for this client.
           </div>
         ) : (
-          deletedGroups.map((group) => (
-            <button
-              key={group.key}
-              type="button"
-              onClick={() => onOpenGroup?.(group)}
-              className="flex w-full items-center justify-between gap-4 rounded-[1.5rem] border border-slate-200 bg-white px-5 py-4 text-left transition hover:border-emerald-300 hover:bg-emerald-50/30"
-            >
-              <div className="min-w-0">
-                <p className="truncate text-base font-bold text-slate-900">{group.serviceName}</p>
-                <p className="mt-1 text-sm text-slate-500">
-                  {group.items.length} payment or invoice record{group.items.length === 1 ? "" : "s"} · Latest activity {formatDateTime(group.items[0]?.date)}
-                </p>
-              </div>
-              <span className="shrink-0 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
-                Open payments
-              </span>
-            </button>
-          ))
+          deletedGroups.map((group) => {
+            const latestItem = group.items[0];
+            const typeLabel = group.deletedProjectType === "plan" ? "Plan" : group.deletedProjectType === "project" ? "Project" : null;
+            return (
+              <button
+                key={group.key}
+                type="button"
+                onClick={() => onOpenGroup?.(group)}
+                className="flex w-full items-center justify-between gap-4 rounded-[1.5rem] border border-slate-200 bg-white px-5 py-4 text-left transition hover:border-emerald-300 hover:bg-emerald-50/30"
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-base font-bold text-slate-900">{group.serviceName}</p>
+                  <p className="mt-1 text-sm text-slate-500">
+                    {typeLabel ? `${typeLabel} · ` : ""}Deleted on {formatDateTime(group.items[0]?.date)} · Last payment method {latestItem?.method || "N/A"}
+                  </p>
+                  <p className="mt-1 text-xs text-slate-400">
+                    {group.items.length} payment or invoice record{group.items.length === 1 ? "" : "s"}
+                  </p>
+                </div>
+                <span className="shrink-0 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+                  Open payments
+                </span>
+              </button>
+            );
+          })
         )}
       </div>
     </section>
