@@ -60,6 +60,13 @@ export const getTransactionPaymentLabel = (transaction) => {
   if (transaction?.type === "renewal" || source === "renewal") return "Renewal Payment";
   if (transaction?.type === "refund") return "Wallet Refund";
   if (transaction?.type === "deposit" || source === "wallet") return "Wallet Recharge";
+  // Bulk add-on-service batch payment (customerCreateServicePlanOrdersBulk.js's parent
+  // transaction) — deliberately has no orderId, so it would otherwise fall through to the
+  // generic "Payment" label below with no indication of what was bought.
+  if (transaction?.paymentDetails?.isServiceBatch) {
+    const count = transaction.paymentDetails.serviceCount || 1;
+    return `${count} Service${count === 1 ? "" : "s"} · ${paymentMethod}`;
+  }
   if (transaction?.orderId) return `Full Payment · ${paymentMethod}`;
   return `Payment · ${paymentMethod}`;
 };
@@ -81,8 +88,12 @@ export const buildLedgerItems = (transactions = [], invoices = []) => {
   return [
     ...transactions.map((transaction) => {
       // Falls back to the name frozen on the order, so a retired/deleted plan still
-      // names the payment in the ledger instead of showing a bare amount.
-      const serviceName = getOrderDisplayName(transaction.orderId, null);
+      // names the payment in the ledger instead of showing a bare amount. A service-batch
+      // transaction has no orderId by design (see getTransactionPaymentLabel above), so its
+      // name comes from the backend-supplied linkedProjectSnapshot instead.
+      const serviceName =
+        getOrderDisplayName(transaction.orderId, null) ||
+        getOrderDisplayName(transaction.linkedProjectSnapshot, null);
       const paymentLabel = getTransactionPaymentLabel(transaction);
       return {
         id: `transaction-${transaction._id}`,
