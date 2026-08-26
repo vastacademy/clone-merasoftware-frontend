@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
-import { ArrowLeft, CalendarClock } from 'lucide-react';
 import { toast } from 'sonner';
 import SummaryApi from '../common';
 import Context from '../context';
@@ -21,9 +20,6 @@ const InstallmentPayment = () => {
   const [loading, setLoading] = useState(true);
   const [order, setOrder] = useState(null);
   const [installment, setInstallment] = useState(null);
-  // Payment is confirmed in a popup (the portal's pattern) rather than inline on the page:
-  // showPayment opens it, showQR switches it from the wallet step to the UPI-QR step.
-  const [showPayment, setShowPayment] = useState(false);
   const [showQR, setShowQR] = useState(false);
   const [transactionId, setTransactionId] = useState('');
   const [upiLink, setUpiLink] = useState('');
@@ -298,8 +294,7 @@ const InstallmentPayment = () => {
     }
   };
 
-
-  if (loading && !order) {
+  if (loading) {
     return (
       <DashboardLayout user={user}>
         <div className="flex items-center justify-center h-screen">
@@ -312,17 +307,14 @@ const InstallmentPayment = () => {
   if (!order || !installment) {
     return (
       <DashboardLayout user={user}>
-        <div
-          className="relative min-h-[calc(100vh-4rem)] overflow-hidden bg-slate-950 bg-cover bg-center px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
-          style={{ backgroundImage: `url(${backgroundImage})` }}
-        >
-          <div className="pointer-events-none absolute inset-0 bg-slate-950/40" />
-          <div className="relative mx-auto max-w-3xl rounded-[1.75rem] border border-white/20 bg-white/10 p-8 text-center shadow-[0_8px_32px_rgba(0,0,0,0.25)] backdrop-blur-2xl backdrop-saturate-150">
-            <h2 className="mb-2 text-lg font-semibold text-red-400">Payment Error</h2>
-            <p className="mb-4 text-base text-slate-300">This installment is not available or has already been paid.</p>
+        <div className="min-h-full bg-slate-950 bg-cover bg-center px-4 py-5 sm:px-6 lg:px-8 lg:py-8"
+        style={{ backgroundImage: `url(${backgroundImage})` }}>
+          <div className="mx-auto max-w-3xl rounded-[2rem] border border-slate-200 bg-white p-8 text-center shadow-sm">
+            <h2 className="text-lg font-semibold text-red-600 mb-2">Payment Error</h2>
+            <p className="text-base text-black mb-4">This installment is not available or has already been paid.</p>
             <button
               onClick={returnToParent}
-              className="rounded-lg bg-emerald-600 px-4 py-2 text-base font-semibold text-white hover:bg-emerald-700"
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg text-base font-semibold"
             >
               Back to Project
             </button>
@@ -332,192 +324,167 @@ const InstallmentPayment = () => {
     );
   }
 
-  const walletCoversAll = remainingAmount <= 0;
-  const walletPart = Math.max(0, installment.amount - remainingAmount);
-
   return (
     <DashboardLayout user={user}>
-      <div
-        className="relative min-h-[calc(100vh-4rem)] overflow-hidden bg-slate-950 bg-cover bg-center px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
-        style={{ backgroundImage: `url(${backgroundImage})` }}
-      >
-        <div className="pointer-events-none absolute inset-0 bg-slate-950/40" />
+      <div className="min-h-full bg-slate-950 bg-cover bg-center px-4 py-5 sm:px-6 lg:px-8 lg:py-8"
+        style={{ backgroundImage: `url(${backgroundImage})` }}>
+      <div className="mx-auto max-w-3xl flex flex-col gap-4">
+        {loading && (
+          <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+            <TriangleMazeLoader />
+          </div>
+        )}
 
-        <div className="relative mx-auto flex w-full max-w-3xl flex-col gap-4">
-          {/* Detail-page header: back button absolute-left, heading truly centred. */}
-          <div className="relative flex items-center justify-center">
-            <button
-              type="button"
-              onClick={returnToParent}
-              className="absolute left-0 inline-flex w-fit shrink-0 items-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-5 py-3 text-lg font-semibold text-white backdrop-blur-md transition hover:bg-white/15"
-            >
-              <ArrowLeft className="h-5 w-5" />
-              Back
-            </button>
-
-            <div className="text-center">
-              <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
+        {/* Payment Header Banner */}
+        <section className="overflow-hidden rounded-[2rem] border border-slate-900/10 bg-slate-950 text-white shadow-2xl">
+          <div className="px-5 py-5 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between mb-3">
+              <h1 className="text-2xl font-bold tracking-tight text-white">Installment Payment</h1>
+              <div className="text-sm px-3 py-1 bg-amber-100 text-amber-800 rounded-full font-semibold">
                 {getInstallmentName(installmentNumber)}
-              </h1>
-              <p className="mt-1 text-base text-slate-300">
-                {getOrderDisplayName(order, 'Project')}
-              </p>
+              </div>
+            </div>
+            <div className="text-base text-white">
+              <p>Project: {getOrderDisplayName(order, 'Project')}</p>
+              <p className="mt-1">Progress: {Math.round(order.projectProgress)}%</p>
             </div>
           </div>
+        </section>
 
-          {/* One dark-glass card with internal dividers, not a stack of sub-cards. */}
-          <div className="relative overflow-hidden rounded-[1.75rem] border border-white/20 bg-white/10 p-5 shadow-[0_8px_32px_rgba(0,0,0,0.25)] backdrop-blur-2xl backdrop-saturate-150 sm:p-6 lg:p-8">
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/[0.12] to-transparent" />
-
-            <div className="relative">
-              <div className="flex flex-wrap items-baseline justify-between gap-3">
-                <div>
-                  <p className="text-sm text-slate-300">Amount due</p>
-                  <p className="mt-1 text-3xl font-bold text-white">{displayINRCurrency(installment.amount)}</p>
-                </div>
-                <span className="inline-flex items-center gap-1 rounded-full border border-amber-400/40 bg-amber-500/20 px-3 py-1 text-sm font-semibold text-amber-300">
-                  <CalendarClock className="h-3.5 w-3.5" />
-                  Due
-                </span>
-              </div>
-
-              <p className="mt-3 text-sm leading-relaxed text-slate-300">
-                {getProgressText(installmentNumber)} Project progress is {Math.round(order.projectProgress)}%.
+        {/* Info Card */}
+        <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-lg">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2h-1V9z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="text-base text-blue-700">
+                {getProgressText(installmentNumber)}
               </p>
-
-              <div className="mt-5 border-t border-white/10 pt-5">
-                <div className="flex items-baseline justify-between gap-4">
-                  <span className="text-sm text-slate-300">Wallet balance</span>
-                  <span className="text-sm font-semibold text-emerald-300">{displayINRCurrency(context.walletBalance)}</span>
-                </div>
-
-                {/* The split only means something when the wallet cannot cover the whole amount. */}
-                {!walletCoversAll && (
-                  <div className="mt-3 divide-y divide-white/10 rounded-xl border border-emerald-400/25 bg-emerald-500/[0.06] px-4 py-2">
-                    <div className="flex items-baseline justify-between gap-4 py-2 text-sm">
-                      <span className="text-slate-300">Paid from wallet (instant)</span>
-                      <span className="font-medium text-emerald-300">{displayINRCurrency(walletPart)}</span>
-                    </div>
-                    <div className="flex items-baseline justify-between gap-4 py-2 text-sm">
-                      <span className="text-slate-300">To pay via UPI</span>
-                      <span className="font-medium text-white">{displayINRCurrency(remainingAmount)}</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="mt-5 border-t border-white/10 pt-5">
-                <button
-                  type="button"
-                  onClick={() => { setShowPayment(true); setShowQR(false); }}
-                  disabled={loading || paymentProcessed}
-                  className="w-full rounded-lg bg-emerald-600 py-3 text-base font-medium text-white transition-colors hover:bg-emerald-700 disabled:opacity-60"
-                >
-                  Pay Now
-                </button>
-              </div>
-
-              <div className="mt-5 space-y-2 border-t border-white/10 pt-5 text-sm text-slate-300">
-                <p>Wallet money is your own already-approved balance, so it is paid instantly.</p>
-                <p>A UPI payment is verified by our team, usually within a few hours.</p>
-                <p>Project development continues as soon as the payment is confirmed.</p>
-                <p>For any payment issue, contact support.</p>
-              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Payment popup — the same two-step wallet then UPI-QR flow InvoiceDetailPage uses, so
-          paying an installment looks and behaves identically wherever it is started from. */}
-      {showPayment && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-md rounded-[1.5rem] border border-white/15 bg-slate-900/95 p-6 text-white shadow-2xl backdrop-blur-2xl">
-            {!showQR ? (
-              <>
-                <h3 className="text-lg font-bold">{getInstallmentName(installmentNumber)}</h3>
-                <div className="mt-4 space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-slate-300">Amount due</span>
-                    <span className="font-semibold text-white">{displayINRCurrency(installment.amount)}</span>
+        {/* Payment Amount Card */}
+        <div className="rounded-[2rem] border border-slate-200 bg-white shadow-sm p-5">
+          <h2 className="text-lg font-semibold text-black mb-4">Payment Details</h2>
+
+          <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg mb-4">
+            <span className="text-base text-black">Installment Amount:</span>
+            <span className="text-xl font-bold text-blue-600">{displayINRCurrency(installment.amount)}</span>
+          </div>
+
+          {/* Wallet Balance */}
+          <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg mb-4">
+            <div>
+              <span className="text-base font-medium text-black">Wallet Balance</span>
+              <p className="text-sm text-black">Available balance in your account</p>
+            </div>
+            <span className="text-base font-semibold text-black">{displayINRCurrency(context.walletBalance)}</span>
+          </div>
+
+          {!showQR ? (
+            <>
+              {/* Payment Breakdown */}
+              {remainingAmount > 0 && (
+                <div className="border-t border-gray-200 pt-4 mt-4">
+                  <h4 className="text-base font-medium text-black mb-2">Payment Breakdown</h4>
+
+                  <div className="flex justify-between items-center mb-2 text-base text-black">
+                    <span>From Wallet</span>
+                    <span>{displayINRCurrency(context.walletBalance)}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-300">Wallet balance</span>
-                    <span className="font-semibold text-emerald-300">{displayINRCurrency(context.walletBalance)}</span>
+
+                  <div className="flex justify-between items-center mb-2 text-base text-black">
+                    <span>Remaining Amount (via QR)</span>
+                    <span>{displayINRCurrency(remainingAmount)}</span>
                   </div>
                 </div>
-                <p className="mt-3 text-xs text-slate-400">
-                  {walletCoversAll
-                    ? 'Your wallet covers this amount. It will be deducted instantly.'
-                    : `Wallet covers ${displayINRCurrency(walletPart)} — the remaining ${displayINRCurrency(remainingAmount)} is paid by UPI QR next.`}
-                </p>
-                <div className="mt-5 flex gap-3">
-                  <button
-                    onClick={() => setShowPayment(false)}
-                    disabled={loading}
-                    className="flex-1 rounded-lg border border-white/20 py-2.5 text-sm font-semibold text-slate-200 hover:bg-white/10 disabled:opacity-60"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleWalletPayment}
-                    disabled={loading}
-                    className="flex-1 rounded-lg bg-emerald-600 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
-                  >
-                    {loading ? 'Processing...' : walletCoversAll ? 'Pay from Wallet' : 'Continue to UPI'}
-                  </button>
-                </div>
-              </>
-            ) : (
-              <>
-                <h3 className="text-lg font-bold">Scan &amp; Pay {displayINRCurrency(remainingAmount)}</h3>
-                <div className="mt-4 flex justify-center rounded-2xl bg-white p-4">
-                  <QRCodeSVG value={upiLink} size={190} />
-                </div>
-                <p className="mt-3 text-center text-xs text-slate-400">Transaction ID: {transactionId}</p>
-                <label className="mt-4 block text-sm font-medium text-slate-200">
-                  UPI Transaction ID
+              )}
+
+              {/* Payment Buttons */}
+              <div className="flex justify-between mt-6">
+                <button
+                  onClick={returnToParent}
+                  className="bg-gray-100 text-black px-6 py-3 rounded-lg text-base font-medium hover:bg-gray-200 transition-colors"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  onClick={handleWalletPayment}
+                  disabled={loading}
+                  className="bg-blue-600 text-white px-6 py-3 rounded-lg text-base font-medium hover:bg-blue-700 transition-colors"
+                >
+                  {remainingAmount > 0
+                    ? 'Pay with Wallet & Continue'
+                    : 'Complete Payment'}
+                </button>
+              </div>
+            </>
+          ) : (
+            /* QR Code Payment */
+            <div className="flex flex-col items-center mt-4">
+              <h3 className="text-center text-lg font-semibold text-black mb-3">
+                Scan QR Code to Pay Remaining Amount
+              </h3>
+
+              <div className="bg-white p-4 rounded-lg shadow-inner mb-4 inline-block">
+                <QRCodeSVG value={upiLink} size={200} />
+              </div>
+
+              <p className="text-sm text-black mb-4 text-center">Transaction ID: {transactionId}</p>
+
+              <div className="w-full mb-4">
+                <label htmlFor="upiTransactionId" className="block text-base font-medium text-black mb-2">
+                  UPI Transaction ID:
                 </label>
                 <input
                   type="text"
+                  id="upiTransactionId"
                   value={upiTransactionId}
-                  onChange={(event) => setUpiTransactionId(event.target.value)}
-                  placeholder="Enter the UPI reference after paying"
-                  className="mt-1.5 w-full rounded-lg border border-white/20 bg-white/5 px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-emerald-400 focus:outline-none"
+                  onChange={(e) => setUpiTransactionId(e.target.value)}
+                  className="w-full border border-gray-300 rounded-md p-2 text-base text-black"
+                  placeholder="Enter the transaction ID from your UPI app"
+                  required
                 />
-                <p className="mt-1.5 text-xs text-slate-400">
-                  Find this in your UPI app payment history. It is required for verification.
+                <p className="text-sm text-black mt-1">
+                  This is required for payment verification. You'll find it in your UPI app payment history.
                 </p>
-                {verificationStatus && (
-                  <p className="mt-3 text-sm text-amber-300">{verificationStatus}</p>
-                )}
-                <div className="mt-5 flex gap-3">
-                  <button
-                    onClick={() => setShowQR(false)}
-                    disabled={loading}
-                    className="flex-1 rounded-lg border border-white/20 py-2.5 text-sm font-semibold text-slate-200 hover:bg-white/10 disabled:opacity-60"
-                  >
-                    Back
-                  </button>
-                  <button
-                    onClick={verifyPayment}
-                    disabled={loading || !upiTransactionId.trim()}
-                    className="flex-1 rounded-lg bg-emerald-600 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
-                  >
-                    {loading ? 'Verifying...' : 'Submit for Verification'}
-                  </button>
-                </div>
-              </>
-            )}
+              </div>
+
+              <button
+                onClick={verifyPayment}
+                disabled={loading || !upiTransactionId.trim()}
+                className="bg-green-600 text-white px-6 py-2 rounded-lg text-base font-medium hover:bg-green-700 transition-colors w-full disabled:bg-gray-400"
+              >
+                {loading ? 'Verifying...' : 'Submit for Verification'}
+              </button>
+
+              {verificationStatus && (
+                <p className="mt-3 text-center text-base text-black">
+                  {verificationStatus}
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Additional Information Card */}
+        <div className="rounded-[2rem] border border-slate-200 bg-white shadow-sm p-5">
+          <h2 className="text-lg font-semibold text-black mb-3">Payment Information</h2>
+
+          <div className="space-y-4 text-base text-black">
+            <p>• Partial payment model allows you to pay as your project progresses</p>
+            <p>• Project development will continue immediately after payment confirmation</p>
+            <p>• If you're paying via QR code, please allow up to 24 hours for verification</p>
+            <p>• For any payment issues, please contact our support team</p>
           </div>
         </div>
-      )}
-
-      {loading && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/30">
-          <TriangleMazeLoader />
-        </div>
-      )}
+      </div>
+      </div>
     </DashboardLayout>
   );
 };

@@ -2186,9 +2186,10 @@ const PaymentOrderHistorySubpage = ({ customerId, orderId, onBack }) => {
     if (!finalInvoice || finalInvoiceAction) return;
     try {
       setFinalInvoiceAction("download");
-      // One document endpoint for every invoice type — the backend decides the layout from the
-      // invoice's own type, so the admin and the customer download the identical PDF.
-      const response = await fetch(`${SummaryApi.invoices.downloadDocument.url}/${finalInvoice._id}/download`, { credentials: "include" });
+      const downloadEndpoint = finalInvoice.invoiceType === "project_final"
+        ? `${SummaryApi.projectFinalInvoice.url}/${finalInvoice._id}/download`
+        : `${SummaryApi.invoices.downloadDocument.url}/${finalInvoice._id}/download`;
+      const response = await fetch(downloadEndpoint, { credentials: "include" });
       if (!response.ok) throw new Error((await response.json().catch(() => ({}))).message || "Failed to download final invoice");
       const url = window.URL.createObjectURL(await response.blob());
       const anchor = document.createElement("a");
@@ -2208,7 +2209,10 @@ const PaymentOrderHistorySubpage = ({ customerId, orderId, onBack }) => {
 
   const handleFinalInvoiceView = () => {
     if (!finalInvoice || finalInvoiceAction) return;
-    window.open(`${SummaryApi.invoices.viewDocument.url}/${finalInvoice._id}/view`, "_blank", "noopener,noreferrer");
+    const url = finalInvoice.invoiceType === "project_final"
+      ? `${SummaryApi.projectFinalInvoice.url}/${finalInvoice._id}/view`
+      : `${SummaryApi.invoices.viewDocument.url}/${finalInvoice._id}/view`;
+    window.open(url, "_blank", "noopener,noreferrer");
   };
 
   const handleFinalInvoiceNativeShare = async () => {
@@ -2219,7 +2223,10 @@ const PaymentOrderHistorySubpage = ({ customerId, orderId, onBack }) => {
     }
     try {
       setFinalInvoiceAction("nativeShare");
-      const response = await fetch(`${SummaryApi.invoices.downloadDocument.url}/${finalInvoice._id}/download`, { credentials: "include" });
+      const url = finalInvoice.invoiceType === "project_final"
+        ? `${SummaryApi.projectFinalInvoice.url}/${finalInvoice._id}/download`
+        : `${SummaryApi.invoices.downloadDocument.url}/${finalInvoice._id}/download`;
+      const response = await fetch(url, { credentials: "include" });
       if (!response.ok) throw new Error((await response.json().catch(() => ({}))).message || "Failed to prepare final invoice");
       const file = new File([await response.blob()], `${finalInvoice.invoiceNumber || "final-project-invoice"}.pdf`, { type: "application/pdf" });
       if (!navigator.canShare({ files: [file] })) throw new Error("Native PDF sharing is not supported on this device");
