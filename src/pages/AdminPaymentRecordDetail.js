@@ -671,6 +671,7 @@ const getOrderReference = (value) => String(value?._id || value || "");
 
 const getInvoiceLabel = (invoice) => {
   if (invoice?.invoiceType === "project_final") return "Final Project Invoice";
+  if (invoice?.invoiceType === "service_statement") return "Service Billing Statement";
   if (invoice?.installmentNumber) return `${getOrdinal(invoice.installmentNumber)} Installment Invoice`;
   if (invoice?.invoiceType === "plan_renewal") return "Plan Renewal Invoice";
   return "Invoice";
@@ -722,7 +723,7 @@ const PaymentOrderHistory = ({ customerId, orderId }) => {
     };
   }, [customerId, reloadKey]);
 
-  const { order, invoices, finalInvoice, transactions, serviceName, invoiceValue, recordedPayments, pendingRecords, initialProjectInvoiceId } = useMemo(() => {
+  const { order, invoices, finalInvoice, transactions, paymentBatches, serviceName, invoiceValue, recordedPayments, pendingRecords, initialProjectInvoiceId } = useMemo(() => {
     const allOrders = workspace?.orders || [];
     const allInvoices = workspace?.invoices || [];
     const allTransactions = workspace?.transactions || [];
@@ -736,6 +737,20 @@ const PaymentOrderHistory = ({ customerId, orderId }) => {
     const matchingTransactions = allTransactions.filter(matchesOrder).sort(
       (left, right) => new Date(right.date || right.createdAt || 0) - new Date(left.date || left.createdAt || 0)
     );
+    // A payment batch (paymentBatchModel) is one payment covering several service orders. Its
+    // children each carry their own orderId, so the batch surfaces on every order it paid for —
+    // that is where the admin approves or rejects it, since a batch is all-or-nothing and its
+    // children can never be settled individually.
+    const pendingBatches = (workspace?.paymentBatches || []).filter(
+      (batch) => batch?.status === "pending-approval"
+    );
+    const matchingBatches = isGeneralPayments
+      ? []
+      : pendingBatches.filter((batch) =>
+          (batch.orderIds || []).some((linked) => getOrderReference(linked) === String(orderId))
+        );
+    const matchingBatchRefs = new Set(matchingBatches.map((batch) => batch.batchRef));
+
     const matchingOrder = isGeneralPayments
       ? null
       : allOrders.find((candidate) => String(candidate?._id) === String(orderId)) || null;
@@ -743,13 +758,17 @@ const PaymentOrderHistory = ({ customerId, orderId }) => {
       ? "Wallet & General Payments"
       : getOrderDisplayName(matchingOrder || matchingInvoices[0]?.orderId || matchingTransactions[0]?.orderId, "Payment History");
     const projectFinalInvoice = matchingInvoices.find((current) => current.invoiceType === "project_final") || null;
-    const paymentInvoices = matchingInvoices.filter((current) => current.invoiceType !== "project_final");
+    const serviceStatement = matchingInvoices.find((current) => current.invoiceType === "service_statement") || null;
+    const paymentInvoices = matchingInvoices.filter((current) => !["project_final", "service_statement"].includes(current.invoiceType));
     const totalInvoiceValue = paymentInvoices.reduce((sum, current) => sum + Number(current.amount || 0), 0);
     const totalRecordedPayments = matchingTransactions
       .filter((current) => current.status === "completed")
       .reduce((sum, current) => sum + Number(current.amount || 0), 0);
     const totalPendingRecords = matchingInvoices.filter((current) => ["unpaid", "partially_paid", "overdue"].includes(current.status)).length
-      + matchingTransactions.filter((current) => current.status === "pending").length;
+      + matchingTransactions.filter(
+        (current) => current.status === "pending" && !matchingBatchRefs.has(current?.parentTransactionId)
+      ).length
+      + matchingBatches.length;
     const firstPendingProjectInvoice = matchingInvoices
       .filter((current) => current.invoiceType === "project" && ["unpaid", "overdue"].includes(current.status))
       .sort((left, right) => Number(left.installmentNumber || 1) - Number(right.installmentNumber || 1))[0];
@@ -757,8 +776,13 @@ const PaymentOrderHistory = ({ customerId, orderId }) => {
     return {
       order: matchingOrder,
       invoices: paymentInvoices,
-      finalInvoice: projectFinalInvoice,
-      transactions: matchingTransactions,
+      finalInvoice: projectFinalInvoice || serviceStatement,
+      // A child of a pending batch is shown by the batch row instead — approving that batch is
+      // the only way it settles, so listing it separately would offer an action that is refused.
+      transactions: matchingTransactions.filter(
+        (transaction) => !matchingBatchRefs.has(transaction?.parentTransactionId)
+      ),
+      paymentBatches: matchingBatches,
       serviceName: resolvedServiceName,
       invoiceValue: totalInvoiceValue,
       recordedPayments: totalRecordedPayments,
@@ -781,7 +805,8 @@ const PaymentOrderHistory = ({ customerId, orderId }) => {
     if (!finalInvoice || finalInvoiceAction) return;
     try {
       setFinalInvoiceAction("download");
-      const response = await fetch(`${SummaryApi.projectFinalInvoice.url}/${finalInvoice._id}/download`, { credentials: "include" });
+      const downloadEndpoint = finalInvoice.invoiceType === "project_final" ? `${SummaryApi.projectFinalInvoice.url}/${finalInvoice._id}/download` : `${SummaryApi.invoices.downloadDocument.url}/${finalInvoice._id}/download`;
+      const response = await fetch(downloadEndpoint, { credentials: "include" });
       if (!response.ok) throw new Error((await response.json().catch(() => ({}))).message || "Failed to download final invoice");
       const url = window.URL.createObjectURL(await response.blob());
       const anchor = document.createElement("a");
@@ -801,7 +826,8 @@ const PaymentOrderHistory = ({ customerId, orderId }) => {
 
   const handleFinalInvoiceView = () => {
     if (!finalInvoice || finalInvoiceAction) return;
-    window.open(`${SummaryApi.projectFinalInvoice.url}/${finalInvoice._id}/view`, "_blank", "noopener,noreferrer");
+    const url = finalInvoice.invoiceType === "project_final" ? `${SummaryApi.projectFinalInvoice.url}/${finalInvoice._id}/view` : `${SummaryApi.invoices.viewDocument.url}/${finalInvoice._id}/view`;
+    window.open(url, "_blank", "noopener,noreferrer");
   };
 
   const handleFinalInvoiceNativeShare = async () => {
@@ -812,7 +838,8 @@ const PaymentOrderHistory = ({ customerId, orderId }) => {
     }
     try {
       setFinalInvoiceAction("nativeShare");
-      const response = await fetch(`${SummaryApi.projectFinalInvoice.url}/${finalInvoice._id}/download`, { credentials: "include" });
+      const url = finalInvoice.invoiceType === "project_final" ? `${SummaryApi.projectFinalInvoice.url}/${finalInvoice._id}/download` : `${SummaryApi.invoices.downloadDocument.url}/${finalInvoice._id}/download`;
+      const response = await fetch(url, { credentials: "include" });
       if (!response.ok) throw new Error((await response.json().catch(() => ({}))).message || "Failed to prepare final invoice");
       const file = new File([await response.blob()], `${finalInvoice.invoiceNumber || "final-project-invoice"}.pdf`, { type: "application/pdf" });
       if (!navigator.canShare({ files: [file] })) throw new Error("Native PDF sharing is not supported on this device");
@@ -826,6 +853,7 @@ const PaymentOrderHistory = ({ customerId, orderId }) => {
 
   const handleFinalInvoiceShare = async () => {
     if (!finalInvoice || finalInvoiceAction) return;
+    if (finalInvoice.invoiceType !== "project_final") return;
     try {
       setFinalInvoiceAction("share");
       const response = await fetch(`${SummaryApi.projectFinalInvoice.url}/${finalInvoice._id}/resend`, { method: "post", credentials: "include" });
@@ -855,7 +883,7 @@ const PaymentOrderHistory = ({ customerId, orderId }) => {
     if (!actionTarget || actionSubmitting) return;
     const { type, record } = actionTarget;
 
-    if (["transaction", "projectApproval"].includes(type) && decision === "reject" && !rejectionReason.trim()) {
+    if (["transaction", "paymentBatch", "projectApproval"].includes(type) && decision === "reject" && !rejectionReason.trim()) {
       toast.error("Rejection reason is required");
       return;
     }
@@ -864,7 +892,11 @@ const PaymentOrderHistory = ({ customerId, orderId }) => {
       setActionSubmitting(true);
       let response;
 
-      if (type === "transaction") {
+      // A batch settles through the same approve/reject endpoints — the controller resolves
+      // the id against paymentBatchModel when no transaction carries it, then settles every
+      // child through the unchanged single-order path.
+      if (type === "transaction" || type === "paymentBatch") {
+        const settleId = type === "paymentBatch" ? record.batchRef : record.transactionId;
         response = await fetch(
           decision === "approve" ? SummaryApi.wallet.approveTransaction.url : SummaryApi.wallet.rejectTransaction.url,
           {
@@ -873,8 +905,8 @@ const PaymentOrderHistory = ({ customerId, orderId }) => {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(
               decision === "approve"
-                ? { transactionId: record.transactionId }
-                : { transactionId: record.transactionId, rejectionReason: rejectionReason.trim() }
+                ? { transactionId: settleId }
+                : { transactionId: settleId, rejectionReason: rejectionReason.trim() }
             ),
           }
         );
@@ -968,7 +1000,7 @@ const PaymentOrderHistory = ({ customerId, orderId }) => {
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <p className="text-xs font-bold uppercase tracking-[0.16em] text-emerald-700">Live cumulative statement</p>
-                      <h2 className="mt-2 text-lg font-bold text-slate-900">Final Project Invoice</h2>
+                      <h2 className="mt-2 text-lg font-bold text-slate-900">{finalInvoice.invoiceType === "service_statement" ? "Service Billing Statement" : "Final Project Invoice"}</h2>
                       <p className="mt-1 text-sm text-slate-600">{finalInvoice.invoiceNumber} · Paid {formatCurrency(finalInvoice.amountPaid)} of {formatCurrency(finalInvoice.amount)}</p>
                       <p className="mt-1 text-sm font-semibold text-emerald-800">{Number(finalInvoice.amount || 0) - Number(finalInvoice.amountPaid || 0) > 0 ? `Pending ${formatCurrency(Number(finalInvoice.amount || 0) - Number(finalInvoice.amountPaid || 0))}` : "Fully paid"}</p>
                     </div>
@@ -976,7 +1008,7 @@ const PaymentOrderHistory = ({ customerId, orderId }) => {
                       <button type="button" onClick={handleFinalInvoiceView} disabled={Boolean(finalInvoiceAction)} className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-800 disabled:opacity-60"><Eye size={15} />View</button>
                       <button type="button" onClick={handleFinalInvoiceDownload} disabled={Boolean(finalInvoiceAction)} className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white disabled:opacity-60"><Download size={15} />{finalInvoiceAction === "download" ? "Preparing..." : "Download"}</button>
                       <button type="button" onClick={handleFinalInvoiceNativeShare} disabled={Boolean(finalInvoiceAction)} className="inline-flex items-center gap-2 rounded-xl border border-emerald-300 bg-white px-3 py-2 text-xs font-semibold text-emerald-800 disabled:opacity-60"><Share2 size={15} />{finalInvoiceAction === "nativeShare" ? "Preparing..." : "Share PDF"}</button>
-                      <button type="button" onClick={handleFinalInvoiceShare} disabled={Boolean(finalInvoiceAction)} className="inline-flex items-center gap-2 rounded-xl border border-emerald-300 bg-white px-3 py-2 text-xs font-semibold text-emerald-800 disabled:opacity-60"><Mail size={15} />{finalInvoiceAction === "share" ? "Sharing..." : "Email"}</button>
+                      {finalInvoice.invoiceType === "project_final" ? <button type="button" onClick={handleFinalInvoiceShare} disabled={Boolean(finalInvoiceAction)} className="inline-flex items-center gap-2 rounded-xl border border-emerald-300 bg-white px-3 py-2 text-xs font-semibold text-emerald-800 disabled:opacity-60"><Mail size={15} />{finalInvoiceAction === "share" ? "Sharing..." : "Email"}</button> : null}
                     </div>
                   </div>
                 </section>
@@ -1034,12 +1066,38 @@ const PaymentOrderHistory = ({ customerId, orderId }) => {
                     <h2 className="text-lg font-bold text-slate-900">Payment Requests & History</h2>
                     <p className="mt-1 text-sm text-slate-500">Every submitted, completed, rejected, or wallet payment record.</p>
                   </div>
-                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{transactions.length} records</span>
+                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{transactions.length + paymentBatches.length} records</span>
                 </div>
-                {transactions.length === 0 ? (
+                {transactions.length === 0 && paymentBatches.length === 0 ? (
                   <p className="mt-4 rounded-2xl bg-slate-50 p-4 text-sm text-slate-500">No payment requests found.</p>
                 ) : (
                   <div className="mt-4 divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200">
+                    {/* One payment covering several services — approved or rejected as a whole,
+                        since its per-service parts can never be settled individually. */}
+                    {paymentBatches.map((batch) => (
+                      <div key={batch._id} className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="font-semibold text-slate-900">
+                              {(batch.orderIds?.length || 1)} Service{(batch.orderIds?.length || 1) === 1 ? "" : "s"} · one payment
+                            </p>
+                            <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getBadgeClassName("Pending")}`}>Pending</span>
+                          </div>
+                          <p className="mt-1 text-xs text-slate-500">
+                            {batch.paymentMethod || "N/A"} · Ref: {batch.upiTransactionId || shortId(batch.batchRef)} · {formatDateTime(batch.createdAt)}
+                          </p>
+                          {batch.walletPart > 0 ? (
+                            <p className="mt-1 text-xs text-slate-500">
+                              Wallet {formatCurrency(batch.walletPart)} already paid · {formatCurrency(batch.upiPart)} awaiting approval
+                            </p>
+                          ) : null}
+                        </div>
+                        <div className="text-left sm:text-right">
+                          <p className="text-base font-bold text-slate-900">{formatCurrency(batch.upiPart)}</p>
+                          <button type="button" onClick={() => openAction("paymentBatch", batch)} className="mt-2 rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white transition hover:bg-slate-800">Review Payment</button>
+                        </div>
+                      </div>
+                    ))}
                     {transactions.map((current) => (
                       <div key={current._id} className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
                         <div>
@@ -1071,6 +1129,8 @@ const PaymentOrderHistory = ({ customerId, orderId }) => {
                     <h2 className="mt-2 text-xl font-bold text-slate-900">
                       {actionTarget.type === "transaction"
                         ? "Review submitted payment"
+                        : actionTarget.type === "paymentBatch"
+                        ? "Review multi-service payment"
                         : actionTarget.type === "planInvoice"
                         ? "Record plan invoice payment"
                         : "Review initial project payment"}
@@ -1078,10 +1138,12 @@ const PaymentOrderHistory = ({ customerId, orderId }) => {
                     <p className="mt-2 text-sm text-slate-500">
                       {actionTarget.type === "transaction"
                         ? `${formatCurrency(actionTarget.record.amount)} submitted via ${actionTarget.record.paymentMethod || "N/A"}. Verify the reference before accepting.`
+                        : actionTarget.type === "paymentBatch"
+                        ? `${formatCurrency(actionTarget.record.upiPart)} submitted via ${actionTarget.record.paymentMethod || "N/A"} for ${actionTarget.record.orderIds?.length || 1} service${(actionTarget.record.orderIds?.length || 1) === 1 ? "" : "s"}. Accepting activates all of them together; rejecting rejects all of them and refunds any wallet portion.`
                         : `${formatCurrency(actionTarget.record.amount)} · ${getInvoiceLabel(actionTarget.record)}${actionTarget.record.invoiceNumber ? ` · ${actionTarget.record.invoiceNumber}` : ""}`}
                     </p>
 
-                    {actionTarget.type !== "transaction" ? (
+                    {!["transaction", "paymentBatch"].includes(actionTarget.type) ? (
                       <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <label>
                           <span className="text-sm font-semibold text-slate-700">Payment method</span>
@@ -1103,7 +1165,7 @@ const PaymentOrderHistory = ({ customerId, orderId }) => {
                       </div>
                     ) : null}
 
-                    {(actionTarget.type === "transaction" || actionTarget.type === "projectApproval") ? (
+                    {["transaction", "paymentBatch", "projectApproval"].includes(actionTarget.type) ? (
                       <label className="mt-5 block">
                         <span className="text-sm font-semibold text-slate-700">Rejection reason</span>
                         <textarea value={rejectionReason} onChange={(event) => setRejectionReason(event.target.value)} disabled={actionSubmitting} rows={3} placeholder="Required only when rejecting" className="mt-2 w-full resize-none rounded-xl border border-slate-200 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-rose-400" />
@@ -1112,11 +1174,11 @@ const PaymentOrderHistory = ({ customerId, orderId }) => {
 
                     <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
                       <button type="button" onClick={closeAction} disabled={actionSubmitting} className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-60">Cancel</button>
-                      {(actionTarget.type === "transaction" || actionTarget.type === "projectApproval") ? (
+                      {["transaction", "paymentBatch", "projectApproval"].includes(actionTarget.type) ? (
                         <button type="button" onClick={() => completeAction("reject")} disabled={actionSubmitting || !rejectionReason.trim()} className="rounded-xl border border-rose-200 px-4 py-2.5 text-sm font-semibold text-rose-700 transition hover:bg-rose-50 disabled:opacity-60">{actionSubmitting ? "Saving..." : "Reject"}</button>
                       ) : null}
-                      <button type="button" onClick={() => completeAction(actionTarget.type === "transaction" ? "approve" : actionTarget.type === "planInvoice" ? "record" : "record")} disabled={actionSubmitting} className="rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-60">
-                        {actionSubmitting ? "Saving..." : actionTarget.type === "transaction" ? "Accept Payment" : actionTarget.type === "planInvoice" ? "Record Payment" : "Record Payment & Approve"}
+                      <button type="button" onClick={() => completeAction(["transaction", "paymentBatch"].includes(actionTarget.type) ? "approve" : "record")} disabled={actionSubmitting} className="rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-60">
+                        {actionSubmitting ? "Saving..." : ["transaction", "paymentBatch"].includes(actionTarget.type) ? "Accept Payment" : actionTarget.type === "planInvoice" ? "Record Payment" : "Record Payment & Approve"}
                       </button>
                     </div>
                   </div>

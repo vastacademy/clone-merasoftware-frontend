@@ -168,7 +168,7 @@ const AddServiceModal = ({
     if (!options.length) return true;
     const choice = selections[plan._id] || {};
     const cycleMonths = BILLING_CYCLE_MONTHS[choice.selectedBillingCycle] || 0;
-    return Boolean(cycleMonths) && (choice.tenureMonths === '' || choice.tenureMonths === undefined || (Number.isInteger(Number(choice.tenureMonths)) && Number(choice.tenureMonths) >= cycleMonths && Number(choice.tenureMonths) % cycleMonths === 0));
+    return Boolean(cycleMonths) && Boolean(choice.tenureMonths) && Number.isInteger(Number(choice.tenureMonths)) && Number(choice.tenureMonths) >= cycleMonths && Number(choice.tenureMonths) % cycleMonths === 0;
   });
   const total = useMemo(() => selectedPlans.reduce((sum, plan) => sum + getSelectedPrice(plan), 0), [selectedPlans, selections]);
 
@@ -428,7 +428,7 @@ const AddServiceModal = ({
                         {isSelected && servicePlan.billingOptions?.length > 0 && (
                           <span className="mt-3 grid gap-2 sm:grid-cols-2" onClick={(event) => event.stopPropagation()}>
                             <label><span className="mb-1 block text-xs font-semibold text-white/70">Billing period</span><select className="w-full rounded-lg border border-white/20 bg-slate-950 px-2.5 py-2 text-sm text-white" value={selections[plan._id]?.selectedBillingCycle || ''} onChange={(event) => setSelections((current) => ({ ...current, [plan._id]: { ...current[plan._id], selectedBillingCycle: event.target.value, tenureMonths: '' } }))}><option value="">Select period</option>{servicePlan.billingOptions.map((option) => <option key={option.billingCycle} value={option.billingCycle}>{BILLING_CYCLE_LABELS[option.billingCycle]} — {formatPrice(option.pricePerCycle)}</option>)}</select></label>
-                            <label><span className="mb-1 block text-xs font-semibold text-white/70">Total tenure (optional)</span><input className="w-full rounded-lg border border-white/20 bg-slate-950 px-2.5 py-2 text-sm text-white disabled:opacity-50" type="number" min={BILLING_CYCLE_MONTHS[selections[plan._id]?.selectedBillingCycle] || 1} step={BILLING_CYCLE_MONTHS[selections[plan._id]?.selectedBillingCycle] || 1} disabled={!selections[plan._id]?.selectedBillingCycle} value={selections[plan._id]?.tenureMonths || ''} onChange={(event) => setSelections((current) => ({ ...current, [plan._id]: { ...current[plan._id], tenureMonths: event.target.value } }))} placeholder="Continue until stopped" /></label>
+                            <label><span className="mb-1 block text-xs font-semibold text-white/70">Total tenure (months)</span><input required className="w-full rounded-lg border border-white/20 bg-slate-950 px-2.5 py-2 text-sm text-white disabled:opacity-50" type="number" min={BILLING_CYCLE_MONTHS[selections[plan._id]?.selectedBillingCycle] || 1} step={BILLING_CYCLE_MONTHS[selections[plan._id]?.selectedBillingCycle] || 1} disabled={!selections[plan._id]?.selectedBillingCycle} value={selections[plan._id]?.tenureMonths || ''} onChange={(event) => setSelections((current) => ({ ...current, [plan._id]: { ...current[plan._id], tenureMonths: event.target.value } }))} placeholder="For example: 6" /></label>
                           </span>
                         )}
                       </span>

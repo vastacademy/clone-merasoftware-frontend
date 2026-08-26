@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { ChevronLeft, Sparkles, CheckCircle2, CalendarClock, XCircle } from 'lucide-react';
+import { ChevronLeft, Sparkles, CheckCircle2, CalendarClock, XCircle, Share2 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { toast } from 'react-toastify';
 import SummaryApi from '../common';
@@ -27,6 +27,7 @@ const formatDate = (date) => {
 
 const INVOICE_STATUS_META = {
   paid: { label: 'Paid', tone: 'border-emerald-400/40 bg-emerald-500/20 text-emerald-300', Icon: CheckCircle2 },
+  partially_paid: { label: 'Partially Paid', tone: 'border-amber-400/40 bg-amber-500/20 text-amber-300', Icon: CalendarClock },
   unpaid: { label: 'Due', tone: 'border-amber-400/40 bg-amber-500/20 text-amber-300', Icon: CalendarClock },
   overdue: { label: 'Overdue', tone: 'border-red-400/40 bg-red-500/20 text-red-300', Icon: XCircle },
   cancelled: { label: 'Cancelled', tone: 'border-white/15 bg-white/10 text-slate-300', Icon: XCircle },
@@ -95,10 +96,33 @@ const InvoiceDetailPage = () => {
   const [payTxnId, setPayTxnId] = useState('');
   const [upiLink, setUpiLink] = useState('');
   const [upiRef, setUpiRef] = useState('');
+  const [sharingInvoice, setSharingInvoice] = useState(false);
 
-  const amountDueNow = Number(invoice?.amount || 0);
+  const amountDueNow = Math.max(0, Number(invoice?.amount || 0) - Number(invoice?.amountPaid || 0));
   const orderIdForPay = invoice?.orderId?._id || invoice?.orderId;
   const isInstallmentInvoice = Boolean(invoice?.installmentNumber);
+  const isStatement = ['project_final', 'service_statement'].includes(invoice?.invoiceType);
+  const isServerInvoice = invoice?._id && !String(invoice._id).startsWith('dummy-');
+  const invoiceDocumentUrl = isServerInvoice ? `${SummaryApi.invoices.viewDocument.url}/${invoice._id}` : null;
+
+  const handleShareInvoice = async () => {
+    if (!invoiceDocumentUrl || !navigator.share || !navigator.canShare) {
+      toast.error('PDF sharing is not supported on this browser. Use Download instead.');
+      return;
+    }
+    try {
+      setSharingInvoice(true);
+      const response = await fetch(`${invoiceDocumentUrl}/download`, { credentials: 'include' });
+      if (!response.ok) throw new Error('Unable to prepare invoice PDF');
+      const file = new File([await response.blob()], `${invoice.invoiceNumber || 'invoice'}.pdf`, { type: 'application/pdf' });
+      if (!navigator.canShare({ files: [file] })) throw new Error('PDF sharing is not supported on this device');
+      await navigator.share({ title: invoice.invoiceNumber || 'Invoice', files: [file] });
+    } catch (error) {
+      if (error.name !== 'AbortError') toast.error(error.message || 'Unable to share invoice');
+    } finally {
+      setSharingInvoice(false);
+    }
+  };
 
   const getInvoiceFallback = () => {
     const order = invoice?.orderId;
@@ -326,19 +350,16 @@ const InvoiceDetailPage = () => {
             </div>
 
             <div className="relative mt-5">
-              {invoice.status === 'paid' ? (
-                invoice.pdfUrl && (
-                  <a
-                    href={invoice.pdfUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block w-full rounded-lg bg-emerald-600 py-3 text-center text-base font-medium text-white hover:bg-emerald-700"
-                  >
-                    Download Invoice
-                  </a>
+              {invoice.status === 'paid' || isStatement ? (
+                invoiceDocumentUrl && (
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                    <a href={`${invoiceDocumentUrl}/view`} target="_blank" rel="noopener noreferrer" className="rounded-lg border border-emerald-300/60 py-3 text-center text-base font-medium text-emerald-100 hover:bg-white/10">View Invoice</a>
+                    <a href={`${invoiceDocumentUrl}/download`} className="rounded-lg bg-emerald-600 py-3 text-center text-base font-medium text-white hover:bg-emerald-700">Download Invoice</a>
+                    <button type="button" onClick={handleShareInvoice} disabled={sharingInvoice} className="inline-flex items-center justify-center gap-2 rounded-lg border border-emerald-300/60 py-3 text-base font-medium text-emerald-100 hover:bg-white/10 disabled:opacity-60"><Share2 size={17} />{sharingInvoice ? 'Preparing…' : 'Share'}</button>
+                  </div>
                 )
               ) : (
-                invoice.status !== 'cancelled' && (
+                invoice.status !== 'cancelled' && !isStatement && amountDueNow > 0 && (
                   <button
                     onClick={() => { setShowPayment(true); setShowQR(false); }}
                     className="w-full rounded-lg bg-emerald-600 py-3 text-base font-medium text-white hover:bg-emerald-700"

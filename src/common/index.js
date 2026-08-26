@@ -612,6 +612,14 @@ const SummaryApi = {
     },
     // Monthly Invoice APIs
     invoices: {
+        viewDocument: {
+            url: `${backendDomain}/api/invoices`,
+            method: "get"
+        },
+        downloadDocument: {
+            url: `${backendDomain}/api/invoices`,
+            method: "get"
+        },
         getUserInvoices: {
             url: `${backendDomain}/api/my-invoices`,
             method: "get"

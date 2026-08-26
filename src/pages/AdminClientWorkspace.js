@@ -44,6 +44,7 @@ import {
   formatCurrency,
   getLedgerStatusLabel,
   buildLedgerItems,
+  buildBatchLedgerItems,
   groupLedgerItemsByProject,
 } from "../helpers/paymentLedger";
 import { adminReturnState, getAdminReturnTarget, goToAdminReturn } from "../helpers/adminReturnNavigation";
@@ -265,6 +266,7 @@ const AdminClientWorkspace = () => {
     orders: [],
     renewals: [],
     transactions: [],
+    paymentBatches: [],
     invoices: [],
     updates: [],
     plans: [],
@@ -752,6 +754,7 @@ const AdminClientWorkspace = () => {
           orders: workspaceData.orders || [],
           renewals: workspaceData.renewals || [],
           transactions: workspaceData.transactions || [],
+          paymentBatches: workspaceData.paymentBatches || [],
           invoices: workspaceData.invoices || [],
           updates: workspaceData.updates || [],
           plans: workspaceData.plans || [],
@@ -1152,6 +1155,7 @@ const AdminClientWorkspace = () => {
           ) : (
             <PaymentInvoicesPanel
               transactions={allData.transactions}
+              paymentBatches={allData.paymentBatches}
               invoices={allData.invoices}
               getBadgeClassName={getBadgeClassName}
               formatDateTime={formatDateTime}
@@ -1707,6 +1711,7 @@ const AccountAccessPanel = ({
 
 const PaymentInvoicesPanel = ({
   transactions,
+  paymentBatches = [],
   invoices,
   getBadgeClassName,
   formatDateTime,
@@ -1717,11 +1722,20 @@ const PaymentInvoicesPanel = ({
 }) => {
   const activeTransactions = transactions.filter((transaction) => !transaction?.orderDeleted);
   const activeInvoices = invoices.filter((invoice) => !invoice?.orderDeleted);
-  const pendingPayments = activeTransactions.filter((transaction) => transaction?.status === "pending");
+  // A batch child is settled through its batch, never on its own, so the batch (not each
+  // child) is what the admin acts on while the payment is still awaiting a decision.
+  const pendingBatchRefs = new Set(
+    paymentBatches.filter((batch) => batch?.status === "pending-approval").map((batch) => batch.batchRef)
+  );
+  const pendingPayments = activeTransactions.filter(
+    (transaction) => transaction?.status === "pending" && !pendingBatchRefs.has(transaction?.parentTransactionId)
+  );
   const unpaidInvoices = activeInvoices.filter((invoice) => ["unpaid", "overdue"].includes(invoice?.status));
   const paidInvoices = activeInvoices.filter((invoice) => invoice?.status === "paid");
   const completedPayments = activeTransactions.filter((transaction) => transaction?.status === "completed");
-  const ledgerItems = buildLedgerItems(transactions, invoices);
+  const ledgerItems = [...buildLedgerItems(transactions, invoices), ...buildBatchLedgerItems(paymentBatches)].sort(
+    (left, right) => right.sortDate - left.sortDate
+  );
   const allLedgerGroups = groupLedgerItemsByProject(ledgerItems);
   // Deleted projects (order hard-deleted, but its transactions/invoices survive) are kept out
   // of this tab entirely — they have their own "Deleted Projects" tab so this list stays clean.
@@ -2011,6 +2025,7 @@ const getOrderReference = (value) => String(value?._id || value || "");
 
 const getInvoiceLabel = (invoice) => {
   if (invoice?.invoiceType === "project_final") return "Final Project Invoice";
+  if (invoice?.invoiceType === "service_statement") return "Service Billing Statement";
   if (invoice?.installmentNumber) return `${getOrdinal(invoice.installmentNumber)} Installment Invoice`;
   if (invoice?.invoiceType === "plan_renewal") return "Plan Renewal Invoice";
   return "Invoice";
@@ -2086,6 +2101,16 @@ const PaymentOrderHistorySubpage = ({ customerId, orderId, onBack }) => {
     const matchingTransactions = allTransactions.filter(matchesOrder).sort(
       (left, right) => new Date(right.date || right.createdAt || 0) - new Date(left.date || left.createdAt || 0)
     );
+    // A payment batch (paymentBatchModel) is one payment covering several service orders. It
+    // surfaces on every order it paid for — a batch is all-or-nothing, so that is where the
+    // admin approves or rejects it; its children can never be settled individually.
+    const matchingBatches = isGeneralPayments
+      ? []
+      : (workspace?.paymentBatches || [])
+          .filter((batch) => batch?.status === "pending-approval")
+          .filter((batch) => (batch.orderIds || []).some((linked) => getOrderReference(linked) === String(orderId)));
+    const matchingBatchRefs = new Set(matchingBatches.map((batch) => batch.batchRef));
+
     const matchingOrder = isGeneralPayments
       ? null
       : allOrders.find((candidate) => String(candidate?._id) === String(orderId)) || null;
@@ -2093,13 +2118,17 @@ const PaymentOrderHistorySubpage = ({ customerId, orderId, onBack }) => {
       ? "Wallet & General Payments"
       : getOrderDisplayName(matchingOrder || matchingInvoices[0]?.orderId || matchingTransactions[0]?.orderId, "Payment History");
     const projectFinalInvoice = matchingInvoices.find((current) => current.invoiceType === "project_final") || null;
-    const paymentInvoices = matchingInvoices.filter((current) => current.invoiceType !== "project_final");
+    const serviceStatement = matchingInvoices.find((current) => current.invoiceType === "service_statement") || null;
+    const paymentInvoices = matchingInvoices.filter((current) => !["project_final", "service_statement"].includes(current.invoiceType));
     const totalInvoiceValue = paymentInvoices.reduce((sum, current) => sum + Number(current.amount || 0), 0);
     const totalRecordedPayments = matchingTransactions
       .filter((current) => current.status === "completed")
       .reduce((sum, current) => sum + Number(current.amount || 0), 0);
     const totalPendingRecords = matchingInvoices.filter((current) => ["unpaid", "partially_paid", "overdue"].includes(current.status)).length
-      + matchingTransactions.filter((current) => current.status === "pending").length;
+      + matchingTransactions.filter(
+        (current) => current.status === "pending" && !matchingBatchRefs.has(current?.parentTransactionId)
+      ).length
+      + matchingBatches.length;
     const firstPendingProjectInvoice = matchingInvoices
       .filter((current) => current.invoiceType === "project" && ["unpaid", "overdue"].includes(current.status))
       .sort((left, right) => Number(left.installmentNumber || 1) - Number(right.installmentNumber || 1))[0];
@@ -2127,6 +2156,8 @@ const PaymentOrderHistorySubpage = ({ customerId, orderId, onBack }) => {
     }));
     const combinedFromUnlinkedTransactions = matchingTransactions
       .filter((transaction) => !linkedTransactionIds.has(String(transaction._id)) && !getOrderReference(transaction?.invoiceId))
+      // A pending batch's child is represented by its batch, not on its own.
+      .filter((transaction) => !matchingBatchRefs.has(transaction?.parentTransactionId))
       .map((transaction) => ({
         key: `transaction-${transaction._id}`,
         invoice: null,
@@ -2140,7 +2171,7 @@ const PaymentOrderHistorySubpage = ({ customerId, orderId, onBack }) => {
     return {
       order: matchingOrder,
       invoices: paymentInvoices,
-      finalInvoice: projectFinalInvoice,
+      finalInvoice: projectFinalInvoice || serviceStatement,
       transactions: matchingTransactions,
       combinedRecords,
       serviceName: resolvedServiceName,
@@ -2155,7 +2186,10 @@ const PaymentOrderHistorySubpage = ({ customerId, orderId, onBack }) => {
     if (!finalInvoice || finalInvoiceAction) return;
     try {
       setFinalInvoiceAction("download");
-      const response = await fetch(`${SummaryApi.projectFinalInvoice.url}/${finalInvoice._id}/download`, { credentials: "include" });
+      const downloadEndpoint = finalInvoice.invoiceType === "project_final"
+        ? `${SummaryApi.projectFinalInvoice.url}/${finalInvoice._id}/download`
+        : `${SummaryApi.invoices.downloadDocument.url}/${finalInvoice._id}/download`;
+      const response = await fetch(downloadEndpoint, { credentials: "include" });
       if (!response.ok) throw new Error((await response.json().catch(() => ({}))).message || "Failed to download final invoice");
       const url = window.URL.createObjectURL(await response.blob());
       const anchor = document.createElement("a");
@@ -2175,7 +2209,10 @@ const PaymentOrderHistorySubpage = ({ customerId, orderId, onBack }) => {
 
   const handleFinalInvoiceView = () => {
     if (!finalInvoice || finalInvoiceAction) return;
-    window.open(`${SummaryApi.projectFinalInvoice.url}/${finalInvoice._id}/view`, "_blank", "noopener,noreferrer");
+    const url = finalInvoice.invoiceType === "project_final"
+      ? `${SummaryApi.projectFinalInvoice.url}/${finalInvoice._id}/view`
+      : `${SummaryApi.invoices.viewDocument.url}/${finalInvoice._id}/view`;
+    window.open(url, "_blank", "noopener,noreferrer");
   };
 
   const handleFinalInvoiceNativeShare = async () => {
@@ -2186,7 +2223,10 @@ const PaymentOrderHistorySubpage = ({ customerId, orderId, onBack }) => {
     }
     try {
       setFinalInvoiceAction("nativeShare");
-      const response = await fetch(`${SummaryApi.projectFinalInvoice.url}/${finalInvoice._id}/download`, { credentials: "include" });
+      const url = finalInvoice.invoiceType === "project_final"
+        ? `${SummaryApi.projectFinalInvoice.url}/${finalInvoice._id}/download`
+        : `${SummaryApi.invoices.downloadDocument.url}/${finalInvoice._id}/download`;
+      const response = await fetch(url, { credentials: "include" });
       if (!response.ok) throw new Error((await response.json().catch(() => ({}))).message || "Failed to prepare final invoice");
       const file = new File([await response.blob()], `${finalInvoice.invoiceNumber || "final-project-invoice"}.pdf`, { type: "application/pdf" });
       if (!navigator.canShare({ files: [file] })) throw new Error("Native PDF sharing is not supported on this device");
@@ -2400,9 +2440,9 @@ const PaymentOrderHistorySubpage = ({ customerId, orderId, onBack }) => {
                 <>
                   <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500">Combined Invoice</h2>
                   <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50/40 p-4">
-                    <p className="text-xs font-bold uppercase tracking-[0.16em] text-emerald-700">Combined Project Invoice</p>
+                    <p className="text-xs font-bold uppercase tracking-[0.16em] text-emerald-700">{finalInvoice.invoiceType === "service_statement" ? "Live Service Billing Statement" : "Combined Project Invoice"}</p>
                     <p className="mt-1 font-semibold text-slate-900">
-                      {finalInvoice.invoiceNumber ? `Invoice ${finalInvoice.invoiceNumber}` : "Full Project Statement"}
+                      {finalInvoice.invoiceNumber ? `Invoice ${finalInvoice.invoiceNumber}` : finalInvoice.invoiceType === "service_statement" ? "Service Billing Statement" : "Full Project Statement"}
                     </p>
                     <div className="mt-2 flex flex-wrap items-center gap-2">
                       <p className="text-base font-bold text-slate-900">{formatCurrency(finalInvoice.amount)}</p>

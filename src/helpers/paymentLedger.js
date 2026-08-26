@@ -60,13 +60,6 @@ export const getTransactionPaymentLabel = (transaction) => {
   if (transaction?.type === "renewal" || source === "renewal") return "Renewal Payment";
   if (transaction?.type === "refund") return "Wallet Refund";
   if (transaction?.type === "deposit" || source === "wallet") return "Wallet Recharge";
-  // Bulk add-on-service batch payment (customerCreateServicePlanOrdersBulk.js's parent
-  // transaction) — deliberately has no orderId, so it would otherwise fall through to the
-  // generic "Payment" label below with no indication of what was bought.
-  if (transaction?.paymentDetails?.isServiceBatch) {
-    const count = transaction.paymentDetails.serviceCount || 1;
-    return `${count} Service${count === 1 ? "" : "s"} · ${paymentMethod}`;
-  }
   if (transaction?.orderId) return `Full Payment · ${paymentMethod}`;
   return `Payment · ${paymentMethod}`;
 };
@@ -78,6 +71,60 @@ const getInvoiceLabel = (invoice) => {
   return "Invoice";
 };
 
+// A payment batch is one payment covering several service orders (paymentBatchModel). It is
+// not a transaction — its money lives in child transactions, one per order, which appear in
+// the ledger on their own. The batch itself is listed only while it is still awaiting the
+// admin's decision, as the single record they act on; once approved/rejected the children
+// carry the outcome and the batch would just be a duplicate row.
+const getBatchLabel = (batch) => {
+  const count = batch?.orderIds?.length || batch?.childTransactionIds?.length || 0;
+  const method = getPaymentMethodLabel(batch?.paymentMethod);
+  return `${count} Service${count === 1 ? "" : "s"} · ${method}`;
+};
+
+const getBatchName = (batch) => {
+  const project = getOrderDisplayName(batch?.linkedProjectOrderId, null);
+  if (project) return project;
+  const names = (batch?.orderIds || [])
+    .map((order) => getOrderDisplayName(order, null))
+    .filter(Boolean);
+  if (!names.length) return null;
+  return names.length === 1 ? names[0] : `${names[0]} +${names.length - 1} more`;
+};
+
+export const buildBatchLedgerItems = (paymentBatches = []) =>
+  paymentBatches
+    .filter((batch) => batch?.status === "pending-approval")
+    .map((batch) => {
+      const serviceName = getBatchName(batch);
+      const label = getBatchLabel(batch);
+      return {
+        id: `batch-${batch._id}`,
+        kind: "paymentBatch",
+        statusLabel: "pending approval",
+        title: serviceName ? `${serviceName} — ${label}` : label,
+        label,
+        status: "pending",
+        amount: batch.upiPart,
+        method: batch.paymentMethod || "N/A",
+        reference: batch.upiTransactionId || shortId(batch.batchRef) || "N/A",
+        date: batch.createdAt,
+        raw: batch,
+        sortDate: safeDateTime(batch.createdAt)?.getTime() || 0,
+        // Grouped with the project these services were bought for when there is one; a
+        // standalone batch groups under its first service order instead of the wallet bucket.
+        orderId:
+          batch.linkedProjectOrderId?._id ||
+          batch.linkedProjectOrderId ||
+          batch.orderIds?.[0]?._id ||
+          batch.orderIds?.[0] ||
+          null,
+        serviceName: serviceName || null,
+        orderStartDate: batch.linkedProjectOrderId?.createdAt || null,
+        orderDeleted: false,
+      };
+    });
+
 export const buildLedgerItems = (transactions = [], invoices = []) => {
   const transactionInvoiceIds = new Set(
     transactions
@@ -88,12 +135,8 @@ export const buildLedgerItems = (transactions = [], invoices = []) => {
   return [
     ...transactions.map((transaction) => {
       // Falls back to the name frozen on the order, so a retired/deleted plan still
-      // names the payment in the ledger instead of showing a bare amount. A service-batch
-      // transaction has no orderId by design (see getTransactionPaymentLabel above), so its
-      // name comes from the backend-supplied linkedProjectSnapshot instead.
-      const serviceName =
-        getOrderDisplayName(transaction.orderId, null) ||
-        getOrderDisplayName(transaction.linkedProjectSnapshot, null);
+      // names the payment in the ledger instead of showing a bare amount.
+      const serviceName = getOrderDisplayName(transaction.orderId, null);
       const paymentLabel = getTransactionPaymentLabel(transaction);
       return {
         id: `transaction-${transaction._id}`,

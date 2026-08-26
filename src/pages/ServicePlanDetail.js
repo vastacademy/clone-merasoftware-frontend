@@ -187,7 +187,8 @@ const ServicePlanDetail = () => {
   const handleConfirmPayment = async () => {
     if (payProcessing) return;
     if (catalogueBillingOptions.length && !selectedBillingOption) return toast.error('Select a billing period first.');
-    if (tenureMonths !== '' && (!Number.isInteger(Number(tenureMonths)) || Number(tenureMonths) < selectedCycleMonths || Number(tenureMonths) % selectedCycleMonths !== 0)) return toast.error('Total tenure must be a whole multiple of the billing period.');
+    if (!tenureMonths) return toast.error('Select the total service tenure.');
+    if (!Number.isInteger(Number(tenureMonths)) || Number(tenureMonths) < selectedCycleMonths || Number(tenureMonths) % selectedCycleMonths !== 0) return toast.error('Total tenure must be a whole multiple of the billing period.');
     try {
       setPayProcessing(true);
 
@@ -400,10 +401,10 @@ const ServicePlanDetail = () => {
                 {catalogueBillingOptions.length > 0 && (
                   <div className="mt-4 grid gap-3 sm:grid-cols-2">
                     <label><span className="mb-1.5 block text-sm font-semibold text-slate-200">Billing period</span><select className="w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2.5 text-sm text-white" value={selectedBillingCycle} onChange={(event) => { setSelectedBillingCycle(event.target.value); setTenureMonths(''); }}><option value="">Select billing period</option>{catalogueBillingOptions.map((option) => <option key={option.billingCycle} value={option.billingCycle}>{BILLING_CYCLE_LABELS[option.billingCycle]} — {formatPrice(option.pricePerCycle)}</option>)}</select></label>
-                    <label><span className="mb-1.5 block text-sm font-semibold text-slate-200">Total tenure (optional)</span><input className="w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2.5 text-sm text-white placeholder:text-white/40" type="number" min={selectedCycleMonths || 1} step={selectedCycleMonths || 1} disabled={!selectedBillingCycle} value={tenureMonths} onChange={(event) => setTenureMonths(event.target.value)} placeholder="Leave blank to continue" /></label>
+                    <label><span className="mb-1.5 block text-sm font-semibold text-slate-200">Total tenure (months)</span><input required className="w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2.5 text-sm text-white placeholder:text-white/40" type="number" min={selectedCycleMonths || 1} step={selectedCycleMonths || 1} disabled={!selectedBillingCycle} value={tenureMonths} onChange={(event) => setTenureMonths(event.target.value)} placeholder="For example: 6" /></label>
                   </div>
                 )}
-                {catalogueBillingOptions.length > 0 && <p className="mt-2 text-xs text-slate-400">First selected period is paid now. {tenureMonths === '' ? 'It will continue until you stop renewal.' : 'Further invoices follow this billing period until the selected tenure ends.'}</p>}
+                {catalogueBillingOptions.length > 0 && <p className="mt-2 text-xs text-slate-400">{tenureMonths && selectedCycleMonths ? `${Number(tenureMonths) / selectedCycleMonths} billing cycles. ` : ''}First selected period is paid now; further invoices follow this billing period until the selected tenure ends.</p>}
 
                 <div className="mt-5 space-y-2 rounded-2xl border border-white/15 bg-white/5 p-4">
                   <div className="flex items-center justify-between text-base text-white/85">
