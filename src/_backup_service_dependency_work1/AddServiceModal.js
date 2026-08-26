@@ -1,17 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Check, Clock, ExternalLink, Loader2, X } from 'lucide-react';
+import { Check, Clock, Loader2, X } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import SummaryApi from '../common';
-// The admin's dependency rule. This modal buys services attached to a project,
-// so it asks the same question the backend will ask when the purchase is made.
-import {
-  SURFACE,
-  canBuyOnSurface,
-  isRedirectableFromProject,
-  startsAfterProjectCompletion,
-} from '../helpers/serviceDependency';
 
 // Add-on service picker, opened from a project's detail page.
 //
@@ -112,13 +103,8 @@ const AddServiceModal = ({
   walletBalance = 0,
   onPurchased,
 }) => {
-  const navigate = useNavigate();
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
-  // A standalone-only service the customer tapped: it stays listed here, but is
-  // bought elsewhere. Holding it in state lets the reason be shown and confirmed
-  // before leaving the project, so the sale is redirected rather than refused.
-  const [redirectPlan, setRedirectPlan] = useState(null);
   const [selectedIds, setSelectedIds] = useState([]);
   const [selections, setSelections] = useState({});
   const [submitting, setSubmitting] = useState(false);
@@ -135,7 +121,6 @@ const AddServiceModal = ({
     // Reset per-open so a previous session's selection never carries over.
     setSelectedIds([]);
     setSelections({});
-    setRedirectPlan(null);
     setPurchasedSummary(null);
     setShowQR(false);
     setUpiLink('');
@@ -155,12 +140,7 @@ const AddServiceModal = ({
             // Retired plans are already excluded server-side; filtered here too so a
             // withdrawn plan can never be bought from a stale client payload.
             !product.retiredAt &&
-            getPriceOf(product) > 0 &&
-            // The admin's dependency rule. A standalone-only service is kept in the
-            // list on purpose — tapping it explains where it is bought and takes the
-            // customer there. Anything else that cannot be attached to a project is
-            // not listed, because there is nowhere useful to send them.
-            (canBuyOnSurface(product, SURFACE.PROJECT) || isRedirectableFromProject(product))
+            getPriceOf(product) > 0
         );
         setPlans(servicePlans);
       } catch (error) {
@@ -198,27 +178,10 @@ const AddServiceModal = ({
   const upiPart = Math.max(0, total - walletPart);
   const canPay = selectedPlans.length > 0 && hasCompleteSelection && total > 0;
 
-  // A standalone-only service is never added to the selection — tapping it opens
-  // the explanation instead, so it can never reach the purchase call (which the
-  // backend would refuse anyway).
   const toggleSelection = (planId) => {
-    const plan = plans.find((item) => item._id === planId);
-    if (plan && isRedirectableFromProject(plan)) {
-      setRedirectPlan(plan);
-      return;
-    }
     setSelectedIds((current) =>
       current.includes(planId) ? current.filter((id) => id !== planId) : [...current, planId]
     );
-  };
-
-  // Confirmed: leave the project and continue on the page that actually sells
-  // this service. The purchase is not cancelled, only moved to where it belongs.
-  const handleRedirectConfirm = () => {
-    const planId = redirectPlan?._id;
-    setRedirectPlan(null);
-    onClose?.();
-    if (planId) navigate(`/service-plan-detail/${planId}`);
   };
 
   // The single create call: orders + invoices + wallet debit + (if any) the pending
@@ -422,11 +385,6 @@ const AddServiceModal = ({
                 const servicePlan = plan.servicePlan || {};
                 const accessLine = getAccessLine(servicePlan);
                 const validityLine = getValidityLine(servicePlan);
-                // Listed, but bought elsewhere — tapping explains and redirects.
-                const isSeparatePurchase = isRedirectableFromProject(plan);
-                // Bought here and linked here; it simply starts once the project is
-                // done. Only worth saying while the project is still running.
-                const startsLater = !isSeparatePurchase && !isProjectFinished && startsAfterProjectCompletion(plan);
 
                 return (
                   <li key={plan._id}>
@@ -437,9 +395,7 @@ const AddServiceModal = ({
                       onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') toggleSelection(plan._id); }}
                       className={[
                         'flex w-full items-start gap-3 rounded-2xl border p-4 text-left transition',
-                        isSeparatePurchase
-                          ? 'border-white/10 bg-white/[0.03] hover:bg-white/[0.07]'
-                          : isSelected
+                        isSelected
                           ? 'border-emerald-400/50 bg-emerald-500/15'
                           : 'border-white/15 bg-white/5 hover:bg-white/10',
                       ].join(' ')}
@@ -447,18 +403,12 @@ const AddServiceModal = ({
                       <span
                         className={[
                           'mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border',
-                          isSeparatePurchase
-                            ? 'border-white/20 bg-transparent text-white/40'
-                            : isSelected
+                          isSelected
                             ? 'border-emerald-400 bg-emerald-500 text-white'
                             : 'border-white/30 bg-transparent',
                         ].join(' ')}
                       >
-                        {isSeparatePurchase ? (
-                          <ExternalLink className="h-3 w-3" />
-                        ) : (
-                          isSelected && <Check className="h-3.5 w-3.5" />
-                        )}
+                        {isSelected && <Check className="h-3.5 w-3.5" />}
                       </span>
 
                       <span className="min-w-0 flex-1">
@@ -474,18 +424,6 @@ const AddServiceModal = ({
                         </span>
                         {validityLine && (
                           <span className="mt-0.5 block text-sm text-white/60">{validityLine}</span>
-                        )}
-                        {isSeparatePurchase && (
-                          <span className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-white/20 bg-white/10 px-2 py-1 text-xs font-semibold text-white/80">
-                            <ExternalLink className="h-3 w-3" />
-                            Bought separately
-                          </span>
-                        )}
-                        {startsLater && (
-                          <span className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-amber-300/40 bg-amber-500/15 px-2 py-1 text-xs font-semibold text-amber-100">
-                            <Clock className="h-3 w-3" />
-                            Starts when this project is completed
-                          </span>
                         )}
                         {isSelected && servicePlan.billingOptions?.length > 0 && (
                           <span className="mt-3 grid gap-2 sm:grid-cols-2" onClick={(event) => event.stopPropagation()}>
@@ -578,51 +516,6 @@ const AddServiceModal = ({
           )}
         </div>
       </div>
-
-      {/* Standalone-only service: explain where it is bought, then take them there.
-          The purchase is redirected, never refused — the customer keeps the sale
-          and lands on the page that can actually complete it. */}
-      {redirectPlan && (
-        <div
-          className="absolute inset-0 z-10 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm"
-          onClick={() => setRedirectPlan(null)}
-        >
-          <div
-            className="w-full max-w-md rounded-3xl border border-white/20 bg-slate-900 p-6 text-left"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <span className="inline-flex items-center gap-1.5 rounded-lg border border-white/20 bg-white/10 px-2 py-1 text-xs font-semibold text-white/80">
-              <ExternalLink className="h-3 w-3" />
-              Bought separately
-            </span>
-            <h3 className="mt-3 text-lg font-semibold text-white">{redirectPlan.serviceName}</h3>
-            <p className="mt-2 text-sm text-white/70">
-              This service runs on its own and cannot be attached to
-              {projectName ? ` ${projectName}` : ' this project'}. It is bought separately, and
-              works the same either way.
-            </p>
-            <p className="mt-2 text-sm text-white/70">
-              Continue to buy it on its own page?
-            </p>
-            <div className="mt-5 flex gap-3">
-              <button
-                type="button"
-                onClick={() => setRedirectPlan(null)}
-                className="flex-1 rounded-2xl border border-white/20 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/15"
-              >
-                Stay here
-              </button>
-              <button
-                type="button"
-                onClick={handleRedirectConfirm}
-                className="flex-1 rounded-2xl bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-400"
-              >
-                Continue
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

@@ -8,9 +8,6 @@ import { customerChildState } from '../helpers/customerReturnNavigation';
 import CustomerWorkspaceTabs from '../components/CustomerWorkspaceTabs';
 import SummaryApi from '../common';
 import GlassPageState from '../components/GlassPageState';
-// The admin's dependency rule — this catalogue sells services with no project,
-// so anything the admin marked project-only does not belong here.
-import { SURFACE, canBuyOnSurface } from '../helpers/serviceDependency';
 
 const CATEGORY_STYLE = {
   website_updates: { icon: Layers3, color: 'text-teal-600' },
@@ -54,18 +51,7 @@ const StartNewProject = () => {
         if (!response.ok) throw new Error('Could not load the catalogue');
         const dataResponse = await response.json();
         const allProducts = dataResponse?.data || [];
-        // A project-required service cannot run on its own, so it is never
-        // offered here — buying it from this page would produce a service that
-        // has nothing to work on. The backend refuses the same purchase; this
-        // only keeps it from being offered in the first place.
-        setProjects(
-          allProducts.filter(
-            (product) =>
-              TAB_CATEGORIES.services.includes(product.category) &&
-              !EXCLUDED_CATEGORIES.includes(product.category) &&
-              (!product.isServicePlan || canBuyOnSurface(product, SURFACE.STANDALONE))
-          )
-        );
+        setProjects(allProducts.filter((product) => TAB_CATEGORIES.services.includes(product.category) && !EXCLUDED_CATEGORIES.includes(product.category)));
       } catch (error) {
         setLoadError(error.message || 'Could not load the catalogue.');
       } finally {
