@@ -2114,43 +2114,21 @@ const PaymentOrderHistorySubpage = ({ customerId, orderId, onBack }) => {
     // (the actual payment attempt) alongside the invoice's own number/due date; an invoice
     // with no transaction yet, or a transaction with no invoice (e.g. wallet-only general
     // payment), each get their own row.
-    // One invoice can be settled by SEVERAL payments — a combined wallet+UPI purchase puts a
-    // completed wallet leg and a pending UPI leg on the SAME invoice. Was: a Map keyed by
-    // invoiceId, which holds one transaction per invoice, so the second leg silently overwrote
-    // the first and only one row ever rendered. For a ₹2,500 combined purchase that meant the
-    // ₹500 wallet row showed while the ₹2,000 UPI payment — the one actually awaiting the
-    // admin's approval — had no row and therefore no Review button at all. Now every linked
-    // transaction is kept, so each real payment event gets its own row.
     const transactionsByInvoiceId = new Map();
     matchingTransactions.forEach((transaction) => {
       const linkedInvoiceId = getOrderReference(transaction?.invoiceId);
-      if (!linkedInvoiceId) return;
-      if (!transactionsByInvoiceId.has(linkedInvoiceId)) transactionsByInvoiceId.set(linkedInvoiceId, []);
-      transactionsByInvoiceId.get(linkedInvoiceId).push(transaction);
+      if (linkedInvoiceId) transactionsByInvoiceId.set(linkedInvoiceId, transaction);
     });
     const linkedTransactionIds = new Set(
-      [...transactionsByInvoiceId.values()].flat().map((transaction) => String(transaction._id))
+      [...transactionsByInvoiceId.values()].map((transaction) => String(transaction._id))
     );
 
-    // An invoice with N linked payments becomes N rows (each showing that payment's own status,
-    // method and reference against the shared invoice); an invoice with none still shows once.
-    const combinedFromInvoices = paymentInvoices.flatMap((invoice) => {
-      const linked = transactionsByInvoiceId.get(String(invoice._id)) || [];
-      if (!linked.length) {
-        return [{
-          key: `invoice-${invoice._id}`,
-          invoice,
-          transaction: null,
-          sortDate: new Date(invoice.invoiceDate || invoice.createdAt || 0).getTime(),
-        }];
-      }
-      return linked.map((transaction) => ({
-        key: `invoice-${invoice._id}-txn-${transaction._id}`,
-        invoice,
-        transaction,
-        sortDate: new Date(transaction.date || transaction.createdAt || invoice.invoiceDate || 0).getTime(),
-      }));
-    });
+    const combinedFromInvoices = paymentInvoices.map((invoice) => ({
+      key: `invoice-${invoice._id}`,
+      invoice,
+      transaction: transactionsByInvoiceId.get(String(invoice._id)) || null,
+      sortDate: new Date(invoice.invoiceDate || invoice.createdAt || 0).getTime(),
+    }));
     const combinedFromUnlinkedTransactions = matchingTransactions
       .filter((transaction) => !linkedTransactionIds.has(String(transaction._id)) && !getOrderReference(transaction?.invoiceId))
       .map((transaction) => ({
