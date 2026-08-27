@@ -3,7 +3,7 @@ import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import {
   ArrowLeft, Clock, CalendarClock, AlertTriangle, Lock, Upload,
-  List, X,
+  List, X, FileText, Image as ImageIcon, Check,
 } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
 import TriangleMazeLoader from '../components/TriangleMazeLoader';
@@ -12,7 +12,6 @@ import SummaryApi from '../common';
 import backgroundImage from '../assets/BG.png';
 import { isPlanItem } from '../helpers/orderType';
 import { goToCustomerReturn } from '../helpers/customerReturnNavigation';
-import UploadedDataList from '../components/UploadedDataList';
 
 const formatDate = (date) => {
   if (!date) return 'N/A';
@@ -28,6 +27,19 @@ const formatDateTime = (date) => {
   const d = new Date(date);
   return `${formatDate(d)} at ${d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}`;
 };
+
+const formatFileSize = (bytes) => {
+  if (!bytes) return '0 KB';
+  return `${(bytes / 1024).toFixed(1)} KB`;
+};
+
+const getFileIcon = (fileType = '') => {
+  if (fileType.startsWith('image/')) {
+    return <ImageIcon className="h-5 w-5 text-slate-400" />;
+  }
+  return <FileText className="h-5 w-5 text-slate-400" />;
+};
+
 // -- Visual-only status derivation, mirrors UserUpdateDashboard.js's
 // getCardVisualStatus so every page reads plan data the same way. --
 const getPlanVisualStatus = (plan) => {
@@ -123,6 +135,57 @@ const BADGE_TONE_CLASSES = {
   closed: 'border border-white/25 bg-white/15 text-white',
 };
 
+const REQUEST_STATUS_META = {
+  pending: { label: 'Pending', tone: 'border-amber-400/40 bg-amber-500/20 text-amber-300' },
+  in_progress: { label: 'In Progress', tone: 'border-white/25 bg-white/15 text-white' },
+  completed: { label: 'Completed', tone: 'border-emerald-400/40 bg-emerald-500/20 text-emerald-300' },
+  rejected: { label: 'Rejected', tone: 'border-rose-400/40 bg-rose-500/20 text-rose-300' },
+};
+
+const RequestHistoryItem = ({ request, isSelected, onSelect }) => {
+  const meta = REQUEST_STATUS_META[request.status] || REQUEST_STATUS_META.pending;
+  const fileCount = request.files?.length || 0;
+
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      className={[
+        'relative flex w-full items-start gap-3 rounded-[1.25rem] border p-3 text-left transition backdrop-blur-md',
+        isSelected
+          ? 'border-white/40 bg-white/[0.1] shadow-md ring-2 ring-white/20'
+          : 'border-white/10 bg-white/[0.03] hover:border-white/20 hover:bg-white/[0.07]',
+      ].join(' ')}
+    >
+      <div
+        className={[
+          'flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2',
+          isSelected ? 'border-white/40 bg-white/15' : 'border-white/15 bg-white/10',
+        ].join(' ')}
+      >
+        {request.status === 'completed' ? (
+          <Check className="h-4 w-4 text-emerald-400" />
+        ) : (
+          <Upload className="h-4 w-4 text-white" />
+        )}
+      </div>
+
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <h3 className="truncate text-base font-semibold text-white">{formatDate(request.createdAt)}</h3>
+          <span className={['rounded-full border px-2 py-0.5 text-sm font-semibold', meta.tone].join(' ')}>
+            {meta.label}
+          </span>
+        </div>
+        <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-sm text-slate-300">
+          <span>{fileCount} file{fileCount === 1 ? '' : 's'}</span>
+          <span>{request.instructions?.length || 0} note{(request.instructions?.length || 0) === 1 ? '' : 's'}</span>
+        </div>
+      </div>
+    </button>
+  );
+};
+
 const PlanDetails = ({ isProjectServiceView = false }) => {
   const { orderId: routeOrderId, projectOrderId, serviceOrderId } = useParams();
   const orderId = serviceOrderId || routeOrderId;
@@ -136,6 +199,7 @@ const PlanDetails = ({ isProjectServiceView = false }) => {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [selectedRequestId, setSelectedRequestId] = useState('');
   const [stoppingRenewal, setStoppingRenewal] = useState(false);
   const [serviceActionMessage, setServiceActionMessage] = useState('');
 
@@ -144,15 +208,10 @@ const PlanDetails = ({ isProjectServiceView = false }) => {
       setLoading(true);
       setNotFound(false);
 
-      // Uploads come from the shared per-order endpoint. It used to fetch every request
-      // the customer had ever made and filter locally on `updatePlanId?._id === orderId`
-      // — which only matched when the controller happened to populate that field, so the
-      // history could silently come back empty. The server now decides what belongs to
-      // this order, and returns the same shape the admin side reads.
       const [orderResponse, requestsResponse] = await Promise.all([
         fetch(`${SummaryApi.orderDetails.url}/${orderId}`, { credentials: 'include' }),
-        fetch(`${SummaryApi.orderUploads.url}/${orderId}/uploads`, {
-          method: SummaryApi.orderUploads.method,
+        fetch(SummaryApi.userUpdateRequests.url, {
+          method: SummaryApi.userUpdateRequests.method,
           credentials: 'include',
         }),
       ]);
@@ -172,9 +231,12 @@ const PlanDetails = ({ isProjectServiceView = false }) => {
       setPlan(orderData.data);
 
       const requestsData = await requestsResponse.json();
-      // Already scoped to this order and sorted newest-first by the server.
-      const planRequests = requestsData.success ? (requestsData.data || []) : [];
+      const planRequests = requestsData.success
+        ? (requestsData.data || []).filter((request) => request.updatePlanId?._id === orderId)
+        : [];
+      planRequests.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       setRequests(planRequests);
+      setSelectedRequestId(planRequests[0]?._id || '');
     } catch (error) {
       console.error('Error fetching plan details:', error);
       setPlan(null);
@@ -239,6 +301,7 @@ const PlanDetails = ({ isProjectServiceView = false }) => {
 
   const product = plan.productId || {};
   const status = getPlanVisualStatus(plan);
+  const selectedRequest = requests.find((r) => r._id === selectedRequestId) || null;
 
   // What the customer bought is recorded ON THEIR ORDER, not only on the plan template:
   // orderItems[] snapshots the name/price at purchase time and servicePlanSnapshot freezes the
@@ -409,17 +472,12 @@ const PlanDetails = ({ isProjectServiceView = false }) => {
                 </div>
               </aside>
 
-              {/* Upload history. Was a two-column split — a list of requests on the left
-                  and a details pane on the right that only filled once a row was picked.
-                  Both halves are now one UploadedDataList, the same component the project
-                  page and the admin workspace render, so every surface shows the same
-                  records and offers the same zip download. */}
-              <section className="relative min-w-0 h-[620px]">
+              <section className="relative min-w-0 h-[620px] border-r border-white/15">
                 <div className="flex h-full min-h-0 flex-col p-4">
                   <div className="flex flex-col gap-2 border-b border-white/15 pb-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                      <p className="text-sm font-medium text-slate-300">Uploaded Data</p>
-                      <h2 className="mt-1 text-xl font-bold text-white">Everything you have sent on this plan</h2>
+                      <p className="text-sm font-medium text-slate-300">Update History</p>
+                      <h2 className="mt-1 text-xl font-bold text-white">Click any request to inspect its files</h2>
                     </div>
                     <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-sm font-semibold text-white backdrop-blur-md">
                       {requests.length} request{requests.length === 1 ? '' : 's'}
@@ -427,14 +485,97 @@ const PlanDetails = ({ isProjectServiceView = false }) => {
                   </div>
 
                   <div className="mt-3 flex-1 min-h-0 overflow-auto pr-1">
-                    <UploadedDataList
-                      uploads={requests}
-                      theme="glass"
-                      emptyText="Nothing uploaded yet. Anything you send appears here."
-                    />
+                    {requests.length > 0 ? (
+                      <div className="space-y-2">
+                        {requests.map((request) => (
+                          <RequestHistoryItem
+                            key={request._id}
+                            request={request}
+                            isSelected={selectedRequestId === request._id}
+                            onSelect={() => setSelectedRequestId(request._id)}
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="rounded-[1.25rem] border border-white/10 bg-white/10 p-4 text-base text-slate-300">
+                        No updates requested yet.
+                      </div>
+                    )}
                   </div>
                 </div>
               </section>
+
+              <aside className="h-[620px] min-w-0">
+                <div className="flex h-full flex-col p-4">
+                  <section className="flex h-full min-h-0 flex-col">
+                    <div className="flex items-start justify-between gap-4 border-b border-white/15 pb-3">
+                      <div>
+                        <p className="text-sm font-medium text-slate-300">Request Details</p>
+                        <h2 className="mt-1 text-xl font-bold text-white">
+                          {selectedRequest ? formatDate(selectedRequest.createdAt) : 'No request selected'}
+                        </h2>
+                      </div>
+                      {selectedRequest ? (
+                        <span className={[
+                          'rounded-full border px-3 py-1 text-sm font-semibold',
+                          (REQUEST_STATUS_META[selectedRequest.status] || REQUEST_STATUS_META.pending).tone,
+                        ].join(' ')}>
+                          {(REQUEST_STATUS_META[selectedRequest.status] || REQUEST_STATUS_META.pending).label}
+                        </span>
+                      ) : null}
+                    </div>
+
+                    {selectedRequest ? (
+                      <div className="mt-3 flex-1 min-h-0 space-y-3 overflow-auto pr-1">
+                        <div className="rounded-2xl border border-white/10 bg-white/10 p-3">
+                          <p className="text-sm font-semibold uppercase text-slate-300">Submitted</p>
+                          <p className="mt-1 text-base font-semibold text-white">{formatDateTime(selectedRequest.createdAt)}</p>
+                        </div>
+
+                        {selectedRequest.instructions?.length > 0 ? (
+                          <div className="rounded-2xl border border-white/10 bg-white/10 p-3">
+                            <p className="text-sm font-semibold uppercase text-slate-300">Instructions</p>
+                            {selectedRequest.instructions.map((note, index) => (
+                              <p key={index} className="mt-1 whitespace-pre-line text-base text-white">{note.text}</p>
+                            ))}
+                          </div>
+                        ) : null}
+
+                        <div className="flex min-h-0 flex-1 flex-col rounded-[1.25rem] border border-white/10 bg-white/10 p-3.5">
+                          <div className="flex items-center justify-between gap-3">
+                            <p className="text-base font-semibold text-white">Files</p>
+                            <span className="rounded-full border border-white/15 bg-white/10 px-2.5 py-1 text-sm font-semibold text-white">
+                              {selectedRequest.files?.length || 0} file{(selectedRequest.files?.length || 0) === 1 ? '' : 's'}
+                            </span>
+                          </div>
+                          <div className="mt-3 flex-1 min-h-0 space-y-2 overflow-auto pr-1">
+                            {selectedRequest.files?.length > 0 ? (
+                              selectedRequest.files.map((file, index) => (
+                                <div
+                                  key={index}
+                                  className="flex items-center gap-3 rounded-2xl border border-white/15 bg-white/10 p-3"
+                                >
+                                  {getFileIcon(file.type)}
+                                  <div className="min-w-0 flex-1">
+                                    <p className="truncate text-sm font-medium text-white">{file.originalName}</p>
+                                    <p className="text-xs text-slate-300">{formatFileSize(file.size)} • {(file.type || '').split('/')[1] || 'file'}</p>
+                                  </div>
+                                </div>
+                              ))
+                            ) : (
+                              <p className="text-base text-slate-300">No files attached to this request.</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="mt-4 rounded-[1.25rem] border border-white/10 bg-white/10 p-4 text-base text-slate-300">
+                        Select a request from the history to view its files.
+                      </div>
+                    )}
+                  </section>
+                </div>
+              </aside>
             </div>
 
               {/* Mobile stacked layout */}
@@ -502,18 +643,101 @@ const PlanDetails = ({ isProjectServiceView = false }) => {
                   <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/[0.12] to-transparent" />
                   <div className="relative flex items-center justify-between gap-3">
                     <div>
-                      <p className="text-sm font-medium text-slate-300">Uploaded Data</p>
+                      <p className="text-sm font-medium text-slate-300">Update History</p>
                       <h2 className="mt-1 text-lg font-semibold text-white">{requests.length} request{requests.length === 1 ? '' : 's'}</h2>
                     </div>
+                    <button
+                      onClick={() => setTimelineExpanded(!timelineExpanded)}
+                      className="inline-flex items-center justify-center rounded-2xl border border-white/15 bg-white/10 px-3 py-2 text-base font-semibold text-white backdrop-blur-md transition hover:bg-white/15"
+                    >
+                      {timelineExpanded ? (
+                        <>
+                          <X className="mr-1 h-4 w-4" />
+                          Close
+                        </>
+                      ) : (
+                        <>
+                          <List className="mr-1 h-4 w-4" />
+                          View
+                        </>
+                      )}
+                    </button>
                   </div>
 
-                  <div className="relative mt-3">
-                    <UploadedDataList
-                      uploads={requests}
-                      theme="glass"
-                      emptyText="Nothing uploaded yet. Anything you send appears here."
-                    />
+                  {timelineExpanded ? (
+                    <div className="relative mt-4 max-h-[318px] overflow-auto pr-1">
+                      <div className="space-y-2.5">
+                        {requests.map((request) => (
+                          <RequestHistoryItem
+                            key={request._id}
+                            request={request}
+                            isSelected={selectedRequestId === request._id}
+                            onSelect={() => setSelectedRequestId(request._id)}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="relative mt-4 rounded-2xl border border-dashed border-white/15 bg-white/10 p-4 text-base text-slate-300">
+                      Open history to select a request.
+                    </div>
+                  )}
+                </section>
+
+                <section className="relative overflow-hidden rounded-[1.75rem] border border-white/20 bg-white/10 p-5 shadow-[0_8px_32px_rgba(0,0,0,0.25)] backdrop-blur-2xl backdrop-saturate-150">
+                  <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/[0.12] to-transparent" />
+                  <div className="relative flex items-start justify-between gap-4 border-b border-white/15 pb-4">
+                    <div>
+                      <p className="text-sm font-medium text-slate-300">Request Details</p>
+                      <h2 className="mt-1 text-lg font-semibold text-white">
+                        {selectedRequest ? formatDate(selectedRequest.createdAt) : 'No request selected'}
+                      </h2>
+                    </div>
+                    {selectedRequest ? (
+                      <span className={[
+                        'rounded-full border px-3 py-1 text-sm font-semibold',
+                        (REQUEST_STATUS_META[selectedRequest.status] || REQUEST_STATUS_META.pending).tone,
+                      ].join(' ')}>
+                        {(REQUEST_STATUS_META[selectedRequest.status] || REQUEST_STATUS_META.pending).label}
+                      </span>
+                    ) : null}
                   </div>
+
+                  {selectedRequest ? (
+                    <div className="relative mt-4 space-y-4">
+                      {selectedRequest.instructions?.length > 0 ? (
+                        <div className="rounded-[1.25rem] border border-white/10 bg-white/10 p-4">
+                          <p className="text-base font-semibold text-white">Instructions</p>
+                          {selectedRequest.instructions.map((note, index) => (
+                            <p key={index} className="mt-2 whitespace-pre-line text-base text-slate-200">{note.text}</p>
+                          ))}
+                        </div>
+                      ) : null}
+
+                      <div className="rounded-[1.25rem] border border-white/10 bg-white/10 p-4">
+                        <p className="text-base font-semibold text-white">Files ({selectedRequest.files?.length || 0})</p>
+                        <div className="mt-3 space-y-2">
+                          {selectedRequest.files?.length > 0 ? (
+                            selectedRequest.files.map((file, index) => (
+                              <div key={index} className="flex items-center gap-3 rounded-2xl border border-white/15 bg-white/10 p-3">
+                                {getFileIcon(file.type)}
+                                <div className="min-w-0 flex-1">
+                                  <p className="truncate text-sm font-medium text-white">{file.originalName}</p>
+                                  <p className="text-xs text-slate-300">{formatFileSize(file.size)} • {(file.type || '').split('/')[1] || 'file'}</p>
+                                </div>
+                              </div>
+                            ))
+                          ) : (
+                            <p className="text-base text-slate-300">No files attached.</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="relative mt-4 rounded-2xl border border-white/10 bg-white/10 p-4 text-base text-slate-300">
+                      Select a request from history to view details.
+                    </div>
+                  )}
                 </section>
               </div>
             </div>

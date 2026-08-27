@@ -23,7 +23,6 @@ import AddServiceModal from '../components/AddServiceModal';
 import ProjectServiceWorkspace from '../components/ProjectServiceWorkspace';
 import Context from '../context';
 import { customerChildState, goToCustomerReturn } from '../helpers/customerReturnNavigation';
-import UploadedDataList from '../components/UploadedDataList';
 
 const normalizeNodeKey = (value) => {
   if (value === null || value === undefined) {
@@ -276,9 +275,6 @@ const ProjectDetails = ({ isAdminView = false }) => {
   const [shouldShowPaymentAlert, setShouldShowPaymentAlert] = useState(false);
   const [currentInstallment, setCurrentInstallment] = useState(null);
   const [updateModalOpen, setUpdateModalOpen] = useState(false);
-  // What the customer has uploaded against THIS order (updateRequestModel records).
-  const [uploadHistory, setUploadHistory] = useState([]);
-  const [uploadHistoryLoading, setUploadHistoryLoading] = useState(false);
   const [showAddServiceModal, setShowAddServiceModal] = useState(false);
   const [isProjectPaused, setIsProjectPaused] = useState(false);
   // Wallet balance for the add-service modal — read from the app-wide SSOT,
@@ -399,27 +395,6 @@ const ProjectDetails = ({ isAdminView = false }) => {
     }
   }, []);
 
-  // Upload history for this order, from the shared source (orderUploadHistory.js).
-  // The server resolves which records belong to this order — a project also owns the
-  // uploads made against the services linked to it — so nothing is filtered here, and
-  // the admin view reads the same endpoint rather than being skipped.
-  const fetchUploadHistory = useCallback(async () => {
-    setUploadHistoryLoading(true);
-    try {
-      const response = await fetch(`${SummaryApi.orderUploads.url}/${orderId}/uploads`, {
-        method: SummaryApi.orderUploads.method,
-        credentials: 'include',
-      });
-      const data = await response.json();
-      setUploadHistory(data?.success ? (data.data || []) : []);
-    } catch (error) {
-      console.error('Error fetching upload history:', error);
-      setUploadHistory([]);
-    } finally {
-      setUploadHistoryLoading(false);
-    }
-  }, [orderId]);
-
   const fetchOrderDetails = useCallback(async () => {
     try {
       // First fetch order data
@@ -489,10 +464,6 @@ const ProjectDetails = ({ isAdminView = false }) => {
   useEffect(() => {
     fetchOrderDetails();
   }, [fetchOrderDetails]);
-
-  useEffect(() => {
-    fetchUploadHistory();
-  }, [fetchUploadHistory]);
 
   // Add polling mechanism — covers changes made by SOMEONE ELSE (admin approving a payment,
   // pushing project progress), which this tab has no way of knowing about.
@@ -1050,27 +1021,6 @@ const ProjectDetails = ({ isAdminView = false }) => {
                           ) : null}
                         </div>
                       </div>
-
-                      {/* Uploaded data history fills whatever space the summary band leaves,
-                          separated from it by a divider rather than by a card of its own.
-                          Scrolls internally so the column keeps its fixed height. */}
-                      <div className={g('mt-4 flex min-h-0 flex-1 flex-col border-t border-slate-200 pt-4', 'mt-4 flex min-h-0 flex-1 flex-col border-t border-white/15 pt-4')}>
-                        <div className="flex items-center justify-between gap-3">
-                          <p className={g('text-sm font-medium text-black', 'text-sm font-medium text-slate-300')}>Uploaded Data</p>
-                          <span className={g('rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600', 'rounded-full border border-white/15 bg-white/10 px-2.5 py-0.5 text-xs font-semibold text-white')}>
-                            {uploadHistory.length}
-                          </span>
-                        </div>
-
-                        <div className="mt-2 min-h-0 flex-1 overflow-auto pr-1">
-                          <UploadedDataList
-                            uploads={uploadHistory}
-                            loading={uploadHistoryLoading}
-                            theme={isAdminView ? 'light' : 'glass'}
-                            emptyText="Nothing uploaded yet. Anything you send appears here."
-                          />
-                        </div>
-                      </div>
                   </div>
                 </aside>
 
@@ -1345,7 +1295,6 @@ const ProjectDetails = ({ isAdminView = false }) => {
             onSubmitSuccess={() => {
               setUpdateModalOpen(false);
               fetchOrderDetails();
-              fetchUploadHistory();
             }}
           />
         )}

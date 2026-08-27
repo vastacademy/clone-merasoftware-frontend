@@ -23,7 +23,6 @@ import AddServiceModal from '../components/AddServiceModal';
 import ProjectServiceWorkspace from '../components/ProjectServiceWorkspace';
 import Context from '../context';
 import { customerChildState, goToCustomerReturn } from '../helpers/customerReturnNavigation';
-import UploadedDataList from '../components/UploadedDataList';
 
 const normalizeNodeKey = (value) => {
   if (value === null || value === undefined) {
@@ -276,9 +275,6 @@ const ProjectDetails = ({ isAdminView = false }) => {
   const [shouldShowPaymentAlert, setShouldShowPaymentAlert] = useState(false);
   const [currentInstallment, setCurrentInstallment] = useState(null);
   const [updateModalOpen, setUpdateModalOpen] = useState(false);
-  // What the customer has uploaded against THIS order (updateRequestModel records).
-  const [uploadHistory, setUploadHistory] = useState([]);
-  const [uploadHistoryLoading, setUploadHistoryLoading] = useState(false);
   const [showAddServiceModal, setShowAddServiceModal] = useState(false);
   const [isProjectPaused, setIsProjectPaused] = useState(false);
   // Wallet balance for the add-service modal — read from the app-wide SSOT,
@@ -399,27 +395,6 @@ const ProjectDetails = ({ isAdminView = false }) => {
     }
   }, []);
 
-  // Upload history for this order, from the shared source (orderUploadHistory.js).
-  // The server resolves which records belong to this order — a project also owns the
-  // uploads made against the services linked to it — so nothing is filtered here, and
-  // the admin view reads the same endpoint rather than being skipped.
-  const fetchUploadHistory = useCallback(async () => {
-    setUploadHistoryLoading(true);
-    try {
-      const response = await fetch(`${SummaryApi.orderUploads.url}/${orderId}/uploads`, {
-        method: SummaryApi.orderUploads.method,
-        credentials: 'include',
-      });
-      const data = await response.json();
-      setUploadHistory(data?.success ? (data.data || []) : []);
-    } catch (error) {
-      console.error('Error fetching upload history:', error);
-      setUploadHistory([]);
-    } finally {
-      setUploadHistoryLoading(false);
-    }
-  }, [orderId]);
-
   const fetchOrderDetails = useCallback(async () => {
     try {
       // First fetch order data
@@ -489,10 +464,6 @@ const ProjectDetails = ({ isAdminView = false }) => {
   useEffect(() => {
     fetchOrderDetails();
   }, [fetchOrderDetails]);
-
-  useEffect(() => {
-    fetchUploadHistory();
-  }, [fetchUploadHistory]);
 
   // Add polling mechanism — covers changes made by SOMEONE ELSE (admin approving a payment,
   // pushing project progress), which this tab has no way of knowing about.
@@ -923,41 +894,36 @@ const ProjectDetails = ({ isAdminView = false }) => {
               threshold unlocks), so blocking them from buying a service would
               block the customer most likely to want one. Only a project that
               isn't a confirmed sale yet is excluded. */}
-          {/* One card for the whole page — the service offer, the summary band and the
-              timeline are separated by dividers rather than by cards of their own. The
-              card is the wrapper; the two-column band is a grid nested inside it. */}
-          <div className={g('hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-sm lg:block', 'relative hidden overflow-hidden rounded-[1.75rem] border border-white/20 bg-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.25)] backdrop-blur-2xl backdrop-saturate-150 lg:block')}>
-                {!isAdminView && <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/[0.12] to-transparent" />}
-
-                {!isAdminView && canAddService && (
-                  <div className={g(
-                    'relative flex flex-col gap-3 border-b border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between',
-                    'relative flex flex-col gap-3 border-b border-white/15 p-4 sm:flex-row sm:items-center sm:justify-between'
-                  )}>
-                    <div>
-                      <p className={g('text-base font-semibold text-black', 'text-base font-semibold text-white')}>
-                        {isProjectFinished ? 'Ongoing servicing for this project' : 'Add a service to this project'}
-                      </p>
-                      <p className={g('mt-1 text-sm text-slate-600', 'mt-1 text-sm text-white/70')}>
-                        {isProjectFinished
-                          ? 'Keep this project maintained with a recurring service — maintenance, marketing, renewals and more.'
-                          : 'Add extra services alongside your running project, such as marketing, content or maintenance.'}
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handleAddService}
-                      className={g(
-                        'inline-flex shrink-0 items-center justify-center rounded-xl bg-emerald-600 px-4 py-2.5 text-base font-semibold text-white transition hover:bg-emerald-700',
-                        'inline-flex shrink-0 items-center justify-center rounded-xl bg-emerald-500 px-4 py-2.5 text-base font-semibold text-white transition hover:bg-emerald-400'
-                      )}
-                    >
-                      Add a Service
-                    </button>
-                  </div>
+          {!isAdminView && canAddService && (
+            <div className={g(
+              'mb-6 flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between',
+              'mb-6 flex flex-col gap-3 rounded-2xl border border-white/20 bg-white/10 p-4 backdrop-blur-2xl sm:flex-row sm:items-center sm:justify-between'
+            )}>
+              <div>
+                <p className={g('text-base font-semibold text-black', 'text-base font-semibold text-white')}>
+                  {isProjectFinished ? 'Ongoing servicing for this project' : 'Add a service to this project'}
+                </p>
+                <p className={g('mt-1 text-sm text-slate-600', 'mt-1 text-sm text-white/70')}>
+                  {isProjectFinished
+                    ? 'Keep this project maintained with a recurring service — maintenance, marketing, renewals and more.'
+                    : 'Add extra services alongside your running project, such as marketing, content or maintenance.'}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleAddService}
+                className={g(
+                  'inline-flex shrink-0 items-center justify-center rounded-xl bg-emerald-600 px-4 py-2.5 text-base font-semibold text-white transition hover:bg-emerald-700',
+                  'inline-flex shrink-0 items-center justify-center rounded-xl bg-emerald-500 px-4 py-2.5 text-base font-semibold text-white transition hover:bg-emerald-400'
                 )}
+              >
+                Add a Service
+              </button>
+            </div>
+          )}
 
-                <div className="grid grid-cols-2 items-stretch">
+          <div className={g('hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-sm lg:grid lg:grid-cols-2 lg:items-stretch', 'relative hidden overflow-hidden rounded-[1.75rem] border border-white/20 bg-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.25)] backdrop-blur-2xl backdrop-saturate-150 lg:grid lg:grid-cols-2 lg:items-stretch')}>
+                {!isAdminView && <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/[0.12] to-transparent" />}
                 <aside className={g('h-[620px] border-r border-slate-200', 'relative h-[620px] border-r border-white/15')}>
                   <div className="flex h-full min-h-0 flex-col p-4">
                       {/* Donut on the left, the snapshot facts it summarises on the right,
@@ -1051,26 +1017,8 @@ const ProjectDetails = ({ isAdminView = false }) => {
                         </div>
                       </div>
 
-                      {/* Uploaded data history fills whatever space the summary band leaves,
-                          separated from it by a divider rather than by a card of its own.
-                          Scrolls internally so the column keeps its fixed height. */}
-                      <div className={g('mt-4 flex min-h-0 flex-1 flex-col border-t border-slate-200 pt-4', 'mt-4 flex min-h-0 flex-1 flex-col border-t border-white/15 pt-4')}>
-                        <div className="flex items-center justify-between gap-3">
-                          <p className={g('text-sm font-medium text-black', 'text-sm font-medium text-slate-300')}>Uploaded Data</p>
-                          <span className={g('rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600', 'rounded-full border border-white/15 bg-white/10 px-2.5 py-0.5 text-xs font-semibold text-white')}>
-                            {uploadHistory.length}
-                          </span>
-                        </div>
-
-                        <div className="mt-2 min-h-0 flex-1 overflow-auto pr-1">
-                          <UploadedDataList
-                            uploads={uploadHistory}
-                            loading={uploadHistoryLoading}
-                            theme={isAdminView ? 'light' : 'glass'}
-                            emptyText="Nothing uploaded yet. Anything you send appears here."
-                          />
-                        </div>
-                      </div>
+                      {/* Divider closing the summary band. */}
+                      <div className={g('mt-4 border-t border-slate-200', 'mt-4 border-t border-white/15')} />
                   </div>
                 </aside>
 
@@ -1133,7 +1081,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
                     </div>
                   </div>
                 </section>
-                </div>
+
               </div>
 
               <div className="space-y-4 lg:hidden">
@@ -1345,7 +1293,6 @@ const ProjectDetails = ({ isAdminView = false }) => {
             onSubmitSuccess={() => {
               setUpdateModalOpen(false);
               fetchOrderDetails();
-              fetchUploadHistory();
             }}
           />
         )}

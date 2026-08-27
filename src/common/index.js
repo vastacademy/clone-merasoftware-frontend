@@ -312,6 +312,16 @@ const SummaryApi = {
         url : `${backendDomain}/api/get-update-requests`,
         method: "get"
       },
+      // Uploaded data for one order. Same two endpoints for customer and admin —
+      // each authorises server-side, so both surfaces read one source.
+      orderUploads: {
+        url: `${backendDomain}/api/orders`,
+        method: "get"
+      },
+      downloadUploadZip: {
+        url: `${backendDomain}/api/uploads`,
+        method: "get"
+      },
       adminUpdateRequests: {
         url: `${backendDomain}/api/get-admin-update-requests`,
         method: "get"

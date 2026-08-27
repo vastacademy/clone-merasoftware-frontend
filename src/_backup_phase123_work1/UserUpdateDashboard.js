@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
 import SummaryApi from '../common';
 import { Clock, RefreshCw, Sparkles, CalendarClock, AlertTriangle, Lock } from 'lucide-react';
 import TriangleMazeLoader from '../components/TriangleMazeLoader';
@@ -208,7 +207,6 @@ const BADGE_TONE_CLASSES = {
 };
 
 const UserUpdateDashboard = () => {
-  const navigate = useNavigate();
   const user = useSelector((state) => state?.user?.user);
   const [updatePlans, setUpdatePlans] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -407,22 +405,6 @@ const UserUpdateDashboard = () => {
                           <RefreshCw className="w-4 h-4 mr-2" />
                           Request Website Update
                         </button>
-
-                        {/* This page lists plans, not uploads — a customer could send data
-                            from here but had nowhere to see what they had already sent.
-                            The plan's own page carries the full history and the zip
-                            download, so it links there rather than repeating the list.
-                            Hidden for the MOCK_PLANS rows this page still renders, whose
-                            ids resolve to no real order. */}
-                        {!String(plan._id).startsWith('mock-') ? (
-                          <button
-                            type="button"
-                            onClick={() => navigate(`/plan-details/${plan._id}`)}
-                            className="mt-2 w-full rounded-lg border border-slate-200 py-2 text-base font-medium text-slate-700 transition hover:bg-slate-50"
-                          >
-                            View uploaded data
-                          </button>
-                        ) : null}
 
                         {status.tone === 'used_up' && (
                           <p className="text-amber-600 text-sm mt-2 text-center">

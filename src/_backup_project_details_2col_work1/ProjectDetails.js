@@ -3,7 +3,7 @@ import { useParams, useNavigate, useSearchParams, useLocation } from 'react-rout
 import { useDispatch, useSelector } from 'react-redux';
 import { 
   X, ArrowLeft, Clock, Check, List, Upload,
-  ExternalLink, ChevronDown
+  ExternalLink
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { getOrderCategory, getOrderDisplayName } from '../helpers/orderPresentation';
@@ -23,7 +23,6 @@ import AddServiceModal from '../components/AddServiceModal';
 import ProjectServiceWorkspace from '../components/ProjectServiceWorkspace';
 import Context from '../context';
 import { customerChildState, goToCustomerReturn } from '../helpers/customerReturnNavigation';
-import UploadedDataList from '../components/UploadedDataList';
 
 const normalizeNodeKey = (value) => {
   if (value === null || value === undefined) {
@@ -59,12 +58,6 @@ const TimelineCheckpointItem = ({
   onSelect,
   compact = false,
   isGlass = false,
-  // Expanded state carries the node's own record inline. isExpanded is driven by the
-  // same selectedNodeId the page already tracked, so selection and expansion are one
-  // thing, not two competing states.
-  isExpanded = false,
-  messages = [],
-  formatDateTimeValue,
 }) => {
   const statusLabel = isDeleted
     ? 'Deleted'
@@ -132,27 +125,16 @@ const TimelineCheckpointItem = ({
             ? 'border-slate-400 bg-slate-100'
             : 'border-slate-300 bg-white';
 
-  // The node row is a button, so the expanded record cannot be nested inside it
-  // (interactive content inside a button is invalid and breaks keyboard use).
-  // The row and its expanded body are therefore siblings inside one card wrapper,
-  // and the border/background that used to sit on the button now sits on that wrapper.
   return (
-    <div
-      className={[
-        compact
-          ? 'w-full overflow-hidden rounded-[1.25rem] border backdrop-blur-md transition'
-          : 'relative w-full overflow-hidden rounded-[1.25rem] border backdrop-blur-md transition',
-        cardTone,
-      ].join(' ')}
-    >
     <button
       type="button"
       data-node-id={node.nodeId}
       onClick={onSelect}
-      aria-expanded={isExpanded}
       className={[
-        'flex w-full items-start gap-3 text-left',
-        compact ? 'p-3.5' : 'p-3',
+        compact
+          ? 'flex w-full items-start gap-3 rounded-[1.25rem] border p-3.5 text-left transition backdrop-blur-md'
+          : 'relative flex w-full items-start gap-3 rounded-[1.25rem] border p-3 text-left transition backdrop-blur-md',
+        cardTone,
       ].join(' ')}
     >
       <div
@@ -181,84 +163,16 @@ const TimelineCheckpointItem = ({
           ].join(' ')}>
             {node.title}
           </h3>
-          {/* Progress rides inside the status badge rather than beside it — "Completed"
-              next to "100% complete" said the same thing twice. A deleted node has no
-              meaningful progress, so it keeps the bare label. */}
-          <span className={["rounded-full border px-2 py-0.5 text-sm font-semibold tabular-nums", statusTone].join(' ')}>
-            {isDeleted ? statusLabel : `${statusLabel} · ${node.cumulativeProgress}%`}
+          <span className={["rounded-full border px-2 py-0.5 text-sm font-semibold", statusTone].join(' ')}>
+            {statusLabel}
           </span>
         </div>
-        {/* Collapsed only. Once the node is open its record carries the full date and
-            time per update, so showing a date here too would print it twice. */}
-        {!isExpanded ? (
-          <div className={isGlass ? 'mt-2 flex flex-wrap gap-x-3 gap-y-1 text-sm text-slate-300' : 'mt-2 flex flex-wrap gap-x-3 gap-y-1 text-sm text-black'}>
-            <span>{formatDate(node.createdAt)}</span>
-          </div>
-        ) : null}
+        <div className={isGlass ? 'mt-2 flex flex-wrap gap-x-3 gap-y-1 text-sm text-slate-300' : 'mt-2 flex flex-wrap gap-x-3 gap-y-1 text-sm text-black'}>
+          <span>{messageCount} updates</span>
+          <span>{formatDate(node.createdAt)}</span>
+        </div>
       </div>
-
-      <ChevronDown
-        className={[
-          'mt-1 h-4 w-4 shrink-0 transition-transform',
-          isExpanded ? 'rotate-180' : '',
-          isGlass ? 'text-slate-300' : 'text-slate-500',
-        ].join(' ')}
-      />
     </button>
-
-    {/* The record that used to live in the third column. Same data, rendered inside
-        the node it belongs to, so the timeline gets the full width instead. */}
-    {isExpanded ? (
-      <div className={[
-        compact ? 'px-3.5 pb-3.5' : 'px-3 pb-3',
-        isGlass ? 'border-t border-white/10' : 'border-t border-slate-200',
-      ].join(' ')}>
-        {/* Only what the row above does not already say. The row carries the node's
-            title, date and update count, so repeating them here (and labelling each
-            with its own heading) was decoration, not information. Progress is the one
-            fact the row omits, so it rides along with each note instead of claiming a
-            column of its own. Message titles are dropped too — checkpointName is the
-            node's own name in practice, printed two lines above. */}
-        {messages.length > 0 ? (
-          <div className={isGlass ? 'divide-y divide-white/10' : 'divide-y divide-slate-200'}>
-            {messages.map((message, index) => (
-              <div
-                key={message._id || message.id || `${node.nodeId}-message-${index}`}
-                className="py-3"
-              >
-                <p className={isGlass ? 'whitespace-pre-line text-base leading-6 text-slate-200' : 'whitespace-pre-line text-base leading-6 text-slate-700'}>
-                  {message.message || message.remark || message.notes || '—'}
-                </p>
-                {/* Progress belongs to the node, not to each update, so it is printed
-                    once below rather than repeated on every row. */}
-                <div className={[
-                  'mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm tabular-nums',
-                  isGlass ? 'text-slate-400' : 'text-slate-500',
-                ].join(' ')}>
-                  {message.timestamp && formatDateTimeValue ? (
-                    <span>{formatDateTimeValue(message.timestamp)}</span>
-                  ) : null}
-                  {(message.fileName || message.fileSize) ? (
-                    <span className={isGlass ? 'text-emerald-300' : 'text-emerald-700'}>
-                      {message.fileName || 'Attachment'}
-                      {message.fileSize ? ` · ${message.fileSize}` : ''}
-                    </span>
-                  ) : null}
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className={[
-            'pt-3 text-sm',
-            isGlass ? 'text-slate-400' : 'text-slate-500',
-          ].join(' ')}>
-            No update recorded
-          </p>
-        )}
-      </div>
-    ) : null}
-    </div>
   );
 };
 
@@ -276,9 +190,6 @@ const ProjectDetails = ({ isAdminView = false }) => {
   const [shouldShowPaymentAlert, setShouldShowPaymentAlert] = useState(false);
   const [currentInstallment, setCurrentInstallment] = useState(null);
   const [updateModalOpen, setUpdateModalOpen] = useState(false);
-  // What the customer has uploaded against THIS order (updateRequestModel records).
-  const [uploadHistory, setUploadHistory] = useState([]);
-  const [uploadHistoryLoading, setUploadHistoryLoading] = useState(false);
   const [showAddServiceModal, setShowAddServiceModal] = useState(false);
   const [isProjectPaused, setIsProjectPaused] = useState(false);
   // Wallet balance for the add-service modal — read from the app-wide SSOT,
@@ -399,27 +310,6 @@ const ProjectDetails = ({ isAdminView = false }) => {
     }
   }, []);
 
-  // Upload history for this order, from the shared source (orderUploadHistory.js).
-  // The server resolves which records belong to this order — a project also owns the
-  // uploads made against the services linked to it — so nothing is filtered here, and
-  // the admin view reads the same endpoint rather than being skipped.
-  const fetchUploadHistory = useCallback(async () => {
-    setUploadHistoryLoading(true);
-    try {
-      const response = await fetch(`${SummaryApi.orderUploads.url}/${orderId}/uploads`, {
-        method: SummaryApi.orderUploads.method,
-        credentials: 'include',
-      });
-      const data = await response.json();
-      setUploadHistory(data?.success ? (data.data || []) : []);
-    } catch (error) {
-      console.error('Error fetching upload history:', error);
-      setUploadHistory([]);
-    } finally {
-      setUploadHistoryLoading(false);
-    }
-  }, [orderId]);
-
   const fetchOrderDetails = useCallback(async () => {
     try {
       // First fetch order data
@@ -489,10 +379,6 @@ const ProjectDetails = ({ isAdminView = false }) => {
   useEffect(() => {
     fetchOrderDetails();
   }, [fetchOrderDetails]);
-
-  useEffect(() => {
-    fetchUploadHistory();
-  }, [fetchUploadHistory]);
 
   // Add polling mechanism — covers changes made by SOMEONE ELSE (admin approving a payment,
   // pushing project progress), which this tab has no way of knowing about.
@@ -590,16 +476,9 @@ const ProjectDetails = ({ isAdminView = false }) => {
     return [...nodes].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
   }, [order?.projectNodes]);
 
-  // The newest active node is the one being worked on — unless it has reached 100%,
-  // in which case nothing is in progress and every node reads as completed. Backend
-  // already draws this line (syncActiveProjectProgress marks the order "completed" at
-  // 100%); without the same check here the page showed "In Progress" on a node the
-  // server considered finished.
   const inProgressNode = useMemo(() => {
     const activeNodes = sortedNodes.filter((node) => node.status === 'active');
-    const latest = activeNodes[activeNodes.length - 1] || null;
-    if (!latest) return null;
-    return Number(latest.cumulativeProgress) >= 100 ? null : latest;
+    return activeNodes[activeNodes.length - 1] || null;
   }, [sortedNodes]);
 
   const timelineNodes = useMemo(
@@ -620,35 +499,15 @@ const ProjectDetails = ({ isAdminView = false }) => {
       ),
     [order?.messages, selectedNode?.nodeId]
   );
-  // Which node is open. Nothing chosen yet ⇒ the latest node, which timelineNodes
-  // already sorts to the top (it is sortedNodes reversed). Derived rather than seeded
-  // into state so a newly added node becomes the open one on its own, with no effect
-  // to keep in sync.
-  const [collapsedOnDesktop, setCollapsedOnDesktop] = useState(false);
-  const expandedNodeId = useMemo(
-    () => (collapsedOnDesktop ? '' : selectedNodeId || timelineNodes[0]?.nodeId || ''),
-    [collapsedOnDesktop, selectedNodeId, timelineNodes]
-  );
-  // Each node now renders its own record inline, so it needs the messages themselves,
-  // not just how many there are. Built once here and reused for both — the counts are
-  // derived from this same map so a node's badge can never disagree with its record.
-  const nodeMessages = useMemo(
+  const nodeMessageCounts = useMemo(
     () =>
       timelineNodes.reduce((acc, node) => {
         acc[node.nodeId] = (order?.messages || []).filter(
           (message) => normalizeNodeKey(message.nodeId) === normalizeNodeKey(node.nodeId)
-        );
+        ).length;
         return acc;
       }, {}),
     [order?.messages, timelineNodes]
-  );
-  const nodeMessageCounts = useMemo(
-    () =>
-      Object.keys(nodeMessages).reduce((acc, nodeId) => {
-        acc[nodeId] = nodeMessages[nodeId].length;
-        return acc;
-      }, {}),
-    [nodeMessages]
   );
 
   useEffect(() => {
@@ -802,11 +661,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
   // awaiting approval" apart from "nothing paid yet". Only a pending payment transaction proves
   // money was submitted — derived by getOrderDetails.js as hasPendingPayment.
   const hasPendingPayment = Boolean(order.hasPendingPayment);
-  // A finished project takes no more uploads. Read from the same projectProgress the
-  // donut shows, which backend derives from the nodes — so the button and the timeline
-  // can never disagree about whether the work is done.
-  const isProjectComplete = progressPercentage >= 100;
-  const isUploadLocked = Boolean(order.hasUnpaidInvoice) || isOrderPendingApproval || isProjectComplete;
+  const isUploadLocked = Boolean(order.hasUnpaidInvoice) || isOrderPendingApproval;
 
   return (
     <Shell {...shellProps}>
@@ -923,47 +778,40 @@ const ProjectDetails = ({ isAdminView = false }) => {
               threshold unlocks), so blocking them from buying a service would
               block the customer most likely to want one. Only a project that
               isn't a confirmed sale yet is excluded. */}
-          {/* One card for the whole page — the service offer, the summary band and the
-              timeline are separated by dividers rather than by cards of their own. The
-              card is the wrapper; the two-column band is a grid nested inside it. */}
-          <div className={g('hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-sm lg:block', 'relative hidden overflow-hidden rounded-[1.75rem] border border-white/20 bg-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.25)] backdrop-blur-2xl backdrop-saturate-150 lg:block')}>
-                {!isAdminView && <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/[0.12] to-transparent" />}
-
-                {!isAdminView && canAddService && (
-                  <div className={g(
-                    'relative flex flex-col gap-3 border-b border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between',
-                    'relative flex flex-col gap-3 border-b border-white/15 p-4 sm:flex-row sm:items-center sm:justify-between'
-                  )}>
-                    <div>
-                      <p className={g('text-base font-semibold text-black', 'text-base font-semibold text-white')}>
-                        {isProjectFinished ? 'Ongoing servicing for this project' : 'Add a service to this project'}
-                      </p>
-                      <p className={g('mt-1 text-sm text-slate-600', 'mt-1 text-sm text-white/70')}>
-                        {isProjectFinished
-                          ? 'Keep this project maintained with a recurring service — maintenance, marketing, renewals and more.'
-                          : 'Add extra services alongside your running project, such as marketing, content or maintenance.'}
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handleAddService}
-                      className={g(
-                        'inline-flex shrink-0 items-center justify-center rounded-xl bg-emerald-600 px-4 py-2.5 text-base font-semibold text-white transition hover:bg-emerald-700',
-                        'inline-flex shrink-0 items-center justify-center rounded-xl bg-emerald-500 px-4 py-2.5 text-base font-semibold text-white transition hover:bg-emerald-400'
-                      )}
-                    >
-                      Add a Service
-                    </button>
-                  </div>
+          {!isAdminView && canAddService && (
+            <div className={g(
+              'mb-6 flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between',
+              'mb-6 flex flex-col gap-3 rounded-2xl border border-white/20 bg-white/10 p-4 backdrop-blur-2xl sm:flex-row sm:items-center sm:justify-between'
+            )}>
+              <div>
+                <p className={g('text-base font-semibold text-black', 'text-base font-semibold text-white')}>
+                  {isProjectFinished ? 'Ongoing servicing for this project' : 'Add a service to this project'}
+                </p>
+                <p className={g('mt-1 text-sm text-slate-600', 'mt-1 text-sm text-white/70')}>
+                  {isProjectFinished
+                    ? 'Keep this project maintained with a recurring service — maintenance, marketing, renewals and more.'
+                    : 'Add extra services alongside your running project, such as marketing, content or maintenance.'}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleAddService}
+                className={g(
+                  'inline-flex shrink-0 items-center justify-center rounded-xl bg-emerald-600 px-4 py-2.5 text-base font-semibold text-white transition hover:bg-emerald-700',
+                  'inline-flex shrink-0 items-center justify-center rounded-xl bg-emerald-500 px-4 py-2.5 text-base font-semibold text-white transition hover:bg-emerald-400'
                 )}
+              >
+                Add a Service
+              </button>
+            </div>
+          )}
 
-                <div className="grid grid-cols-2 items-stretch">
+          <div className={g('hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-sm lg:grid lg:grid-cols-[280px_minmax(0,1fr)_360px] lg:items-stretch', 'relative hidden overflow-hidden rounded-[1.75rem] border border-white/20 bg-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.25)] backdrop-blur-2xl backdrop-saturate-150 lg:grid lg:grid-cols-[280px_minmax(0,1fr)_360px] lg:items-stretch')}>
+                {!isAdminView && <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/[0.12] to-transparent" />}
                 <aside className={g('h-[620px] border-r border-slate-200', 'relative h-[620px] border-r border-white/15')}>
                   <div className="flex h-full min-h-0 flex-col p-4">
-                      {/* Donut on the left, the snapshot facts it summarises on the right,
-                          with the actions sitting under those facts. */}
-                      <div className="grid grid-cols-2 items-start gap-5">
-                        <div className="relative mx-auto flex h-40 w-40 shrink-0 items-center justify-center">
+                      <div className="flex items-center justify-center">
+                        <div className="relative flex h-40 w-40 items-center justify-center">
                           <div className={g('absolute inset-0 rounded-full border-[12px] border-slate-200', 'absolute inset-0 rounded-full border-[12px] border-white/15')}></div>
                           <svg className="absolute inset-0 h-full w-full" viewBox="0 0 100 100">
                             <circle
@@ -983,103 +831,66 @@ const ProjectDetails = ({ isAdminView = false }) => {
                             <span className={g('mt-1 text-sm font-medium text-black', 'mt-1 text-sm font-medium text-slate-300')}>Complete</span>
                           </div>
                         </div>
-
-                        <div className="min-w-0">
-                          {/* Document style: divider-separated key/value rows, no boxes */}
-                          <div className={g('divide-y divide-slate-200', 'divide-y divide-white/10')}>
-                            <div className="flex items-center justify-between gap-3 py-2">
-                              <span className={g('text-sm text-slate-600', 'text-sm text-slate-300')}>Last update</span>
-                              <span className={g('text-right text-base font-semibold text-black', 'text-right text-base font-semibold text-white')}>{formatDateTime(order.updatedAt || order.createdAt)}</span>
-                            </div>
-                            <div className="flex items-center justify-between gap-3 py-2">
-                              <span className={g('text-sm text-slate-600', 'text-sm text-slate-300')}>Updates linked</span>
-                              <span className={g('text-base font-semibold tabular-nums text-black', 'text-base font-semibold tabular-nums text-white')}>{totalUpdates}</span>
-                            </div>
-                            <div className="flex items-center justify-between gap-3 py-2">
-                              <span className={g('text-sm text-slate-600', 'text-sm text-slate-300')}>Current phase</span>
-                              <span className={g('text-base font-semibold text-black', 'text-base font-semibold text-white')}>{order.currentPhase || 'N/A'}</span>
-                            </div>
-                          </div>
-
-                          {!isAdminView ? (
-                            <button
-                              type="button"
-                              onClick={() => setUpdateModalOpen(true)}
-                              disabled={isUploadLocked}
-                              title={
-                                isProjectComplete
-                                  ? "This project is complete"
-                                  : isUploadLocked
-                                    ? "Available after payment is recorded"
-                                    : undefined
-                              }
-                              className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-2.5 text-base font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-400 disabled:hover:bg-slate-400"
-                            >
-                              {/* A completed project says so instead of offering an upload it
-                                  will not accept. Payment locks keep their own wording. */}
-                              {isProjectComplete ? (
-                                <>
-                                  <Check className="h-4 w-4" />
-                                  Project Completed
-                                </>
-                              ) : (
-                                <>
-                                  <Upload className="h-4 w-4" />
-                                  Upload Data
-                                  {isUploadLocked && (
-                                    <span className="ml-1 rounded-full bg-white/20 px-2 py-0.5 text-xs font-semibold">Pending</span>
-                                  )}
-                                </>
-                              )}
-                            </button>
-                          ) : null}
-
-                          {order.projectLink && order.projectLink.trim() !== '' ? (
-                            <a
-                              href={order.projectLink}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className={g(
-                                'mt-2 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-base font-semibold text-emerald-700 transition hover:bg-emerald-100',
-                                'mt-2 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-4 py-2.5 text-base font-semibold text-white backdrop-blur-md transition hover:bg-white/15'
-                              )}
-                            >
-                              <ExternalLink className="h-4 w-4" />
-                              View Project
-                            </a>
-                          ) : null}
-                        </div>
                       </div>
 
-                      {/* Uploaded data history fills whatever space the summary band leaves,
-                          separated from it by a divider rather than by a card of its own.
-                          Scrolls internally so the column keeps its fixed height. */}
-                      <div className={g('mt-4 flex min-h-0 flex-1 flex-col border-t border-slate-200 pt-4', 'mt-4 flex min-h-0 flex-1 flex-col border-t border-white/15 pt-4')}>
-                        <div className="flex items-center justify-between gap-3">
-                          <p className={g('text-sm font-medium text-black', 'text-sm font-medium text-slate-300')}>Uploaded Data</p>
-                          <span className={g('rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600', 'rounded-full border border-white/15 bg-white/10 px-2.5 py-0.5 text-xs font-semibold text-white')}>
-                            {uploadHistory.length}
-                          </span>
-                        </div>
+                      {!isAdminView ? (
+                        <button
+                          type="button"
+                          onClick={() => setUpdateModalOpen(true)}
+                          disabled={isUploadLocked}
+                          title={isUploadLocked ? "Available after payment is recorded" : undefined}
+                          className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-2.5 text-base font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-400 disabled:hover:bg-slate-400"
+                        >
+                          <Upload className="h-4 w-4" />
+                          Upload Data
+                          {isUploadLocked && (
+                            <span className="ml-1 rounded-full bg-white/20 px-2 py-0.5 text-xs font-semibold">Pending</span>
+                          )}
+                        </button>
+                      ) : null}
 
-                        <div className="mt-2 min-h-0 flex-1 overflow-auto pr-1">
-                          <UploadedDataList
-                            uploads={uploadHistory}
-                            loading={uploadHistoryLoading}
-                            theme={isAdminView ? 'light' : 'glass'}
-                            emptyText="Nothing uploaded yet. Anything you send appears here."
-                          />
+                      {order.projectLink && order.projectLink.trim() !== '' ? (
+                        <a
+                          href={order.projectLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={g(
+                            'mt-3 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-base font-semibold text-emerald-700 transition hover:bg-emerald-100',
+                            'mt-3 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-4 py-2.5 text-base font-semibold text-white backdrop-blur-md transition hover:bg-white/15'
+                          )}
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                          View Project
+                        </a>
+                      ) : null}
+
+                      <div className={g('mt-4 border-t border-slate-200 pt-4', 'mt-4 border-t border-white/15 pt-4')}>
+                        <p className={g('text-lg font-semibold text-black', 'text-lg font-semibold text-white')}>Snapshot</p>
+                        {/* Document style: divider-separated key/value rows, no boxes */}
+                        <div className={g('mt-2 divide-y divide-slate-200', 'mt-2 divide-y divide-white/10')}>
+                          <div className="flex items-center justify-between py-2.5">
+                            <span className={g('text-sm text-slate-600', 'text-sm text-slate-300')}>Last update</span>
+                            <span className={g('text-base font-semibold text-black', 'text-base font-semibold text-white')}>{formatDateTime(order.updatedAt || order.createdAt)}</span>
+                          </div>
+                          <div className="flex items-center justify-between py-2.5">
+                            <span className={g('text-sm text-slate-600', 'text-sm text-slate-300')}>Updates linked</span>
+                            <span className={g('text-base font-semibold tabular-nums text-black', 'text-base font-semibold tabular-nums text-white')}>{totalUpdates}</span>
+                          </div>
+                          <div className="flex items-center justify-between py-2.5">
+                            <span className={g('text-sm text-slate-600', 'text-sm text-slate-300')}>Current phase</span>
+                            <span className={g('text-base font-semibold text-black', 'text-base font-semibold text-white')}>{order.currentPhase || 'N/A'}</span>
+                          </div>
                         </div>
                       </div>
                   </div>
                 </aside>
 
-                <section className={g('min-w-0 h-[620px]', 'relative min-w-0 h-[620px]')}>
+                <section className={g('min-w-0 h-[620px] border-r border-slate-200', 'relative min-w-0 h-[620px] border-r border-white/15')}>
                   <div className="flex h-full min-h-0 flex-col p-4">
                     <div className={g('flex flex-col gap-2 border-b border-slate-200 pb-4 sm:flex-row sm:items-center sm:justify-between', 'flex flex-col gap-2 border-b border-white/15 pb-4 sm:flex-row sm:items-center sm:justify-between')}>
                       <div>
                         <p className={g('text-sm font-medium text-black', 'text-sm font-medium text-slate-300')}>Progress Timeline</p>
-                        <h2 className={g('mt-1 text-xl font-bold text-black', 'mt-1 text-xl font-bold text-white')}>Click any checkpoint to open its record</h2>
+                        <h2 className={g('mt-1 text-xl font-bold text-black', 'mt-1 text-xl font-bold text-white')}>Click any checkpoint to inspect its record</h2>
                       </div>
                       <span className={g('rounded-full bg-white px-3 py-1 text-sm font-semibold text-black', 'rounded-full border border-white/15 bg-white/10 px-3 py-1 text-sm font-semibold text-white backdrop-blur-md')}>
                         {timelineNodes.length} stages
@@ -1093,12 +904,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
                             const isDeleted = node.status === 'deleted';
                             const isInProgress = node === inProgressNode;
                             const isCompleted = node.status === 'active' && !isInProgress;
-                            // Guarded against the empty key: with nothing expanded,
-                            // normalizeNodeKey('') would otherwise match a node whose
-                            // own id is missing and open it.
-                            const isExpanded =
-                              Boolean(expandedNodeId) &&
-                              normalizeNodeKey(expandedNodeId) === normalizeNodeKey(node.nodeId);
+                            const isSelected = normalizeNodeKey(selectedNodeId) === normalizeNodeKey(node.nodeId);
 
                             return (
                               <TimelineCheckpointItem
@@ -1107,23 +913,10 @@ const ProjectDetails = ({ isAdminView = false }) => {
                               isCompleted={isCompleted}
                               isInProgress={isInProgress}
                               isDeleted={isDeleted}
-                              isSelected={isExpanded}
-                              isExpanded={isExpanded}
-                              messages={nodeMessages[node.nodeId] || []}
+                              isSelected={isSelected}
                               messageCount={nodeMessageCounts[node.nodeId] || 0}
                               formatDate={formatDate}
-                              formatDateTimeValue={formatDateTime}
-                              // Clicking the open node closes it; clicking another opens that one.
-                              // selectedNodeId itself is left pointing at a real node — the mobile
-                              // layout below still reads it — so "closed" is tracked separately.
-                              onSelect={() => {
-                                if (isExpanded) {
-                                  setCollapsedOnDesktop(true);
-                                  return;
-                                }
-                                setCollapsedOnDesktop(false);
-                                setSelectedNodeId(node.nodeId);
-                              }}
+                              onSelect={() => setSelectedNodeId(node.nodeId)}
                               isGlass={!isAdminView}
                             />
                             );
@@ -1133,7 +926,103 @@ const ProjectDetails = ({ isAdminView = false }) => {
                     </div>
                   </div>
                 </section>
-                </div>
+
+                <aside className="h-[620px] min-w-0">
+                  <div className="flex h-full flex-col p-4">
+                    <section
+                      className="flex h-full min-h-0 flex-col"
+                    >
+                      <div className={g('flex items-start justify-between gap-4 border-b border-slate-200 pb-3', 'flex items-start justify-between gap-4 border-b border-white/15 pb-3')}>
+                        <div>
+                          <p className={g('text-sm font-medium text-black', 'text-sm font-medium text-slate-300')}>Checkpoint Details</p>
+                          <h2 className={g('mt-1 text-xl font-bold text-black', 'mt-1 text-xl font-bold text-white')}>
+                            {selectedNode ? selectedNode.title : 'No node selected'}
+                          </h2>
+                        </div>
+                        {selectedNode ? (
+                          <span className={[
+                            "rounded-full px-3 py-1 text-sm font-semibold",
+                            selectedNode.status === 'deleted'
+                              ? g('bg-slate-100 text-slate-400', 'border border-white/10 bg-white/5 text-slate-500')
+                              : selectedNode === inProgressNode
+                                ? g('bg-slate-100 text-slate-700', 'border border-white/25 bg-white/15 text-white')
+                                : g('bg-emerald-100 text-emerald-700', 'border border-emerald-400/40 bg-emerald-500/20 text-emerald-300'),
+                          ].join(" ")}>
+                            {selectedNode.status === 'deleted' ? 'Deleted' : selectedNode === inProgressNode ? 'Active' : 'Completed'}
+                          </span>
+                        ) : null}
+                      </div>
+
+                      {selectedNode ? (
+                        <div className="mt-4 flex-1 min-h-0 space-y-5 overflow-auto pr-1">
+                          {/* Meta row — document style: divider-separated columns, no boxes */}
+                          <div className={g('flex divide-x divide-slate-200 border-b border-slate-200 pb-4', 'flex divide-x divide-white/10 border-b border-white/15 pb-4')}>
+                            <div className="flex-1 pr-4">
+                              <p className={g('text-xs font-semibold uppercase tracking-wide text-slate-500', 'text-xs font-semibold uppercase tracking-wide text-slate-400')}>Date</p>
+                              <p className={g('mt-1 text-base font-bold tabular-nums text-black', 'mt-1 text-base font-bold tabular-nums text-white')}>
+                                {formatDate(selectedNode.createdAt)}
+                              </p>
+                            </div>
+                            <div className="flex-1 px-4">
+                              <p className={g('text-xs font-semibold uppercase tracking-wide text-slate-500', 'text-xs font-semibold uppercase tracking-wide text-slate-400')}>Progress</p>
+                              <p className={g('mt-1 text-base font-bold tabular-nums text-black', 'mt-1 text-base font-bold tabular-nums text-white')}>{selectedNode.cumulativeProgress}%</p>
+                            </div>
+                            <div className="flex-1 pl-4">
+                              <p className={g('text-xs font-semibold uppercase tracking-wide text-slate-500', 'text-xs font-semibold uppercase tracking-wide text-slate-400')}>Updates</p>
+                              <p className={g('mt-1 text-base font-bold tabular-nums text-black', 'mt-1 text-base font-bold tabular-nums text-white')}>{selectedNodeMessages.length}</p>
+                            </div>
+                          </div>
+
+                          {/* Textual Record — section label with a trailing rule, no wrapper box */}
+                          <div className="flex min-h-0 flex-1 flex-col">
+                            <div className="flex items-center gap-3">
+                              <p className={g('text-xs font-semibold uppercase tracking-wide text-slate-500', 'text-xs font-semibold uppercase tracking-wide text-slate-400')}>
+                                Textual Record · {selectedNodeMessages.length} note{selectedNodeMessages.length === 1 ? '' : 's'}
+                              </p>
+                              <span className={g('h-px flex-1 bg-slate-200', 'h-px flex-1 bg-white/15')} />
+                            </div>
+                            <div className="mt-1 flex-1 min-h-0 overflow-auto pr-1">
+                              {selectedNodeMessages.length > 0 ? (
+                                selectedNodeMessages.map((message, index) => (
+                                  <div
+                                    key={message._id || message.id || `${selectedNode.nodeId}-message-${index}`}
+                                    className={g('border-b border-slate-200 py-4 last:border-b-0', 'border-b border-white/10 py-4 last:border-b-0')}
+                                  >
+                                    <div className="flex items-baseline justify-between gap-3">
+                                      <p className={g('text-base font-semibold text-black', 'text-base font-semibold text-white')}>
+                                        {message.checkpointName || selectedNode.title}
+                                      </p>
+                                      <p className={g('shrink-0 text-sm tabular-nums text-slate-500', 'shrink-0 text-sm tabular-nums text-slate-400')}>
+                                        {message.timestamp ? formatDateTime(message.timestamp) : 'No date'}
+                                      </p>
+                                    </div>
+                                    <p className={g('mt-1.5 whitespace-pre-line text-base leading-6 text-slate-700', 'mt-1.5 whitespace-pre-line text-base leading-6 text-slate-200')}>
+                                      {message.message || message.remark || message.notes || 'No textual details available.'}
+                                    </p>
+                                    {(message.fileSize || message.fileName) ? (
+                                      <p className={g('mt-2 text-sm font-medium text-emerald-700', 'mt-2 text-sm font-medium text-emerald-300')}>
+                                        ↳ {message.fileName ? message.fileName : 'Attachment'}
+                                        {message.fileSize ? ` · ${message.fileSize}` : ''}
+                                      </p>
+                                    ) : null}
+                                  </div>
+                                ))
+                              ) : (
+                                <p className={g('py-4 text-base text-slate-500', 'py-4 text-base text-slate-400')}>
+                                  No textual record is linked to this node yet.
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className={g('mt-4 rounded-[1.25rem] border border-slate-200 bg-slate-50 p-4 text-base text-black', 'mt-4 rounded-[1.25rem] border border-white/10 bg-white/10 p-4 text-base text-slate-300')}>
+                          Timeline data is not available yet.
+                        </div>
+                      )}
+                    </section>
+                  </div>
+                </aside>
               </div>
 
               <div className="space-y-4 lg:hidden">
@@ -1345,7 +1234,6 @@ const ProjectDetails = ({ isAdminView = false }) => {
             onSubmitSuccess={() => {
               setUpdateModalOpen(false);
               fetchOrderDetails();
-              fetchUploadHistory();
             }}
           />
         )}

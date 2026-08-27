@@ -259,12 +259,6 @@ const AdminClientWorkspace = () => {
   const [showTrashConfirm, setShowTrashConfirm] = useState(false);
   const [trashing, setTrashing] = useState(false);
   // Documents section state (admin-sent documents timeline for this client)
-  // Uploaded data for whichever project/plan subpage is open, from the shared
-  // GET /api/orders/:orderId/uploads. Keyed by nothing — only one record is open at a
-  // time, and switching records refetches.
-  const [submissions, setSubmissions] = useState([]);
-  const [submissionsLoading, setSubmissionsLoading] = useState(false);
-  const [submissionsError, setSubmissionsError] = useState("");
   const [documentsList, setDocumentsList] = useState(null);
   const [documentsLoading, setDocumentsLoading] = useState(false);
   const [documentsError, setDocumentsError] = useState("");
@@ -625,50 +619,6 @@ const AdminClientWorkspace = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, customerId]);
-
-  // Uploaded data follows whichever record is open. The endpoint authorises server-side
-  // (admin reads any order) and resolves which records belong to it — including those made
-  // against services linked to a project — so nothing is filtered or merged here.
-  useEffect(() => {
-    const openOrderId = activeProjectId || activePlanId;
-    if (!openOrderId) {
-      setSubmissions([]);
-      setSubmissionsError("");
-      return;
-    }
-
-    let cancelled = false;
-    const loadUploads = async () => {
-      setSubmissionsLoading(true);
-      setSubmissionsError("");
-      try {
-        const response = await fetch(`${SummaryApi.orderUploads.url}/${openOrderId}/uploads`, {
-          method: SummaryApi.orderUploads.method,
-          credentials: "include",
-        });
-        const data = await response.json();
-        if (cancelled) return;
-        if (!data?.success) {
-          setSubmissions([]);
-          setSubmissionsError(data?.message || "Could not load uploaded data");
-          return;
-        }
-        setSubmissions(data.data || []);
-      } catch (error) {
-        if (cancelled) return;
-        console.error("Error loading uploaded data:", error);
-        setSubmissions([]);
-        setSubmissionsError("Could not load uploaded data");
-      } finally {
-        if (!cancelled) setSubmissionsLoading(false);
-      }
-    };
-
-    loadUploads();
-    return () => {
-      cancelled = true;
-    };
-  }, [activeProjectId, activePlanId]);
 
   const handleUploadDocument = async ({ file, source }) => {
     if (!customerId || !file) return;
@@ -1099,9 +1049,6 @@ const AdminClientWorkspace = () => {
                 onSoftRefresh={handleSoftRefreshActiveProject}
                 allInvoices={allData.invoices}
                 allTransactions={allData.transactions}
-                submissions={submissions}
-                submissionsLoading={submissionsLoading}
-                submissionsError={submissionsError}
               />
             ) : (
               <CompactWorkspaceCard
@@ -1161,9 +1108,6 @@ const AdminClientWorkspace = () => {
                 detailLabel="Plan"
                 notesText="This is the workspace subpage version for plans. It stays inside the same client workspace, and the back button returns to the plans list without leaving the page."
                 summaryTitle="Plan activity snapshot"
-                submissions={submissions}
-                submissionsLoading={submissionsLoading}
-                submissionsError={submissionsError}
               />
             ) : (
               <CompactWorkspaceCard
@@ -3706,6 +3650,7 @@ const WorkspaceDetailSubpage = ({
         error={submissionsError}
         onBack={() => setSubmissionsOpen(false)}
         recordLabel={detailLabel}
+        formatDateTime={formatDateTime}
       />
     );
   }
@@ -3741,10 +3686,10 @@ const WorkspaceDetailSubpage = ({
           type="button"
           onClick={() => setSubmissionsOpen(true)}
           className="inline-flex h-10 shrink-0 items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
-          title="View and download the data this client uploaded"
+          title="View data and files this client submitted"
         >
           <Inbox size={16} />
-          Uploaded Data
+          Submissions
           {submissionsPendingCount > 0 ? (
             <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700">
               {submissionsPendingCount}
