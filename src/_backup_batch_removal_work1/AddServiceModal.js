@@ -122,7 +122,7 @@ const AddServiceModal = ({
   // bought elsewhere. Holding it in state lets the reason be shown and confirmed
   // before leaving the project, so the sale is redirected rather than refused.
   const [redirectPlan, setRedirectPlan] = useState(null);
-  const [selectedId, setSelectedId] = useState(null);
+  const [selectedIds, setSelectedIds] = useState([]);
   const [selections, setSelections] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [purchasedSummary, setPurchasedSummary] = useState(null);
@@ -136,7 +136,7 @@ const AddServiceModal = ({
     if (!isOpen) return;
 
     // Reset per-open so a previous session's selection never carries over.
-    setSelectedId(null);
+    setSelectedIds([]);
     setSelections({});
     setRedirectPlan(null);
     setPurchasedSummary(null);
@@ -176,12 +176,9 @@ const AddServiceModal = ({
     fetchPlans();
   }, [isOpen]);
 
-  // One service per purchase. A payment settles one order, so buying several at
-  // once needed a payment that covered many — that grouping is gone, and this
-  // modal now uses the same single-service purchase the standalone page uses.
-  const selectedPlan = useMemo(
-    () => plans.find((plan) => plan._id === selectedId) || null,
-    [plans, selectedId]
+  const selectedPlans = useMemo(
+    () => plans.filter((plan) => selectedIds.includes(plan._id)),
+    [plans, selectedIds]
   );
 
   const getSelectedPrice = (plan) => {
@@ -189,27 +186,23 @@ const AddServiceModal = ({
     const option = plan.servicePlan?.billingOptions?.find((item) => item.billingCycle === cycle);
     return Number(option?.pricePerCycle ?? getPriceOf(plan));
   };
-
-  const hasCompleteSelection = (() => {
-    if (!selectedPlan) return false;
-    const options = selectedPlan.servicePlan?.billingOptions || [];
+  const hasCompleteSelection = selectedPlans.every((plan) => {
+    const options = plan.servicePlan?.billingOptions || [];
     if (!options.length) return true;
-    const choice = selections[selectedPlan._id] || {};
+    const choice = selections[plan._id] || {};
     const cycleMonths = BILLING_CYCLE_MONTHS[choice.selectedBillingCycle] || 0;
     return Boolean(cycleMonths) && Boolean(choice.tenureMonths) && Number.isInteger(Number(choice.tenureMonths)) && Number(choice.tenureMonths) >= cycleMonths && Number(choice.tenureMonths) % cycleMonths === 0;
-  })();
-
-  const total = selectedPlan ? getSelectedPrice(selectedPlan) : 0;
+  });
+  const total = useMemo(() => selectedPlans.reduce((sum, plan) => sum + getSelectedPrice(plan), 0), [selectedPlans, selections]);
 
   // Display-only split. The server re-derives this from the real balance and is the
   // authority — the client never tells the backend what to charge where.
   const walletPart = Math.min(Number(walletBalance || 0), total);
   const upiPart = Math.max(0, total - walletPart);
-  const canPay = Boolean(selectedPlan) && hasCompleteSelection && total > 0;
+  const canPay = selectedPlans.length > 0 && hasCompleteSelection && total > 0;
 
-  // Picking a service replaces whatever was picked before — only one at a time.
-  // A standalone-only service is never selected at all: tapping it opens the
-  // explanation instead, so it can never reach the purchase call (which the
+  // A standalone-only service is never added to the selection — tapping it opens
+  // the explanation instead, so it can never reach the purchase call (which the
   // backend would refuse anyway).
   const toggleSelection = (planId) => {
     const plan = plans.find((item) => item._id === planId);
@@ -217,7 +210,9 @@ const AddServiceModal = ({
       setRedirectPlan(plan);
       return;
     }
-    setSelectedId((current) => (current === planId ? null : planId));
+    setSelectedIds((current) =>
+      current.includes(planId) ? current.filter((id) => id !== planId) : [...current, planId]
+    );
   };
 
   // Confirmed: leave the project and continue on the page that actually sells
@@ -229,30 +224,24 @@ const AddServiceModal = ({
     if (planId) navigate(`/service-plan-detail/${planId}`);
   };
 
-  // The create call — the same single-service purchase endpoint the standalone
-  // page uses, with the project attached. One payment, one order: no grouping,
-  // no separate approval object.
-  const createOrder = async ({ txnId, upiRef }) => {
-    const choice = selections[selectedPlan._id] || {};
-    const hasBillingOptions = Boolean(selectedPlan.servicePlan?.billingOptions?.length);
-    const response = await fetch(SummaryApi.createServicePlanOrder.url, {
-      method: SummaryApi.createServicePlanOrder.method,
+  // The single create call: orders + invoices + wallet debit + (if any) the pending
+  // parent/child UPI transactions, all in one atomic server-side request.
+  const createOrders = async ({ txnId, upiRef }) => {
+    const response = await fetch(SummaryApi.createServicePlanOrdersBulk.url, {
+      method: SummaryApi.createServicePlanOrdersBulk.method,
       credentials: 'include',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
-        planId: selectedPlan._id,
-        selectedBillingCycle: hasBillingOptions ? choice.selectedBillingCycle : undefined,
-        tenureMonths: choice.tenureMonths === '' || choice.tenureMonths === undefined ? undefined : Number(choice.tenureMonths),
+        planIds: selectedIds,
+        selections: selectedPlans.map((plan) => ({ planId: plan._id, selectedBillingCycle: selections[plan._id]?.selectedBillingCycle, tenureMonths: selections[plan._id]?.tenureMonths === '' ? undefined : Number(selections[plan._id]?.tenureMonths) })),
         linkedProjectOrderId: projectOrderId,
         addedDuringProjectPhase: isProjectFinished ? 'after_completion' : 'in_progress',
-        paymentDetails: {
-          transactionId: txnId,
-          upiTransactionId: upiRef || null,
-        },
+        transactionId: txnId,
+        upiTransactionId: upiRef || undefined,
       }),
     });
     const result = await response.json();
-    if (!result.success) throw new Error(result.message || 'Could not add the service');
+    if (!result.success) throw new Error(result.message || 'Could not add the services');
     return result.data;
   };
 
@@ -266,12 +255,12 @@ const AddServiceModal = ({
     if (upiPart === 0) {
       try {
         setSubmitting(true);
-        const data = await createOrder({ txnId });
+        const data = await createOrders({ txnId });
         setPurchasedSummary(data);
         onPurchased?.();
         setTimeout(() => onClose?.(), 1800);
       } catch (error) {
-        toast.error(error.message || 'Could not add the service');
+        toast.error(error.message || 'Could not add the services');
       } finally {
         setSubmitting(false);
       }
@@ -299,22 +288,17 @@ const AddServiceModal = ({
     }
     try {
       setSubmitting(true);
-      const data = await createOrder({ txnId: payTxnId, upiRef: upiReference.trim() });
+      const data = await createOrders({ txnId: payTxnId, upiRef: upiReference.trim() });
       setShowQR(false);
       setPurchasedSummary(data);
       onPurchased?.();
       setTimeout(() => onClose?.(), 1800);
     } catch (error) {
-      toast.error(error.message || 'Could not add the service');
+      toast.error(error.message || 'Could not add the services');
     } finally {
       setSubmitting(false);
     }
   };
-
-  // The single-service response reports how the money split; nothing waiting on
-  // UPI means the service is already active.
-  const purchaseApproved = purchasedSummary ? Number(purchasedSummary.upiPending || 0) <= 0 : false;
-  const purchasedName = selectedPlan?.serviceName || 'Service';
 
   if (!isOpen) return null;
 
@@ -326,8 +310,8 @@ const AddServiceModal = ({
           <div>
             <h2 className="text-xl font-bold text-white">
               {purchasedSummary
-                ? purchaseApproved
-                  ? 'Service added'
+                ? purchasedSummary.approved
+                  ? 'Services added'
                   : 'Submitted for approval'
                 : showQR
                 ? 'Pay the remaining amount'
@@ -337,9 +321,9 @@ const AddServiceModal = ({
             </h2>
             <p className="mt-1 text-sm text-white/70">
               {purchasedSummary
-                ? purchaseApproved
-                  ? 'Your service is active now.'
-                  : 'Your service starts as soon as this payment is approved.'
+                ? purchasedSummary.approved
+                  ? 'Your services are active now.'
+                  : 'Your services start as soon as this payment is approved.'
                 : showQR
                 ? `Scan and pay ${formatPrice(upiPart)}`
                 : `For ${projectName}`}
@@ -359,29 +343,35 @@ const AddServiceModal = ({
         <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
           {purchasedSummary ? (
             <>
-              <div
-                className={[
-                  'flex items-center justify-between gap-3 rounded-2xl border px-4 py-3',
-                  purchaseApproved
-                    ? 'border-emerald-400/30 bg-emerald-500/10'
-                    : 'border-amber-400/30 bg-amber-500/10',
-                ].join(' ')}
-              >
-                <span className="flex items-center gap-2 text-base font-semibold text-white">
-                  {purchaseApproved ? (
-                    <Check className="h-4 w-4 text-emerald-300" />
-                  ) : (
-                    <Clock className="h-4 w-4 text-amber-300" />
-                  )}
-                  {purchasedName}
-                </span>
-                <span className="text-base text-white/80">{formatPrice(purchasedSummary.finalPrice)}</span>
-              </div>
+              <ul className="space-y-2">
+                {purchasedSummary.orders.map((item) => (
+                  <li
+                    key={item.orderId}
+                    className={[
+                      'flex items-center justify-between gap-3 rounded-2xl border px-4 py-3',
+                      purchasedSummary.approved
+                        ? 'border-emerald-400/30 bg-emerald-500/10'
+                        : 'border-amber-400/30 bg-amber-500/10',
+                    ].join(' ')}
+                  >
+                    <span className="flex items-center gap-2 text-base font-semibold text-white">
+                      {purchasedSummary.approved ? (
+                        <Check className="h-4 w-4 text-emerald-300" />
+                      ) : (
+                        <Clock className="h-4 w-4 text-amber-300" />
+                      )}
+                      {item.name}
+                    </span>
+                    <span className="text-base text-white/80">{formatPrice(item.amount)}</span>
+                  </li>
+                ))}
+              </ul>
 
-              {!purchaseApproved && (
+              {!purchasedSummary.approved && (
                 <p className="mt-4 rounded-xl border border-amber-400/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-100">
-                  We've received your payment reference. This service activates once our team
-                  confirms it — you don't need to pay again.
+                  We've received your payment reference. All {purchasedSummary.count} service
+                  {purchasedSummary.count === 1 ? '' : 's'} activate together once our team confirms
+                  it — you don't need to pay again.
                 </p>
               )}
             </>
@@ -431,7 +421,7 @@ const AddServiceModal = ({
           ) : (
             <ul className="space-y-2">
               {plans.map((plan) => {
-                const isSelected = selectedId === plan._id;
+                const isSelected = selectedIds.includes(plan._id);
                 const servicePlan = plan.servicePlan || {};
                 const accessLine = getAccessLine(servicePlan);
                 const validityLine = getValidityLine(servicePlan);
@@ -547,7 +537,11 @@ const AddServiceModal = ({
           ) : (
             <>
               <div className="flex items-center justify-between text-base text-white">
-                <span>{selectedPlan ? selectedPlan.serviceName : 'Select a service'}</span>
+                <span>
+                  {selectedPlans.length > 0
+                    ? `${selectedPlans.length} selected`
+                    : 'Select one or more services'}
+                </span>
                 <span className="font-bold">{formatPrice(total)}</span>
               </div>
 
@@ -555,10 +549,10 @@ const AddServiceModal = ({
                 Wallet balance: {formatPrice(walletBalance)}
               </p>
 
-              {selectedPlan && !hasCompleteSelection && <p className="mt-2 text-sm text-amber-200">Select a billing period and tenure for this service.</p>}
+              {!hasCompleteSelection && <p className="mt-2 text-sm text-amber-200">Select a valid billing period and tenure for every selected service.</p>}
 
               {/* Split breakdown — shown only when the payment actually is a split. */}
-              {selectedPlan && upiPart > 0 && (
+              {selectedPlans.length > 0 && upiPart > 0 && (
                 <div className="mt-2 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm">
                   <div className="flex items-center justify-between text-white/70">
                     <span>From wallet</span>

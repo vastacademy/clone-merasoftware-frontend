@@ -181,6 +181,10 @@ const SummaryApi = {
         url : `${backendDomain}/api/customer/service-plan-order`,
         method: "post"
     },
+    createServicePlanOrdersBulk : {
+        url : `${backendDomain}/api/customer/service-plan-orders-bulk`,
+        method: "post"
+    },
     stopServiceRenewal : {
         url : `${backendDomain}/api/customer/service-plan/stop-renewal`,
         method: "post"

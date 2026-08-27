@@ -44,6 +44,7 @@ import {
   formatCurrency,
   getLedgerStatusLabel,
   buildLedgerItems,
+  buildBatchLedgerItems,
   groupLedgerItemsByProject,
 } from "../helpers/paymentLedger";
 import { adminReturnState, getAdminReturnTarget, goToAdminReturn } from "../helpers/adminReturnNavigation";
@@ -265,6 +266,7 @@ const AdminClientWorkspace = () => {
     orders: [],
     renewals: [],
     transactions: [],
+    paymentBatches: [],
     invoices: [],
     updates: [],
     plans: [],
@@ -752,6 +754,7 @@ const AdminClientWorkspace = () => {
           orders: workspaceData.orders || [],
           renewals: workspaceData.renewals || [],
           transactions: workspaceData.transactions || [],
+          paymentBatches: workspaceData.paymentBatches || [],
           invoices: workspaceData.invoices || [],
           updates: workspaceData.updates || [],
           plans: workspaceData.plans || [],
@@ -1152,6 +1155,7 @@ const AdminClientWorkspace = () => {
           ) : (
             <PaymentInvoicesPanel
               transactions={allData.transactions}
+              paymentBatches={allData.paymentBatches}
               invoices={allData.invoices}
               getBadgeClassName={getBadgeClassName}
               formatDateTime={formatDateTime}
@@ -1707,6 +1711,7 @@ const AccountAccessPanel = ({
 
 const PaymentInvoicesPanel = ({
   transactions,
+  paymentBatches = [],
   invoices,
   getBadgeClassName,
   formatDateTime,
@@ -1717,11 +1722,18 @@ const PaymentInvoicesPanel = ({
 }) => {
   const activeTransactions = transactions.filter((transaction) => !transaction?.orderDeleted);
   const activeInvoices = invoices.filter((invoice) => !invoice?.orderDeleted);
-  const pendingPayments = activeTransactions.filter((transaction) => transaction?.status === "pending");
+  // A batch child is settled through its batch, never on its own, so the batch (not each
+  // child) is what the admin acts on while the payment is still awaiting a decision.
+  const pendingBatchRefs = new Set(
+    paymentBatches.filter((batch) => batch?.status === "pending-approval").map((batch) => batch.batchRef)
+  );
+  const pendingPayments = activeTransactions.filter(
+    (transaction) => transaction?.status === "pending" && !pendingBatchRefs.has(transaction?.parentTransactionId)
+  );
   const unpaidInvoices = activeInvoices.filter((invoice) => ["unpaid", "overdue"].includes(invoice?.status));
   const paidInvoices = activeInvoices.filter((invoice) => invoice?.status === "paid");
   const completedPayments = activeTransactions.filter((transaction) => transaction?.status === "completed");
-  const ledgerItems = buildLedgerItems(transactions, invoices).sort(
+  const ledgerItems = [...buildLedgerItems(transactions, invoices), ...buildBatchLedgerItems(paymentBatches)].sort(
     (left, right) => right.sortDate - left.sortDate
   );
   const allLedgerGroups = groupLedgerItemsByProject(ledgerItems);
@@ -2089,6 +2101,16 @@ const PaymentOrderHistorySubpage = ({ customerId, orderId, onBack }) => {
     const matchingTransactions = allTransactions.filter(matchesOrder).sort(
       (left, right) => new Date(right.date || right.createdAt || 0) - new Date(left.date || left.createdAt || 0)
     );
+    // A payment batch (paymentBatchModel) is one payment covering several service orders. It
+    // surfaces on every order it paid for — a batch is all-or-nothing, so that is where the
+    // admin approves or rejects it; its children can never be settled individually.
+    const matchingBatches = isGeneralPayments
+      ? []
+      : (workspace?.paymentBatches || [])
+          .filter((batch) => batch?.status === "pending-approval")
+          .filter((batch) => (batch.orderIds || []).some((linked) => getOrderReference(linked) === String(orderId)));
+    const matchingBatchRefs = new Set(matchingBatches.map((batch) => batch.batchRef));
+
     const matchingOrder = isGeneralPayments
       ? null
       : allOrders.find((candidate) => String(candidate?._id) === String(orderId)) || null;
@@ -2103,7 +2125,10 @@ const PaymentOrderHistorySubpage = ({ customerId, orderId, onBack }) => {
       .filter((current) => current.status === "completed")
       .reduce((sum, current) => sum + Number(current.amount || 0), 0);
     const totalPendingRecords = matchingInvoices.filter((current) => ["unpaid", "partially_paid", "overdue"].includes(current.status)).length
-      + matchingTransactions.filter((current) => current.status === "pending").length;
+      + matchingTransactions.filter(
+        (current) => current.status === "pending" && !matchingBatchRefs.has(current?.parentTransactionId)
+      ).length
+      + matchingBatches.length;
     const firstPendingProjectInvoice = matchingInvoices
       .filter((current) => current.invoiceType === "project" && ["unpaid", "overdue"].includes(current.status))
       .sort((left, right) => Number(left.installmentNumber || 1) - Number(right.installmentNumber || 1))[0];
@@ -2131,6 +2156,8 @@ const PaymentOrderHistorySubpage = ({ customerId, orderId, onBack }) => {
     }));
     const combinedFromUnlinkedTransactions = matchingTransactions
       .filter((transaction) => !linkedTransactionIds.has(String(transaction._id)) && !getOrderReference(transaction?.invoiceId))
+      // A pending batch's child is represented by its batch, not on its own.
+      .filter((transaction) => !matchingBatchRefs.has(transaction?.parentTransactionId))
       .map((transaction) => ({
         key: `transaction-${transaction._id}`,
         invoice: null,
