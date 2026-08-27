@@ -12,6 +12,9 @@ import {
   isRedirectableFromProject,
   startsAfterProjectCompletion,
 } from '../helpers/serviceDependency';
+// How long a service may be bought for — shared with the standalone page so the
+// two surfaces can never offer different terms.
+import { BILLING_CYCLE_MONTHS, buildTenureOptions } from '../helpers/serviceTenure';
 
 // Add-on service picker, opened from a project's detail page.
 //
@@ -63,7 +66,7 @@ const BILLING_CYCLE_LABELS = {
   every_4_years: 'billed every 4 years',
   every_5_years: 'billed every 5 years',
 };
-const BILLING_CYCLE_MONTHS = { monthly: 1, quarterly: 3, half_yearly: 6, yearly: 12, every_2_years: 24, every_3_years: 36, every_4_years: 48, every_5_years: 60 };
+
 
 const formatPrice = (value) =>
   new Intl.NumberFormat('en-IN', {
@@ -490,7 +493,7 @@ const AddServiceModal = ({
                         {isSelected && servicePlan.billingOptions?.length > 0 && (
                           <span className="mt-3 grid gap-2 sm:grid-cols-2" onClick={(event) => event.stopPropagation()}>
                             <label><span className="mb-1 block text-xs font-semibold text-white/70">Billing period</span><select className="w-full rounded-lg border border-white/20 bg-slate-950 px-2.5 py-2 text-sm text-white" value={selections[plan._id]?.selectedBillingCycle || ''} onChange={(event) => setSelections((current) => ({ ...current, [plan._id]: { ...current[plan._id], selectedBillingCycle: event.target.value, tenureMonths: '' } }))}><option value="">Select period</option>{servicePlan.billingOptions.map((option) => <option key={option.billingCycle} value={option.billingCycle}>{BILLING_CYCLE_LABELS[option.billingCycle]} — {formatPrice(option.pricePerCycle)}</option>)}</select></label>
-                            <label><span className="mb-1 block text-xs font-semibold text-white/70">Total tenure (months)</span><input required className="w-full rounded-lg border border-white/20 bg-slate-950 px-2.5 py-2 text-sm text-white disabled:opacity-50" type="number" min={BILLING_CYCLE_MONTHS[selections[plan._id]?.selectedBillingCycle] || 1} step={BILLING_CYCLE_MONTHS[selections[plan._id]?.selectedBillingCycle] || 1} disabled={!selections[plan._id]?.selectedBillingCycle} value={selections[plan._id]?.tenureMonths || ''} onChange={(event) => setSelections((current) => ({ ...current, [plan._id]: { ...current[plan._id], tenureMonths: event.target.value } }))} placeholder="For example: 6" /></label>
+                            <label><span className="mb-1 block text-xs font-semibold text-white/70">Total tenure</span><select required className="w-full rounded-lg border border-white/20 bg-slate-950 px-2.5 py-2 text-sm text-white disabled:opacity-50" disabled={!selections[plan._id]?.selectedBillingCycle} value={selections[plan._id]?.tenureMonths || ''} onChange={(event) => setSelections((current) => ({ ...current, [plan._id]: { ...current[plan._id], tenureMonths: event.target.value } }))}><option value="">Select tenure</option>{buildTenureOptions(BILLING_CYCLE_MONTHS[selections[plan._id]?.selectedBillingCycle]).map((option) => <option key={option.months} value={option.months}>{option.label}</option>)}</select></label>
                           </span>
                         )}
                       </span>

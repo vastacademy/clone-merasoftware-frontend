@@ -18,6 +18,7 @@ const BILLING_OPTIONS = [
   { id: "monthly", label: "Monthly", months: 1 }, { id: "quarterly", label: "Quarterly", months: 3 },
   { id: "half_yearly", label: "Every 6 Months", months: 6 }, { id: "yearly", label: "Yearly", months: 12 },
   { id: "every_2_years", label: "Every 2 Years", months: 24 }, { id: "every_3_years", label: "Every 3 Years", months: 36 },
+  { id: "every_4_years", label: "Every 4 Years", months: 48 }, { id: "every_5_years", label: "Every 5 Years", months: 60 },
 ];
 const inputClass = "w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100";
 const labelClass = "mb-1.5 block text-sm font-semibold text-slate-700";
@@ -34,9 +35,6 @@ const AdminCreateServicePage = () => {
   const leaveForm = () => goToAdminReturn(navigate, location, "/admin-panel/website-management/plans", { replace: true });
   const descriptionRef = useRef("");
   const [form, setForm] = useState({
-    // visibility has no form control — a new service is always created Active.
-    // The field itself stays in the payload and the plan lifecycle (retire /
-    // restore on the Plans page) still drives it, so nothing downstream changes.
     serviceName: "", serviceType: "", timing: "", dependency: "", visibility: "visible",
     controlsUpload: false, sendsReminders: false, accessScope: "", uploadAttempts: "", filesPerUpload: "",
     purchaseType: "recurring", monthlyReferencePrice: "", oneTimePrice: "",
@@ -105,9 +103,10 @@ const AdminCreateServicePage = () => {
           <form className="rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm sm:p-5" onSubmit={handlePreviewSubmit}>
             <section>
               <p className="text-sm font-bold uppercase tracking-wide text-slate-500">1. Service basics</p>
-              <div className="mt-3 grid gap-3 md:grid-cols-2">
+              <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                 <label><span className={labelClass}>Service Name</span><input className={inputClass} value={form.serviceName} onChange={(event) => update("serviceName", event.target.value)} placeholder="e.g. Website Care" /></label>
                 <label><span className={labelClass}>Service Type</span><select className={inputClass} value={form.serviceType} onChange={(event) => update("serviceType", event.target.value)}><option value="">Select type</option>{SERVICE_TYPES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
+                <label><span className={labelClass}>Catalogue Status</span><select className={inputClass} value={form.visibility} onChange={(event) => update("visibility", event.target.value)}><option value="visible">Active</option><option value="hidden">Disabled</option></select></label>
               </div>
             </section>
 

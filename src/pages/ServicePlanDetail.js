@@ -7,6 +7,7 @@ import { goToCustomerReturn } from '../helpers/customerReturnNavigation';
 import { ArrowLeft, CheckCircle2 } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
 import SummaryApi from '../common';
+import { BILLING_CYCLE_MONTHS, buildTenureOptions } from '../helpers/serviceTenure';
 import Context from '../context';
 import backgroundImage from '../assets/BG.png';
 import GlassPageState from '../components/GlassPageState';
@@ -55,7 +56,7 @@ const BILLING_CYCLE_LABELS = {
   every_5_years: 'Billed Every 5 Years',
 };
 
-const BILLING_CYCLE_MONTHS = { monthly: 1, quarterly: 3, half_yearly: 6, yearly: 12, every_2_years: 24, every_3_years: 36, every_4_years: 48, every_5_years: 60 };
+// Billing periods and tenure choices come from the shared SSOT (helpers/serviceTenure.js).
 
 const formatPrice = (value) =>
   new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(value);
@@ -401,7 +402,7 @@ const ServicePlanDetail = () => {
                 {catalogueBillingOptions.length > 0 && (
                   <div className="mt-4 grid gap-3 sm:grid-cols-2">
                     <label><span className="mb-1.5 block text-sm font-semibold text-slate-200">Billing period</span><select className="w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2.5 text-sm text-white" value={selectedBillingCycle} onChange={(event) => { setSelectedBillingCycle(event.target.value); setTenureMonths(''); }}><option value="">Select billing period</option>{catalogueBillingOptions.map((option) => <option key={option.billingCycle} value={option.billingCycle}>{BILLING_CYCLE_LABELS[option.billingCycle]} — {formatPrice(option.pricePerCycle)}</option>)}</select></label>
-                    <label><span className="mb-1.5 block text-sm font-semibold text-slate-200">Total tenure (months)</span><input required className="w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2.5 text-sm text-white placeholder:text-white/40" type="number" min={selectedCycleMonths || 1} step={selectedCycleMonths || 1} disabled={!selectedBillingCycle} value={tenureMonths} onChange={(event) => setTenureMonths(event.target.value)} placeholder="For example: 6" /></label>
+                    <label><span className="mb-1.5 block text-sm font-semibold text-slate-200">Total tenure</span><select required className="w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2.5 text-sm text-white disabled:opacity-50" disabled={!selectedBillingCycle} value={tenureMonths} onChange={(event) => setTenureMonths(event.target.value)}><option value="">Select tenure</option>{buildTenureOptions(selectedCycleMonths).map((option) => <option key={option.months} value={option.months}>{option.label}</option>)}</select></label>
                   </div>
                 )}
                 {catalogueBillingOptions.length > 0 && <p className="mt-2 text-xs text-slate-400">{tenureMonths && selectedCycleMonths ? `${Number(tenureMonths) / selectedCycleMonths} billing cycles. ` : ''}First selected period is paid now; further invoices follow this billing period until the selected tenure ends.</p>}
