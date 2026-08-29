@@ -1,6 +1,7 @@
 import React from 'react';
 import { Download } from 'lucide-react';
 
+import SummaryApi from '../common';
 import { formatFileSize, getRequestStatusMeta } from '../helpers/clientSubmissions';
 
 // One renderer for the customer's uploaded data, used by every surface that shows it:
@@ -10,9 +11,7 @@ import { formatFileSize, getRequestStatusMeta } from '../helpers/clientSubmissio
 //
 // Presentation only — it never fetches. Callers pass the array that
 // GET /api/orders/:orderId/uploads returned, so the shape here is the server's shape
-// (id / notes / files[].name), not the raw updateRequestModel document. The download is
-// the same arrangement: this reports that one was asked for and the caller performs it,
-// so the component stays a renderer even though a download is now a request, not a link.
+// (id / notes / files[].name), not the raw updateRequestModel document.
 //
 // `theme` picks the surface's visual language: 'glass' for the customer portal over
 // BG.png, 'light' for the admin panel's white cards. Only colours differ — the content,
@@ -24,8 +23,6 @@ const UploadedDataList = ({
   error = '',
   theme = 'glass',
   emptyText = 'Nothing uploaded yet.',
-  onDownload,
-  downloadingId = '',
 }) => {
   const isGlass = theme === 'glass';
   const t = (lightClass, glassClass) => (isGlass ? glassClass : lightClass);
@@ -48,7 +45,6 @@ const UploadedDataList = ({
         const files = attempt.files || [];
         const notes = attempt.notes || [];
         const meta = getRequestStatusMeta(attempt.status, theme);
-        const isDownloading = Boolean(downloadingId) && downloadingId === attempt.id;
 
         return (
           <div key={attempt.id} className="py-3">
@@ -90,24 +86,18 @@ const UploadedDataList = ({
 
                 {/* One zip per upload. The server decides whether anything is still
                     fetchable (hasDownloadableFiles), so this never offers a download
-                    that would produce an empty archive.
-
-                    A button, not a link: an <a href> to the API is a cross-site
-                    navigation, and Firefox sends no session cookie on one, so the
-                    download came back as a 401 page. The caller fetches it instead. */}
+                    that would produce an empty archive. */}
                 {attempt.hasDownloadableFiles ? (
-                  <button
-                    type="button"
-                    onClick={() => onDownload?.(attempt)}
-                    disabled={isDownloading}
+                  <a
+                    href={`${SummaryApi.downloadUploadZip.url}/${attempt.id}/download`}
                     className={t(
-                      'mt-2 inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60',
-                      'mt-2 inline-flex items-center gap-1.5 rounded-lg border border-white/15 bg-white/10 px-2.5 py-1.5 text-xs font-semibold text-white transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-60'
+                      'mt-2 inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50',
+                      'mt-2 inline-flex items-center gap-1.5 rounded-lg border border-white/15 bg-white/10 px-2.5 py-1.5 text-xs font-semibold text-white transition hover:bg-white/15'
                     )}
                   >
                     <Download className="h-3.5 w-3.5" />
-                    {isDownloading ? 'Preparing…' : `Download ${files.length > 1 ? 'All' : ''}`.trim()}
-                  </button>
+                    Download {files.length > 1 ? 'All' : ''}
+                  </a>
                 ) : (
                   <p className={t('mt-2 text-xs text-slate-500', 'mt-2 text-xs text-slate-400')}>
                     Files are no longer available.

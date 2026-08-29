@@ -14,8 +14,7 @@ import UploadedDataList from "../UploadedDataList";
 // customer read one endpoint and draw it with one component, so neither can show an upload
 // or a download the other does not.
 //
-// Presentation only — the caller fetches and passes the array down, and performs the
-// download it is asked for, so this stays a renderer like the list it wraps.
+// Presentation only — the caller fetches and passes the array down.
 
 const ClientSubmissionsPanel = ({
   submissions = [],
@@ -23,8 +22,6 @@ const ClientSubmissionsPanel = ({
   error = "",
   onBack,
   recordLabel = "Project",
-  onDownload,
-  downloadingId = "",
 }) => {
   const pendingCount = (submissions || []).filter((item) => item?.status === "pending").length;
 
@@ -72,8 +69,6 @@ const ClientSubmissionsPanel = ({
             error={error}
             theme="light"
             emptyText="Nothing uploaded against this record yet."
-            onDownload={onDownload}
-            downloadingId={downloadingId}
           />
         </div>
       </div>

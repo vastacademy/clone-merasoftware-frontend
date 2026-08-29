@@ -322,6 +322,26 @@ const SummaryApi = {
         url: `${backendDomain}/api/uploads`,
         method: "get"
       },
+      adminUpdateRequests: {
+        url: `${backendDomain}/api/get-admin-update-requests`,
+        method: "get"
+      },
+      assignUpdateRequestDeveloper: {
+        url : `${backendDomain}/api/assign-update-developer`,
+        method: "post"
+      },
+      updateRequestMessage: {
+        url: `${backendDomain}/api/update-request-message`,
+        method: "post"
+      },
+      completeUpdateRequest: {
+        url: `${backendDomain}/api/complete-update-request`,
+        method: "post"
+      },
+      rejectUpdateRequest: {
+        url : `${backendDomain}/api/reject-update-request`,
+        method: "post"
+      },
       developerAssignedUpdates: {
         url: `${backendDomain}/api/assigned-updates`,
         method: "get"

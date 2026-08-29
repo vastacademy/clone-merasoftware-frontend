@@ -24,7 +24,6 @@ import ProjectServiceWorkspace from '../components/ProjectServiceWorkspace';
 import Context from '../context';
 import { customerChildState, goToCustomerReturn } from '../helpers/customerReturnNavigation';
 import UploadedDataList from '../components/UploadedDataList';
-import { downloadAuthenticatedFile } from '../helpers/downloadFile';
 
 const normalizeNodeKey = (value) => {
   if (value === null || value === undefined) {
@@ -280,7 +279,6 @@ const ProjectDetails = ({ isAdminView = false }) => {
   // What the customer has uploaded against THIS order (updateRequestModel records).
   const [uploadHistory, setUploadHistory] = useState([]);
   const [uploadHistoryLoading, setUploadHistoryLoading] = useState(false);
-  const [downloadingUploadId, setDownloadingUploadId] = useState('');
   const [showAddServiceModal, setShowAddServiceModal] = useState(false);
   const [isProjectPaused, setIsProjectPaused] = useState(false);
   // Wallet balance for the add-service modal — read from the app-wide SSOT,
@@ -586,25 +584,6 @@ const ProjectDetails = ({ isAdminView = false }) => {
   // customer never leaves their project — no attach-context has to be carried
   // through navigation, and closing returns them exactly where they were.
   const handleAddService = () => setShowAddServiceModal(true);
-
-  // The upload zip is fetched, not linked to, so the session cookie travels with it —
-  // see helpers/downloadFile.js. One at a time; the list shows which is preparing.
-  const handleUploadDownload = async (attempt) => {
-    if (!attempt?.id || downloadingUploadId) return;
-    try {
-      setDownloadingUploadId(attempt.id);
-      // Same name the server sets in Content-Disposition, which a blob download cannot read.
-      await downloadAuthenticatedFile(
-        `${SummaryApi.downloadUploadZip.url}/${attempt.id}/download`,
-        `uploaded-data-${attempt.id}.zip`
-      );
-      toast.success('Download started');
-    } catch (error) {
-      toast.error(error.message || 'Failed to download files');
-    } finally {
-      setDownloadingUploadId('');
-    }
-  };
 
   const sortedNodes = useMemo(() => {
     const nodes = order?.projectNodes || [];
@@ -1089,8 +1068,6 @@ const ProjectDetails = ({ isAdminView = false }) => {
                             loading={uploadHistoryLoading}
                             theme={isAdminView ? 'light' : 'glass'}
                             emptyText="Nothing uploaded yet. Anything you send appears here."
-                            onDownload={handleUploadDownload}
-                            downloadingId={downloadingUploadId}
                           />
                         </div>
                       </div>

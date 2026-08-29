@@ -1,7 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import { toast } from 'sonner';
 import {
   ArrowLeft, Clock, CalendarClock, AlertTriangle, Lock, Upload,
   List, X,
@@ -14,7 +13,6 @@ import backgroundImage from '../assets/BG.png';
 import { isPlanItem } from '../helpers/orderType';
 import { goToCustomerReturn } from '../helpers/customerReturnNavigation';
 import UploadedDataList from '../components/UploadedDataList';
-import { downloadAuthenticatedFile } from '../helpers/downloadFile';
 
 const formatDate = (date) => {
   if (!date) return 'N/A';
@@ -136,7 +134,6 @@ const PlanDetails = ({ isProjectServiceView = false }) => {
 
   const [plan, setPlan] = useState(null);
   const [requests, setRequests] = useState([]);
-  const [downloadingUploadId, setDownloadingUploadId] = useState('');
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [stoppingRenewal, setStoppingRenewal] = useState(false);
@@ -207,25 +204,6 @@ const PlanDetails = ({ isProjectServiceView = false }) => {
       setServiceActionMessage(result.message);
       fetchPlanDetails();
     } catch (error) { setServiceActionMessage(error.message || 'Could not stop renewal'); } finally { setStoppingRenewal(false); }
-  };
-
-  // The upload zip is fetched, not linked to, so the session cookie travels with it —
-  // see helpers/downloadFile.js. One at a time; the list shows which is preparing.
-  const handleUploadDownload = async (attempt) => {
-    if (!attempt?.id || downloadingUploadId) return;
-    try {
-      setDownloadingUploadId(attempt.id);
-      // Same name the server sets in Content-Disposition, which a blob download cannot read.
-      await downloadAuthenticatedFile(
-        `${SummaryApi.downloadUploadZip.url}/${attempt.id}/download`,
-        `uploaded-data-${attempt.id}.zip`
-      );
-      toast.success('Download started');
-    } catch (error) {
-      toast.error(error.message || 'Failed to download files');
-    } finally {
-      setDownloadingUploadId('');
-    }
   };
 
   if (loading) {
@@ -453,8 +431,6 @@ const PlanDetails = ({ isProjectServiceView = false }) => {
                       uploads={requests}
                       theme="glass"
                       emptyText="Nothing uploaded yet. Anything you send appears here."
-                      onDownload={handleUploadDownload}
-                      downloadingId={downloadingUploadId}
                     />
                   </div>
                 </div>
@@ -536,8 +512,6 @@ const PlanDetails = ({ isProjectServiceView = false }) => {
                       uploads={requests}
                       theme="glass"
                       emptyText="Nothing uploaded yet. Anything you send appears here."
-                      onDownload={handleUploadDownload}
-                      downloadingId={downloadingUploadId}
                     />
                   </div>
                 </section>

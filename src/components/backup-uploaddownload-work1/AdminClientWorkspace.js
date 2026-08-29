@@ -31,7 +31,6 @@ import {
   Share2,
 } from "lucide-react";
 import SummaryApi from "../common";
-import { downloadAuthenticatedFile } from "../helpers/downloadFile";
 import { logout } from "../store/userSlice";
 import CookieManager from "../utils/cookieManager";
 import StorageService from "../utils/storageService";
@@ -3370,29 +3369,9 @@ const WorkspaceDetailSubpage = ({
   // the project/plan detail, and its Back button returns here. Local view state, like
   // the selected node — leaving this record forgets it.
   const [submissionsOpen, setSubmissionsOpen] = useState(false);
-  const [downloadingUploadId, setDownloadingUploadId] = useState("");
   const submissionsPendingCount = (submissions || []).filter(
     (entry) => entry?.status === "pending",
   ).length;
-
-  // The zip is fetched rather than linked to, so the session cookie travels — see
-  // helpers/downloadFile.js. One upload at a time; the button reports which.
-  const handleUploadDownload = async (attempt) => {
-    if (!attempt?.id || downloadingUploadId) return;
-    try {
-      setDownloadingUploadId(attempt.id);
-      // Same name the server sets in Content-Disposition, which a blob download cannot read.
-      await downloadAuthenticatedFile(
-        `${SummaryApi.downloadUploadZip.url}/${attempt.id}/download`,
-        `uploaded-data-${attempt.id}.zip`,
-      );
-      toast.success("Download started");
-    } catch (error) {
-      toast.error(error.message || "Failed to download files");
-    } finally {
-      setDownloadingUploadId("");
-    }
-  };
 
   const itemStatus = getStatusLabel(item);
   const isProjectDetail = detailLabel === "Project";
@@ -3727,8 +3706,6 @@ const WorkspaceDetailSubpage = ({
         error={submissionsError}
         onBack={() => setSubmissionsOpen(false)}
         recordLabel={detailLabel}
-        onDownload={handleUploadDownload}
-        downloadingId={downloadingUploadId}
       />
     );
   }
