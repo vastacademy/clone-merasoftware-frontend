@@ -692,6 +692,17 @@ const SummaryApi = {
         url: `${backendDomain}/api/admin/projects`,
         method: "post"
     },
+    // Cancellation is a two-call flow: the preview is read-only and tells the admin what will be
+    // refunded and which methods need a reference id; the cancel call actually settles the money.
+    // Both take the orderId as a path segment, like approveProjectOrder above.
+    projectCancelPreview: {
+        url: `${backendDomain}/api/admin/projects`,
+        method: "get"
+    },
+    cancelProjectOrder: {
+        url: `${backendDomain}/api/admin/projects`,
+        method: "post"
+    },
     categoryBasePrices: {
         url: `${backendDomain}/api/admin/category-base-prices`,
         method: "get"

@@ -579,7 +579,9 @@ const ProjectDetails = ({ isAdminView = false }) => {
   const canAddService = Boolean(
     order &&
       order.orderVisibility !== 'pending-approval' &&
-      order.orderVisibility !== 'payment-rejected'
+      order.orderVisibility !== 'payment-rejected' &&
+      // A cancelled project is settled and refunded — nothing new may be bought against it.
+      order.orderVisibility !== 'cancelled'
   );
 
   // Services are picked in a modal rather than on a separate page, so the
@@ -827,7 +829,11 @@ const ProjectDetails = ({ isAdminView = false }) => {
   // donut shows, which backend derives from the nodes — so the button and the timeline
   // can never disagree about whether the work is done.
   const isProjectComplete = progressPercentage >= 100;
-  const isUploadLocked = Boolean(order.hasUnpaidInvoice) || isOrderPendingApproval || isProjectComplete;
+  // A cancelled project is closed and its money already settled — nothing more can be
+  // uploaded or requested against it.
+  const isOrderCancelled = order.orderVisibility === 'cancelled';
+  const isUploadLocked =
+    Boolean(order.hasUnpaidInvoice) || isOrderPendingApproval || isProjectComplete || isOrderCancelled;
 
   return (
     <Shell {...shellProps}>
@@ -887,7 +893,49 @@ const ProjectDetails = ({ isAdminView = false }) => {
               not paid anything yet, and — because the invoice legitimately stays unpaid until an
               admin approves — kept showing "Payment Pending" even right after they DID submit a
               UPI payment. The two states were swapped in exactly the case that matters. */}
-          {!isAdminView && hasPendingPayment && (
+          {/* A cancelled project outranks every payment banner below: the money is already
+              settled, so "payment pending" / "awaiting approval" no longer mean anything. */}
+          {isOrderCancelled && (
+            <div className={g(
+              'mb-6 rounded-2xl border border-slate-300 bg-slate-100 p-4',
+              'mb-6 rounded-2xl border border-white/20 bg-white/10 p-4 backdrop-blur-md'
+            )}>
+              <p className={g('text-base font-semibold text-slate-800', 'text-base font-semibold text-white')}>
+                Project Cancelled
+              </p>
+              {order.cancellationReason ? (
+                <p className={g('mt-1 text-sm text-slate-600', 'mt-1 text-sm text-white/80')}>
+                  {order.cancellationReason}
+                </p>
+              ) : null}
+              {Number(order.refundTotal || 0) > 0 ? (
+                <div className="mt-3">
+                  <p className={g('text-sm font-semibold text-slate-700', 'text-sm font-semibold text-white/90')}>
+                    Refunded ₹{Number(order.refundTotal).toLocaleString('en-IN')}
+                  </p>
+                  <div className="mt-2 space-y-1">
+                    {(order.refunds || []).map((refund, index) => (
+                      <p
+                        key={`${refund.method}-${index}`}
+                        className={g('text-sm text-slate-600', 'text-sm text-white/75')}
+                      >
+                        <span className="capitalize">{String(refund.method).replace('_', ' ')}</span>
+                        {' — ₹'}
+                        {Number(refund.amount || 0).toLocaleString('en-IN')}
+                        {refund.method === 'wallet'
+                          ? ' (added to your wallet)'
+                          : refund.referenceId
+                            ? ` (reference: ${refund.referenceId})`
+                            : ''}
+                      </p>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          )}
+
+          {!isAdminView && !isOrderCancelled && hasPendingPayment && (
             <div className={g(
               'mb-6 rounded-2xl border border-emerald-300 bg-emerald-50 p-4',
               'mb-6 rounded-2xl border border-emerald-400/40 bg-emerald-500/15 p-4 backdrop-blur-md'
@@ -903,7 +951,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
             </div>
           )}
 
-          {!isAdminView && !hasPendingPayment && order.hasUnpaidInvoice && (
+          {!isAdminView && !isOrderCancelled && !hasPendingPayment && order.hasUnpaidInvoice && (
             <div className={g(
               'mb-6 rounded-2xl border border-amber-300 bg-amber-50 p-4',
               'mb-6 rounded-2xl border border-amber-400/40 bg-amber-500/15 p-4 backdrop-blur-md'

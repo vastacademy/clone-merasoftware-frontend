@@ -62,6 +62,12 @@ export const getItemStatusMeta = (order) => {
     return { label: 'Unknown', tone: 'bg-slate-100 text-slate-700' };
   }
 
+  // Terminal state — the admin cancelled the project and settled/refunded its money.
+  // Checked first: a cancelled project is cancelled regardless of its progress or invoices.
+  if (order.orderVisibility === 'cancelled') {
+    return { label: 'Cancelled', tone: 'bg-slate-200 text-slate-700' };
+  }
+
   // Admin rejected the payment (nothing paid) — client must retry.
   if (order.orderVisibility === 'payment-rejected') {
     return { label: 'Payment Rejected', tone: 'bg-rose-100 text-rose-700' };
@@ -134,6 +140,9 @@ export const getItemSummary = (order) => {
   }
 
   if (isProjectItem(order)) {
+    // Cancelled first — a project cancelled at 100% progress must not still read as complete.
+    if (order.orderVisibility === 'cancelled') return '';
+
     // A project reads as complete via either signal, matching getItemStatusMeta.
     if (order.projectProgress >= 100 || order.currentPhase === 'completed') {
       return '100% complete';

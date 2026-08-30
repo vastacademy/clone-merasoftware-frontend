@@ -29,8 +29,10 @@ import {
   Download,
   Send,
   Share2,
+  Ban,
 } from "lucide-react";
 import SummaryApi from "../common";
+import displayINRCurrency from "../helpers/displayCurrency";
 import { downloadAuthenticatedFile } from "../helpers/downloadFile";
 import { logout } from "../store/userSlice";
 import CookieManager from "../utils/cookieManager";
@@ -236,6 +238,15 @@ const AdminClientWorkspace = () => {
   const [deleteSelections, setDeleteSelections] = useState({});
   const [deleteError, setDeleteError] = useState("");
   const [deletingOrderId, setDeletingOrderId] = useState(null);
+  // Cancellation flow — mirrors the delete flow above: a target, a read-only preview fetched
+  // when the modal opens, and per-method reference ids the admin fills in before confirming.
+  const [cancelTarget, setCancelTarget] = useState(null);
+  const [cancelPreview, setCancelPreview] = useState(null);
+  const [cancelPreviewLoading, setCancelPreviewLoading] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
+  const [cancelReferenceIds, setCancelReferenceIds] = useState({});
+  const [cancelError, setCancelError] = useState("");
+  const [cancellingOrderId, setCancellingOrderId] = useState(null);
   const [showCreateProjectForm, setShowCreateProjectForm] = useState(false);
   const [workspaceRefreshKey, setWorkspaceRefreshKey] = useState(0);
   const [activeProjectId, setActiveProjectId] = useState(null);
@@ -552,8 +563,94 @@ const AdminClientWorkspace = () => {
     }
   };
 
+  const resetCancelFlow = () => {
+    setCancelTarget(null);
+    setCancelPreview(null);
+    setCancelPreviewLoading(false);
+    setCancelReason("");
+    setCancelReferenceIds({});
+    setCancelError("");
+  };
+
+  // Opens the cancel modal and loads the read-only preview — what will be refunded, split by
+  // the method each payment actually came in through. Nothing is written by this call.
+  const handleRequestCancel = async (item) => {
+    if (!item?._id) return;
+
+    setCancelTarget(item);
+    setCancelPreview(null);
+    setCancelReason("");
+    setCancelReferenceIds({});
+    setCancelError("");
+    setCancelPreviewLoading(true);
+
+    try {
+      const response = await fetch(`${SummaryApi.projectCancelPreview.url}/${item._id}/cancel-preview`, {
+        method: SummaryApi.projectCancelPreview.method,
+        credentials: "include",
+      });
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.message || "Failed to load cancellation details");
+      }
+      setCancelPreview(result.data);
+    } catch (error) {
+      console.error("Error loading cancellation preview:", error);
+      setCancelError(error.message || "Failed to load cancellation details");
+    } finally {
+      setCancelPreviewLoading(false);
+    }
+  };
+
+  const handleConfirmCancel = async () => {
+    if (!cancelTarget?._id || !cancelPreview) return;
+
+    const orderId = cancelTarget._id;
+    setCancellingOrderId(orderId);
+    setCancelError("");
+
+    try {
+      const response = await fetch(`${SummaryApi.cancelProjectOrder.url}/${orderId}/cancel`, {
+        method: SummaryApi.cancelProjectOrder.method,
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: cancelReason, referenceIds: cancelReferenceIds }),
+      });
+
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.message || "Failed to cancel project");
+      }
+
+      if (client?._id || customerId) {
+        StorageService.clearUserOrders(client?._id || customerId);
+      }
+      setWorkspaceRefreshKey((key) => key + 1);
+      toast.success(result.message || "Project cancelled successfully");
+      resetCancelFlow();
+    } catch (error) {
+      console.error("Error cancelling project:", error);
+      setCancelError(error.message || "Failed to cancel project");
+      toast.error(error.message || "Failed to cancel project");
+    } finally {
+      setCancellingOrderId(null);
+    }
+  };
+
+  // Every non-wallet leg needs the admin's own reference id before the confirm button unlocks —
+  // that money is sent by hand outside this system, and the customer is told the reference.
+  const cancelExternalLegs = (cancelPreview?.legs || []).filter((leg) => leg.method !== "wallet");
+  const allCancelReferencesFilled = cancelExternalLegs.every((leg) =>
+    String(cancelReferenceIds[leg.method] || "").trim()
+  );
+
   const deleteChecklistSections = deleteScan?.sections || [];
   const deleteRequiredSections = deleteChecklistSections.filter((section) => section.present);
+  // Delete is cleanup only — a project that took money must be cancelled (and refunded) first.
+  // The server enforces this too; the UI reads the scan so it can say why the button is locked.
+  const deleteNeedsCancelFirst = Boolean(
+    deleteScan && !deleteScan.isCancelled && Number(deleteScan.paidTotal || 0) > 0
+  );
   const allDeleteSectionsSelected =
     deleteRequiredSections.length > 0 &&
     deleteRequiredSections.every((section) => deleteSelections[section.key]);
@@ -1087,7 +1184,9 @@ const AdminClientWorkspace = () => {
                 error={activeProjectError}
                 onBack={handleBackToProjects}
                 onDelete={handleRequestDelete}
+                onCancel={handleRequestCancel}
                 deletingOrderId={deletingOrderId}
+                cancellingOrderId={cancellingOrderId}
                 getStatusLabel={getProjectDisplayStatus}
                 getBadgeClassName={getBadgeClassName}
                 formatDateTime={formatDateTime}
@@ -1112,7 +1211,9 @@ const AdminClientWorkspace = () => {
                 emptyText="No projects found for this client."
                 onRowClick={handleOpenProject}
                 onDelete={handleRequestDelete}
+                onCancel={handleRequestCancel}
                 deletingOrderId={deletingOrderId}
+                cancellingOrderId={cancellingOrderId}
                 headerAction={
                   <button
                     type="button"
@@ -1154,7 +1255,9 @@ const AdminClientWorkspace = () => {
                 error={activePlanError}
                 onBack={handleBackToPlans}
                 onDelete={handleRequestDelete}
+                onCancel={handleRequestCancel}
                 deletingOrderId={deletingOrderId}
+                cancellingOrderId={cancellingOrderId}
                 getStatusLabel={getPlanDisplayStatus}
                 getBadgeClassName={getBadgeClassName}
                 formatDateTime={formatDateTime}
@@ -1174,7 +1277,9 @@ const AdminClientWorkspace = () => {
                 emptyText="No plans found for this client."
                 onRowClick={handleOpenPlan}
                 onDelete={handleRequestDelete}
+                onCancel={handleRequestCancel}
                 deletingOrderId={deletingOrderId}
+                cancellingOrderId={cancellingOrderId}
                 renderMeta={(plan) => [
                   `Type: ${getPlanTypeLabel(plan)}`,
                   `Usage: ${
@@ -1268,6 +1373,147 @@ const AdminClientWorkspace = () => {
           </div>
       </AdminWorkspaceShell>
 
+        {cancelTarget ? (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 px-4 py-6">
+            <div className="max-h-full w-full max-w-xl overflow-y-auto rounded-[2rem] border border-slate-200 bg-white p-6 shadow-2xl">
+              <div className="flex items-start gap-4">
+                <div className="rounded-2xl bg-amber-50 p-3 text-amber-600">
+                  <Ban size={20} />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-xl font-bold text-slate-900">Cancel this project?</h3>
+                  <p className="mt-1 text-sm text-slate-500">
+                    {cancelPreview?.projectName || cancelTarget.productId?.serviceName || "Project"}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={resetCancelFlow}
+                  disabled={Boolean(cancellingOrderId)}
+                  className="rounded-full p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-900 disabled:opacity-50"
+                  aria-label="Close"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {cancelPreviewLoading ? (
+                <div className="mt-6 flex items-center gap-2 text-sm text-slate-500">
+                  <Loader2 size={16} className="animate-spin" /> Loading refund details...
+                </div>
+              ) : null}
+
+              {cancelPreview && !cancelPreviewLoading ? (
+                <div className="mt-6 space-y-5">
+                  {cancelPreview.refundable > 0 ? (
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                      <p className="text-sm font-bold uppercase tracking-wide text-slate-500">
+                        Refund to source
+                      </p>
+                      <p className="mt-1 text-sm text-slate-500">
+                        Money goes back the way it came in.
+                      </p>
+                      <div className="mt-4 space-y-3">
+                        {cancelPreview.legs.map((leg) => (
+                          <div key={leg.method} className="border-t border-slate-200 pt-3 first:border-t-0 first:pt-0">
+                            <div className="flex items-center justify-between">
+                              <span className="text-base font-semibold capitalize text-slate-900">
+                                {leg.method.replace("_", " ")}
+                              </span>
+                              <span className="text-base font-bold text-slate-900">
+                                {displayINRCurrency(leg.amount)}
+                              </span>
+                            </div>
+                            {leg.method === "wallet" ? (
+                              <p className="mt-1 text-sm text-emerald-600">
+                                Credited to the wallet automatically.
+                              </p>
+                            ) : (
+                              <div className="mt-2">
+                                <p className="text-sm text-slate-500">
+                                  Send this amount yourself, then enter the reference id.
+                                </p>
+                                <input
+                                  type="text"
+                                  value={cancelReferenceIds[leg.method] || ""}
+                                  onChange={(event) =>
+                                    setCancelReferenceIds((prev) => ({
+                                      ...prev,
+                                      [leg.method]: event.target.value,
+                                    }))
+                                  }
+                                  placeholder="Reference / UTR id"
+                                  className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-base text-slate-900 outline-none focus:border-emerald-500"
+                                />
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                        <div className="flex items-center justify-between border-t border-slate-300 pt-3">
+                          <span className="text-base font-bold text-slate-900">Total refund</span>
+                          <span className="text-base font-bold text-slate-900">
+                            {displayINRCurrency(cancelPreview.refundable)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                      No payment was received for this project, so there is nothing to refund.
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="text-sm font-bold text-slate-700">Reason (optional)</label>
+                    <textarea
+                      value={cancelReason}
+                      onChange={(event) => setCancelReason(event.target.value)}
+                      rows={2}
+                      placeholder="Shared with the customer"
+                      className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-base text-slate-900 outline-none focus:border-emerald-500"
+                    />
+                  </div>
+
+                  <p className="text-sm text-slate-500">
+                    The customer will be notified by email with the refund details.
+                  </p>
+                </div>
+              ) : null}
+
+              {cancelError ? (
+                <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                  {cancelError}
+                </div>
+              ) : null}
+
+              <div className="mt-6 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={resetCancelFlow}
+                  disabled={Boolean(cancellingOrderId)}
+                  className="rounded-2xl border border-slate-200 px-5 py-2.5 text-base font-bold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
+                >
+                  Keep project
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmCancel}
+                  disabled={
+                    Boolean(cancellingOrderId) ||
+                    cancelPreviewLoading ||
+                    !cancelPreview ||
+                    !allCancelReferencesFilled
+                  }
+                  className="inline-flex items-center gap-2 rounded-2xl bg-amber-600 px-5 py-2.5 text-base font-bold text-white transition hover:bg-amber-700 disabled:opacity-50"
+                >
+                  {cancellingOrderId ? <Loader2 size={16} className="animate-spin" /> : null}
+                  Cancel project
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : null}
+
         {deleteTarget ? (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 px-4 py-6">
             <div className="w-full max-w-xl rounded-[2rem] border border-slate-200 bg-white p-6 shadow-2xl">
@@ -1298,6 +1544,15 @@ const AdminClientWorkspace = () => {
               </div>
 
               <div className="mt-6 space-y-4">
+                {deleteNeedsCancelFirst ? (
+                  <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                    <p className="text-sm font-bold text-amber-800">Cancel this project first</p>
+                    <p className="mt-1 text-sm text-amber-700">
+                      Payments were received for this project. Cancel it so the money is refunded
+                      and recorded, then delete the record.
+                    </p>
+                  </div>
+                ) : null}
                 {deleteScanLoading ? (
                   <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
                     Scanning linked records...
@@ -1382,7 +1637,7 @@ const AdminClientWorkspace = () => {
                 <button
                   type="button"
                   onClick={handleConfirmDelete}
-                  disabled={Boolean(deletingOrderId) || deleteScanLoading || !allDeleteSectionsSelected}
+                  disabled={Boolean(deletingOrderId) || deleteScanLoading || !allDeleteSectionsSelected || deleteNeedsCancelFirst}
                   className="inline-flex items-center justify-center gap-2 rounded-2xl bg-rose-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-70"
                 >
                   {deletingOrderId ? (
@@ -2635,7 +2890,7 @@ const PaymentOrderHistorySubpage = ({ customerId, orderId, onBack }) => {
   );
 };
 
-const CompactWorkspaceCard = ({ title, subtitle, items, emptyText, onRowClick, onDelete, deletingOrderId, renderMeta, renderRight, headerAction }) => {
+const CompactWorkspaceCard = ({ title, subtitle, items, emptyText, onRowClick, onDelete, onCancel, deletingOrderId, cancellingOrderId, renderMeta, renderRight, headerAction }) => {
   return (
     <div>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -2690,7 +2945,27 @@ const CompactWorkspaceCard = ({ title, subtitle, items, emptyText, onRowClick, o
                   <div>{renderRight?.(item)}</div>
                 </div>
 
-                <div className="col-span-6 flex items-center justify-end lg:col-span-1">
+                <div className="col-span-6 flex flex-wrap items-center justify-end gap-2 lg:col-span-1">
+                  {/* Cancel settles the money and closes the project; Delete only removes the
+                      record afterwards. A project already cancelled has nothing left to cancel. */}
+                  {onCancel && item.orderVisibility !== "cancelled" ? (
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onCancel(item);
+                      }}
+                      disabled={cancellingOrderId === item._id}
+                      className="inline-flex items-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-70"
+                    >
+                      {cancellingOrderId === item._id ? (
+                        <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-amber-600 border-t-transparent" />
+                      ) : (
+                        <Ban size={14} />
+                      )}
+                      Cancel
+                    </button>
+                  ) : null}
                   {onDelete ? (
                     <button
                       type="button"
@@ -3339,7 +3614,9 @@ const WorkspaceDetailSubpage = ({
   error,
   onBack,
   onDelete,
+  onCancel,
   deletingOrderId,
+  cancellingOrderId,
   getStatusLabel,
   getBadgeClassName,
   formatDateTime,
@@ -3767,6 +4044,24 @@ const WorkspaceDetailSubpage = ({
             </span>
           ) : null}
         </button>
+
+        {/* Cancel settles the money first; delete is only cleanup afterwards. */}
+        {onCancel && item?.orderVisibility !== "cancelled" ? (
+          <button
+            type="button"
+            onClick={() => onCancel(item)}
+            disabled={cancellingOrderId === item?._id}
+            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-amber-200 bg-amber-50 text-amber-700 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-70"
+            aria-label={`Cancel ${detailLabel.toLowerCase()}`}
+            title={`Cancel ${detailLabel.toLowerCase()}`}
+          >
+            {cancellingOrderId === item?._id ? (
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-amber-600 border-t-transparent" />
+            ) : (
+              <Ban size={16} />
+            )}
+          </button>
+        ) : null}
 
         <button
           type="button"

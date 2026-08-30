@@ -82,7 +82,10 @@ export const buildLedgerItems = (transactions = [], invoices = []) => {
     ...transactions.map((transaction) => {
       // Falls back to the name frozen on the order, so a retired/deleted plan still
       // names the payment in the ledger instead of showing a bare amount.
-      const serviceName = getOrderDisplayName(transaction.orderId, null);
+      // Transactions now survive their order's deletion (they are the permanent record that
+      // money moved), so the snapshot deleteOrder.js writes is what names them afterwards.
+      const serviceName =
+        getOrderDisplayName(transaction.orderId, null) || transaction.deletedProjectName;
       const paymentLabel = getTransactionPaymentLabel(transaction);
       return {
         id: `transaction-${transaction._id}`,
@@ -101,6 +104,7 @@ export const buildLedgerItems = (transactions = [], invoices = []) => {
         serviceName: serviceName || null,
         orderStartDate: transaction.orderId?.createdAt || null,
         orderDeleted: Boolean(transaction.orderDeleted),
+        deletedProjectType: transaction.deletedProjectType || null,
       };
     }),
     ...invoices
