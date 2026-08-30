@@ -3,7 +3,6 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Download, Eye, Mail, Send, Share2, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import SummaryApi from "../common";
-import { downloadAuthenticatedFile } from "../helpers/downloadFile";
 import AdminLayout from "../components/AdminLayout";
 import { getTransactionPaymentLabel } from "../helpers/paymentLedger";
 import { getOrderDisplayName } from "../helpers/orderPresentation";
@@ -156,10 +155,24 @@ const SinglePaymentRecordDetail = () => {
 
     try {
       setActionLoading("download");
-      await downloadAuthenticatedFile(
-        `${baseActionUrl}/download-invoice`,
-        `Invoice-${invoice.invoiceNumber || invoice._id}.pdf`,
-      );
+      const response = await fetch(`${baseActionUrl}/download-invoice`, {
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        const result = await response.json().catch(() => ({}));
+        throw new Error(result.message || "Failed to download invoice");
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `Invoice-${invoice.invoiceNumber || invoice._id}.pdf`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      window.URL.revokeObjectURL(url);
       toast.success("Invoice download started");
     } catch (downloadError) {
       console.error("Error downloading invoice:", downloadError);
@@ -772,10 +785,16 @@ const PaymentOrderHistory = ({ customerId, orderId }) => {
       setFinalInvoiceAction("download");
       // One document endpoint for every invoice type — the backend decides the layout from the
       // invoice's own type, so the admin and the customer download the identical PDF.
-      await downloadAuthenticatedFile(
-        `${SummaryApi.invoices.downloadDocument.url}/${finalInvoice._id}/download`,
-        `${finalInvoice.invoiceNumber || "final-project-invoice"}.pdf`,
-      );
+      const response = await fetch(`${SummaryApi.invoices.downloadDocument.url}/${finalInvoice._id}/download`, { credentials: "include" });
+      if (!response.ok) throw new Error((await response.json().catch(() => ({}))).message || "Failed to download final invoice");
+      const url = window.URL.createObjectURL(await response.blob());
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `${finalInvoice.invoiceNumber || "final-project-invoice"}.pdf`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      window.URL.revokeObjectURL(url);
       toast.success("Final invoice download started");
     } catch (error) {
       toast.error(error.message || "Failed to download final invoice");

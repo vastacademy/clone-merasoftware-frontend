@@ -1,10 +1,9 @@
 // One way to download a file that sits behind authToken.
 //
 // Every such download used to be written out by hand at the call site — the same fetch,
-// the same blob, the same throwaway anchor, in AdminPaymentRecordDetail.js,
-// AdminClientWorkspace.js and InvoiceDetailPage.js. Four copies of a sequence is three
-// too many, and the fourth (the uploaded-data zip) was written differently: as a plain
-// <a href> straight to the API.
+// the same blob, the same throwaway anchor, twice in AdminClientWorkspace.js and twice in
+// AdminPaymentRecordDetail.js. The uploaded-data zip was the odd one out, written instead
+// as a plain <a href> straight to the API.
 //
 // That difference is what broke it. A plain anchor is a top-level cross-site navigation
 // from the frontend origin to the API origin, and Firefox does not attach the session

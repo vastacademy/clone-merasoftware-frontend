@@ -123,9 +123,13 @@ export const buildLedgerItems = (transactions = [], invoices = []) => {
           sortDate: safeDateTime(invoice.paidDate || invoice.invoiceDate || invoice.createdAt)?.getTime() || 0,
           orderId: invoice.orderId?._id || invoice.orderId || null,
           serviceName: serviceName || null,
-          orderStartDate: invoice.orderId?.createdAt || null,
+          // A deleted order populates to null, so its start date can only come from the
+          // snapshot written at delete time.
+          orderStartDate: invoice.orderId?.createdAt || invoice.deletedProjectStartDate || null,
           orderDeleted: Boolean(invoice.orderDeleted),
           deletedProjectType: invoice.deletedProjectType || null,
+          deletedProjectDeletedAt: invoice.deletedProjectDeletedAt || null,
+          deletedProjectPaymentMethod: invoice.deletedProjectPaymentMethod || null,
         };
       }),
   ].sort((left, right) => right.sortDate - left.sortDate);
@@ -157,6 +161,8 @@ export const groupLedgerItemsByProject = (ledgerItems = []) => {
         baseName,
         startDate: item.orderStartDate || null,
         deletedProjectType: item.deletedProjectType || null,
+        deletedProjectDeletedAt: item.deletedProjectDeletedAt || null,
+        deletedProjectPaymentMethod: item.deletedProjectPaymentMethod || null,
         items: [],
         latestSortDate: 0,
       });
@@ -166,6 +172,8 @@ export const groupLedgerItemsByProject = (ledgerItems = []) => {
     group.latestSortDate = Math.max(group.latestSortDate, item.sortDate);
     if (!group.startDate && item.orderStartDate) group.startDate = item.orderStartDate;
     if (!group.deletedProjectType && item.deletedProjectType) group.deletedProjectType = item.deletedProjectType;
+    if (!group.deletedProjectDeletedAt && item.deletedProjectDeletedAt) group.deletedProjectDeletedAt = item.deletedProjectDeletedAt;
+    if (!group.deletedProjectPaymentMethod && item.deletedProjectPaymentMethod) group.deletedProjectPaymentMethod = item.deletedProjectPaymentMethod;
   });
 
   // When two different projects share the same service name (e.g. two "Standard Website"

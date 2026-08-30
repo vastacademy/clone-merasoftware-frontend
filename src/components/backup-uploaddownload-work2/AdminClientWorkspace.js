@@ -2037,16 +2037,6 @@ const DeletedProjectsPanel = ({ transactions, invoices, formatDateTime, onOpenGr
           deletedGroups.map((group) => {
             const latestItem = group.items[0];
             const typeLabel = group.deletedProjectType === "plan" ? "Plan" : group.deletedProjectType === "project" ? "Project" : null;
-            // Every fact below is read from the snapshot written by deleteOrder.js. Records
-            // deleted before that snapshot existed simply have nothing to show, so each line
-            // is rendered only when its own value is present.
-            const facts = [
-              typeLabel,
-              group.startDate ? `Purchased ${formatDate(group.startDate)}` : null,
-              group.deletedProjectDeletedAt ? `Deleted ${formatDate(group.deletedProjectDeletedAt)}` : null,
-              // Falls back to the last payment record's own method for pre-snapshot deletions.
-              `Paid by ${group.deletedProjectPaymentMethod || latestItem?.method || "N/A"}`,
-            ].filter(Boolean);
             return (
               <button
                 key={group.key}
@@ -2056,7 +2046,9 @@ const DeletedProjectsPanel = ({ transactions, invoices, formatDateTime, onOpenGr
               >
                 <div className="min-w-0">
                   <p className="truncate text-base font-bold text-slate-900">{group.serviceName}</p>
-                  <p className="mt-1 text-sm text-slate-500">{facts.join(" · ")}</p>
+                  <p className="mt-1 text-sm text-slate-500">
+                    {typeLabel ? `${typeLabel} · ` : ""}Deleted on {formatDateTime(group.items[0]?.date)} · Last payment method {latestItem?.method || "N/A"}
+                  </p>
                   <p className="mt-1 text-xs text-slate-400">
                     {group.items.length} payment or invoice record{group.items.length === 1 ? "" : "s"}
                   </p>
@@ -2250,10 +2242,16 @@ const PaymentOrderHistorySubpage = ({ customerId, orderId, onBack }) => {
       setFinalInvoiceAction("download");
       // One document endpoint for every invoice type — the backend decides the layout from the
       // invoice's own type, so the admin and the customer download the identical PDF.
-      await downloadAuthenticatedFile(
-        `${SummaryApi.invoices.downloadDocument.url}/${finalInvoice._id}/download`,
-        `${finalInvoice.invoiceNumber || "final-project-invoice"}.pdf`,
-      );
+      const response = await fetch(`${SummaryApi.invoices.downloadDocument.url}/${finalInvoice._id}/download`, { credentials: "include" });
+      if (!response.ok) throw new Error((await response.json().catch(() => ({}))).message || "Failed to download final invoice");
+      const url = window.URL.createObjectURL(await response.blob());
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `${finalInvoice.invoiceNumber || "final-project-invoice"}.pdf`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      window.URL.revokeObjectURL(url);
       toast.success("Final invoice download started");
     } catch (error) {
       toast.error(error.message || "Failed to download final invoice");
@@ -2296,10 +2294,19 @@ const PaymentOrderHistorySubpage = ({ customerId, orderId, onBack }) => {
     if (!invoice?._id || invoiceRowAction) return;
     try {
       setInvoiceRowAction(`download-${invoice._id}`);
-      await downloadAuthenticatedFile(
+      const response = await fetch(
         `${SummaryApi.adminPaymentRecord.url}/${customerId}/payment-records/invoice/${invoice._id}/download-invoice`,
-        `Invoice-${invoice.invoiceNumber || invoice._id}.pdf`,
+        { credentials: "include" }
       );
+      if (!response.ok) throw new Error((await response.json().catch(() => ({}))).message || "Failed to download invoice");
+      const url = window.URL.createObjectURL(await response.blob());
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `Invoice-${invoice.invoiceNumber || invoice._id}.pdf`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      window.URL.revokeObjectURL(url);
       toast.success("Invoice download started");
     } catch (error) {
       toast.error(error.message || "Failed to download invoice");
