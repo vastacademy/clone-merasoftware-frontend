@@ -5,8 +5,8 @@ import SummaryApi from '../common';
 import DashboardLayout from '../components/DashboardLayout';
 import backgroundImage from '../assets/BG.png';
 import TriangleMazeLoader from '../components/TriangleMazeLoader';
-import { isOrderApproved } from '../helpers/orderVisibility';
 import { getOrderCategory, getOrderDisplayName } from '../helpers/orderPresentation';
+import { getInstallmentPaymentEligibility } from '../helpers/installmentPaymentEligibility';
 import {
   customerChildState,
   goToCustomerReturn,
@@ -253,7 +253,10 @@ const OrderDetailPage = () => {
                   {order.installments.map((installment) => {
                     const st = getInstallmentStatus(installment);
                     const label = INSTALLMENT_LABELS[installment.installmentNumber] || `Installment #${installment.installmentNumber}`;
-                    const canPay = !installment.paid && installment.paymentStatus !== 'pending-approval' && isOrderApproved(order);
+                    const { canPay } = getInstallmentPaymentEligibility(
+                      order,
+                      installment.installmentNumber
+                    );
                     return (
                       <div
                         key={installment.installmentNumber}

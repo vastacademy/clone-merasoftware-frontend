@@ -11,6 +11,7 @@ import DashboardLayout from '../components/DashboardLayout';
 import backgroundImage from '../assets/BG.png';
 import { goToCustomerReturn } from '../helpers/customerReturnNavigation';
 import { getOrderDisplayName } from '../helpers/orderPresentation';
+import { getInstallmentPaymentEligibility } from '../helpers/installmentPaymentEligibility';
 
 const InstallmentPayment = () => {
   const { orderId, installmentNumber } = useParams();
@@ -77,7 +78,12 @@ const InstallmentPayment = () => {
             inst => inst.installmentNumber === parseInt(installmentNumber)
           );
           
-          if (currentInstallment && !currentInstallment.paid) {
+          const eligibility = getInstallmentPaymentEligibility(
+            orderData,
+            installmentNumber
+          );
+
+          if (currentInstallment && eligibility.canPay) {
             setInstallment(currentInstallment);
             
             // Check if wallet balance is sufficient
@@ -85,8 +91,7 @@ const InstallmentPayment = () => {
               setRemainingAmount(currentInstallment.amount - context.walletBalance);
             }
           } else {
-            // Installment not found or already paid
-            toast.error('This installment is not available or has already been paid');
+            toast.error(eligibility.reason);
             returnToParent();
           }
         } else {
