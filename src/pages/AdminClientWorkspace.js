@@ -245,6 +245,16 @@ const AdminClientWorkspace = () => {
   const [cancelPreviewLoading, setCancelPreviewLoading] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
   const [cancelReferenceIds, setCancelReferenceIds] = useState({});
+  // The refund figure the admin will actually give — seeded from the system's suggestion
+  // when the preview loads, then editable.
+  const [cancelRefundAmount, setCancelRefundAmount] = useState("");
+  // How the refund divides across payment methods: source (default) / wallet_first / manual.
+  const [cancelRefundMode, setCancelRefundMode] = useState("source");
+  const [cancelManualLegs, setCancelManualLegs] = useState({});
+  const [cancelRefundReason, setCancelRefundReason] = useState("");
+  // Linked services the admin chose to cancel with the project, and each one's reference ids.
+  const [cancelServiceIds, setCancelServiceIds] = useState([]);
+  const [cancelServiceRefs, setCancelServiceRefs] = useState({});
   const [cancelError, setCancelError] = useState("");
   const [cancellingOrderId, setCancellingOrderId] = useState(null);
   const [showCreateProjectForm, setShowCreateProjectForm] = useState(false);
@@ -569,6 +579,12 @@ const AdminClientWorkspace = () => {
     setCancelPreviewLoading(false);
     setCancelReason("");
     setCancelReferenceIds({});
+    setCancelRefundAmount("");
+    setCancelRefundMode("source");
+    setCancelManualLegs({});
+    setCancelRefundReason("");
+    setCancelServiceIds([]);
+    setCancelServiceRefs({});
     setCancelError("");
   };
 
@@ -579,8 +595,16 @@ const AdminClientWorkspace = () => {
 
     setCancelTarget(item);
     setCancelPreview(null);
+    // Clear every per-cancellation choice, not just the first ones added — opening this for a
+    // second project must never inherit the previous one's selected services or split mode.
     setCancelReason("");
     setCancelReferenceIds({});
+    setCancelRefundAmount("");
+    setCancelRefundMode("source");
+    setCancelManualLegs({});
+    setCancelRefundReason("");
+    setCancelServiceIds([]);
+    setCancelServiceRefs({});
     setCancelError("");
     setCancelPreviewLoading(true);
 
@@ -594,6 +618,7 @@ const AdminClientWorkspace = () => {
         throw new Error(result.message || "Failed to load cancellation details");
       }
       setCancelPreview(result.data);
+      setCancelRefundAmount(String(result.data?.suggestion?.suggested ?? result.data?.refundable ?? ""));
     } catch (error) {
       console.error("Error loading cancellation preview:", error);
       setCancelError(error.message || "Failed to load cancellation details");
@@ -614,7 +639,19 @@ const AdminClientWorkspace = () => {
         method: SummaryApi.cancelProjectOrder.method,
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reason: cancelReason, referenceIds: cancelReferenceIds }),
+        body: JSON.stringify({
+          reason: cancelReason,
+          referenceIds: cancelReferenceIds,
+          refundAmount: cancelRefundAmount === "" ? null : Number(cancelRefundAmount),
+          refundMode: cancelRefundMode,
+          manualLegs: cancelRefundMode === "manual" ? cancelManualLegs : null,
+          refundReason: cancelRefundReason,
+          serviceIds: cancelServiceIds,
+          serviceRefundOptions: cancelServiceIds.reduce((acc, id) => {
+            acc[id] = { referenceIds: cancelServiceRefs[id] || {} };
+            return acc;
+          }, {}),
+        }),
       });
 
       const result = await response.json();
@@ -639,7 +676,89 @@ const AdminClientWorkspace = () => {
 
   // Every non-wallet leg needs the admin's own reference id before the confirm button unlocks —
   // that money is sent by hand outside this system, and the customer is told the reference.
-  const cancelExternalLegs = (cancelPreview?.legs || []).filter((leg) => leg.method !== "wallet");
+  // A refund may be zero (nothing owed back) but never negative, and never more than was
+  // actually received — the server enforces the same rule.
+  const cancelRefundValue = cancelRefundAmount === "" ? NaN : Number(cancelRefundAmount);
+  const cancelAmountValid =
+    Number.isFinite(cancelRefundValue) &&
+    cancelRefundValue >= 0 &&
+    cancelRefundValue <= Number(cancelPreview?.refundable || 0);
+  // Mirrors helpers/orderRefundService.js's buildPayoutLegs so the modal shows exactly what the
+  // server will pay out per method. The server re-derives and re-validates all of this — this
+  // copy exists only so the admin sees the result before committing.
+  const cancelSplitFor = (mode) => {
+    const legs = cancelPreview?.legs || [];
+    const total = Number(cancelPreview?.refundable || 0);
+    if (!legs.length || !(total > 0) || !cancelAmountValid) return [];
+
+    if (mode === "manual") {
+      return legs.map((leg) => ({
+        method: leg.method,
+        amount: Math.round(Number(cancelManualLegs[leg.method] || 0)),
+        original: leg.amount,
+      }));
+    }
+
+    if (mode === "wallet_first") {
+      let left = cancelRefundValue;
+      const walletCap = Number(legs.find((leg) => leg.method === "wallet")?.amount || 0);
+      const walletShare = Math.min(walletCap, left);
+      left -= walletShare;
+      const out = [{ method: "wallet", amount: walletShare, original: walletCap }];
+      legs.forEach((leg) => {
+        if (leg.method === "wallet") return;
+        const share = Math.min(Number(leg.amount || 0), left);
+        left -= share;
+        out.push({ method: leg.method, amount: share, original: leg.amount });
+      });
+      return out;
+    }
+
+    let allocated = 0;
+    return legs.map((leg, index) => {
+      const share =
+        index === legs.length - 1
+          ? cancelRefundValue - allocated
+          : Math.round((cancelRefundValue * leg.amount) / total);
+      allocated += share;
+      return { method: leg.method, amount: share, original: leg.amount };
+    });
+  };
+
+  const cancelPayoutLegs = cancelSplitFor(cancelRefundMode).filter((leg) => leg.amount > 0);
+
+  // The same three rules the server enforces, checked here so the button locks instead of the
+  // request failing: no leg over its original, parts add up, and a wallet top-up needs a reason.
+  const cancelSplitTotal = cancelSplitFor(cancelRefundMode).reduce((sum, leg) => sum + leg.amount, 0);
+  const cancelSplitOverLeg = cancelSplitFor(cancelRefundMode).some(
+    (leg) => leg.amount > Number(leg.original || 0) || leg.amount < 0
+  );
+  const cancelSplitValid =
+    !cancelAmountValid || (!cancelSplitOverLeg && cancelSplitTotal === cancelRefundValue);
+
+  const cancelSourceWallet = Number(
+    cancelSplitFor("source").find((leg) => leg.method === "wallet")?.amount || 0
+  );
+  const cancelChosenWallet = Number(
+    cancelSplitFor(cancelRefundMode).find((leg) => leg.method === "wallet")?.amount || 0
+  );
+  // Putting more into the wallet than the source split would turns the customer's bank money
+  // into credit they cannot withdraw — allowed, but only on the record.
+  const cancelNeedsRefundReason = cancelChosenWallet > cancelSourceWallet;
+  const cancelReasonSatisfied = !cancelNeedsRefundReason || Boolean(cancelRefundReason.trim());
+
+  // A chosen service refunds on its own suggested figure, so any non-wallet method it was paid
+  // by needs its own reference id before the cancel can run.
+  const cancelServicesNeedingRefs = (cancelPreview?.services || []).filter(
+    (svc) => cancelServiceIds.includes(svc.orderId) && Number(svc.suggestion?.suggested || 0) > 0
+  );
+  const allCancelServiceRefsFilled = cancelServicesNeedingRefs.every((svc) =>
+    (svc.legs || [])
+      .filter((leg) => leg.method !== "wallet")
+      .every((leg) => String(cancelServiceRefs[svc.orderId]?.[leg.method] || "").trim())
+  );
+  // Only legs actually being paid out need a reference id.
+  const cancelExternalLegs = cancelPayoutLegs.filter((leg) => leg.method !== "wallet");
   const allCancelReferencesFilled = cancelExternalLegs.every((leg) =>
     String(cancelReferenceIds[leg.method] || "").trim()
   );
@@ -1406,15 +1525,87 @@ const AdminClientWorkspace = () => {
               {cancelPreview && !cancelPreviewLoading ? (
                 <div className="mt-6 space-y-5">
                   {cancelPreview.refundable > 0 ? (
+                    <>
                     <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                       <p className="text-sm font-bold uppercase tracking-wide text-slate-500">
-                        Refund to source
+                        Refund amount
                       </p>
-                      <p className="mt-1 text-sm text-slate-500">
-                        Money goes back the way it came in.
+                      {/* The working, not just the number — an unexplained figure gets
+                          overridden every time, which defeats the point of calculating it. */}
+                      <p className="mt-1 text-sm text-slate-600">
+                        {cancelPreview.suggestion?.explanation}
+                      </p>
+                      <div className="mt-3 flex flex-wrap items-center gap-3">
+                        <div className="flex items-center gap-2">
+                          <span className="text-base font-bold text-slate-500">₹</span>
+                          <input
+                            type="number"
+                            min="0"
+                            max={cancelPreview.refundable}
+                            value={cancelRefundAmount}
+                            onChange={(event) => setCancelRefundAmount(event.target.value)}
+                            className="w-40 rounded-xl border border-slate-200 px-3 py-2 text-base font-bold text-slate-900 outline-none focus:border-emerald-500"
+                          />
+                        </div>
+                        <span className="text-sm text-slate-500">
+                          of {displayINRCurrency(cancelPreview.refundable)} received
+                        </span>
+                        {Number(cancelRefundAmount) !== Number(cancelPreview.suggestion?.suggested ?? -1) ? (
+                          <button
+                            type="button"
+                            onClick={() => setCancelRefundAmount(String(cancelPreview.suggestion?.suggested ?? 0))}
+                            className="rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-white"
+                          >
+                            Use suggested {displayINRCurrency(cancelPreview.suggestion?.suggested || 0)}
+                          </button>
+                        ) : null}
+                      </div>
+                      {!cancelAmountValid ? (
+                        <p className="mt-2 text-sm font-semibold text-rose-600">
+                          Enter an amount between ₹0 and {displayINRCurrency(cancelPreview.refundable)}.
+                        </p>
+                      ) : null}
+                      {cancelPreview.suggestion?.adminDecides ? (
+                        <p className="mt-2 text-sm text-amber-700">
+                          Work has already started — set this to what was actually spent.
+                        </p>
+                      ) : null}
+                    </div>
+
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                      <p className="text-sm font-bold uppercase tracking-wide text-slate-500">
+                        How it goes back
+                      </p>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {[
+                          { key: "source", label: "To source", hint: "Same proportion it was paid" },
+                          { key: "wallet_first", label: "Wallet first", hint: "Fill the wallet, then the rest" },
+                          { key: "manual", label: "Manual", hint: "Set each method yourself" },
+                        ].map((option) => (
+                          <button
+                            key={option.key}
+                            type="button"
+                            onClick={() => setCancelRefundMode(option.key)}
+                            title={option.hint}
+                            className={`rounded-xl border px-3 py-2 text-sm font-semibold transition ${
+                              cancelRefundMode === option.key
+                                ? "border-emerald-400 bg-emerald-50 text-emerald-700"
+                                : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                            }`}
+                          >
+                            {option.label}
+                          </button>
+                        ))}
+                      </div>
+                      <p className="mt-2 text-sm text-slate-500">
+                        {cancelRefundMode === "source"
+                          ? "Money goes back the way it came in, in the same proportion it was paid."
+                          : cancelRefundMode === "wallet_first"
+                            ? "The wallet is filled first, up to what it originally paid."
+                            : "Set each method's share yourself. No method can get back more than it paid."}
                       </p>
                       <div className="mt-4 space-y-3">
-                        {cancelPreview.legs.map((leg) => (
+                        {cancelPayoutLegs.map((leg) => (
                           <div key={leg.method} className="border-t border-slate-200 pt-3 first:border-t-0 first:pt-0">
                             <div className="flex items-center justify-between">
                               <span className="text-base font-semibold capitalize text-slate-900">
@@ -1449,19 +1640,155 @@ const AdminClientWorkspace = () => {
                             )}
                           </div>
                         ))}
+                        {cancelRefundMode === "manual" ? (
+                          <div className="space-y-2 border-t border-slate-200 pt-3">
+                            {(cancelPreview.legs || []).map((leg) => (
+                              <div key={`manual-${leg.method}`} className="flex items-center justify-between gap-3">
+                                <span className="text-sm font-semibold capitalize text-slate-700">
+                                  {leg.method.replace("_", " ")}
+                                  <span className="ml-2 font-normal text-slate-400">
+                                    max {displayINRCurrency(leg.amount)}
+                                  </span>
+                                </span>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max={leg.amount}
+                                  value={cancelManualLegs[leg.method] ?? ""}
+                                  onChange={(event) =>
+                                    setCancelManualLegs((prev) => ({
+                                      ...prev,
+                                      [leg.method]: event.target.value,
+                                    }))
+                                  }
+                                  className="w-32 rounded-xl border border-slate-200 px-3 py-2 text-base text-slate-900 outline-none focus:border-emerald-500"
+                                />
+                              </div>
+                            ))}
+                            {!cancelSplitValid ? (
+                              <p className="text-sm font-semibold text-rose-600">
+                                The parts must add up to {displayINRCurrency(cancelRefundValue || 0)}, and no
+                                method can get back more than it paid.
+                              </p>
+                            ) : null}
+                          </div>
+                        ) : null}
+
+                        {cancelNeedsRefundReason ? (
+                          <div className="border-t border-slate-200 pt-3">
+                            <label className="text-sm font-bold text-amber-800">
+                              Why is more going to the wallet?
+                            </label>
+                            <p className="mt-1 text-sm text-amber-700">
+                              This turns the customer's bank money into wallet credit they cannot
+                              withdraw — record that they asked for it.
+                            </p>
+                            <input
+                              type="text"
+                              value={cancelRefundReason}
+                              onChange={(event) => setCancelRefundReason(event.target.value)}
+                              placeholder="e.g. Customer asked to keep it in the wallet"
+                              className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-base text-slate-900 outline-none focus:border-emerald-500"
+                            />
+                          </div>
+                        ) : null}
+
                         <div className="flex items-center justify-between border-t border-slate-300 pt-3">
                           <span className="text-base font-bold text-slate-900">Total refund</span>
                           <span className="text-base font-bold text-slate-900">
-                            {displayINRCurrency(cancelPreview.refundable)}
+                            {displayINRCurrency(cancelAmountValid ? cancelRefundValue : 0)}
                           </span>
                         </div>
                       </div>
                     </div>
+                    </>
                   ) : (
                     <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
                       No payment was received for this project, so there is nothing to refund.
                     </div>
                   )}
+
+                  {(cancelPreview.services || []).length > 0 ? (
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                      <p className="text-sm font-bold uppercase tracking-wide text-slate-500">
+                        Services on this project
+                      </p>
+                      <p className="mt-1 text-sm text-slate-500">
+                        A service left running will keep billing the customer for a project that no
+                        longer exists. Choose which to cancel and refund too.
+                      </p>
+                      <div className="mt-3 space-y-3">
+                        {cancelPreview.services.map((svc) => {
+                          const chosen = cancelServiceIds.includes(svc.orderId);
+                          const externalLegs = (svc.legs || []).filter((leg) => leg.method !== "wallet");
+                          return (
+                            <div key={svc.orderId} className="border-t border-slate-200 pt-3 first:border-t-0 first:pt-0">
+                              <label className="flex items-start gap-3">
+                                <input
+                                  type="checkbox"
+                                  checked={chosen}
+                                  onChange={(event) =>
+                                    setCancelServiceIds((prev) =>
+                                      event.target.checked
+                                        ? [...prev, svc.orderId]
+                                        : prev.filter((id) => id !== svc.orderId)
+                                    )
+                                  }
+                                  className="mt-1 h-4 w-4 rounded border-slate-300 text-emerald-600"
+                                />
+                                <span className="min-w-0 flex-1">
+                                  <span className="block text-base font-semibold text-slate-900">{svc.name}</span>
+                                  <span className="mt-0.5 block text-sm text-slate-500">
+                                    {svc.suggestion?.explanation}
+                                  </span>
+                                  {Number(svc.suggestion?.suggested || 0) > 0 ? (
+                                    <span className="mt-0.5 block text-sm font-semibold text-emerald-700">
+                                      Refund {displayINRCurrency(svc.suggestion.suggested)}
+                                    </span>
+                                  ) : (
+                                    <span className="mt-0.5 block text-sm text-slate-500">Nothing to refund</span>
+                                  )}
+                                </span>
+                              </label>
+
+                              {chosen && Number(svc.suggestion?.suggested || 0) > 0 && externalLegs.length > 0 ? (
+                                <div className="mt-2 space-y-2 pl-7">
+                                  {externalLegs.map((leg) => (
+                                    <div key={`${svc.orderId}-${leg.method}`}>
+                                      <p className="text-sm text-slate-500">
+                                        Send the <span className="capitalize">{leg.method.replace("_", " ")}</span>{" "}
+                                        share yourself, then enter the reference id.
+                                      </p>
+                                      <input
+                                        type="text"
+                                        value={cancelServiceRefs[svc.orderId]?.[leg.method] || ""}
+                                        onChange={(event) =>
+                                          setCancelServiceRefs((prev) => ({
+                                            ...prev,
+                                            [svc.orderId]: {
+                                              ...(prev[svc.orderId] || {}),
+                                              [leg.method]: event.target.value,
+                                            },
+                                          }))
+                                        }
+                                        placeholder="Reference / UTR id"
+                                        className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-base text-slate-900 outline-none focus:border-emerald-500"
+                                      />
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : null}
+                            </div>
+                          );
+                        })}
+                      </div>
+                      {cancelServiceIds.length === 0 ? (
+                        <p className="mt-3 text-sm text-amber-700">
+                          None selected — these services will keep running and billing.
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : null}
 
                   <div>
                     <label className="text-sm font-bold text-slate-700">Reason (optional)</label>
@@ -1502,7 +1829,11 @@ const AdminClientWorkspace = () => {
                     Boolean(cancellingOrderId) ||
                     cancelPreviewLoading ||
                     !cancelPreview ||
-                    !allCancelReferencesFilled
+                    !allCancelReferencesFilled ||
+                    !cancelAmountValid ||
+                    !cancelSplitValid ||
+                    !cancelReasonSatisfied ||
+                    !allCancelServiceRefsFilled
                   }
                   className="inline-flex items-center gap-2 rounded-2xl bg-amber-600 px-5 py-2.5 text-base font-bold text-white transition hover:bg-amber-700 disabled:opacity-50"
                 >
@@ -1544,6 +1875,34 @@ const AdminClientWorkspace = () => {
               </div>
 
               <div className="mt-6 space-y-4">
+                {(deleteScan?.linkedServices || []).length > 0 ? (
+                  <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                    <p className="text-sm font-bold text-amber-800">
+                      Delete these services first
+                    </p>
+                    <p className="mt-1 text-sm text-amber-700">
+                      {deleteScan.linkedServices.length} service
+                      {deleteScan.linkedServices.length === 1 ? " is" : "s are"} attached to this
+                      project. They are separate orders and are not deleted with it — clear them
+                      first, or they will be left pointing at a project that no longer exists.
+                    </p>
+                    <ul className="mt-3 space-y-1.5">
+                      {deleteScan.linkedServices.map((service) => (
+                        <li key={service.orderId} className="flex items-center justify-between gap-3">
+                          <span className="min-w-0 truncate text-sm font-semibold text-amber-900">
+                            {service.name}
+                          </span>
+                          <span className="shrink-0 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold capitalize text-amber-800">
+                            {service.orderVisibility === "cancelled"
+                              ? "Cancelled"
+                              : (service.servicePlanStatus || "active").replace("_", " ")}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+
                 {deleteNeedsCancelFirst ? (
                   <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
                     <p className="text-sm font-bold text-amber-800">Cancel this project first</p>
