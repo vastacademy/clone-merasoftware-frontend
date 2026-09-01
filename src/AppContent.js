@@ -8,8 +8,7 @@ import Context from './context';
 import CookieManager from './utils/cookieManager';
 import StorageService from './utils/storageService';
 import ScrollToTop from './helpers/scrollTop';
-import { isOrderApproved } from './helpers/orderVisibility';
-import { getOrderCategory } from './helpers/orderPresentation';
+import { getOrderCategory, isActiveWorkItem } from './helpers/orderPresentation';
 import { clearOrderSummary, getOrderSummary } from './utils/orderSummaryClient';
 // import QRModal from './components/QRModal';
 // import socket from './components/socket';
@@ -220,10 +219,10 @@ useEffect(() => {
           if (!category) return false;
           
           if (['standard_websites', 'dynamic_websites', 'cloud_software_development', 'app_development'].includes(category)) {
-            if (!isOrderApproved(project) || project.orderVisibility === 'payment-rejected') {
-              return false;
-            }
-            return project.projectProgress < 100 || project.currentPhase !== 'completed';
+            // Shared with every other "what is the customer working on" list
+            // (helpers/orderPresentation.js). Written inline here before, which is how it came to
+            // exclude only rejected — a cancelled project still counted as the active one.
+            return isActiveWorkItem(project);
           }
           return false;
         });

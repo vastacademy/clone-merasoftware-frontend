@@ -13,9 +13,8 @@ import backgroundImage from '../assets/BG.png';
 import CustomerWorkspaceTabs from '../components/CustomerWorkspaceTabs';
 import OrderListRow, { OrderListHeader } from '../components/OrderListRow';
 import Context from '../context';
-import { isOrderApproved } from '../helpers/orderVisibility';
 import { isProjectItem, isPlanItem, sortItemsLatestFirst } from '../helpers/orderType';
-import { getRemainingDays } from '../helpers/orderPresentation';
+import { getRemainingDays, isActiveWorkItem } from '../helpers/orderPresentation';
 import { customerChildState } from '../helpers/customerReturnNavigation';
 
 const ProjectsAndPlans = () => {
@@ -59,16 +58,7 @@ const ProjectsAndPlans = () => {
   );
 
   const activeProjects = useMemo(
-    () =>
-      items.filter(
-        (order) =>
-          isProjectItem(order) &&
-          isOrderApproved(order) &&
-          order.orderVisibility !== 'payment-rejected' &&
-          order.orderVisibility !== 'pending-approval' &&
-          order.projectProgress < 100 &&
-          order.currentPhase !== 'completed'
-      ),
+    () => items.filter((order) => isProjectItem(order) && isActiveWorkItem(order)),
     [items]
   );
 
@@ -77,11 +67,8 @@ const ProjectsAndPlans = () => {
       items.filter(
         (order) =>
           isPlanItem(order) &&
-          isOrderApproved(order) &&
-          order.orderVisibility !== 'payment-rejected' &&
-          order.orderVisibility !== 'pending-approval' &&
-          order.planStatus !== 'closed' &&
-          order.isActive &&
+          isActiveWorkItem(order) &&
+          // Validity left is a quantity, not a state — the engine does not decide it.
           getRemainingDays(order) > 0
       ),
     [items]

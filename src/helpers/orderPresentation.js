@@ -56,49 +56,98 @@ export const getRemainingDays = (order) => {
   return Math.max(0, Math.ceil((endDate - new Date()) / (1000 * 60 * 60 * 24)));
 };
 
-// Status badge label + Tailwind tone for a project/plan order.
+// The engine's derived state code (backend/helpers/orderStatusEngine.js), attached to every
+// order by applyOrderSummary and getOrderDetails.
+export const getOrderStateCode = (order) => order?.orderState?.code;
+
+// The states that mean "the customer still has live work here". Shared rather than written
+// inline at each list, because that is precisely how three separate "active items" filters
+// (CustomerDashboard, ProjectsAndPlans, OrderPage) all came to omit 'cancelled' — each excluded
+// rejected and pending, and none of them was updated when cancellation was added to the system.
+const ACTIVE_STATE_CODES = ['in_progress', 'approved_not_started', 'payment_due', 'plan_active'];
+
+// Is this order live work? Plans additionally need validity left, which callers add themselves
+// via getRemainingDays — that is a quantity, not a state, so it does not belong in the engine.
+export const isActiveWorkItem = (order) => {
+  const code = getOrderStateCode(order);
+  if (code) return ACTIVE_STATE_CODES.includes(code);
+
+  // ── fallback: payloads that predate the engine ──
+  if (order?.orderVisibility === 'cancelled') return false;
+  if (order?.orderVisibility === 'payment-rejected') return false;
+  if (order?.orderVisibility === 'pending-approval') return false;
+  if (!isOrderApproved(order)) return false;
+  if (isProjectItem(order)) {
+    return order.projectProgress < 100 && order.currentPhase !== 'completed';
+  }
+  if (isPlanItem(order)) {
+    return order.planStatus !== 'closed' && Boolean(order.isActive);
+  }
+  return false;
+};
+
+// Maps the engine's semantic tone key onto this surface's Tailwind classes. The engine returns
+// a meaning ("this is a warning"), not a colour, so each surface keeps its own palette while the
+// decision about WHICH meaning applies is made in one place.
+const TONE_CLASS = {
+  neutral: 'bg-slate-200 text-slate-700',
+  positive: 'bg-emerald-100 text-emerald-700',
+  active: 'bg-blue-100 text-blue-700',
+  warning: 'bg-amber-100 text-amber-800',
+  danger: 'bg-rose-100 text-rose-700',
+};
+
+// Status badge label + Tailwind tone for a project/plan/service order.
+//
+// The rules used to live here, duplicated (with drift) across five surfaces. They now live in
+// backend/helpers/orderStatusEngine.js and arrive on the order as `orderState`, so this function
+// only chooses how to paint the answer — it no longer decides what the answer is.
+//
+// Why the fallback below still exists: `orderState` is attached by applyOrderSummary() and
+// getOrderDetails.js, which covers every list and detail feed. Anything that renders an order
+// from a different payload (an older cached response, a nested `orderId` populate that only
+// selects a few columns) would otherwise render "Unknown". The fallback keeps the previous
+// behaviour for those cases rather than degrading them, and is deliberately minimal — the
+// engine is the source of truth wherever it is present.
 export const getItemStatusMeta = (order) => {
   if (!order) {
     return { label: 'Unknown', tone: 'bg-slate-100 text-slate-700' };
   }
 
-  // Terminal state — the admin cancelled the project and settled/refunded its money.
-  // Checked first: a cancelled project is cancelled regardless of its progress or invoices.
+  if (order.orderState?.label) {
+    return {
+      label: order.orderState.label,
+      tone: TONE_CLASS[order.orderState.tone] || 'bg-slate-100 text-slate-700',
+      code: order.orderState.code,
+      phase: order.orderState.phase,
+      phaseLabel: order.orderState.phaseLabel,
+    };
+  }
+
+  // ── fallback: payloads that predate the engine ──
   if (order.orderVisibility === 'cancelled') {
-    return { label: 'Cancelled', tone: 'bg-slate-200 text-slate-700' };
+    return { label: 'Cancelled', tone: TONE_CLASS.neutral };
   }
-
-  // Admin rejected the payment (nothing paid) — client must retry.
   if (order.orderVisibility === 'payment-rejected') {
-    return { label: 'Payment Rejected', tone: 'bg-rose-100 text-rose-700' };
+    return { label: 'Payment Rejected', tone: TONE_CLASS.danger };
   }
-
-  // Client paid/submitted; admin is verifying. Green so the client sees work is moving.
   if (order.orderVisibility === 'pending-approval') {
-    return { label: 'Approval Pending', tone: 'bg-emerald-100 text-emerald-700' };
+    return { label: 'Approval Pending', tone: TONE_CLASS.warning };
   }
 
   if (isProjectItem(order)) {
     if (order.projectProgress >= 100 || order.currentPhase === 'completed') {
-      return { label: 'Completed', tone: 'bg-emerald-100 text-emerald-700' };
+      return { label: 'Completed', tone: TONE_CLASS.positive };
     }
-
-    // Admin-created project whose invoice is still unpaid — client action needed.
-    // Amber (not green) to signal "you must pay", distinct from Approval Pending.
     if (order.hasUnpaidInvoice) {
-      return { label: 'Payment Pending', tone: 'bg-amber-100 text-amber-800' };
+      return { label: 'Payment Pending', tone: TONE_CLASS.warning };
     }
-
     if (isOrderApproved(order)) {
       const progress = Math.round(order.projectProgress || 0);
-      // progress 0 = payment approved but work not yet started. Show the last
-      // stage that actually passed (payment approval) instead of a negative
-      // "Not Started". Blue (same as In Progress), not green — work is starting,
-      // not finished, so the user doesn't read it as "done".
       if (progress === 0) {
-        return { label: 'Payment Approved', tone: 'bg-blue-100 text-blue-700' };
+        return { label: 'Payment Approved', tone: TONE_CLASS.active };
       }
-      return { label: `In Progress · ${progress}%`, tone: 'bg-blue-100 text-blue-700' };
+      return { label: `In Progress · ${progress}%`, tone: TONE_CLASS.active };
     }
   }
 
@@ -111,9 +160,8 @@ export const getItemStatusMeta = (order) => {
         : (order.updatesUsed || 0) >= (order.productId?.updateCount || 0));
 
     if (isClosed) {
-      return { label: 'Closed', tone: 'bg-slate-200 text-slate-700' };
+      return { label: 'Closed', tone: TONE_CLASS.neutral };
     }
-
     if (isOrderApproved(order) && getRemainingDays(order) > 0) {
       return { label: 'Active plan', tone: 'bg-violet-100 text-violet-700' };
     }
@@ -140,10 +188,18 @@ export const getItemSummary = (order) => {
   }
 
   if (isProjectItem(order)) {
-    // Cancelled first — a project cancelled at 100% progress must not still read as complete.
+    // Derived from the same engine state the badge uses, so the summary can never contradict it.
+    // Only a project genuinely underway has a meaningful progress figure: a cancelled, rejected,
+    // pending or payment-due order shows nothing rather than a number the badge disagrees with.
+    if (order.orderState?.code) {
+      if (order.orderState.code === 'completed') return '100% complete';
+      if (order.orderState.code !== 'in_progress') return '';
+      return `${order.orderState.progress}% complete`;
+    }
+
+    // ── fallback: payloads that predate the engine (see getItemStatusMeta) ──
     if (order.orderVisibility === 'cancelled') return '';
 
-    // A project reads as complete via either signal, matching getItemStatusMeta.
     if (order.projectProgress >= 100 || order.currentPhase === 'completed') {
       return '100% complete';
     }

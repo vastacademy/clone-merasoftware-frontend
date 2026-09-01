@@ -91,20 +91,34 @@ const getWorkspaceItemName = (item) =>
 const getProjectCategory = (order) =>
   order?.projectSnapshot?.category || order?.productId?.category;
 
-const isCompletedOrder = (order) =>
-  (order?.projectProgress || 0) >= 100 ||
-  order?.currentPhase === "completed" ||
-  order?.status === "completed";
+// Bucketing for the count tiles and the row sort order. These group by the engine's stable
+// `code`, never by the displayed wording, so a label change cannot silently empty a bucket.
+//
+// The previous versions read order.status directly, including the values "rejected" /
+// "cancelled" / "canceled" that are not in the status enum and therefore never matched — which
+// is why a cancelled project counted as active and sorted with live work.
+const stateCode = (order) => order?.orderState?.code;
 
-const isRejectedOrder = (order) =>
-  order?.orderVisibility === "payment-rejected" ||
-  order?.status === "rejected" ||
-  order?.status === "cancelled" ||
-  order?.status === "canceled";
+const isCompletedOrder = (order) => {
+  const code = stateCode(order);
+  if (code) return code === "completed" || code === "plan_closed";
+  // ── fallback: payloads that predate the engine ──
+  return (order?.projectProgress || 0) >= 100 || order?.currentPhase === "completed";
+};
 
-const isPendingOrder = (order) =>
-  order?.orderVisibility === "pending-approval" ||
-  order?.status === "pending";
+const isRejectedOrder = (order) => {
+  const code = stateCode(order);
+  if (code) return code === "rejected" || code === "cancelled";
+  // ── fallback ──
+  return order?.orderVisibility === "payment-rejected" || order?.orderVisibility === "cancelled";
+};
+
+const isPendingOrder = (order) => {
+  const code = stateCode(order);
+  if (code) return code === "pending_approval" || code === "processing";
+  // ── fallback ──
+  return order?.orderVisibility === "pending-approval";
+};
 
 const isActiveOrder = (order) =>
   !isPendingOrder(order) && !isRejectedOrder(order) && !isCompletedOrder(order);
@@ -131,15 +145,34 @@ const sortWorkspaceItem = (a, b, getRank) => {
   return (safeDateTime(b?.updatedAt || b?.createdAt)?.getTime() || 0) - (safeDateTime(a?.updatedAt || a?.createdAt)?.getTime() || 0);
 };
 
+// Display label for a project row. Derived by backend/helpers/orderStatusEngine.js and delivered
+// on the order as `orderState`, so the admin and the customer can no longer be shown different
+// answers for the same order.
+//
+// What this replaces, and why it was wrong: the previous version tested
+// order.status === "rejected" / "cancelled" / "canceled". None of those values is in
+// orderProductModel's status enum (['pending','in_progress','completed']), so that branch could
+// never match. cancelProjectOrder.js writes orderVisibility only and leaves status at
+// 'in_progress' — so a cancelled project fell through every branch and displayed "In Progress"
+// to the admin while the customer correctly saw "Cancelled". That is the reported bug.
 const getProjectDisplayStatus = (order) => {
-  if (order?.orderVisibility === "pending-approval" || order?.status === "pending") return "Processing";
-  if (order?.orderVisibility === "payment-rejected" || ["rejected", "cancelled", "canceled"].includes(order?.status)) {
-    return "Rejected";
-  }
-  if ((order?.projectProgress || 0) >= 100 || order?.currentPhase === "completed" || order?.status === "completed") {
-    return "Completed";
-  }
+  if (order?.orderState?.label) return order.orderState.label;
+
+  // ── fallback: payloads that predate the engine ──
+  if (order?.orderVisibility === "cancelled") return "Cancelled";
+  if (order?.orderVisibility === "pending-approval") return "Processing";
+  if (order?.orderVisibility === "payment-rejected") return "Rejected";
+  if ((order?.projectProgress || 0) >= 100 || order?.currentPhase === "completed") return "Completed";
   return "In Progress";
+};
+
+// The build phase for a project row. Derived, not read from order.currentPhase: the stored column
+// only ever moves to 'completed' (at 100%) or back to 'development' when a finished project drops
+// below 100 — ordinary forward progress never advances it, so every running project displayed
+// "planning" no matter how far along it was.
+const getProjectPhaseLabel = (order) => {
+  if (order?.orderState?.phaseLabel) return order.orderState.phaseLabel;
+  return getPhaseLabel(order?.currentPhase);
 };
 
 const getPlanTypeLabel = (plan) => {
@@ -149,14 +182,20 @@ const getPlanTypeLabel = (plan) => {
   return "Website Update Plan";
 };
 
+// Display label for a plan/service row — same engine, same reason as getProjectDisplayStatus.
+//
+// The previous version also tested plan.status against values absent from the status enum, and
+// never read servicePlanStatus at all — so a paused service read "Active" and an active service
+// whose isActive flag was stale read "Inactive".
 const getPlanDisplayStatus = (plan) => {
+  if (plan?.orderState?.label) return plan.orderState.label;
+
+  // ── fallback: payloads that predate the engine ──
   const expiryDate = safeDateTime(plan?.currentMonthExpiryDate);
   const expired = plan?.autoRenewalStatus === "expired" || Boolean(expiryDate && expiryDate.getTime() < Date.now());
 
-  if (plan?.isActive === false || ["cancelled", "canceled", "rejected", "hidden"].includes(plan?.status)) {
-    return "Inactive";
-  }
-
+  if (plan?.orderVisibility === "cancelled") return "Cancelled";
+  if (plan?.isActive === false) return "Inactive";
   if (expired) return "Expired";
   return "Active";
 };
@@ -1344,7 +1383,7 @@ const AdminClientWorkspace = () => {
                 }
                 renderMeta={(order) => [
                   `Category: ${getCategoryLabel(getProjectCategory(order))}`,
-                  `Phase: ${getPhaseLabel(order.currentPhase)}`,
+                  `Phase: ${getProjectPhaseLabel(order)}`,
                   `Progress: ${order.projectProgress || 0}%`,
                 ]}
                 renderRight={(order) => (
@@ -1893,9 +1932,14 @@ const AdminClientWorkspace = () => {
                             {service.name}
                           </span>
                           <span className="shrink-0 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold capitalize text-amber-800">
-                            {service.orderVisibility === "cancelled"
-                              ? "Cancelled"
-                              : (service.servicePlanStatus || "active").replace("_", " ")}
+                            {/* Same derivation as every other service badge in the app
+                                (backend/helpers/orderStatusEngine.js). The inline version below
+                                is the fallback for a linked-service payload that carries only the
+                                few columns getOrderDetails selects for it. */}
+                            {service.orderState?.label
+                              || (service.orderVisibility === "cancelled"
+                                ? "Cancelled"
+                                : (service.servicePlanStatus || "active").replace("_", " "))}
                           </span>
                         </li>
                       ))}
@@ -4924,7 +4968,7 @@ const WorkspaceDetailSubpage = ({
               <p className="text-sm font-medium text-slate-500">{detailLabel} Info</p>
               <div className="mt-4 space-y-4 text-sm text-slate-700">
                 <InfoLine label="Category" value={getCategoryLabel(getProjectCategory(item))} />
-                <InfoLine label="Current Phase" value={getPhaseLabel(item?.currentPhase)} />
+                <InfoLine label="Current Phase" value={getProjectPhaseLabel(item)} />
                 <InfoLine label="Created" value={formatDateTime(item?.createdAt)} />
                 <InfoLine label="Updated" value={formatDateTime(item?.updatedAt || item?.createdAt)} />
               </div>

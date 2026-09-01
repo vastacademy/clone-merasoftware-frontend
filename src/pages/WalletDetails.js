@@ -21,8 +21,7 @@ import displayINRCurrency from '../helpers/displayCurrency';
 import TriangleMazeLoader from '../components/TriangleMazeLoader';
 import DashboardLayout from '../components/DashboardLayout';
 import backgroundImage from '../assets/BG.png';
-import { isOrderApproved } from '../helpers/orderVisibility';
-import { getOrderCategory, getOrderDisplayName } from '../helpers/orderPresentation';
+import { getOrderCategory, getOrderDisplayName, isActiveWorkItem } from '../helpers/orderPresentation';
 
 const WalletDetails = () => {
   const [walletHistory, setWalletHistory] = useState([]);
@@ -91,7 +90,10 @@ const WalletDetails = () => {
         const activeProj = (data.data || []).find(order => {
           const category = getOrderCategory(order).toLowerCase();
           const supportedCategory = ['standard_websites', 'dynamic_websites', 'cloud_software_development', 'app_development'].includes(category);
-          return supportedCategory && isOrderApproved(order) && order.orderVisibility !== 'payment-rejected' && (order.projectProgress < 100 || order.currentPhase !== 'completed');
+          // Same "is this live work" rule every other list uses
+          // (helpers/orderPresentation.js) — written inline here before, and so it excluded only
+          // rejected: a cancelled project still surfaced as the customer's active project.
+          return supportedCategory && isActiveWorkItem(order);
         });
         setActiveProject(activeProj || null);
       }

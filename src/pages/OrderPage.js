@@ -22,26 +22,54 @@ import { isProjectItem, isPlanItem, PROJECT_CATEGORIES } from '../helpers/orderT
 import { getOrderCategory, getOrderDisplayName } from '../helpers/orderPresentation';
 import { customerChildState } from '../helpers/customerReturnNavigation';
 
+// Display label for one order. Derived by backend/helpers/orderStatusEngine.js and delivered on
+// the order as `orderState`, so this page can no longer disagree with the project list or the
+// admin workspace about what an order's state is.
+//
+// This page's own version of these rules had no 'cancelled' branch at all, so a cancelled order
+// fell through to its progress and read "Completed"; and it collapsed every approved order into
+// "In progress", so an order at 0% and one with a payment due were indistinguishable.
 const getOrderStatus = (order) => {
   if (!order) return 'Processing';
+  if (order.orderState?.label) return order.orderState.label;
 
-  if (order.orderVisibility === 'payment-rejected') {
-    return 'Rejected';
-  }
-
-  if (order.orderVisibility === 'pending-approval') {
-    return 'Pending approval';
-  }
-
-  if (order.projectProgress >= 100 || order.currentPhase === 'completed') {
-    return 'Completed';
-  }
-
-  if (isOrderApproved(order)) {
-    return 'In progress';
-  }
-
+  // ── fallback: payloads that predate the engine ──
+  if (order.orderVisibility === 'cancelled') return 'Cancelled';
+  if (order.orderVisibility === 'payment-rejected') return 'Rejected';
+  if (order.orderVisibility === 'pending-approval') return 'Pending approval';
+  if (order.projectProgress >= 100 || order.currentPhase === 'completed') return 'Completed';
+  if (isOrderApproved(order)) return 'In progress';
   return 'Processing';
+};
+
+// The filter tabs and their counts group orders by MEANING, never by the displayed wording — a
+// label change (or a plan reading "Active" where a project reads "In Progress · 40%") must not
+// silently empty a tab. `code` is the engine's stable machine value and is what they compare.
+const getOrderStatusCode = (order) => {
+  if (order?.orderState?.code) return order.orderState.code;
+
+  // ── fallback: derive a code from the same conditions the label fallback uses ──
+  if (order?.orderVisibility === 'cancelled') return 'cancelled';
+  if (order?.orderVisibility === 'payment-rejected') return 'rejected';
+  if (order?.orderVisibility === 'pending-approval') return 'pending_approval';
+  if (order?.projectProgress >= 100 || order?.currentPhase === 'completed') return 'completed';
+  if (isOrderApproved(order)) return 'in_progress';
+  return 'processing';
+};
+
+// Which tab an order belongs under. Grouped rather than one-code-per-tab so states the tabs were
+// never written for (payment due, not-yet-started, active/closed plans) land somewhere sensible
+// instead of vanishing from every tab but "All".
+const TAB_CODES = {
+  pending: ['pending_approval', 'processing'],
+  active: ['in_progress', 'approved_not_started', 'payment_due', 'plan_active'],
+  completed: ['completed', 'plan_closed'],
+  rejected: ['rejected', 'cancelled'],
+};
+
+const matchesTab = (order, tab) => {
+  if (tab === 'all') return true;
+  return (TAB_CODES[tab] || []).includes(getOrderStatusCode(order));
 };
 
 const OrderStatusBadge = ({ status }) => {
@@ -204,19 +232,21 @@ const OrdersPage = () => {
         allOrders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
         setOrders(allOrders);
 
+        // The one project still being worked on. Derived from the engine's state code so a
+        // cancelled project cannot qualify — the previous version excluded only pending and
+        // rejected, so a cancelled project was still picked up as the customer's active work.
         const activeProj = allOrders.find((order) => {
           const category = getOrderCategory(order).toLowerCase();
-          if (!category) return false;
+          if (!category || !PROJECT_CATEGORIES.has(category)) return false;
 
-          if (PROJECT_CATEGORIES.has(category)) {
-            if (order.orderVisibility === 'pending-approval' || order.orderVisibility === 'payment-rejected') {
-              return false;
-            }
+          const code = getOrderStatusCode(order);
+          if (code) return ['in_progress', 'approved_not_started', 'payment_due'].includes(code);
 
-            return order.projectProgress < 100 || order.currentPhase !== 'completed';
+          // ── fallback: payloads that predate the engine ──
+          if (['pending-approval', 'payment-rejected', 'cancelled'].includes(order.orderVisibility)) {
+            return false;
           }
-
-          return false;
+          return order.projectProgress < 100 || order.currentPhase !== 'completed';
         });
 
         setActiveProject(activeProj || null);
@@ -236,31 +266,14 @@ const OrdersPage = () => {
     });
   };
 
-  const getFilteredOrders = () => {
-    return orders.filter((order) => {
-      const status = getOrderStatus(order);
-
-      if (activeTab === 'all') return true;
-      if (activeTab === 'pending') return status === 'Pending approval' || status === 'Processing';
-      if (activeTab === 'active') return status === 'In progress';
-      if (activeTab === 'completed') return status === 'Completed';
-      if (activeTab === 'rejected') return status === 'Rejected';
-
-      return true;
-    });
-  };
-
-  const filteredOrders = getFilteredOrders();
+  const filteredOrders = orders.filter((order) => matchesTab(order, activeTab));
 
   const statusCounts = {
     all: orders.length,
-    pending: orders.filter((order) => {
-      const status = getOrderStatus(order);
-      return status === 'Pending approval' || status === 'Processing';
-    }).length,
-    active: orders.filter((order) => getOrderStatus(order) === 'In progress').length,
-    completed: orders.filter((order) => getOrderStatus(order) === 'Completed').length,
-    rejected: orders.filter((order) => getOrderStatus(order) === 'Rejected').length,
+    pending: orders.filter((order) => matchesTab(order, 'pending')).length,
+    active: orders.filter((order) => matchesTab(order, 'active')).length,
+    completed: orders.filter((order) => matchesTab(order, 'completed')).length,
+    rejected: orders.filter((order) => matchesTab(order, 'rejected')).length,
   };
 
   const filterTabs = [

@@ -18,9 +18,20 @@ const ProjectWorkspaceModal = ({ project, developers = [], onClose, onProjectUpd
   const [linkText, setLinkText] = useState('');
   const [linkUrl, setLinkUrl] = useState('');
 
-  const isCompleted = (currentProject?.projectProgress || 0) >= 100 || currentProject?.currentPhase === 'completed';
-  const isRejected = currentProject?.orderVisibility === 'payment-rejected';
-  const shouldBeReadOnly = isReadOnly || isCompleted || isRejected;
+  // Read-only once the project is closed to further work. Derived from the engine's state code
+  // where it is available (backend/helpers/orderStatusEngine.js) so this gate cannot disagree
+  // with the badge shown beside it — the raw expression stays as the pre-engine fallback.
+  //
+  // 'cancelled' was missing here: a cancelled project stayed fully editable in the admin
+  // workspace because the previous check only covered completed and rejected.
+  const stateCode = currentProject?.orderState?.code;
+  const isCompleted = stateCode
+    ? stateCode === 'completed'
+    : (currentProject?.projectProgress || 0) >= 100 || currentProject?.currentPhase === 'completed';
+  const isClosed = stateCode
+    ? ['rejected', 'cancelled'].includes(stateCode)
+    : ['payment-rejected', 'cancelled'].includes(currentProject?.orderVisibility);
+  const shouldBeReadOnly = isReadOnly || isCompleted || isClosed;
 
   const messageTextareaRef = useRef(null);
   const projectLinkRef = useRef(null);
@@ -213,7 +224,10 @@ const ProjectWorkspaceModal = ({ project, developers = [], onClose, onProjectUpd
             </h3>
             {shouldBeReadOnly && (
               <p className="mt-1 text-sm text-gray-600">
-                {isRejected ? '🔴 Payment Rejected' : '✅ Completed'}
+                {/* Says WHY it is read-only. The previous version had only two branches, so a
+                    cancelled project fell to the else and announced itself as "Completed". */}
+                {currentProject?.orderState?.label
+                  || (isClosed ? '🔴 Payment Rejected' : '✅ Completed')}
               </p>
             )}
           </div>

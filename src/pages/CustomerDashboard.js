@@ -18,9 +18,8 @@ import SummaryApi from '../common';
 import Context from '../context';
 import OrderListRow, { OrderListHeader } from '../components/OrderListRow';
 import displayINRCurrency from '../helpers/displayCurrency';
-import { isOrderApproved } from '../helpers/orderVisibility';
 import { isProjectItem, isPlanItem, sortItemsLatestFirst } from '../helpers/orderType';
-import { getRemainingDays, getOrderDisplayName } from '../helpers/orderPresentation';
+import { getRemainingDays, getOrderDisplayName, isActiveWorkItem, getOrderStateCode } from '../helpers/orderPresentation';
 import { customerReturnState } from '../helpers/customerReturnNavigation';
 
 const getItemLink = (order) =>
@@ -107,15 +106,7 @@ const CustomerDashboard = () => {
   const activeProjects = useMemo(
     () =>
       orders
-        .filter(
-          (order) =>
-            isProjectItem(order) &&
-            isOrderApproved(order) &&
-            order.orderVisibility !== 'payment-rejected' &&
-            order.orderVisibility !== 'pending-approval' &&
-            order.projectProgress < 100 &&
-            order.currentPhase !== 'completed'
-        )
+        .filter((order) => isProjectItem(order) && isActiveWorkItem(order))
         .sort(sortItemsLatestFirst),
     [orders]
   );
@@ -126,11 +117,8 @@ const CustomerDashboard = () => {
         .filter(
           (order) =>
             isPlanItem(order) &&
-            isOrderApproved(order) &&
-            order.orderVisibility !== 'payment-rejected' &&
-            order.orderVisibility !== 'pending-approval' &&
-            order.planStatus !== 'closed' &&
-            order.isActive &&
+            isActiveWorkItem(order) &&
+            // A plan also has to have validity left to be worth showing as active.
             getRemainingDays(order) > 0
         )
         .sort(sortItemsLatestFirst),
@@ -140,43 +128,25 @@ const CustomerDashboard = () => {
   const activeWorkItemsCount = activeProjects.length + activePlans.length;
 
   const activeProject = useMemo(
-    () =>
-      orders.find(
-        (order) =>
-          isProjectItem(order) &&
-          isOrderApproved(order) &&
-          order.orderVisibility !== 'payment-rejected' &&
-          order.orderVisibility !== 'pending-approval' &&
-          order.projectProgress < 100 &&
-          order.currentPhase !== 'completed'
-      ) || null,
+    () => orders.find((order) => isProjectItem(order) && isActiveWorkItem(order)) || null,
     [orders]
   );
 
   const pendingApprovalCount = useMemo(
-    () => orders.filter((order) => order.orderVisibility === 'pending-approval').length,
+    () => orders.filter((order) => getOrderStateCode(order) === 'pending_approval').length,
     [orders]
   );
 
   const rejectedCount = useMemo(
-    () => orders.filter((order) => order.orderVisibility === 'payment-rejected').length,
+    () => orders.filter((order) => getOrderStateCode(order) === 'rejected').length,
     [orders]
   );
 
   const completedCount = useMemo(
-    () =>
-      orders.filter(
-        (order) =>
-          (isProjectItem(order) && (order.projectProgress >= 100 || order.currentPhase === 'completed')) ||
-          (isPlanItem(order) &&
-            (order.planStatus === 'closed' ||
-              !order.isActive ||
-              (order.productId?.isMonthlyRenewablePlan || order.productId?.isMonthlyLimitedPlan
-                ? (order.totalYearlyDaysRemaining || 0) <= 0
-                : (order.updatesUsed || 0) >= (order.productId?.updateCount || 0))))
-      ).length,
+    () => orders.filter((order) => ['completed', 'plan_closed'].includes(getOrderStateCode(order))).length,
     [orders]
   );
+
 
   const primaryWorkItem = activeProjects[0] || activePlans[0] || activeProject || null;
   const primaryAction = (() => {

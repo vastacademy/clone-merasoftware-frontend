@@ -25,6 +25,7 @@ import Context from '../context';
 import { customerChildState, goToCustomerReturn } from '../helpers/customerReturnNavigation';
 import UploadedDataList from '../components/UploadedDataList';
 import { downloadAuthenticatedFile } from '../helpers/downloadFile';
+import OrderLifecycleTimeline from '../components/OrderLifecycleTimeline';
 
 const normalizeNodeKey = (value) => {
   if (value === null || value === undefined) {
@@ -326,7 +327,15 @@ const ProjectDetails = ({ isAdminView = false }) => {
       };
   const checkPaymentStatus = useCallback(async (order) => {
     // If project is already completed, don't show payment alert
-    if (order.projectProgress >= 100 || order.currentPhase === 'completed') {
+    // A finished or closed project has no payment left to chase. Derived from the engine's
+    // state code where present (backend/helpers/orderStatusEngine.js); the raw expression is
+    // the pre-engine fallback. 'cancelled' was missing here — a cancelled project could still
+    // raise a payment alert for money that has already been settled and refunded.
+    const stateCode = order.orderState?.code;
+    const isClosedToPayment = stateCode
+      ? ['completed', 'cancelled', 'rejected'].includes(stateCode)
+      : order.projectProgress >= 100 || order.currentPhase === 'completed';
+    if (isClosedToPayment) {
       setShouldShowPaymentAlert(false);
       setIsProjectPaused(false);
       return;
@@ -568,20 +577,27 @@ const ProjectDetails = ({ isAdminView = false }) => {
   // Same completion test the payment-alert logic already uses (see
   // checkPaymentStatus) — kept identical so "finished" means one thing on
   // this page.
+  // Read from the engine's derived state where it is available, so a gate can never disagree
+  // with the badge sitting next to it. The raw-field expression stays as the fallback for
+  // payloads that predate the engine.
   const isProjectFinished = order
-    ? order.projectProgress >= 100 || order.currentPhase === 'completed'
+    ? (order.orderState?.code
+        ? order.orderState.code === 'completed'
+        : order.projectProgress >= 100 || order.currentPhase === 'completed')
     : false;
 
   // A service can be attached to any project that is a confirmed sale — whether
   // it is mid-build, on an installment plan, or already delivered. The only
-  // exclusions are the two states where the project itself isn't real yet:
-  // still awaiting approval, or rejected outright.
+  // exclusions are the states where the project itself isn't real yet (awaiting approval,
+  // rejected) or is closed for good (cancelled — settled and refunded, nothing new may be
+  // bought against it).
   const canAddService = Boolean(
     order &&
-      order.orderVisibility !== 'pending-approval' &&
-      order.orderVisibility !== 'payment-rejected' &&
-      // A cancelled project is settled and refunded — nothing new may be bought against it.
-      order.orderVisibility !== 'cancelled'
+      (order.orderState?.code
+        ? !['pending_approval', 'processing', 'rejected', 'cancelled'].includes(order.orderState.code)
+        : order.orderVisibility !== 'pending-approval' &&
+          order.orderVisibility !== 'payment-rejected' &&
+          order.orderVisibility !== 'cancelled')
   );
 
   // Services are picked in a modal rather than on a separate page, so the
@@ -831,9 +847,22 @@ const ProjectDetails = ({ isAdminView = false }) => {
   const isProjectComplete = progressPercentage >= 100;
   // A cancelled project is closed and its money already settled — nothing more can be
   // uploaded or requested against it.
-  const isOrderCancelled = order.orderVisibility === 'cancelled';
+  const isOrderCancelled = order.orderState?.code === 'cancelled' || order.orderVisibility === 'cancelled';
   const isUploadLocked =
     Boolean(order.hasUnpaidInvoice) || isOrderPendingApproval || isProjectComplete || isOrderCancelled;
+
+  // Why the upload is locked, not just that it is. All four reasons used to collapse into one
+  // "Pending" pill, so a CANCELLED project offered "Upload Data · Pending" — telling the customer
+  // to wait for something that is never coming. The button now says which state it is in.
+  const uploadLockMeta = isOrderCancelled
+    ? { badge: 'Cancelled', title: 'This project has been cancelled' }
+    : isProjectComplete
+      ? { badge: null, title: 'This project is complete' }
+      : order.hasUnpaidInvoice
+        ? { badge: 'Payment due', title: 'Available once the due payment is recorded' }
+        : isOrderPendingApproval
+          ? { badge: 'Pending', title: 'Available after payment is approved' }
+          : { badge: null, title: undefined };
 
   return (
     <Shell {...shellProps}>
@@ -1066,27 +1095,42 @@ const ProjectDetails = ({ isAdminView = false }) => {
                             </div>
                             <div className="flex items-center justify-between gap-3 py-2">
                               <span className={g('text-sm text-slate-600', 'text-sm text-slate-300')}>Current phase</span>
-                              <span className={g('text-base font-semibold text-black', 'text-base font-semibold text-white')}>{order.currentPhase || 'N/A'}</span>
+                              {/* Derived by backend/helpers/orderStatusEngine.js, not the stored
+                                  currentPhase column: that column only ever moves to 'completed'
+                                  at 100%, so a project at 1% displayed "planning" indefinitely. */}
+                              <span className={g('text-base font-semibold text-black', 'text-base font-semibold text-white')}>{order.orderState?.phaseLabel || order.currentPhase || 'N/A'}</span>
                             </div>
                           </div>
+
+                          {/* Lifecycle history — when this order was approved, when work began,
+                              when it finished. Comes from backend/helpers/orderLifecycleLog.js;
+                              before that log existed none of these dates were recorded at all. */}
+                          {order.lifecycleTimeline?.length ? (
+                            <div className={g('mt-5 border-t border-slate-200 pt-4', 'mt-5 border-t border-white/10 pt-4')}>
+                              <p className={g('mb-3 text-sm font-semibold text-black', 'mb-3 text-sm font-semibold text-white')}>Project history</p>
+                              {/* g() takes (adminClass, customerClass) and the admin classes here
+                                  are the light ones — this page renders light for admin and dark
+                                  for the customer, so the timeline's palette follows the same way. */}
+                              <OrderLifecycleTimeline timeline={order.lifecycleTimeline} dark={!isAdminView} />
+                            </div>
+                          ) : null}
 
                           {!isAdminView ? (
                             <button
                               type="button"
                               onClick={() => setUpdateModalOpen(true)}
                               disabled={isUploadLocked}
-                              title={
-                                isProjectComplete
-                                  ? "This project is complete"
-                                  : isUploadLocked
-                                    ? "Available after payment is recorded"
-                                    : undefined
-                              }
+                              title={uploadLockMeta.title}
                               className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-2.5 text-base font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-400 disabled:hover:bg-slate-400"
                             >
                               {/* A completed project says so instead of offering an upload it
                                   will not accept. Payment locks keep their own wording. */}
-                              {isProjectComplete ? (
+                              {isOrderCancelled ? (
+                                <>
+                                  <X className="h-4 w-4" />
+                                  Project Cancelled
+                                </>
+                              ) : isProjectComplete ? (
                                 <>
                                   <Check className="h-4 w-4" />
                                   Project Completed
@@ -1095,8 +1139,8 @@ const ProjectDetails = ({ isAdminView = false }) => {
                                 <>
                                   <Upload className="h-4 w-4" />
                                   Upload Data
-                                  {isUploadLocked && (
-                                    <span className="ml-1 rounded-full bg-white/20 px-2 py-0.5 text-xs font-semibold">Pending</span>
+                                  {uploadLockMeta.badge && (
+                                    <span className="ml-1 rounded-full bg-white/20 px-2 py-0.5 text-xs font-semibold">{uploadLockMeta.badge}</span>
                                   )}
                                 </>
                               )}
