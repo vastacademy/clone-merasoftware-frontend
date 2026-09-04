@@ -9,8 +9,15 @@ import CookieManager from "../utils/cookieManager";
 import StorageService from "../utils/storageService";
 import AdminLayout from "../components/AdminLayout";
 import AdminWorkspaceShell, { AdminWorkspaceHeader } from "../components/admin/AdminWorkspaceShell";
+import projectCategoryOptions, { projectCategoryLabel } from "../helpers/projectCategoryOptions";
 
 const FEATURE_UPGRADE_CATEGORY = "feature_upgrades";
+
+// compatibleWith[] carries the categories a feature is offered for; an EMPTY array
+// means "all categories". The form exposes that as a two-way choice instead of
+// making the admin reason about an empty list.
+const CATEGORY_SCOPE_ALL = "all";
+const CATEGORY_SCOPE_SELECTED = "selected";
 
 const formInputClassName =
   "w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-base text-black outline-none transition placeholder:text-slate-400 focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100";
@@ -22,6 +29,12 @@ const FeatureEditForm = ({ feature, onCancel, onSaved, onDeleted }) => {
   const [sellingPrice, setSellingPrice] = useState(feature?.sellingPrice ?? feature?.price ?? "");
   const [description, setDescription] = useState(feature?.formattedDescriptions?.[0]?.content ?? "");
   const [isHidden, setIsHidden] = useState(Boolean(feature?.isHidden));
+  const [isQuantityBased, setIsQuantityBased] = useState(Boolean(feature?.isQuantityBased));
+  const existingCategories = Array.isArray(feature?.compatibleWith) ? feature.compatibleWith : [];
+  const [categoryScope, setCategoryScope] = useState(
+    existingCategories.length > 0 ? CATEGORY_SCOPE_SELECTED : CATEGORY_SCOPE_ALL
+  );
+  const [selectedCategories, setSelectedCategories] = useState(existingCategories);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -37,6 +50,11 @@ const FeatureEditForm = ({ feature, onCancel, onSaved, onDeleted }) => {
       toast.error("Price must be a non-negative number.");
       return;
     }
+    const isScopedToSelection = categoryScope === CATEGORY_SCOPE_SELECTED;
+    if (isScopedToSelection && selectedCategories.length === 0) {
+      toast.error("Select at least one category, or choose All Categories.");
+      return;
+    }
 
     const payload = {
       serviceName: serviceName.trim(),
@@ -45,6 +63,11 @@ const FeatureEditForm = ({ feature, onCancel, onSaved, onDeleted }) => {
       sellingPrice: numericPrice,
       formattedDescriptions: description.trim() ? [{ content: description.trim() }] : [],
       isHidden,
+      // Quantity-based => the project form charges this price per unit and shows a
+      // +/- counter. Never inferred from serviceName.
+      isQuantityBased,
+      // Empty array = offered for every category.
+      compatibleWith: isScopedToSelection ? selectedCategories : [],
     };
     if (isEditing) payload._id = feature._id;
 
@@ -67,6 +90,12 @@ const FeatureEditForm = ({ feature, onCancel, onSaved, onDeleted }) => {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const toggleCategory = (value) => {
+    setSelectedCategories((current) =>
+      current.includes(value) ? current.filter((item) => item !== value) : [...current, value]
+    );
   };
 
   const handleDelete = async () => {
@@ -120,7 +149,9 @@ const FeatureEditForm = ({ feature, onCancel, onSaved, onDeleted }) => {
         </div>
 
         <div>
-          <label className={formLabelClassName}>Price (₹) *</label>
+          <label className={formLabelClassName}>
+            {isQuantityBased ? "Price per unit (₹) *" : "Price (₹) *"}
+          </label>
           <input
             type="number"
             min={0}
@@ -138,6 +169,84 @@ const FeatureEditForm = ({ feature, onCancel, onSaved, onDeleted }) => {
             value={description}
             onChange={(event) => setDescription(event.target.value)}
           />
+        </div>
+
+        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+          <span className={formLabelClassName}>How is this feature charged?</span>
+          <div className="mt-1 space-y-2">
+            <label className="flex cursor-pointer items-start gap-2.5">
+              <input
+                type="radio"
+                name="feature-quantity-mode"
+                checked={!isQuantityBased}
+                onChange={() => setIsQuantityBased(false)}
+                className="mt-1 h-4 w-4 border-slate-300"
+              />
+              <span>
+                <span className="block text-sm font-semibold text-slate-800">Single feature</span>
+                <span className="block text-xs text-slate-500">
+                  Selected once and charged at its own price.
+                </span>
+              </span>
+            </label>
+            <label className="flex cursor-pointer items-start gap-2.5">
+              <input
+                type="radio"
+                name="feature-quantity-mode"
+                checked={isQuantityBased}
+                onChange={() => setIsQuantityBased(true)}
+                className="mt-1 h-4 w-4 border-slate-300"
+              />
+              <span>
+                <span className="block text-sm font-semibold text-slate-800">Quantity-based feature</span>
+                <span className="block text-xs text-slate-500">
+                  The project form shows a +/- counter and charges price x quantity.
+                </span>
+              </span>
+            </label>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+          <span className={formLabelClassName}>Available for</span>
+          <div className="mt-1 space-y-2">
+            <label className="flex cursor-pointer items-center gap-2.5">
+              <input
+                type="radio"
+                name="feature-category-scope"
+                checked={categoryScope === CATEGORY_SCOPE_ALL}
+                onChange={() => setCategoryScope(CATEGORY_SCOPE_ALL)}
+                className="h-4 w-4 border-slate-300"
+              />
+              <span className="text-sm font-semibold text-slate-800">All categories</span>
+            </label>
+            <label className="flex cursor-pointer items-center gap-2.5">
+              <input
+                type="radio"
+                name="feature-category-scope"
+                checked={categoryScope === CATEGORY_SCOPE_SELECTED}
+                onChange={() => setCategoryScope(CATEGORY_SCOPE_SELECTED)}
+                className="h-4 w-4 border-slate-300"
+              />
+              <span className="text-sm font-semibold text-slate-800">Selected categories</span>
+            </label>
+          </div>
+
+          {categoryScope === CATEGORY_SCOPE_SELECTED ? (
+            <div className="mt-3 grid grid-cols-1 gap-2 border-t border-slate-200 pt-3 sm:grid-cols-2">
+              {projectCategoryOptions.map((option) => (
+                <label key={option.value} className="flex cursor-pointer items-center gap-2.5">
+                  <input
+                    type="checkbox"
+                    checked={selectedCategories.includes(option.value)}
+                    onChange={() => toggleCategory(option.value)}
+                    className="h-4 w-4 rounded border-slate-300"
+                  />
+                  <span className="text-sm text-slate-700">{option.label}</span>
+                </label>
+              ))}
+            </div>
+          ) : null}
         </div>
 
         <div className="flex items-center gap-2">
@@ -304,12 +413,33 @@ const AdminFeatureProductsPage = () => {
                 >
                   <div className="col-span-6">
                     <p className="text-sm font-semibold text-slate-900">{feature.serviceName}</p>
+                    <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                      <span
+                        className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                          feature.isQuantityBased
+                            ? "bg-amber-100 text-amber-800"
+                            : "bg-slate-100 text-slate-600"
+                        }`}
+                      >
+                        {feature.isQuantityBased ? "Quantity-based" : "Single"}
+                      </span>
+                      <span className="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
+                        {feature.compatibleWith?.length
+                          ? feature.compatibleWith.map(projectCategoryLabel).join(", ")
+                          : "All categories"}
+                      </span>
+                    </div>
                     {feature.packageIncludes?.length ? (
                       <p className="mt-1 truncate text-xs text-slate-500">{feature.packageIncludes.join(", ")}</p>
                     ) : null}
                   </div>
                   <div className="col-span-3">
-                    <p className="text-sm font-semibold text-slate-900">₹{feature.sellingPrice ?? feature.price}</p>
+                    <p className="text-sm font-semibold text-slate-900">
+                      ₹{feature.sellingPrice ?? feature.price}
+                      {feature.isQuantityBased ? (
+                        <span className="ml-1 text-xs font-normal text-slate-500">/ unit</span>
+                      ) : null}
+                    </p>
                   </div>
                   <div className="col-span-2">
                     <span className="inline-flex rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-800">{feature.isHidden ? "Hidden" : "Visible"}</span>

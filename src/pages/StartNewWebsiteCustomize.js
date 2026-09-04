@@ -8,6 +8,7 @@ import Context from '../context';
 import DashboardLayout from '../components/DashboardLayout';
 import SummaryApi from '../common';
 import displayINRCurrency from '../helpers/displayCurrency';
+import { isFeatureForCategory } from '../helpers/projectCategoryOptions';
 import backgroundImage from '../assets/BG.png';
 
 // Primary project categories the customize form supports.
@@ -53,12 +54,12 @@ const INSTALLMENT_OPTIONS = [
 const splitsFor = (count) =>
   INSTALLMENT_OPTIONS.find((o) => o.value === count)?.splits || [50, 50];
 
-// Website "pages" are represented by the existing "Add New Page" feature product. It gets a
-// +/- counter instead of a checkbox, and is always counted in the estimate (min pages included).
-const MIN_PAGES = 4;
-const MAX_PAGES = 99;
-const isPagesFeature = (feature) =>
-  (feature?.serviceName || '').toLowerCase().includes('add new page');
+// Every capability is an ordinary optional feature: the customer picks it or not. A feature
+// the admin marked quantity-based gets a +/- counter and is charged sellingPrice x quantity;
+// the rest are a single checkbox. Nothing is inferred from a feature's name, and nothing is
+// forced into the order — the category base price is the package the customer already pays for.
+const MIN_QUANTITY = 1;
+const MAX_QUANTITY = 99;
 
 const SectionLabel = ({ children }) => (
   <p className="text-sm font-semibold uppercase tracking-wide text-emerald-300/90">{children}</p>
@@ -136,8 +137,8 @@ const MultiSelectDropdown = ({
   loading,
   onToggle,
   onRemove,
-  pageCount,
-  onPageCountChange,
+  quantities,
+  onQuantityChange,
 }) => {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
@@ -150,18 +151,17 @@ const MultiSelectDropdown = ({
     return () => document.removeEventListener('mousedown', onDocClick);
   }, []);
 
-  // Regular (checkbox) features vs the pages feature (always-on +/- counter).
-  const regularSelected = options.filter(
-    (o) => !isPagesFeature(o) && selectedIds.includes(o._id)
-  );
-  const hasPagesFeature = options.some(isPagesFeature);
-  // Summary count in the trigger includes pages (always active) + selected regular features.
-  const summaryCount = regularSelected.length + (hasPagesFeature ? 1 : 0);
+  // Everything the customer has actually ticked — no feature is selected implicitly.
+  const selectedOptions = options.filter((o) => selectedIds.includes(o._id));
+  const summaryCount = selectedOptions.length;
 
-  const stepPages = (delta) => (e) => {
+  const stepQuantity = (featureId, delta) => (e) => {
     e.stopPropagation();
-    const next = Math.min(MAX_PAGES, Math.max(MIN_PAGES, (pageCount || MIN_PAGES) + delta));
-    onPageCountChange(next);
+    const current = quantities[featureId] || MIN_QUANTITY;
+    onQuantityChange(
+      featureId,
+      Math.min(MAX_QUANTITY, Math.max(MIN_QUANTITY, current + delta))
+    );
   };
 
   return (
@@ -190,79 +190,75 @@ const MultiSelectDropdown = ({
       {open && options.length > 0 && (
         <div className="absolute z-30 mt-2 max-h-72 w-full overflow-y-auto rounded-xl border border-white/15 bg-slate-900/95 shadow-[0_16px_48px_rgba(0,0,0,0.5)] backdrop-blur-2xl">
           {options.map((option) => {
-            // Pages feature — always-on +/- counter row instead of a checkbox.
-            if (isPagesFeature(option)) {
-              return (
-                <div
-                  key={option._id}
-                  className="flex w-full items-center justify-between gap-3 px-4 py-3 text-base"
-                >
-                  <span className="font-medium text-white">Website Pages</span>
-                  <div className="flex items-center gap-1 rounded-lg border border-white/20 bg-white/5">
-                    <button
-                      type="button"
-                      onClick={stepPages(-1)}
-                      disabled={pageCount <= MIN_PAGES}
-                      className="flex h-8 w-8 items-center justify-center rounded-l-lg text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
-                    >
-                      <Minus className="h-4 w-4" strokeWidth={2.5} />
-                    </button>
-                    <span className="min-w-[2.5rem] text-center text-base font-semibold text-white">
-                      {pageCount}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={stepPages(1)}
-                      disabled={pageCount >= MAX_PAGES}
-                      className="flex h-8 w-8 items-center justify-center rounded-r-lg text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
-                    >
-                      <Plus className="h-4 w-4" strokeWidth={2.5} />
-                    </button>
-                  </div>
-                </div>
-              );
-            }
-
             const isSelected = selectedIds.includes(option._id);
+            const quantity = quantities[option._id] || MIN_QUANTITY;
+            // A quantity-based feature keeps its checkbox and, once ticked, reveals a
+            // +/- counter — so the customer chooses it like any other capability.
             return (
-              <button
-                key={option._id}
-                type="button"
-                onClick={() => onToggle(option._id)}
-                className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-base text-slate-200 transition-colors hover:bg-white/[0.06]"
-              >
-                <span className={isSelected ? 'font-medium text-white' : ''}>
-                  {option.serviceName?.trim()}
-                </span>
-                <span
-                  className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-colors ${
-                    isSelected
-                      ? 'border-emerald-400 bg-emerald-500 text-white'
-                      : 'border-white/30 text-transparent'
-                  }`}
+              <div key={option._id} className="px-4 py-3">
+                <button
+                  type="button"
+                  onClick={() => onToggle(option._id)}
+                  className="flex w-full items-center justify-between gap-3 text-left text-base text-slate-200 transition-colors"
                 >
-                  <Check className="h-3.5 w-3.5" strokeWidth={3} />
-                </span>
-              </button>
+                  <span className={isSelected ? 'font-medium text-white' : ''}>
+                    {option.serviceName?.trim()}
+                  </span>
+                  <span
+                    className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-colors ${
+                      isSelected
+                        ? 'border-emerald-400 bg-emerald-500 text-white'
+                        : 'border-white/30 text-transparent'
+                    }`}
+                  >
+                    <Check className="h-3.5 w-3.5" strokeWidth={3} />
+                  </span>
+                </button>
+
+                {isSelected && option.isQuantityBased && (
+                  <div className="mt-2.5 flex items-center justify-between gap-3">
+                    <span className="text-sm text-slate-400">
+                      {displayINRCurrency(Number(option.sellingPrice) || 0)} each
+                    </span>
+                    <div className="flex items-center gap-1 rounded-lg border border-white/20 bg-white/5">
+                      <button
+                        type="button"
+                        onClick={stepQuantity(option._id, -1)}
+                        disabled={quantity <= MIN_QUANTITY}
+                        className="flex h-8 w-8 items-center justify-center rounded-l-lg text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        <Minus className="h-4 w-4" strokeWidth={2.5} />
+                      </button>
+                      <span className="min-w-[2.5rem] text-center text-base font-semibold text-white">
+                        {quantity}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={stepQuantity(option._id, 1)}
+                        disabled={quantity >= MAX_QUANTITY}
+                        className="flex h-8 w-8 items-center justify-center rounded-r-lg text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        <Plus className="h-4 w-4" strokeWidth={2.5} />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             );
           })}
         </div>
       )}
 
-      {/* Selected chips — pages chip (always) + selected regular features */}
-      {(hasPagesFeature || regularSelected.length > 0) && (
+      {/* Selected chips — a quantity-based feature shows its count alongside the name. */}
+      {selectedOptions.length > 0 && (
         <div className="mt-3 flex flex-wrap gap-2">
-          {hasPagesFeature && (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/40 bg-emerald-500/15 px-3 py-1 text-sm text-white">
-              {pageCount} Pages
-            </span>
-          )}
-          {regularSelected.map((option) => (
+          {selectedOptions.map((option) => (
             <span
               key={option._id}
               className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/40 bg-emerald-500/15 py-1 pl-3 pr-1.5 text-sm text-white"
             >
               {option.serviceName?.trim()}
+              {option.isQuantityBased ? ` x${quantities[option._id] || MIN_QUANTITY}` : ''}
               <button
                 type="button"
                 onClick={() => onRemove(option._id)}
@@ -298,7 +294,8 @@ const StartNewWebsiteCustomize = () => {
   const [allFeatures, setAllFeatures] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedFeatureIds, setSelectedFeatureIds] = useState([]);
-  const [pageCount, setPageCount] = useState(MIN_PAGES);
+  // Per-feature counts for quantity-based features, keyed by feature id.
+  const [featureQuantities, setFeatureQuantities] = useState({});
   // Category base price — the SAME base the backend adds in finalPrice = basePrice + features.
   // Fetched per-category so the on-page estimate matches the authoritative order price.
   const [basePrice, setBasePrice] = useState(0);
@@ -312,17 +309,19 @@ const StartNewWebsiteCustomize = () => {
         const response = await fetch(SummaryApi.allProduct.url);
         const dataResponse = await response.json();
         const products = dataResponse?.data || [];
+        // Same rule the backend enforces in customerCreateCustomProjectOrder.js: a feature
+        // is offered for this category when compatibleWith names it, or names nothing at
+        // all (= all categories).
         const features = products.filter(
           (p) =>
             p.category === 'feature_upgrades' &&
             !p.isHidden &&
-            Array.isArray(p.compatibleWith) &&
-            p.compatibleWith.includes(projectCategory)
+            isFeatureForCategory(p, projectCategory)
         );
         if (active) {
           setAllFeatures(features);
           setSelectedFeatureIds([]); // reset selection for the new project type
-          setPageCount(MIN_PAGES); // reset pages counter for the new project type
+          setFeatureQuantities({}); // reset counters for the new project type
         }
       } catch (error) {
         console.error('Error loading features:', error);
@@ -367,39 +366,41 @@ const StartNewWebsiteCustomize = () => {
     setSelectedFeatureIds((prev) => prev.filter((id) => id !== featureId));
   };
 
+  const setFeatureQuantity = (featureId, quantity) => {
+    setFeatureQuantities((prev) => ({ ...prev, [featureId]: quantity }));
+  };
+
   // Estimate total (UI-only, not a final price). Byte-aligned with the backend's
   // finalPrice = basePrice + featuresTotal (customerCreateCustomProjectOrder.js):
   //  - category base price is always included
-  //  - the pages feature is always counted as sellingPrice × pageCount
-  //  - regular features are counted once each when checkbox-selected
+  //  - a selected feature is counted as sellingPrice × its quantity (1 unless the
+  //    feature is quantity-based)
   const estimateTotal = useMemo(
     () =>
       allFeatures.reduce((sum, f) => {
+        if (!selectedFeatureIds.includes(f._id)) return sum;
         const price = Number(f.sellingPrice) || 0;
-        if (isPagesFeature(f)) {
-          return sum + price * pageCount;
-        }
-        return selectedFeatureIds.includes(f._id) ? sum + price : sum;
+        const quantity = f.isQuantityBased ? featureQuantities[f._id] || MIN_QUANTITY : 1;
+        return sum + price * quantity;
       }, basePrice),
-    [allFeatures, selectedFeatureIds, pageCount, basePrice]
+    [allFeatures, selectedFeatureIds, featureQuantities, basePrice]
   );
 
   const projectLabel = labelOf(PROJECT_OPTIONS, projectCategory) || 'Your Project';
-  // Capability count = selected regular features + the always-on pages feature (if available).
-  const hasPagesFeature = allFeatures.some(isPagesFeature);
-  const selectedCount = selectedFeatureIds.length + (hasPagesFeature ? 1 : 0);
+  const selectedCount = selectedFeatureIds.length;
 
-  // Human-readable list of chosen capabilities (pages first, then selected features).
-  const selectedCapabilityNames = useMemo(() => {
-    const names = [];
-    if (hasPagesFeature) names.push(`${pageCount} Website Pages`);
-    allFeatures.forEach((f) => {
-      if (!isPagesFeature(f) && selectedFeatureIds.includes(f._id)) {
-        names.push(f.serviceName?.trim());
-      }
-    });
-    return names;
-  }, [allFeatures, selectedFeatureIds, pageCount, hasPagesFeature]);
+  // Human-readable list of chosen capabilities, a quantity-based one carrying its count.
+  const selectedCapabilityNames = useMemo(
+    () =>
+      allFeatures
+        .filter((f) => selectedFeatureIds.includes(f._id))
+        .map((f) => {
+          const name = f.serviceName?.trim();
+          if (!f.isQuantityBased) return name;
+          return `${featureQuantities[f._id] || MIN_QUANTITY} × ${name}`;
+        }),
+    [allFeatures, selectedFeatureIds, featureQuantities]
+  );
 
   // --- Proceed / Create handling (wired to the customer custom-project endpoint) ---
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -432,13 +433,9 @@ const StartNewWebsiteCustomize = () => {
     }));
   }, [paymentOption, installmentCount, estimateTotal]);
 
-  // Feature IDs the customer actually chose. The pages feature is always included
-  // (min pages are implicit); regular features only when checkbox-selected.
+  // Feature IDs the customer actually chose — nothing is added on their behalf.
   const chosenFeatureIds = useMemo(
-    () =>
-      allFeatures
-        .filter((f) => isPagesFeature(f) || selectedFeatureIds.includes(f._id))
-        .map((f) => f._id),
+    () => allFeatures.filter((f) => selectedFeatureIds.includes(f._id)).map((f) => f._id),
     [allFeatures, selectedFeatureIds]
   );
 
@@ -446,7 +443,7 @@ const StartNewWebsiteCustomize = () => {
   // created order, so the next "Proceed" creates a fresh one instead of paying a stale order.
   useEffect(() => {
     setCreatedOrder(null);
-  }, [projectCategory, chosenFeatureIds, pageCount, paymentOption, installmentCount, couponCode]);
+  }, [projectCategory, chosenFeatureIds, featureQuantities, paymentOption, installmentCount, couponCode]);
 
   // Create the order server-side (price is re-derived there). For full/partial the customer
   // has already paid (wallet/UPI), so paymentDetails is passed and the backend creates the
@@ -455,8 +452,8 @@ const StartNewWebsiteCustomize = () => {
   const createProjectOrder = async (paymentDetails = null) => {
     const requestBody = {
       category: projectCategory,
-      pageCount,
       featureIds: chosenFeatureIds,
+      featureQuantities,
       budget: budget || null,
       ownership: ownership || null,
       paymentType: paymentOption, // 'full' | 'partial' | 'decide_later'
@@ -740,8 +737,8 @@ const StartNewWebsiteCustomize = () => {
                     loading={loading}
                     onToggle={toggleFeature}
                     onRemove={removeFeature}
-                    pageCount={pageCount}
-                    onPageCountChange={setPageCount}
+                    quantities={featureQuantities}
+                    onQuantityChange={setFeatureQuantity}
                   />
                 </div>
               </section>

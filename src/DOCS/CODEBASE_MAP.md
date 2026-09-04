@@ -77,12 +77,39 @@ Project root: `e:\merasoftware-new` — `backend/` (Node/Express/Mongoose) + `fr
 - Form component: `CreateProjectForClientForm`. 2-step flow: Project Details → Payment Settings.
 - Creates a hidden catalog product (`isCustomClientProject: true` on `productModel.js`) + an order — NOT wired through the customer storefront (`createOrder.js`/`DirectPayment.js` not reused).
 - Category Base Price: fixed per-category price from `backend/models/categoryBasePriceModel.js`, managed at `/admin-panel/project-setup/base-price` (`AdminCategoryBasePricePage.js`). Read-only/auto-fetched in the form — never client-submitted.
-- Additional Features: existing `feature_upgrades`-category `productModel` products (NOT a separate collection — a separate `projectFeatureModel` attempt was built then removed). Managed at `/admin-panel/project-setup/features` (`AdminFeatureProductsPage.js`) — **CRUD on this page is currently stub-only** (list works; Add/Edit modal was deliberately removed in a later pass, though the underlying `uploadProduct`/`updateProduct`/`deleteProduct` endpoints still work and are callable elsewhere).
+- Additional Features: existing `feature_upgrades`-category `productModel` products (NOT a separate collection — a separate `projectFeatureModel` attempt was built then removed). Managed at `/admin-panel/project-setup/features` (`AdminFeatureProductsPage.js`) — the Add/Edit modal is **live again** (`FeatureEditForm`), and now also sets each feature's capability (see §4a).
 - Server-side price re-derivation is mandatory: `adminCreateProjectOrder.js` never trusts client-submitted price/feature data — re-derives base price from `categoryBasePriceModel` and feature price from `productModel` (filtered to `feature_upgrades`).
 - Reference Total = Base + Features (display only); Selling Price is manual; Discount = Reference Total − Selling Price.
 - `startingNodeTitle` does **not** live on `productModel.js` (an early plan, never implemented that way) — it lives on `orderProductModel.js` (order-level, copied at start) and `categoryBasePriceModel.js` (per-category default, fields: `category`, `basePrice`, `description`, `startingNodeTitle`).
 - `hasUnpaidInvoice` (from `getOrderDetails.js`) is scoped to only `order.currentInstallment`'s invoice, gated on that installment's `progressThreshold` being reached — NOT "any unpaid invoice on the order" (fixed; previously over-matched).
 - Per-client **"Deleted Projects" tab** in `AdminClientWorkspace.js` shows `orderDeleted`-flagged payment history separately from the main Payment & Invoices tab.
+
+### 4a. Feature capability (quantity + category scope) — SSOT is the catalogue row, never the feature's name
+
+**Was:** a feature's behaviour was inferred from its `serviceName`. `adminCreateProjectOrder.js` and `AdminClientWorkspace.js` each held `const ADD_NEW_PAGE_FEATURE_NAME = "Add New Page"` and compared with `===`; `StartNewWebsiteCustomize.js` and `customerCreateCustomProjectOrder.js` held `isPagesFeature()` doing `serviceName.toLowerCase().includes('add new page')`. Only a feature matching that string could be bought more than once, so a new quantity-style feature created from the admin form could never take a quantity — and the live catalogue row was actually named "Add new page", which the two `===` comparisons never matched, leaving the admin counter dead. Category scope was not set anywhere in the Features form, and `AdminClientWorkspace.js` applied no category filter at all, so every feature was offered for every project type.
+
+**Now:** two catalogue fields decide both, set by the admin in `AdminFeatureProductsPage.js`'s `FeatureEditForm`:
+- `productModel.isQuantityBased` (Boolean, default false) — true means the project form shows a `+`/`−` counter and the feature is charged `sellingPrice × quantity`; false means a single checkbox charged once. The form exposes it as a Single / Quantity-based radio and relabels the price field "Price per unit (₹)".
+- `productModel.compatibleWith[]` (pre-existing field, now writable from this form) — which project categories the feature is offered for, where an **EMPTY array means "all categories"**. The form exposes it as All / Selected categories plus per-category checkboxes.
+
+Every consumer now reads those two fields:
+- `adminCreateProjectOrder.js` / `customerCreateCustomProjectOrder.js` — quantity comes from `feature.isQuantityBased ? Math.max(1, requested) : 1`, both controllers using the identical mapping; the feature query uses the shared `helpers/featureCatalogue.js`.
+- `AdminClientWorkspace.js` (`CreateProjectForClientForm`) — counter and estimate keyed off `isQuantityBased`; the dropdown is filtered by `isFeatureForCategory()` and clears `selectedFeatureIds`/`featureQuantities` when the category changes, so a stale selection can't reach an order the backend would drop.
+- `StartNewWebsiteCustomize.js` — see §4b.
+
+**Category rule is shared, not re-derived per caller:** `backend/helpers/featureCatalogue.js` exports `featureCatalogueFilter(category)` (the Mongo `$or`: tagged with the category, `$size: 0`, `$exists: false`, or `null`) and `frontend/src/helpers/projectCategoryOptions.js` exports `isFeatureForCategory(feature, category)` (the JS predicate) — the two halves are deliberately kept in step, since a shape one side allows and the other rejects would show a feature the order then silently drops. `projectCategoryOptions.js` is also the SSOT for the four project categories (`AdminClientWorkspace.js`'s `PROJECT_CATEGORIES` now points at it). Do **not** use `helpers/compatibleWithOptions.js` for this — that older list still carries `web_applications`/`mobile_apps`, which match no live project category.
+
+**Two latent bugs fixed in the same pass** (both dormant only because quantity could never exceed 1):
+- *Invoice double-charge.* `downloadInvoice.js:96` prints `originalPrice × quantity`, but `adminCreateProjectOrder.js` was writing the already-multiplied total into `orderItems[].originalPrice`. 5 × ₹499 rendered as ₹12,475 instead of ₹2,495. Both project controllers now put the **unit** price in `originalPrice` and the total in `finalPrice` — the convention `createOrder.js` already used.
+- *Snapshot dropped quantity.* `projectSnapshot.features[]` in `orderProductModel.js` declared only `featureId`/`name`/`price`, so the `quantity` the controllers sent was silently discarded by strict mode. The subdocument now declares `quantity` (default 1) and `unitPrice`, so the frozen record never has to divide to recover the rate.
+
+### 4b. Customer custom-project form (`StartNewWebsiteCustomize.js`) — pages are an ordinary feature
+
+**Was:** website pages were a hardcoded special case. `isPagesFeature()` matched by name, and that one feature was **auto-included in every order without the customer selecting it** (`chosenFeatureIds` filtered on `isPagesFeature(f) || selected`), rendered as an always-on counter labelled "Website Pages" instead of its own name, forced to `MIN_PAGES = 4`…`MAX_PAGES = 99`, always counted in the estimate, and sent as a separate `pageCount` field that the backend clamped and wrote to `projectSnapshot.totalPages`. A customer could not order a project without paying for at least 4 pages, and no other feature could ever take a quantity.
+
+**Now:** every capability is an ordinary optional feature — the category base price is the package the customer already pays for, and extra pages are just a named line item on top. `isPagesFeature`/`MIN_PAGES`/`MAX_PAGES`/`pageCount` are gone; `MIN_QUANTITY = 1`/`MAX_QUANTITY = 99` bound any quantity-based feature. Each feature is a checkbox that, once ticked *and* if `isQuantityBased`, reveals a `+`/`−` counter; selected chips read `Feature ×5`; the estimate is `sellingPrice × quantity` over selected features only. The request body sends `featureQuantities` (same shape `adminCreateProjectOrder.js` accepts) instead of `pageCount`, and `projectSnapshot.totalPages` is **no longer written by this flow** — the count lives in `projectSnapshot.features[].quantity` (the admin flow never populated `totalPages` either). `orderItems[].quantity` was hardcoded to `1` here and now carries the real quantity.
+
+**Still name-based, deliberately out of scope:** the *catalogue-product* purchase flow (`createOrder.js`, `DirectPayment.js`, `ProjectDetailView.js`, `QuantitySelector.js`, `DraftOrderCard.js`) still matches `'add new page'` by name. That flow computes `additionalQuantity` against a product's own `totalPages` (pages included in the package) and is a separate system from custom projects.
 
 ---
 
@@ -363,7 +390,6 @@ Behaviour is covered by throwaway tests written during the build (not committed)
 
 - `StartNewWebsiteCustomize.js` calls a `SummaryApi.customerCategoryBasePrice` mapping that doesn't exist (§1).
 - Chess iOS Safari WebSocket cookie-auth failure (§10) — unresolved.
-- `AdminFeatureProductsPage.js`/`AdminCategoryBasePricePage.js` Add/Edit UI is currently stub-only (list works, create/edit modal was removed) — the underlying endpoints (`uploadProduct`/`updateProduct`/`deleteProduct`) still work but nothing calls them from these pages.
 - No admin capability exists to **activate** a customer's plan, or to pause/resume one. **Closing** one is now possible — cancelling it (§8a) sets `servicePlanStatus: 'cancelled'` and stops the renewal cron — but that always settles/refunds the money and is one-way, so it is not a general-purpose "close this plan" control.
 - Service system: no activation engine, no enforcement of upload/reminder allowances, no cycle/recurring billing beyond the first payment, no reminder delivery — see §5's three-axis design section for what's planned but not built.
 - **No un-cancel.** Cancelling an order is deliberately one-way (§8a) — the refund has already been paid out, so reversing it would mean taking money back, which is a new payment rather than an undo. A mistaken cancellation is corrected by creating a new order.
@@ -384,6 +410,7 @@ Behaviour is covered by throwaway tests written during the build (not committed)
 | Leads/CRM | `backend/controller/lead/*.js`, `backend/models/leadModel.js`, `pages/AdminLeads*.js` |
 | Project creation (admin) | `backend/controller/order/adminCreateProjectOrder.js`, `AdminClientWorkspace.js` |
 | Project creation (customer) | `backend/controller/order/customerCreateCustomProjectOrder.js`, `pages/StartNewWebsiteCustomize.js` |
+| Feature catalogue (quantity/category) | `models/productModel.js` (`isQuantityBased`, `compatibleWith[]`), `backend/helpers/featureCatalogue.js`, `helpers/projectCategoryOptions.js`, `pages/AdminFeatureProductsPage.js` |
 | Node/timeline system | `backend/helpers/projectNodeService.js`, `backend/controller/order/projectNodeController.js`, `pages/ProjectDetails.js` |
 | Service plans | `backend/models/productModel.js` (`servicePlan{}`), `backend/helpers/servicePlanPurchase.js`, `pages/ServicePlanDetail.js`, `components/AddServiceModal.js` (admin create UI — not a dedicated page) |
 | Payment batches (multi-service) | `backend/models/paymentBatchModel.js`, `backend/controller/order/customerCreateServicePlanOrdersBulk.js`, `backend/controller/user/transactionApprovalController.js`, `helpers/paymentLedger.js`, `components/AddServiceModal.js` |

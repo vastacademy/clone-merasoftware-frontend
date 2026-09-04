@@ -33,6 +33,7 @@ import {
 } from "lucide-react";
 import SummaryApi from "../common";
 import displayINRCurrency from "../helpers/displayCurrency";
+import projectCategoryOptions, { isFeatureForCategory } from "../helpers/projectCategoryOptions";
 import { downloadAuthenticatedFile } from "../helpers/downloadFile";
 import { logout } from "../store/userSlice";
 import CookieManager from "../utils/cookieManager";
@@ -3396,13 +3397,13 @@ const CompactWorkspaceCard = ({ title, subtitle, items, emptyText, onRowClick, o
   );
 };
 
-const PROJECT_CATEGORIES = [
-  { value: "standard_websites", label: "Standard Website" },
-  { value: "dynamic_websites", label: "Dynamic Website" },
-  { value: "cloud_software_development", label: "Cloud Software" },
-  { value: "app_development", label: "App Development" },
-];
+// The four project categories come from helpers/projectCategoryOptions.js, the shared
+// SSOT the Features form also builds its category picker from — so a feature can never
+// be tagged with a category this form cannot offer.
+const PROJECT_CATEGORIES = projectCategoryOptions;
 
+// Keeps its own "N/A" fallback: this label is rendered for existing orders, where the
+// category may be missing entirely, unlike the picker above.
 const getCategoryLabel = (category) =>
   PROJECT_CATEGORIES.find((option) => option.value === category)?.label || category || "N/A";
 
@@ -3464,8 +3465,6 @@ const CreateProjectForClientForm = ({ clientName, customerId, onCancel, onCreate
   const [featureQuantities, setFeatureQuantities] = useState({});
   const [isFeatureDropdownOpen, setIsFeatureDropdownOpen] = useState(false);
   const featureDropdownRef = useRef(null);
-
-  const ADD_NEW_PAGE_FEATURE_NAME = "Add New Page";
 
   useEffect(() => {
     const fetchFeatures = async () => {
@@ -3548,16 +3547,20 @@ const CreateProjectForClientForm = ({ clientName, customerId, onCancel, onCreate
     });
   };
 
-  const selectableFeatures = availableFeatures.filter(
+  // Only features offered for the chosen category are selectable. compatibleWith[] carries
+  // that, an EMPTY array meaning "all categories" — the same rule the backend enforces in
+  // adminCreateProjectOrder.js, so a feature can never be selected here and dropped there.
+  const categoryFeatures = category
+    ? availableFeatures.filter((feature) => isFeatureForCategory(feature, category))
+    : availableFeatures;
+  const selectableFeatures = categoryFeatures.filter(
     (feature) => !selectedFeatureIds.includes(feature._id)
   );
   const selectedFeatures = selectedFeatureIds
-    .map((id) => availableFeatures.find((feature) => feature._id === id))
+    .map((id) => categoryFeatures.find((feature) => feature._id === id))
     .filter(Boolean);
   const featuresTotal = selectedFeatures.reduce((sum, feature) => {
-    const quantity = feature.serviceName === ADD_NEW_PAGE_FEATURE_NAME
-      ? (featureQuantities[feature._id] || 1)
-      : 1;
+    const quantity = feature.isQuantityBased ? (featureQuantities[feature._id] || 1) : 1;
     return sum + (Number(feature.sellingPrice) || 0) * quantity;
   }, 0);
   const referenceTotal = Number(basePrice) + featuresTotal;
@@ -3653,7 +3656,14 @@ const CreateProjectForClientForm = ({ clientName, customerId, onCancel, onCreate
           <select
             className={projectFormInputClassName}
             value={category}
-            onChange={(event) => setCategory(event.target.value)}
+            onChange={(event) => {
+              setCategory(event.target.value);
+              // Features are category-scoped, so a selection made for the previous
+              // category must not survive into the new one — the backend would drop
+              // it anyway and the estimate would silently disagree with the order.
+              setSelectedFeatureIds([]);
+              setFeatureQuantities({});
+            }}
           >
             <option value="">Select category</option>
             {PROJECT_CATEGORIES.map((option) => (
@@ -3731,7 +3741,7 @@ const CreateProjectForClientForm = ({ clientName, customerId, onCancel, onCreate
                   {selectedFeatures.length > 0 && (
                     <div className="flex flex-wrap gap-2 border-b border-slate-100 p-2">
                       {selectedFeatures.map((feature) => {
-                        const isAddNewPage = feature.serviceName === ADD_NEW_PAGE_FEATURE_NAME;
+                        const isQuantityBased = Boolean(feature.isQuantityBased);
                         const quantity = featureQuantities[feature._id] || 1;
                         return (
                           <span
@@ -3740,11 +3750,11 @@ const CreateProjectForClientForm = ({ clientName, customerId, onCancel, onCreate
                           >
                             <span>{feature.serviceName}</span>
 
-                            {typeof feature.sellingPrice === "number" && !isAddNewPage && (
+                            {typeof feature.sellingPrice === "number" && !isQuantityBased && (
                               <span className="text-emerald-600">₹{feature.sellingPrice}</span>
                             )}
 
-                            {isAddNewPage ? (
+                            {isQuantityBased ? (
                               <span className="flex items-center gap-1.5 rounded-full border border-emerald-300 bg-white px-1.5 py-0.5">
                                 <span className="text-xs text-emerald-600">₹{feature.sellingPrice}</span>
                                 <button
