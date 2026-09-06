@@ -9,7 +9,6 @@ import DashboardLayout from '../components/DashboardLayout';
 import SummaryApi from '../common';
 import displayINRCurrency from '../helpers/displayCurrency';
 import { isFeatureForCategory } from '../helpers/projectCategoryOptions';
-import backgroundImage from '../assets/BG.png';
 
 // Primary project categories the customize form supports.
 const PROJECT_OPTIONS = [
@@ -67,7 +66,7 @@ const SectionLabel = ({ children }) => (
 
 const Field = ({ label, children }) => (
   <label className="block">
-    <span className="mb-2 block text-base font-medium text-white">{label}</span>
+    <span className="mb-2 block text-base font-medium text-[var(--text-primary)]">{label}</span>
     {children}
   </label>
 );
@@ -92,19 +91,19 @@ const SelectDropdown = ({ value, options, placeholder = 'Select…', onChange })
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center justify-between gap-3 rounded-xl border border-white/20 bg-white/5 px-4 py-3 text-left text-base text-white outline-none transition hover:border-white/35 focus-visible:border-emerald-400"
+        className="flex w-full items-center justify-between gap-3 rounded-xl border border-[var(--glass-border-strong)] bg-[var(--glass-bg-subtle)] px-4 py-3 text-left text-base text-[var(--text-primary)] outline-none transition hover:border-[var(--glass-border-strong)] focus-visible:border-emerald-400"
       >
-        <span className={selectedLabel ? 'text-white' : 'text-slate-400'}>
+        <span className={selectedLabel ? 'text-[var(--text-primary)]' : 'text-[var(--text-muted)]'}>
           {selectedLabel || placeholder}
         </span>
         <ChevronDown
-          className={`h-4 w-4 shrink-0 text-slate-300 transition-transform ${open ? 'rotate-180' : ''}`}
+          className={`h-4 w-4 shrink-0 text-[var(--text-secondary)] transition-transform ${open ? 'rotate-180' : ''}`}
           strokeWidth={2}
         />
       </button>
 
       {open && (
-        <div className="absolute z-30 mt-2 w-full overflow-hidden rounded-xl border border-white/15 bg-slate-900/95 shadow-[0_16px_48px_rgba(0,0,0,0.5)] backdrop-blur-2xl">
+        <div className="absolute z-30 mt-2 w-full overflow-hidden rounded-xl border border-[var(--glass-border)] bg-[var(--menu-bg)] shadow-[0_16px_48px_rgba(0,0,0,0.5)] backdrop-blur-2xl">
           {options.map((option) => {
             const isActive = option.value === value;
             return (
@@ -116,7 +115,7 @@ const SelectDropdown = ({ value, options, placeholder = 'Select…', onChange })
                   setOpen(false);
                 }}
                 className={`flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-base transition-colors ${
-                  isActive ? 'bg-emerald-500/15 text-white' : 'text-slate-200 hover:bg-white/[0.06]'
+                  isActive ? 'bg-emerald-500/15 text-[var(--text-primary)]' : 'text-[var(--text-secondary)] hover:bg-[var(--glass-bg-subtle)]'
                 }`}
               >
                 {option.label}
@@ -170,9 +169,9 @@ const MultiSelectDropdown = ({
         type="button"
         onClick={() => setOpen((o) => !o)}
         disabled={loading || options.length === 0}
-        className="flex w-full items-center justify-between gap-3 rounded-xl border border-white/20 bg-white/5 px-4 py-3 text-left text-base text-white outline-none transition hover:border-white/35 focus-visible:border-emerald-400 disabled:cursor-not-allowed disabled:opacity-60"
+        className="flex w-full items-center justify-between gap-3 rounded-xl border border-[var(--glass-border-strong)] bg-[var(--glass-bg-subtle)] px-4 py-3 text-left text-base text-[var(--text-primary)] outline-none transition hover:border-[var(--glass-border-strong)] focus-visible:border-emerald-400 disabled:cursor-not-allowed disabled:opacity-60"
       >
-        <span className={summaryCount ? 'text-white' : 'text-slate-400'}>
+        <span className={summaryCount ? 'text-[var(--text-primary)]' : 'text-[var(--text-muted)]'}>
           {loading
             ? 'Loading capabilities…'
             : options.length === 0
@@ -182,13 +181,13 @@ const MultiSelectDropdown = ({
             : 'Choose capabilities'}
         </span>
         <ChevronDown
-          className={`h-4 w-4 shrink-0 text-slate-300 transition-transform ${open ? 'rotate-180' : ''}`}
+          className={`h-4 w-4 shrink-0 text-[var(--text-secondary)] transition-transform ${open ? 'rotate-180' : ''}`}
           strokeWidth={2}
         />
       </button>
 
       {open && options.length > 0 && (
-        <div className="absolute z-30 mt-2 max-h-72 w-full overflow-y-auto rounded-xl border border-white/15 bg-slate-900/95 shadow-[0_16px_48px_rgba(0,0,0,0.5)] backdrop-blur-2xl">
+        <div className="absolute z-30 mt-2 max-h-72 w-full overflow-y-auto rounded-xl border border-[var(--glass-border)] bg-[var(--menu-bg)] shadow-[0_16px_48px_rgba(0,0,0,0.5)] backdrop-blur-2xl">
           {options.map((option) => {
             const isSelected = selectedIds.includes(option._id);
             const quantity = quantities[option._id] || MIN_QUANTITY;
@@ -199,16 +198,16 @@ const MultiSelectDropdown = ({
                 <button
                   type="button"
                   onClick={() => onToggle(option._id)}
-                  className="flex w-full items-center justify-between gap-3 text-left text-base text-slate-200 transition-colors"
+                  className="flex w-full items-center justify-between gap-3 text-left text-base text-[var(--text-secondary)] transition-colors"
                 >
-                  <span className={isSelected ? 'font-medium text-white' : ''}>
+                  <span className={isSelected ? 'font-medium text-[var(--text-primary)]' : ''}>
                     {option.serviceName?.trim()}
                   </span>
                   <span
                     className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-colors ${
                       isSelected
-                        ? 'border-emerald-400 bg-emerald-500 text-white'
-                        : 'border-white/30 text-transparent'
+                        ? 'border-emerald-400 bg-emerald-500 text-[var(--text-primary)]'
+                        : 'border-[var(--glass-border-strong)] text-transparent'
                     }`}
                   >
                     <Check className="h-3.5 w-3.5" strokeWidth={3} />
@@ -217,26 +216,26 @@ const MultiSelectDropdown = ({
 
                 {isSelected && option.isQuantityBased && (
                   <div className="mt-2.5 flex items-center justify-between gap-3">
-                    <span className="text-sm text-slate-400">
+                    <span className="text-sm text-[var(--text-muted)]">
                       {displayINRCurrency(Number(option.sellingPrice) || 0)} each
                     </span>
-                    <div className="flex items-center gap-1 rounded-lg border border-white/20 bg-white/5">
+                    <div className="flex items-center gap-1 rounded-lg border border-[var(--glass-border-strong)] bg-[var(--glass-bg-subtle)]">
                       <button
                         type="button"
                         onClick={stepQuantity(option._id, -1)}
                         disabled={quantity <= MIN_QUANTITY}
-                        className="flex h-8 w-8 items-center justify-center rounded-l-lg text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
+                        className="flex h-8 w-8 items-center justify-center rounded-l-lg text-[var(--text-primary)] transition hover:bg-[var(--glass-bg)] disabled:cursor-not-allowed disabled:opacity-40"
                       >
                         <Minus className="h-4 w-4" strokeWidth={2.5} />
                       </button>
-                      <span className="min-w-[2.5rem] text-center text-base font-semibold text-white">
+                      <span className="min-w-[2.5rem] text-center text-base font-semibold text-[var(--text-primary)]">
                         {quantity}
                       </span>
                       <button
                         type="button"
                         onClick={stepQuantity(option._id, 1)}
                         disabled={quantity >= MAX_QUANTITY}
-                        className="flex h-8 w-8 items-center justify-center rounded-r-lg text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
+                        className="flex h-8 w-8 items-center justify-center rounded-r-lg text-[var(--text-primary)] transition hover:bg-[var(--glass-bg)] disabled:cursor-not-allowed disabled:opacity-40"
                       >
                         <Plus className="h-4 w-4" strokeWidth={2.5} />
                       </button>
@@ -255,14 +254,14 @@ const MultiSelectDropdown = ({
           {selectedOptions.map((option) => (
             <span
               key={option._id}
-              className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/40 bg-emerald-500/15 py-1 pl-3 pr-1.5 text-sm text-white"
+              className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/40 bg-emerald-500/15 py-1 pl-3 pr-1.5 text-sm text-[var(--text-primary)]"
             >
               {option.serviceName?.trim()}
               {option.isQuantityBased ? ` x${quantities[option._id] || MIN_QUANTITY}` : ''}
               <button
                 type="button"
                 onClick={() => onRemove(option._id)}
-                className="flex h-5 w-5 items-center justify-center rounded-full text-emerald-100 transition hover:bg-white/15"
+                className="flex h-5 w-5 items-center justify-center rounded-full text-emerald-100 transition hover:bg-[var(--glass-bg-strong)]"
               >
                 <X className="h-3.5 w-3.5" strokeWidth={2.5} />
               </button>
@@ -596,10 +595,9 @@ const StartNewWebsiteCustomize = () => {
   return (
     <DashboardLayout user={user}>
       <div
-        className="relative min-h-[calc(100vh-4rem)] bg-slate-950 bg-cover bg-center px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
-        style={{ backgroundImage: `url(${backgroundImage})` }}
+        className="relative min-h-[calc(100vh-4rem)] px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
       >
-        <div className="pointer-events-none absolute inset-0 bg-slate-950/40" />
+        <div className="pointer-events-none absolute inset-0 bg-[var(--scrim)]" />
 
         <div className="relative mx-auto flex w-full max-w-6xl flex-col gap-10">
           {/* Header — open, centered */}
@@ -607,28 +605,28 @@ const StartNewWebsiteCustomize = () => {
             <button
               type="button"
               onClick={() => navigate('/start-new-project/build/new_website')}
-              className="absolute left-0 inline-flex w-fit shrink-0 items-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-5 py-3 text-lg font-semibold text-white backdrop-blur-md transition hover:bg-white/15"
+              className="absolute left-0 inline-flex w-fit shrink-0 items-center gap-2 rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg)] px-5 py-3 text-lg font-semibold text-[var(--text-primary)] backdrop-blur-md transition hover:bg-[var(--glass-bg-strong)]"
             >
               <ArrowLeft className="h-5 w-5" />
               Back
             </button>
 
             <div className="text-center">
-              <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl lg:text-4xl">
+              <h1 className="text-2xl font-bold tracking-tight text-[var(--text-primary)] sm:text-3xl lg:text-4xl">
                 {projectLabel}
               </h1>
-              <p className="mt-1 text-base text-slate-300 sm:text-lg">Customize your project</p>
+              <p className="mt-1 text-base text-[var(--text-secondary)] sm:text-lg">Customize your project</p>
             </div>
           </div>
 
           {/* Full-page glass sheet behind all content — soft, frameless-feeling, overflow-visible */}
-          <div className="rounded-[2rem] bg-white/[0.06] p-6 backdrop-blur-2xl sm:p-8 lg:p-10">
+          <div className="rounded-[2rem] bg-[var(--glass-bg-subtle)] p-6 backdrop-blur-2xl sm:p-8 lg:p-10">
           <div className="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-14">
             {/* LEFT: the requirement form */}
             <div className="flex flex-col gap-10">
               <section>
                 <SectionLabel>Your requirement</SectionLabel>
-                <p className="mt-2 text-base text-slate-300">
+                <p className="mt-2 text-base text-[var(--text-secondary)]">
                   Prefilled from your answers — change anything you like.
                 </p>
 
@@ -667,11 +665,11 @@ const StartNewWebsiteCustomize = () => {
 
                 {/* Partial payment — installment plan chooser + breakdown */}
                 {paymentOption === 'partial' && (
-                  <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.04] p-5">
+                  <div className="mt-6 rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg-subtle)] p-5">
                     <p className="text-sm font-semibold uppercase tracking-wide text-emerald-300/90">
                       Installment plan
                     </p>
-                    <p className="mt-1 text-sm text-slate-300">
+                    <p className="mt-1 text-sm text-[var(--text-secondary)]">
                       Pay in parts as your project progresses. You&apos;ll pay the first
                       installment now; the rest become due later.
                     </p>
@@ -686,8 +684,8 @@ const StartNewWebsiteCustomize = () => {
                             onClick={() => setInstallmentCount(option.value)}
                             className={`rounded-xl border px-4 py-3 text-left text-base transition ${
                               isActive
-                                ? 'border-emerald-400/60 bg-emerald-500/15 text-white'
-                                : 'border-white/15 bg-white/[0.03] text-slate-200 hover:border-white/30'
+                                ? 'border-emerald-400/60 bg-emerald-500/15 text-[var(--text-primary)]'
+                                : 'border-[var(--glass-border)] bg-[var(--glass-bg-subtle)] text-[var(--text-secondary)] hover:border-[var(--glass-border-strong)]'
                             }`}
                           >
                             {option.label}
@@ -696,13 +694,13 @@ const StartNewWebsiteCustomize = () => {
                       })}
                     </div>
 
-                    <div className="mt-4 divide-y divide-white/10">
+                    <div className="mt-4 divide-y divide-[var(--divider)]">
                       {installmentBreakdown.map((inst) => (
                         <div
                           key={inst.installmentNumber}
                           className="flex items-center justify-between py-2 text-sm"
                         >
-                          <span className="text-slate-300">
+                          <span className="text-[var(--text-secondary)]">
                             Installment {inst.installmentNumber} ({inst.percentage}%)
                             {inst.installmentNumber === 1 && (
                               <span className="ml-2 rounded-full border border-emerald-400/40 bg-emerald-500/15 px-2 py-0.5 text-xs text-emerald-200">
@@ -710,7 +708,7 @@ const StartNewWebsiteCustomize = () => {
                               </span>
                             )}
                           </span>
-                          <span className="font-medium text-white">
+                          <span className="font-medium text-[var(--text-primary)]">
                             ₹{inst.amount.toLocaleString('en-IN')}
                           </span>
                         </div>
@@ -724,10 +722,10 @@ const StartNewWebsiteCustomize = () => {
                 )}
               </section>
 
-              <section className="border-t border-white/10 pt-10">
+              <section className="border-t border-[var(--glass-border)] pt-10">
                 <SectionLabel>Capabilities</SectionLabel>
-                <h2 className="mt-2 text-xl font-bold text-white">Choose what your project needs</h2>
-                <p className="mt-1 text-base text-slate-300">
+                <h2 className="mt-2 text-xl font-bold text-[var(--text-primary)]">Choose what your project needs</h2>
+                <p className="mt-1 text-base text-[var(--text-secondary)]">
                   Select everything you need, or just the parts that matter.
                 </p>
                 <div className="mt-5 max-w-xl">
@@ -745,15 +743,15 @@ const StartNewWebsiteCustomize = () => {
             </div>
 
             {/* RIGHT: estimate + coupon + submit (sticky on desktop) */}
-            <div className="lg:border-l lg:border-white/10 lg:pl-14">
+            <div className="lg:border-l lg:border-[var(--glass-border)] lg:pl-14">
               <div className="lg:sticky lg:top-6 flex flex-col gap-10">
                 <section>
                   <SectionLabel>Estimated total</SectionLabel>
                   <div className="mt-4 flex items-baseline justify-between gap-4">
-                    <span className="text-sm text-slate-400">
+                    <span className="text-sm text-[var(--text-muted)]">
                       {selectedCount} capabilit{selectedCount === 1 ? 'y' : 'ies'}
                     </span>
-                    <span className="text-3xl font-bold text-white">
+                    <span className="text-3xl font-bold text-[var(--text-primary)]">
                       ₹{estimateTotal.toLocaleString('en-IN')}
                     </span>
                   </div>
@@ -764,7 +762,7 @@ const StartNewWebsiteCustomize = () => {
                   </p>
                 </section>
 
-                <section className="border-t border-white/10 pt-10">
+                <section className="border-t border-[var(--glass-border)] pt-10">
                   <SectionLabel>Coupon / promo code</SectionLabel>
                   <div className="mt-4 flex gap-2">
                     <input
@@ -772,24 +770,24 @@ const StartNewWebsiteCustomize = () => {
                       value={couponCode}
                       onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
                       placeholder="Enter code"
-                      className="w-full border-0 border-b border-white/20 bg-transparent px-0 py-2.5 text-base text-white placeholder-slate-500 outline-none transition focus:border-emerald-400"
+                      className="w-full border-0 border-b border-[var(--glass-border-strong)] bg-transparent px-0 py-2.5 text-base text-[var(--text-primary)] placeholder-[var(--text-muted)] outline-none transition focus:border-emerald-400"
                     />
                     <button
                       type="button"
                       onClick={() => {}}
-                      className="shrink-0 rounded-xl border border-emerald-400/40 bg-emerald-500/20 px-5 py-2.5 text-base font-medium text-white backdrop-blur-md transition-all duration-300 hover:border-emerald-300/60 hover:bg-emerald-500/35"
+                      className="shrink-0 rounded-xl border border-emerald-400/40 bg-emerald-500/20 px-5 py-2.5 text-base font-medium text-[var(--text-primary)] backdrop-blur-md transition-all duration-300 hover:border-emerald-300/60 hover:bg-emerald-500/35"
                     >
                       Apply
                     </button>
                   </div>
                 </section>
 
-                <section className="border-t border-white/10 pt-10">
+                <section className="border-t border-[var(--glass-border)] pt-10">
                   <button
                     type="button"
                     onClick={handleSubmit}
                     disabled={submitting}
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-emerald-400/40 bg-emerald-500/20 px-8 py-3 text-base font-semibold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.25)] backdrop-blur-md transition-all duration-300 hover:border-emerald-300/60 hover:bg-emerald-500/35 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-emerald-400/40 bg-emerald-500/20 px-8 py-3 text-base font-semibold text-[var(--text-primary)] shadow-[inset_0_1px_0_rgba(255,255,255,0.25)] backdrop-blur-md transition-all duration-300 hover:border-emerald-300/60 hover:bg-emerald-500/35 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {submitting
                       ? 'Please wait…'
@@ -809,57 +807,57 @@ const StartNewWebsiteCustomize = () => {
       {showPaymentModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
           <div
-            className="absolute inset-0 bg-slate-950/70 backdrop-blur-sm"
+            className="absolute inset-0 bg-[var(--glass-bg-subtle)] backdrop-blur-sm"
             onClick={() => setShowPaymentModal(false)}
           />
-          <div className="relative w-full max-w-md animate-[fadeSlideUp_0.3s_ease-out_both] overflow-hidden rounded-3xl border border-white/20 bg-white/10 p-7 shadow-[0_24px_64px_rgba(0,0,0,0.5)] backdrop-blur-2xl backdrop-saturate-150">
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/[0.15] to-transparent" />
+          <div className="relative w-full max-w-md animate-[fadeSlideUp_0.3s_ease-out_both] overflow-hidden rounded-3xl border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] p-7 shadow-[0_24px_64px_rgba(0,0,0,0.5)] backdrop-blur-2xl backdrop-saturate-150">
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-[var(--glass-sheen)] to-transparent" />
 
             <button
               type="button"
               onClick={() => setShowPaymentModal(false)}
-              className="absolute right-4 top-4 rounded-lg border border-white/20 bg-white/10 p-1.5 text-white transition-colors duration-200 hover:border-emerald-300/60 hover:bg-white/[0.16]"
+              className="absolute right-4 top-4 rounded-lg border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] p-1.5 text-[var(--text-primary)] transition-colors duration-200 hover:border-emerald-300/60 hover:bg-[var(--glass-bg-strong)]"
             >
               <X className="h-4 w-4" strokeWidth={2} />
             </button>
 
             {!showQR ? (
               <>
-                <h3 className="relative text-xl font-semibold text-white">Confirm your project</h3>
-                <p className="relative mt-1 text-sm text-slate-300">
+                <h3 className="relative text-xl font-semibold text-[var(--text-primary)]">Confirm your project</h3>
+                <p className="relative mt-1 text-sm text-[var(--text-secondary)]">
                   Review your selection before you continue to payment.
                 </p>
 
-                <div className="relative mt-5 divide-y divide-white/10">
+                <div className="relative mt-5 divide-y divide-[var(--divider)]">
                   <div className="flex items-baseline justify-between gap-4 py-2.5">
-                    <span className="text-sm text-slate-400">Project</span>
-                    <span className="text-right text-sm font-medium text-white">{projectLabel}</span>
+                    <span className="text-sm text-[var(--text-muted)]">Project</span>
+                    <span className="text-right text-sm font-medium text-[var(--text-primary)]">{projectLabel}</span>
                   </div>
                   <div className="flex items-start justify-between gap-4 py-2.5">
-                    <span className="text-sm text-slate-400">Capabilities</span>
-                    <span className="text-right text-sm font-medium text-white">
+                    <span className="text-sm text-[var(--text-muted)]">Capabilities</span>
+                    <span className="text-right text-sm font-medium text-[var(--text-primary)]">
                       {selectedCapabilityNames.length
                         ? selectedCapabilityNames.join(', ')
                         : 'None selected'}
                     </span>
                   </div>
                   <div className="flex items-baseline justify-between gap-4 py-2.5">
-                    <span className="text-sm text-slate-400">Payment</span>
-                    <span className="text-right text-sm font-medium text-white">
+                    <span className="text-sm text-[var(--text-muted)]">Payment</span>
+                    <span className="text-right text-sm font-medium text-[var(--text-primary)]">
                       {labelOf(PAYMENT_OPTIONS, paymentOption)}
                     </span>
                   </div>
                   {couponCode && (
                     <div className="flex items-baseline justify-between gap-4 py-2.5">
-                      <span className="text-sm text-slate-400">Coupon</span>
-                      <span className="text-right text-sm font-medium text-white">{couponCode}</span>
+                      <span className="text-sm text-[var(--text-muted)]">Coupon</span>
+                      <span className="text-right text-sm font-medium text-[var(--text-primary)]">{couponCode}</span>
                     </div>
                   )}
                   <div className="flex items-baseline justify-between gap-4 py-2.5">
-                    <span className="text-sm text-slate-400">
+                    <span className="text-sm text-[var(--text-muted)]">
                       {createdOrder ? 'Project price' : 'Estimated total'}
                     </span>
-                    <span className="text-right text-lg font-bold text-white">
+                    <span className="text-right text-lg font-bold text-[var(--text-primary)]">
                       ₹{(createdOrder ? createdOrder.finalPrice : estimateTotal).toLocaleString('en-IN')}
                     </span>
                   </div>
@@ -873,25 +871,25 @@ const StartNewWebsiteCustomize = () => {
                   )}
                 </div>
 
-                <div className="relative mt-4 flex items-baseline justify-between gap-4 rounded-xl border border-white/15 bg-white/[0.04] px-4 py-3">
-                  <span className="text-sm text-slate-300">Wallet balance</span>
-                  <span className="text-sm font-medium text-white">
+                <div className="relative mt-4 flex items-baseline justify-between gap-4 rounded-xl border border-[var(--glass-border)] bg-[var(--glass-bg-subtle)] px-4 py-3">
+                  <span className="text-sm text-[var(--text-secondary)]">Wallet balance</span>
+                  <span className="text-sm font-medium text-[var(--text-primary)]">
                     {displayINRCurrency(context?.walletBalance || 0)}
                   </span>
                 </div>
 
                 {/* Wallet/UPI split — shown when the wallet is used and doesn't fully cover it */}
                 {walletPart > 0 && upiPart > 0 && (
-                  <div className="relative mt-3 divide-y divide-white/10 rounded-xl border border-emerald-400/25 bg-emerald-500/[0.06] px-4 py-2">
+                  <div className="relative mt-3 divide-y divide-[var(--divider)] rounded-xl border border-emerald-400/25 bg-emerald-500/[0.06] px-4 py-2">
                     <div className="flex items-baseline justify-between gap-4 py-2 text-sm">
-                      <span className="text-slate-300">Paid from wallet (instant)</span>
+                      <span className="text-[var(--text-secondary)]">Paid from wallet (instant)</span>
                       <span className="font-medium text-emerald-300">
                         ₹{walletPart.toLocaleString('en-IN')}
                       </span>
                     </div>
                     <div className="flex items-baseline justify-between gap-4 py-2 text-sm">
-                      <span className="text-slate-300">To pay via UPI</span>
-                      <span className="font-medium text-white">
+                      <span className="text-[var(--text-secondary)]">To pay via UPI</span>
+                      <span className="font-medium text-[var(--text-primary)]">
                         ₹{upiPart.toLocaleString('en-IN')}
                       </span>
                     </div>
@@ -902,7 +900,7 @@ const StartNewWebsiteCustomize = () => {
                   type="button"
                   onClick={handleConfirmPayment}
                   disabled={payProcessing}
-                  className="relative mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-400/40 bg-emerald-500/20 px-5 py-3 text-base font-medium text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.25)] backdrop-blur-md transition-all duration-300 hover:border-emerald-300/60 hover:bg-emerald-500/35 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="relative mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-400/40 bg-emerald-500/20 px-5 py-3 text-base font-medium text-[var(--text-primary)] shadow-[inset_0_1px_0_rgba(255,255,255,0.25)] backdrop-blur-md transition-all duration-300 hover:border-emerald-300/60 hover:bg-emerald-500/35 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {payProcessing
                     ? 'Processing…'
@@ -916,8 +914,8 @@ const StartNewWebsiteCustomize = () => {
             ) : (
               /* QR step — shown when wallet balance is insufficient */
               <>
-                <h3 className="relative text-xl font-semibold text-white">Scan to pay</h3>
-                <p className="relative mt-1 text-sm text-slate-300">
+                <h3 className="relative text-xl font-semibold text-[var(--text-primary)]">Scan to pay</h3>
+                <p className="relative mt-1 text-sm text-[var(--text-secondary)]">
                   Pay ₹{upiPart.toLocaleString('en-IN')} using any UPI app, then enter
                   the transaction ID below.
                   {walletPart > 0 && (
@@ -931,11 +929,11 @@ const StartNewWebsiteCustomize = () => {
                   <div className="rounded-2xl bg-white p-4">
                     <QRCodeSVG value={upiLink} size={190} />
                   </div>
-                  <p className="mt-3 text-xs text-slate-400">Transaction ID: {payTxnId}</p>
+                  <p className="mt-3 text-xs text-[var(--text-muted)]">Transaction ID: {payTxnId}</p>
                 </div>
 
                 <label className="relative mt-5 block">
-                  <span className="mb-2 block text-sm font-medium text-white">
+                  <span className="mb-2 block text-sm font-medium text-[var(--text-primary)]">
                     UPI Transaction ID
                   </span>
                   <input
@@ -946,7 +944,7 @@ const StartNewWebsiteCustomize = () => {
                       setUpiTransactionId(e.target.value.replace(/\D/g, ''))
                     }
                     placeholder="Enter the 12-digit ID from your UPI app"
-                    className="w-full rounded-xl border border-white/20 bg-white/5 px-4 py-3 text-base text-white placeholder-slate-500 outline-none transition focus:border-emerald-400"
+                    className="w-full rounded-xl border border-[var(--glass-border-strong)] bg-[var(--glass-bg-subtle)] px-4 py-3 text-base text-[var(--text-primary)] placeholder-[var(--text-muted)] outline-none transition focus:border-emerald-400"
                   />
                 </label>
 
@@ -954,7 +952,7 @@ const StartNewWebsiteCustomize = () => {
                   type="button"
                   onClick={handleVerifyUpi}
                   disabled={payProcessing || upiTransactionId.trim().length < 12}
-                  className="relative mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-400/40 bg-emerald-500/20 px-5 py-3 text-base font-medium text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.25)] backdrop-blur-md transition-all duration-300 hover:border-emerald-300/60 hover:bg-emerald-500/35 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="relative mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-400/40 bg-emerald-500/20 px-5 py-3 text-base font-medium text-[var(--text-primary)] shadow-[inset_0_1px_0_rgba(255,255,255,0.25)] backdrop-blur-md transition-all duration-300 hover:border-emerald-300/60 hover:bg-emerald-500/35 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {payProcessing ? 'Submitting…' : 'Submit for Verification'}
                 </button>
@@ -968,24 +966,24 @@ const StartNewWebsiteCustomize = () => {
       {showSuccess && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
           <div
-            className="absolute inset-0 bg-slate-950/70 backdrop-blur-sm"
+            className="absolute inset-0 bg-[var(--glass-bg-subtle)] backdrop-blur-sm"
             onClick={() => setShowSuccess(false)}
           />
-          <div className="relative w-full max-w-sm animate-[fadeSlideUp_0.3s_ease-out_both] overflow-hidden rounded-3xl border border-white/20 bg-white/10 p-7 text-center shadow-[0_24px_64px_rgba(0,0,0,0.5)] backdrop-blur-2xl backdrop-saturate-150">
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/[0.15] to-transparent" />
+          <div className="relative w-full max-w-sm animate-[fadeSlideUp_0.3s_ease-out_both] overflow-hidden rounded-3xl border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] p-7 text-center shadow-[0_24px_64px_rgba(0,0,0,0.5)] backdrop-blur-2xl backdrop-saturate-150">
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-[var(--glass-sheen)] to-transparent" />
 
             <div className="relative mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-emerald-400/40 bg-emerald-500/15 backdrop-blur-md">
               <CheckCircle2 className="h-8 w-8 text-emerald-400" strokeWidth={1.75} />
             </div>
 
-            <h3 className="relative mt-5 text-xl font-semibold text-white">
+            <h3 className="relative mt-5 text-xl font-semibold text-[var(--text-primary)]">
               {paymentOption === 'decide_later'
                 ? 'Project request submitted'
                 : createdOrder?.approved
                 ? 'Payment successful — project started'
                 : 'Payment submitted for approval'}
             </h3>
-            <p className="relative mt-2 text-base leading-relaxed text-slate-300">
+            <p className="relative mt-2 text-base leading-relaxed text-[var(--text-secondary)]">
               {paymentOption === 'decide_later'
                 ? 'Our team will review your requirement and get in touch with you shortly.'
                 : createdOrder?.approved
@@ -996,7 +994,7 @@ const StartNewWebsiteCustomize = () => {
             <button
               type="button"
               onClick={() => navigate('/dashboard')}
-              className="relative mt-6 inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-400/40 bg-emerald-500/20 px-6 py-2.5 text-base font-medium text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.25)] backdrop-blur-md transition-all duration-300 hover:border-emerald-300/60 hover:bg-emerald-500/35"
+              className="relative mt-6 inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-400/40 bg-emerald-500/20 px-6 py-2.5 text-base font-medium text-[var(--text-primary)] shadow-[inset_0_1px_0_rgba(255,255,255,0.25)] backdrop-blur-md transition-all duration-300 hover:border-emerald-300/60 hover:bg-emerald-500/35"
             >
               Go to Dashboard
             </button>

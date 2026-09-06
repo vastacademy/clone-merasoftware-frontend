@@ -27,7 +27,7 @@ const FloatingCartButton = () => {
       type="button"
       onClick={openCartDrawer}
       aria-label={`Open cart, ${draftOrders.length} item${draftOrders.length === 1 ? '' : 's'}`}
-      className={`fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-slate-950 text-white shadow-xl transition-transform hover:bg-slate-800 ${
+      className={`fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-[rgb(var(--ink-rgb))] text-[var(--page-bg)] shadow-xl transition-transform hover:bg-[rgb(var(--ink-rgb)/0.85)] ${
         isWiggling ? 'animate-wiggle' : ''
       }`}
     >

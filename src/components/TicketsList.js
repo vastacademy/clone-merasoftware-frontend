@@ -81,13 +81,13 @@ const TicketsList = () => {
         );
       case 'closed':
         return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[var(--glass-bg-strong)] text-[var(--text-secondary)]">
             Closed
           </span>
         );
       default:
         return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[var(--glass-bg-strong)] text-[var(--text-secondary)]">
             Unknown
           </span>
         );
@@ -124,8 +124,8 @@ const TicketsList = () => {
         disabled={currentPage === 1}
         className={`relative inline-flex items-center rounded-l-xl border px-2 py-2 backdrop-blur-md ${
           currentPage === 1
-            ? 'cursor-not-allowed border-white/10 bg-white/5 text-slate-500'
-            : 'border-white/20 bg-white/10 text-slate-200 hover:bg-white/20'
+            ? 'cursor-not-allowed border-[var(--glass-border)] bg-[var(--glass-bg-subtle)] text-[var(--text-muted)]'
+            : 'border-[var(--glass-border-strong)] bg-[var(--glass-bg)] text-[var(--text-secondary)] hover:bg-[var(--glass-bg-strong)]'
         }`}
       >
         <span className="sr-only">Previous</span>
@@ -146,8 +146,8 @@ const TicketsList = () => {
           onClick={() => handlePageChange(i)}
           className={`relative inline-flex items-center border px-4 py-2 backdrop-blur-md ${
             i === currentPage
-              ? 'z-10 border-emerald-400/50 bg-emerald-500/25 text-white'
-              : 'border-white/20 bg-white/10 text-slate-200 hover:bg-white/20'
+              ? 'z-10 border-emerald-400/50 bg-emerald-500/25 text-[var(--text-primary)]'
+              : 'border-[var(--glass-border-strong)] bg-[var(--glass-bg)] text-[var(--text-secondary)] hover:bg-[var(--glass-bg-strong)]'
           }`}
         >
           {i}
@@ -163,8 +163,8 @@ const TicketsList = () => {
         disabled={currentPage === totalPages}
         className={`relative inline-flex items-center rounded-r-xl border px-2 py-2 backdrop-blur-md ${
           currentPage === totalPages
-            ? 'cursor-not-allowed border-white/10 bg-white/5 text-slate-500'
-            : 'border-white/20 bg-white/10 text-slate-200 hover:bg-white/20'
+            ? 'cursor-not-allowed border-[var(--glass-border)] bg-[var(--glass-bg-subtle)] text-[var(--text-muted)]'
+            : 'border-[var(--glass-border-strong)] bg-[var(--glass-bg)] text-[var(--text-secondary)] hover:bg-[var(--glass-bg-strong)]'
         }`}
       >
         <span className="sr-only">Next</span>
@@ -192,10 +192,10 @@ const TicketsList = () => {
   }, [currentPage, statusFilter, userDetails, isInitialized]);
   
   return (
-    <div className="relative overflow-hidden rounded-3xl border border-white/20 bg-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.25)] backdrop-blur-2xl backdrop-saturate-150">
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/[0.12] to-transparent" />
-      <div className="relative flex items-center justify-between gap-3 border-b border-white/15 p-4 sm:px-6">
-        <h2 className="flex items-center text-xl font-semibold text-white">
+    <div className="relative overflow-hidden rounded-3xl border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] shadow-[var(--card-shadow)] backdrop-blur-2xl backdrop-saturate-150">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-[var(--glass-sheen)] to-transparent" />
+      <div className="relative flex items-center justify-between gap-3 border-b border-[var(--glass-border)] p-4 sm:px-6">
+        <h2 className="flex items-center text-xl font-semibold text-[var(--text-primary)]">
           <Ticket className="mr-2 h-5 w-5" />
           My Support Tickets
         </h2>
@@ -207,18 +207,18 @@ const TicketsList = () => {
                 setStatusFilter(e.target.value);
                 setCurrentPage(1);
               }}
-              className="rounded-xl border border-white/20 bg-white/10 py-1.5 pl-9 pr-3 text-sm text-white backdrop-blur-md focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/40"
+              className="rounded-xl border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] py-1.5 pl-9 pr-3 text-sm text-[var(--text-primary)] backdrop-blur-md focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/40"
             >
-              <option className="bg-slate-900 text-white" value="">All Tickets</option>
-              <option className="bg-slate-900 text-white" value="pending">Pending</option>
-              <option className="bg-slate-900 text-white" value="open">Open</option>
-              <option className="bg-slate-900 text-white" value="closed">Closed</option>
+              <option className="bg-[var(--menu-bg)] text-[var(--text-primary)]" value="">All Tickets</option>
+              <option className="bg-[var(--menu-bg)] text-[var(--text-primary)]" value="pending">Pending</option>
+              <option className="bg-[var(--menu-bg)] text-[var(--text-primary)]" value="open">Open</option>
+              <option className="bg-[var(--menu-bg)] text-[var(--text-primary)]" value="closed">Closed</option>
             </select>
-            <Filter className="absolute left-3 top-2 h-4 w-4 text-slate-400" />
+            <Filter className="absolute left-3 top-2 h-4 w-4 text-[var(--text-muted)]" />
           </div>
           <button
             onClick={() => setShowCreateForm(true)}
-            className="flex items-center rounded-xl border border-emerald-400/40 bg-emerald-500/20 px-3 py-1.5 text-sm font-medium text-white backdrop-blur-md transition-colors hover:bg-emerald-500/35 sm:px-4"
+            className="flex items-center rounded-xl border border-emerald-400/40 bg-emerald-500/20 px-3 py-1.5 text-sm font-medium text-[var(--text-primary)] backdrop-blur-md transition-colors hover:bg-emerald-500/35 sm:px-4"
           >
             <Plus className="mr-1 h-4 w-4" />
             <span className="hidden sm:inline">Create Ticket</span>
@@ -236,7 +236,7 @@ const TicketsList = () => {
           <p className="text-rose-400">{error}</p>
           <button
             onClick={fetchTickets}
-            className="mt-4 rounded-xl border border-emerald-400/40 bg-emerald-500/20 px-4 py-2 text-sm text-white backdrop-blur-md hover:bg-emerald-500/35"
+            className="mt-4 rounded-xl border border-emerald-400/40 bg-emerald-500/20 px-4 py-2 text-sm text-[var(--text-primary)] backdrop-blur-md hover:bg-emerald-500/35"
           >
             Try Again
           </button>
@@ -244,13 +244,13 @@ const TicketsList = () => {
       ) : tickets.length === 0 ? (
         <div className="relative p-12 text-center">
           <div className="mb-4 flex justify-center">
-            <Ticket className="h-12 w-12 text-white/30" />
+            <Ticket className="h-12 w-12 text-[var(--text-muted)]" />
           </div>
-          <h3 className="mb-2 text-lg font-medium text-white">No tickets found</h3>
-          <p className="mb-6 text-slate-300">You haven't created any support tickets yet.</p>
+          <h3 className="mb-2 text-lg font-medium text-[var(--text-primary)]">No tickets found</h3>
+          <p className="mb-6 text-[var(--text-secondary)]">You haven't created any support tickets yet.</p>
           <button
             onClick={() => setShowCreateForm(true)}
-            className="mx-auto flex items-center rounded-xl border border-emerald-400/40 bg-emerald-500/20 px-4 py-2 text-white backdrop-blur-md hover:bg-emerald-500/35"
+            className="mx-auto flex items-center rounded-xl border border-emerald-400/40 bg-emerald-500/20 px-4 py-2 text-[var(--text-primary)] backdrop-blur-md hover:bg-emerald-500/35"
           >
             <Plus className="mr-2 h-4 w-4" />
             Create Your First Ticket
@@ -259,57 +259,57 @@ const TicketsList = () => {
       ) : (
         <>
           <div className="relative overflow-x-auto">
-            <table className="min-w-full divide-y divide-white/15">
-              <thead className="bg-white/5">
+            <table className="min-w-full divide-y divide-[var(--divider)]">
+              <thead className="bg-[var(--glass-bg-subtle)]">
                 <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-300">
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
                     Ticket ID
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-300">
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
                     Category
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-300">
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
                     Subject
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-300">
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
                     Status
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-300">
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
                     Created
                   </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-300">
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
                     Last Updated
                   </th>
-                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-slate-300">
+                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
                     Action
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/10">
+              <tbody className="divide-y divide-[var(--divider)]">
                 {tickets.map((ticket) => (
                   <tr
                     key={ticket.ticketId}
                     onClick={() => navigate(`/support-tickets/${ticket.ticketId}`, {
                       state: customerReturnState('/support'),
                     })}
-                    className="cursor-pointer hover:bg-white/[0.06]"
+                    className="cursor-pointer hover:bg-[var(--glass-bg-subtle)]"
                   >
-                    <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-white">
+                    <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-[var(--text-primary)]">
                       {ticket.ticketId}
                     </td>
-                    <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-300">
+                    <td className="whitespace-nowrap px-6 py-4 text-sm text-[var(--text-secondary)]">
                       {ticket.category}
                     </td>
-                    <td className="max-w-[200px] truncate whitespace-nowrap px-6 py-4 text-sm text-slate-300">
+                    <td className="max-w-[200px] truncate whitespace-nowrap px-6 py-4 text-sm text-[var(--text-secondary)]">
                       {ticket.subject}
                     </td>
-                    <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-300">
+                    <td className="whitespace-nowrap px-6 py-4 text-sm text-[var(--text-secondary)]">
                       {getStatusBadge(ticket.status)}
                     </td>
-                    <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-300">
+                    <td className="whitespace-nowrap px-6 py-4 text-sm text-[var(--text-secondary)]">
                       {formatDate(ticket.createdAt)}
                     </td>
-                    <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-300">
+                    <td className="whitespace-nowrap px-6 py-4 text-sm text-[var(--text-secondary)]">
                       {formatDate(ticket.updatedAt)}
                     </td>
                     <td className="whitespace-nowrap px-6 py-4 text-right text-sm">

@@ -20,7 +20,6 @@ import {
   HelpCircle,
 } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
-import backgroundImage from '../assets/BG.png';
 
 const QUESTIONS = [
   {
@@ -249,22 +248,21 @@ const StartNewWebsiteBuild = () => {
   return (
     <DashboardLayout user={user}>
       <div
-        className="relative min-h-[calc(100vh-4rem)] overflow-hidden bg-slate-950 bg-cover bg-center px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
-        style={{ backgroundImage: `url(${backgroundImage})` }}
+        className="relative min-h-[calc(100vh-4rem)] overflow-hidden px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
       >
-        <div className="pointer-events-none absolute inset-0 bg-slate-950/40" />
+        <div className="pointer-events-none absolute inset-0 bg-[var(--scrim)]" />
 
         <div className="relative mx-auto max-w-6xl">
           <div className="relative flex items-center justify-center">
             <button
               type="button"
               onClick={handleBack}
-              className="absolute left-0 inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-5 py-3 text-lg font-medium text-white shadow-[0_8px_32px_rgba(0,0,0,0.35)] backdrop-blur-2xl transition-all duration-300 hover:border-emerald-300/60 hover:bg-white/[0.16]"
+              className="absolute left-0 inline-flex items-center gap-2 rounded-xl border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] px-5 py-3 text-lg font-medium text-[var(--text-primary)] shadow-[var(--card-shadow)] backdrop-blur-2xl transition-all duration-300 hover:border-emerald-300/60 hover:bg-[var(--glass-bg-strong)]"
             >
               <ArrowLeft className="h-5 w-5" strokeWidth={2} />
               Back
             </button>
-            <span className="inline-flex items-center rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-sm font-medium text-white shadow-[0_8px_32px_rgba(0,0,0,0.35)] backdrop-blur-2xl">
+            <span className="inline-flex items-center rounded-full border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] px-4 py-1.5 text-sm font-medium text-[var(--text-primary)] shadow-[var(--card-shadow)] backdrop-blur-2xl">
               New Website Project
             </span>
           </div>
@@ -279,7 +277,7 @@ const StartNewWebsiteBuild = () => {
                       ? 'w-10 bg-emerald-400'
                       : i < step
                       ? 'w-6 bg-emerald-400/60'
-                      : 'w-6 bg-white/20'
+                      : 'w-6 bg-[var(--glass-bg-strong)]'
                   }`}
                 />
               ))}
@@ -292,10 +290,10 @@ const StartNewWebsiteBuild = () => {
                 <span className="inline-flex items-center rounded-full border border-emerald-400/30 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-300">
                   {currentQuestion.eyebrow}
                 </span>
-                <h1 className="mt-4 text-2xl font-bold tracking-tight text-white sm:text-3xl">
+                <h1 className="mt-4 text-2xl font-bold tracking-tight text-[var(--text-primary)] sm:text-3xl">
                   {currentQuestion.title}
                 </h1>
-                <p className="mx-auto mt-3 max-w-xl text-base text-slate-300">
+                <p className="mx-auto mt-3 max-w-xl text-base text-[var(--text-secondary)]">
                   {currentQuestion.subtitle}
                 </p>
               </div>
@@ -315,33 +313,33 @@ const StartNewWebsiteBuild = () => {
                       <button
                         type="button"
                         onClick={() => handleSelect(currentQuestion.key, option.value)}
-                        className="group relative w-full overflow-hidden rounded-3xl border border-white/20 bg-white/10 p-6 text-left shadow-[0_8px_32px_rgba(0,0,0,0.25)] backdrop-blur-2xl backdrop-saturate-150 transition-all duration-300 hover:-translate-y-1.5 hover:border-emerald-300/60 hover:bg-white/[0.16] hover:shadow-[0_24px_48px_rgba(16,185,129,0.28)] focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+                        className="group relative w-full overflow-hidden rounded-3xl border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] p-6 text-left shadow-[var(--card-shadow)] backdrop-blur-2xl backdrop-saturate-150 transition-all duration-300 hover:-translate-y-1.5 hover:border-emerald-300/60 hover:bg-[var(--glass-bg-strong)] hover:shadow-[0_24px_48px_rgba(16,185,129,0.28)] focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
                       >
-                        <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/[0.15] to-transparent" />
+                        <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-[var(--glass-sheen)] to-transparent" />
                         <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-emerald-300/30 opacity-0 blur-3xl transition-opacity duration-500 group-hover:opacity-100" />
-                        <div className="pointer-events-none absolute inset-0 rounded-3xl ring-1 ring-inset ring-white/10 transition-all duration-300 group-hover:ring-emerald-300/40" />
+                        <div className="pointer-events-none absolute inset-0 rounded-3xl ring-1 ring-inset ring-[var(--glass-border)] transition-all duration-300 group-hover:ring-emerald-300/40" />
 
-                        <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl border border-white/20 bg-white/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.25)] backdrop-blur-md transition-colors duration-300 group-hover:border-emerald-400/50 group-hover:bg-emerald-500/15">
-                          <Icon className="h-7 w-7 text-white transition-colors duration-300 group-hover:text-emerald-400" strokeWidth={1.75} />
+                        <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] shadow-[inset_0_1px_0_rgba(255,255,255,0.25)] backdrop-blur-md transition-colors duration-300 group-hover:border-emerald-400/50 group-hover:bg-emerald-500/15">
+                          <Icon className="h-7 w-7 text-[var(--text-primary)] transition-colors duration-300 group-hover:text-emerald-400" strokeWidth={1.75} />
                         </div>
 
-                        <h3 className="relative mt-5 text-xl font-semibold text-white">
+                        <h3 className="relative mt-5 text-xl font-semibold text-[var(--text-primary)]">
                           {option.title}
                         </h3>
                         {option.description && (
-                          <p className="relative mt-2 text-base leading-relaxed text-slate-300">
+                          <p className="relative mt-2 text-base leading-relaxed text-[var(--text-secondary)]">
                             {option.description}
                           </p>
                         )}
 
-                        <div className="relative mt-5 inline-flex items-center gap-2 rounded-xl border border-emerald-400/40 bg-emerald-500/20 px-4 py-2 text-base font-medium text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.25)] backdrop-blur-md transition-all duration-300 group-hover:gap-3 group-hover:border-emerald-300/60 group-hover:bg-emerald-500/35">
+                        <div className="relative mt-5 inline-flex items-center gap-2 rounded-xl border border-emerald-400/40 bg-emerald-500/20 px-4 py-2 text-base font-medium text-[var(--text-primary)] shadow-[inset_0_1px_0_rgba(255,255,255,0.25)] backdrop-blur-md transition-all duration-300 group-hover:gap-3 group-hover:border-emerald-300/60 group-hover:bg-emerald-500/35">
                           Select
                           <ArrowRight className="h-4 w-4" strokeWidth={2} />
                         </div>
                       </button>
 
                       {option.note && (
-                        <p className="mt-3 px-1 text-center text-lg text-white">
+                        <p className="mt-3 px-1 text-center text-lg text-[var(--text-primary)]">
                           {option.note}
                         </p>
                       )}
@@ -352,76 +350,76 @@ const StartNewWebsiteBuild = () => {
             </div>
           ) : (
             <div className="mt-10 animate-[fadeSlideUp_0.5s_ease-out_both]">
-              <div className="relative overflow-hidden rounded-3xl border border-white/20 bg-white/10 p-8 text-center shadow-[0_8px_32px_rgba(0,0,0,0.25)] backdrop-blur-2xl backdrop-saturate-150 sm:p-10">
-                <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/[0.15] to-transparent" />
+              <div className="relative overflow-hidden rounded-3xl border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] p-8 text-center shadow-[var(--card-shadow)] backdrop-blur-2xl backdrop-saturate-150 sm:p-10">
+                <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-[var(--glass-sheen)] to-transparent" />
 
                 <div className="relative mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border border-emerald-400/40 bg-emerald-500/15 backdrop-blur-md">
                   <CheckCircle2 className="h-9 w-9 text-emerald-400" strokeWidth={1.75} />
                 </div>
 
-                <h2 className="relative mt-5 text-2xl font-bold text-white">
+                <h2 className="relative mt-5 text-2xl font-bold text-[var(--text-primary)]">
                   Your requirement is ready to submit
                 </h2>
-                <p className="relative mx-auto mt-2 max-w-md text-base text-slate-300">
+                <p className="relative mx-auto mt-2 max-w-md text-base text-[var(--text-secondary)]">
                   Our team will review this and set up the best project for you.
                 </p>
 
-                <div className="relative mt-8 divide-y divide-white/10 rounded-2xl border border-white/15 bg-white/5 text-left">
+                <div className="relative mt-8 divide-y divide-[var(--divider)] rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg-subtle)] text-left">
                   <div className="flex items-center justify-between px-5 py-3">
-                    <span className="text-base text-slate-300">Budget</span>
-                    <span className="text-base font-medium text-white">
+                    <span className="text-base text-[var(--text-secondary)]">Budget</span>
+                    <span className="text-base font-medium text-[var(--text-primary)]">
                       {BUDGET_LABELS[answers.budget]}
                     </span>
                   </div>
                   {answers.websiteType && (
                     <div className="flex items-center justify-between px-5 py-3">
-                      <span className="text-base text-slate-300">Website type</span>
-                      <span className="text-base font-medium text-white">
+                      <span className="text-base text-[var(--text-secondary)]">Website type</span>
+                      <span className="text-base font-medium text-[var(--text-primary)]">
                         {WEBSITE_TYPE_LABELS[answers.websiteType]}
                       </span>
                     </div>
                   )}
                   {answers.ownership && (
                     <div className="flex items-center justify-between px-5 py-3">
-                      <span className="text-base text-slate-300">Content management</span>
-                      <span className="text-base font-medium text-white">
+                      <span className="text-base text-[var(--text-secondary)]">Content management</span>
+                      <span className="text-base font-medium text-[var(--text-primary)]">
                         {OWNERSHIP_LABELS[answers.ownership]}
                       </span>
                     </div>
                   )}
                 </div>
 
-                <div className="relative mt-6 rounded-2xl border border-white/15 bg-white/5 p-6 text-left">
-                  <p className="text-base text-slate-300">
+                <div className="relative mt-6 rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg-subtle)] p-6 text-left">
+                  <p className="text-base text-[var(--text-secondary)]">
                     This request will be submitted under your name. You can edit these details below.
                   </p>
 
                   <div className="mt-5 space-y-5">
                     <label className="block">
-                      <span className="mb-2 flex items-center gap-2 text-base font-semibold text-white">
-                        <User size={16} className="text-slate-400" /> Full name
+                      <span className="mb-2 flex items-center gap-2 text-base font-semibold text-[var(--text-primary)]">
+                        <User size={16} className="text-[var(--text-muted)]" /> Full name
                       </span>
                       <input
                         name="name"
                         value={contactDetails.name}
                         onChange={handleContactChange}
-                        className="w-full border-0 border-b border-white/20 bg-transparent px-0 py-2 text-base text-white outline-none transition focus:border-emerald-400 focus:ring-0"
+                        className="w-full border-0 border-b border-[var(--glass-border-strong)] bg-transparent px-0 py-2 text-base text-[var(--text-primary)] outline-none transition focus:border-emerald-400 focus:ring-0"
                       />
                     </label>
                     <label className="block">
-                      <span className="mb-2 flex items-center gap-2 text-base font-semibold text-white">
-                        <Mail size={16} className="text-slate-400" /> Email address
+                      <span className="mb-2 flex items-center gap-2 text-base font-semibold text-[var(--text-primary)]">
+                        <Mail size={16} className="text-[var(--text-muted)]" /> Email address
                       </span>
                       <input
                         name="email"
                         value={contactDetails.email}
                         readOnly
-                        className="w-full border-0 border-b border-white/10 bg-transparent px-0 py-2 text-base text-white outline-none"
+                        className="w-full border-0 border-b border-[var(--glass-border)] bg-transparent px-0 py-2 text-base text-[var(--text-primary)] outline-none"
                       />
                     </label>
                     <label className="block">
-                      <span className="mb-2 flex items-center gap-2 text-base font-semibold text-white">
-                        <Phone size={16} className="text-slate-400" /> Phone number
+                      <span className="mb-2 flex items-center gap-2 text-base font-semibold text-[var(--text-primary)]">
+                        <Phone size={16} className="text-[var(--text-muted)]" /> Phone number
                       </span>
                       <input
                         name="phone"
@@ -430,7 +428,7 @@ const StartNewWebsiteBuild = () => {
                         pattern="[0-9]*"
                         value={contactDetails.phone}
                         onChange={handleContactChange}
-                        className="w-full border-0 border-b border-white/20 bg-transparent px-0 py-2 text-base text-white outline-none transition focus:border-emerald-400 focus:ring-0"
+                        className="w-full border-0 border-b border-[var(--glass-border-strong)] bg-transparent px-0 py-2 text-base text-[var(--text-primary)] outline-none transition focus:border-emerald-400 focus:ring-0"
                       />
                     </label>
                   </div>
@@ -439,7 +437,7 @@ const StartNewWebsiteBuild = () => {
                 <button
                   type="button"
                   onClick={() => {}}
-                  className="relative mt-8 inline-flex items-center gap-2 rounded-xl border border-emerald-400/40 bg-emerald-500/20 px-6 py-3 text-base font-medium text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.25)] backdrop-blur-md transition-all duration-300 hover:gap-3 hover:border-emerald-300/60 hover:bg-emerald-500/35"
+                  className="relative mt-8 inline-flex items-center gap-2 rounded-xl border border-emerald-400/40 bg-emerald-500/20 px-6 py-3 text-base font-medium text-[var(--text-primary)] shadow-[inset_0_1px_0_rgba(255,255,255,0.25)] backdrop-blur-md transition-all duration-300 hover:gap-3 hover:border-emerald-300/60 hover:bg-emerald-500/35"
                 >
                   Submit Request
                   <ArrowRight className="h-4 w-4" strokeWidth={2} />

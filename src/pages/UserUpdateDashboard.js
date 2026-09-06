@@ -5,7 +5,6 @@ import SummaryApi from '../common';
 import { Clock, RefreshCw, Sparkles, CalendarClock, AlertTriangle, Lock } from 'lucide-react';
 import TriangleMazeLoader from '../components/TriangleMazeLoader';
 import DashboardLayout from '../components/DashboardLayout';
-import backgroundImage from '../assets/BG.png';
 import UpdateRequestModal from '../components/UpdateRequestModal'
 
 // ---------------------------------------------------------------------------
@@ -202,9 +201,9 @@ const getCardVisualStatus = (plan) => {
 const BADGE_TONE_CLASSES = {
   active: 'bg-emerald-100 text-emerald-700',
   used_up: 'bg-amber-100 text-amber-800',
-  expired: 'bg-slate-200 text-slate-700',
+  expired: 'bg-[var(--glass-bg-strong)] text-[var(--text-secondary)]',
   paused: 'bg-rose-100 text-rose-700',
-  closed: 'bg-slate-800 text-white',
+  closed: 'bg-[var(--glass-bg-strong)] text-[var(--text-primary)]',
 };
 
 const UserUpdateDashboard = () => {
@@ -268,27 +267,26 @@ const UserUpdateDashboard = () => {
   return (
     <DashboardLayout user={user}>
       <div
-        className="min-h-full bg-slate-950 bg-cover bg-center px-4 py-5 sm:px-6 lg:px-8 lg:py-8"
-        style={{ backgroundImage: `url(${backgroundImage})` }}
+        className="min-h-full px-4 py-5 sm:px-6 lg:px-8 lg:py-8"
       >
-        <section className="mx-auto max-w-7xl overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
-          <div className="rounded-t-[2rem] bg-gradient-to-r from-slate-950 via-slate-900 to-blue-950 px-5 py-5 text-white sm:px-6 lg:px-8">
+        <section className="glass-panel mx-auto max-w-7xl overflow-hidden rounded-[2rem]">
+          <div className="rounded-t-[2rem] border-b border-[var(--divider)] bg-[var(--glass-bg-subtle)] px-5 py-5 text-[var(--text-primary)] sm:px-6 lg:px-8">
             <div className="inline-flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-sm font-semibold uppercase text-emerald-300">
               <Sparkles className="h-3.5 w-3.5" />
               My Updates
             </div>
-            <h1 className="mt-3 max-w-xl text-2xl font-bold tracking-tight text-white">
+            <h1 className="mt-3 max-w-xl text-2xl font-bold tracking-tight text-[var(--text-primary)]">
               My Website Update Plans
             </h1>
           </div>
 
           <div className="p-5 sm:p-6">
             {plansToRender.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
-                <p className="text-base text-black mb-4">You don't have any active update plans.</p>
+              <div className="rounded-2xl border border-dashed border-[var(--glass-border)] bg-[var(--glass-bg-subtle)] p-8 text-center">
+                <p className="text-base text-[var(--text-primary)] mb-4">You don't have any active update plans.</p>
                 <button
                   onClick={() => window.location.href = '/website-updates'}
-                  className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-4 py-2.5 text-base font-semibold text-white transition hover:bg-blue-700"
+                  className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-4 py-2.5 text-base font-semibold text-[var(--text-primary)] transition hover:bg-blue-700"
                 >
                   Browse Update Plans
                 </button>
@@ -301,9 +299,9 @@ const UserUpdateDashboard = () => {
                   const canRequest = status.tone === 'active';
 
                   return (
-                    <div key={plan._id} className="rounded-2xl border border-slate-200 bg-white shadow-sm p-4">
+                    <div key={plan._id} className="glass-panel rounded-2xl p-4">
                       <div className="flex items-start justify-between gap-3 mb-3">
-                        <h3 className="text-lg font-semibold text-black">{product.serviceName}</h3>
+                        <h3 className="text-lg font-semibold text-[var(--text-primary)]">{product.serviceName}</h3>
                         <span className={`shrink-0 inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${BADGE_TONE_CLASSES[status.tone]}`}>
                           {status.badge}
                         </span>
@@ -313,13 +311,13 @@ const UserUpdateDashboard = () => {
                         <div className="space-y-4 mb-4">
                           {/* This month's updates */}
                           <div>
-                            <div className="flex justify-between text-sm text-black mb-1">
+                            <div className="flex justify-between text-sm text-[var(--text-primary)] mb-1">
                               <span>This Month's Updates</span>
-                              <span className="text-base font-medium text-black">
+                              <span className="text-base font-medium text-[var(--text-primary)]">
                                 {Math.max(0, (plan.currentMonthUpdatesLimit || product.monthlyUpdateLimit || 1) - (plan.currentMonthUpdatesUsed || 0))} of {plan.currentMonthUpdatesLimit || product.monthlyUpdateLimit || 1}
                               </span>
                             </div>
-                            <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div className="w-full bg-[var(--glass-bg-strong)] rounded-full h-2">
                               <div
                                 className="bg-blue-600 h-2 rounded-full"
                                 style={{
@@ -330,20 +328,20 @@ const UserUpdateDashboard = () => {
                           </div>
 
                           {/* Resets on */}
-                          <div className="flex items-center gap-2 text-sm text-slate-600 bg-slate-50 rounded-lg px-3 py-2">
-                            <CalendarClock className="w-4 h-4 text-slate-500 shrink-0" />
-                            <span>Resets on <span className="font-medium text-black">{formatDate(plan.monthlyLimitResetDate || plan.currentMonthExpiryDate)}</span></span>
+                          <div className="flex items-center gap-2 text-sm text-[var(--text-secondary)] bg-[var(--glass-bg-subtle)] rounded-lg px-3 py-2">
+                            <CalendarClock className="w-4 h-4 text-[var(--text-muted)] shrink-0" />
+                            <span>Resets on <span className="font-medium text-[var(--text-primary)]">{formatDate(plan.monthlyLimitResetDate || plan.currentMonthExpiryDate)}</span></span>
                           </div>
 
                           {/* Yearly plan */}
                           <div>
-                            <div className="flex justify-between text-sm text-black mb-1">
+                            <div className="flex justify-between text-sm text-[var(--text-primary)] mb-1">
                               <span>Yearly Plan</span>
-                              <span className="text-base font-medium text-black">
+                              <span className="text-base font-medium text-[var(--text-primary)]">
                                 {plan.totalYearlyDaysRemaining ?? 0} of {product.yearlyPlanDuration || 365} days left
                               </span>
                             </div>
-                            <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div className="w-full bg-[var(--glass-bg-strong)] rounded-full h-2">
                               <div
                                 className="bg-violet-500 h-2 rounded-full"
                                 style={{
@@ -357,13 +355,13 @@ const UserUpdateDashboard = () => {
                         <div className="space-y-4 mb-4">
                           {/* Updates Remaining */}
                           <div>
-                            <div className="flex justify-between text-sm text-black mb-1">
+                            <div className="flex justify-between text-sm text-[var(--text-primary)] mb-1">
                               <span>Updates Remaining</span>
-                              <span className="text-base font-medium text-black">
+                              <span className="text-base font-medium text-[var(--text-primary)]">
                                 {Math.max(0, (product.updateCount || 0) - (plan.updatesUsed || 0))} of {product.updateCount || 0}
                               </span>
                             </div>
-                            <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div className="w-full bg-[var(--glass-bg-strong)] rounded-full h-2">
                               <div
                                 className="bg-blue-600 h-2 rounded-full"
                                 style={{
@@ -375,14 +373,14 @@ const UserUpdateDashboard = () => {
 
                           {/* Validity Period */}
                           <div>
-                            <div className="flex justify-between text-sm text-black mb-1">
+                            <div className="flex justify-between text-sm text-[var(--text-primary)] mb-1">
                               <span>Validity Period</span>
-                              <span className="text-base font-medium text-black flex items-center">
+                              <span className="text-base font-medium text-[var(--text-primary)] flex items-center">
                                 <Clock className="w-3 h-3 mr-1" />
                                 {status.daysLeft} days left
                               </span>
                             </div>
-                            <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div className="w-full bg-[var(--glass-bg-strong)] rounded-full h-2">
                               <div
                                 className="bg-green-600 h-2 rounded-full"
                                 style={{
@@ -400,8 +398,8 @@ const UserUpdateDashboard = () => {
                           disabled={!canRequest}
                           className={`w-full py-2 rounded-lg text-base font-medium flex items-center justify-center ${
                             canRequest
-                              ? 'bg-blue-600 text-white hover:bg-blue-700'
-                              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                              ? 'bg-blue-600 text-[var(--text-primary)] hover:bg-blue-700'
+                              : 'bg-[var(--glass-bg-subtle)] text-[var(--text-muted)] cursor-not-allowed'
                           }`}
                         >
                           <RefreshCw className="w-4 h-4 mr-2" />
@@ -418,7 +416,7 @@ const UserUpdateDashboard = () => {
                           <button
                             type="button"
                             onClick={() => navigate(`/plan-details/${plan._id}`)}
-                            className="mt-2 w-full rounded-lg border border-slate-200 py-2 text-base font-medium text-slate-700 transition hover:bg-slate-50"
+                            className="mt-2 w-full rounded-lg border border-[var(--glass-border)] py-2 text-base font-medium text-[var(--text-secondary)] transition hover:bg-[var(--glass-bg-subtle)]"
                           >
                             View uploaded data
                           </button>
@@ -433,13 +431,13 @@ const UserUpdateDashboard = () => {
                         )}
 
                         {status.tone === 'expired' && !status.isRecurring && (
-                          <p className="text-slate-600 text-sm mt-2 text-center">
+                          <p className="text-[var(--text-secondary)] text-sm mt-2 text-center">
                             Your update plan has expired. Please purchase a new plan.
                           </p>
                         )}
 
                         {status.tone === 'expired' && status.isRecurring && (
-                          <p className="text-slate-600 text-sm mt-2 text-center">
+                          <p className="text-[var(--text-secondary)] text-sm mt-2 text-center">
                             Your yearly plan has ended. Please purchase a new plan.
                           </p>
                         )}
@@ -457,7 +455,7 @@ const UserUpdateDashboard = () => {
                         )}
 
                         {status.tone === 'closed' && (
-                          <div className="mt-2 flex items-start gap-2 rounded-lg bg-slate-100 px-3 py-2 text-sm text-slate-600">
+                          <div className="mt-2 flex items-start gap-2 rounded-lg bg-[var(--glass-bg-strong)] px-3 py-2 text-sm text-[var(--text-secondary)]">
                             <Lock className="w-4 h-4 shrink-0 mt-0.5" />
                             <span>This plan was closed. Contact support if this looks wrong.</span>
                           </div>

@@ -246,16 +246,16 @@ const UpdateRequestModal = ({ plan, onClose, onSubmitSuccess }) => {
   
 // Update the file icons to handle new file types
 const getFileIcon = (fileType) => {
-  const chip = 'w-10 h-10 p-2 mr-3 rounded-lg border border-white/15 bg-white/10 flex-shrink-0';
+  const chip = 'w-10 h-10 p-2 mr-3 rounded-lg border border-[var(--glass-border)] bg-[var(--glass-bg)] flex-shrink-0';
   if (fileType.startsWith('image/')) {
-    return <Image className={`${chip} text-white/70`} />;
+    return <Image className={`${chip} text-[var(--text-secondary)]`} />;
   } else if (fileType === 'application/pdf') {
     return <FileText className={`${chip} text-rose-300`} />;
   } else if (fileType === 'application/msword' ||
              fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
     return <FileText className={`${chip} text-sky-300`} />;
   } else {
-    return <FileText className={`${chip} text-white/70`} />;
+    return <FileText className={`${chip} text-[var(--text-secondary)]`} />;
   }
 };
 
@@ -263,17 +263,17 @@ const getFileIcon = (fileType) => {
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
       {/* Outer frame — the GREEN gradient scene the modal floats on (matches the mockup's .scene) */}
-      <div className="w-full max-w-2xl max-h-[90vh] flex rounded-[1.5rem] p-6 shadow-[0_25px_70px_rgba(0,0,0,0.55)] ring-1 ring-inset ring-white/[0.06] bg-[radial-gradient(120%_120%_at_15%_0%,#1f6d54_0%,#143b3a_45%,#0d1b26_100%)]">
+      <div className="w-full max-w-2xl max-h-[90vh] flex rounded-[1.5rem] p-6 shadow-[0_25px_70px_rgba(0,0,0,0.55)] ring-1 ring-inset ring-[var(--glass-border)] bg-[radial-gradient(120%_120%_at_15%_0%,#1f6d54_0%,#143b3a_45%,#0d1b26_100%)]">
       {/* Inner modal — dark neutral glass floating on the green frame (matches .modal.glass) */}
-      <div className="relative w-full flex flex-col rounded-[1.4rem] border border-white/[0.18] text-white shadow-[0_20px_60px_rgba(0,0,0,0.45)] overflow-hidden bg-[rgba(20,26,32,0.55)] backdrop-blur-xl backdrop-saturate-150">
+      <div className="relative w-full flex flex-col rounded-[1.4rem] border border-[var(--glass-border)] text-[var(--text-primary)] shadow-[0_20px_60px_rgba(0,0,0,0.45)] overflow-hidden bg-[rgba(20,26,32,0.55)] backdrop-blur-xl backdrop-saturate-150">
         {/* Top sheen, matching the page's glass cards */}
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-1/3 bg-gradient-to-b from-white/[0.10] to-transparent" />
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-1/3 bg-gradient-to-b from-[var(--glass-sheen)] to-transparent" />
         {/* Header */}
-        <div className="relative border-b border-white/15 px-5 py-4 flex justify-between items-center">
-          <h3 className="font-bold text-lg text-white">Upload Data</h3>
+        <div className="relative border-b border-[var(--glass-border)] px-5 py-4 flex justify-between items-center">
+          <h3 className="font-bold text-lg text-[var(--text-primary)]">Upload Data</h3>
           <button
             onClick={onClose}
-            className="grid h-8 w-8 place-items-center rounded-lg border border-white/15 bg-white/10 text-white/80 transition hover:bg-white/15 hover:text-white disabled:opacity-50"
+            className="grid h-8 w-8 place-items-center rounded-lg border border-[var(--glass-border)] bg-[var(--glass-bg)] text-[var(--text-secondary)] transition hover:bg-[var(--glass-bg-strong)] hover:text-[var(--text-primary)] disabled:opacity-50"
             disabled={loading}
           >
             <X className="w-5 h-5" />
@@ -296,26 +296,26 @@ const getFileIcon = (fileType) => {
           /* Confirmation Screen */
           <div className="relative flex-1 overflow-auto p-6 flex flex-col items-center">
             <div className="text-center mb-6">
-              <h4 className="text-xl font-bold mb-2 text-white">Confirm Update Request</h4>
-              <p className="text-white/70">
+              <h4 className="text-xl font-bold mb-2 text-[var(--text-primary)]">Confirm Update Request</h4>
+              <p className="text-[var(--text-secondary)]">
                 You're about to use 1 of your available monthly updates. This action cannot be undone.
               </p>
             </div>
 
-            <div className="w-full rounded-2xl border border-white/10 bg-white/[0.06] p-4 mb-6">
-              <h5 className="text-xs font-semibold uppercase tracking-wide text-white/60 mb-3">Summary</h5>
-              <div className="divide-y divide-white/10">
+            <div className="w-full rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg-subtle)] p-4 mb-6">
+              <h5 className="text-xs font-semibold uppercase tracking-wide text-[var(--text-secondary)] mb-3">Summary</h5>
+              <div className="divide-y divide-[var(--divider)]">
                 <div className="flex items-center justify-between py-2">
-                  <span className="text-sm text-white/70">Plan</span>
-                  <span className="text-sm font-semibold text-white">{plan.productId?.serviceName}</span>
+                  <span className="text-sm text-[var(--text-secondary)]">Plan</span>
+                  <span className="text-sm font-semibold text-[var(--text-primary)]">{plan.productId?.serviceName}</span>
                 </div>
                 <div className="flex items-center justify-between py-2">
-                  <span className="text-sm text-white/70">Files</span>
-                  <span className="text-sm font-semibold tabular-nums text-white">{files.length} files uploaded</span>
+                  <span className="text-sm text-[var(--text-secondary)]">Files</span>
+                  <span className="text-sm font-semibold tabular-nums text-[var(--text-primary)]">{files.length} files uploaded</span>
                 </div>
                 <div className="flex items-center justify-between py-2">
-                  <span className="text-sm text-white/70">Instructions</span>
-                  <span className="text-sm font-semibold tabular-nums text-white">{messages.length} messages</span>
+                  <span className="text-sm text-[var(--text-secondary)]">Instructions</span>
+                  <span className="text-sm font-semibold tabular-nums text-[var(--text-primary)]">{messages.length} messages</span>
                 </div>
               </div>
             </div>
@@ -323,14 +323,14 @@ const getFileIcon = (fileType) => {
             <div className="flex gap-4 mt-auto">
               <button
                 onClick={() => setShowConfirmation(false)}
-                className="px-5 py-2.5 rounded-xl border border-white/20 bg-white/10 font-semibold text-white transition hover:bg-white/15 disabled:opacity-50"
+                className="px-5 py-2.5 rounded-xl border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] font-semibold text-[var(--text-primary)] transition hover:bg-[var(--glass-bg-strong)] disabled:opacity-50"
                 disabled={loading}
               >
                 Back
               </button>
               <button
                 onClick={submitUpdateRequest}
-                className="px-5 py-2.5 rounded-xl bg-emerald-600 font-semibold text-white transition hover:bg-emerald-700 flex items-center disabled:opacity-50"
+                className="px-5 py-2.5 rounded-xl bg-emerald-600 font-semibold text-[var(--text-primary)] transition hover:bg-emerald-700 flex items-center disabled:opacity-50"
                 disabled={loading}
               >
                 Confirm and Submit
@@ -343,9 +343,9 @@ const getFileIcon = (fileType) => {
             {/* Content */}
             <div className="p-4 flex-1 overflow-auto">
               <div className="mb-6">
-                {uploadServices.length > 0 && <label className="mb-4 block"><span className="mb-1 block text-sm font-semibold text-white/80">Upload service</span><select className="w-full rounded-xl border border-white/20 bg-slate-950 px-3 py-2.5 text-sm text-white" value={selectedServiceId} onChange={(event) => setSelectedServiceId(event.target.value)}>{uploadServices.map((service) => <option key={service._id} value={service._id}>{service.productId?.serviceName || service.orderItems?.[0]?.name} · {Math.max(0, Number(service.servicePlanSnapshot?.portalAccessCount || 0) - Number(service.serviceAccessUsedInCycle || 0))} attempts left</option>)}</select></label>}
-                <h4 className="text-xs font-semibold uppercase tracking-wide text-white/60 mb-1">Upload Files</h4>
-                <p className="text-sm text-white/55 mb-4">
+                {uploadServices.length > 0 && <label className="mb-4 block"><span className="mb-1 block text-sm font-semibold text-[var(--text-secondary)]">Upload service</span><select className="w-full rounded-xl border border-[var(--glass-border-strong)] bg-[var(--glass-bg-subtle)] px-3 py-2.5 text-sm text-[var(--text-primary)]" value={selectedServiceId} onChange={(event) => setSelectedServiceId(event.target.value)}>{uploadServices.map((service) => <option key={service._id} value={service._id}>{service.productId?.serviceName || service.orderItems?.[0]?.name} · {Math.max(0, Number(service.servicePlanSnapshot?.portalAccessCount || 0) - Number(service.serviceAccessUsedInCycle || 0))} attempts left</option>)}</select></label>}
+                <h4 className="text-xs font-semibold uppercase tracking-wide text-[var(--text-secondary)] mb-1">Upload Files</h4>
+                <p className="text-sm text-[var(--text-secondary)] mb-4">
                 Only JPG images, PDF, DOC, TXT and RTF documents are supported. Max file size: 5MB. Maximum {maxFileCount} files allowed. Images will be automatically compressed.
                 </p>
 
@@ -355,12 +355,12 @@ const getFileIcon = (fileType) => {
                     htmlFor="file-upload"
                     className={`border-2 border-dashed rounded-2xl w-full p-6 flex flex-col items-center justify-center cursor-pointer transition ${
                       files.length >= maxFileCount
-                        ? 'border-white/15 bg-white/[0.04] cursor-not-allowed'
-                        : 'border-white/25 bg-white/[0.06] hover:bg-white/10'
+                        ? 'border-[var(--glass-border)] bg-[var(--glass-bg-subtle)] cursor-not-allowed'
+                        : 'border-[var(--glass-border-strong)] bg-[var(--glass-bg-subtle)] hover:bg-[var(--glass-bg)]'
                     }`}
                   >
-                    <Upload className={`w-10 h-10 mb-2 ${files.length >= maxFileCount ? 'text-white/30' : 'text-emerald-400'}`} />
-                    <p className={`text-sm ${files.length >= maxFileCount ? 'text-white/40' : 'text-white/70'}`}>
+                    <Upload className={`w-10 h-10 mb-2 ${files.length >= maxFileCount ? 'text-[var(--text-muted)]' : 'text-emerald-400'}`} />
+                    <p className={`text-sm ${files.length >= maxFileCount ? 'text-[var(--text-muted)]' : 'text-[var(--text-secondary)]'}`}>
                       {files.length >= maxFileCount ? `Maximum files reached (${maxFileCount}/${maxFileCount})` : `Click to upload or drag and drop (${files.length}/${maxFileCount})`}
                     </p>
                     <input
@@ -379,12 +379,12 @@ const getFileIcon = (fileType) => {
                 {/* File previews */}
                 {files.length > 0 && (
                   <div className="mt-4">
-                    <h5 className="text-xs font-semibold uppercase tracking-wide text-white/60 mb-1">Uploaded Files</h5>
-                    <div className="divide-y divide-white/10 border-t border-white/10">
+                    <h5 className="text-xs font-semibold uppercase tracking-wide text-[var(--text-secondary)] mb-1">Uploaded Files</h5>
+                    <div className="divide-y divide-[var(--divider)] border-t border-[var(--glass-border)]">
                     {files.map((file, index) => (
                       <div key={index} className="flex items-center py-3">
                         {file.type.startsWith('image/') ? (
-                          <div className="flex-shrink-0 w-10 h-10 rounded-lg overflow-hidden mr-3 border border-white/15">
+                          <div className="flex-shrink-0 w-10 h-10 rounded-lg overflow-hidden mr-3 border border-[var(--glass-border)]">
                             <img
                               src={file.preview}
                               alt={file.name}
@@ -394,15 +394,15 @@ const getFileIcon = (fileType) => {
                         ) : getFileIcon(file.type)}
 
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate text-white">{file.name}</p>
-                          <p className="text-xs text-white/50 tabular-nums">
+                          <p className="text-sm font-medium truncate text-[var(--text-primary)]">{file.name}</p>
+                          <p className="text-xs text-[var(--text-muted)] tabular-nums">
                             {(file.size / 1024).toFixed(1)} KB • {file.type.split('/')[1]}
                           </p>
                         </div>
 
                         <button
                           onClick={() => removeFile(index)}
-                          className="ml-2 text-white/50 hover:text-rose-400 transition"
+                          className="ml-2 text-[var(--text-muted)] hover:text-rose-400 transition"
                         >
                           <X className="w-5 h-5" />
                         </button>
@@ -414,23 +414,23 @@ const getFileIcon = (fileType) => {
               </div>
               
               <div>
-                <h4 className="text-xs font-semibold uppercase tracking-wide text-white/60 mb-1">Instructions</h4>
-                <p className="text-sm text-white/55 mb-4">
+                <h4 className="text-xs font-semibold uppercase tracking-wide text-[var(--text-secondary)] mb-1">Instructions</h4>
+                <p className="text-sm text-[var(--text-secondary)] mb-4">
                   Please provide clear instructions for your website update.
                 </p>
 
                 {/* Previous messages */}
-                <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-3 mb-4 max-h-48 overflow-y-auto">
+                <div className="rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg-subtle)] p-3 mb-4 max-h-48 overflow-y-auto">
                   {messages.length === 0 ? (
-                    <p className="text-white/50 text-sm text-center py-4">
+                    <p className="text-[var(--text-muted)] text-sm text-center py-4">
                       No instructions added yet. Use the form below to add instructions.
                     </p>
                   ) : (
-                    <div className="divide-y divide-white/10">
+                    <div className="divide-y divide-[var(--divider)]">
                       {messages.map((msg, index) => (
                         <div key={index} className="py-3 first:pt-0 last:pb-0">
-                          <p className="text-sm text-white">{msg.text}</p>
-                          <p className="text-xs text-white/50 mt-1 tabular-nums">
+                          <p className="text-sm text-[var(--text-primary)]">{msg.text}</p>
+                          <p className="text-xs text-[var(--text-muted)] mt-1 tabular-nums">
                             {msg.timestamp.toLocaleTimeString()}
                           </p>
                         </div>
@@ -454,9 +454,9 @@ const getFileIcon = (fileType) => {
                         }
                       }}
                       placeholder="Type your instructions here... (Enter to add, Shift+Enter for new line)"
-                      className="w-full rounded-xl border border-white/16 bg-white/[0.08] p-3 min-h-[80px] text-white placeholder:text-white/40 focus:outline-none focus:border-emerald-400/60 resize-none"
+                      className="w-full rounded-xl border border-[var(--glass-border)] bg-[var(--glass-bg-subtle)] p-3 min-h-[80px] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-emerald-400/60 resize-none"
                     ></textarea>
-                    <div className="absolute bottom-2 right-2 text-xs text-white/40 tabular-nums">
+                    <div className="absolute bottom-2 right-2 text-xs text-[var(--text-muted)] tabular-nums">
                       {message.length} characters
                     </div>
                   </div>
@@ -465,8 +465,8 @@ const getFileIcon = (fileType) => {
                     disabled={!message.trim()}
                     className={`px-3 py-3 rounded-xl transition ${
                       !message.trim()
-                        ? 'bg-white/10 text-white/40 cursor-not-allowed'
-                        : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                        ? 'bg-[var(--glass-bg)] text-[var(--text-muted)] cursor-not-allowed'
+                        : 'bg-emerald-600 text-[var(--text-primary)] hover:bg-emerald-700'
                     }`}
                   >
                     <Send className="w-5 h-5" />
@@ -476,7 +476,7 @@ const getFileIcon = (fileType) => {
             </div>
             
             {/* Footer */}
-            <div className="p-4 border-t border-white/15">
+            <div className="p-4 border-t border-[var(--glass-border)]">
               <button
                 onClick={() => {
                   // Agar message field mein kuch hai to pehle usse send kar do
@@ -493,8 +493,8 @@ const getFileIcon = (fileType) => {
                 disabled={files.length === 0 && messages.length === 0}
                 className={`w-full py-3 rounded-xl font-semibold transition ${
                   files.length === 0 && messages.length === 0
-                    ? 'bg-white/10 text-white/40 cursor-not-allowed'
-                    : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                    ? 'bg-[var(--glass-bg)] text-[var(--text-muted)] cursor-not-allowed'
+                    : 'bg-emerald-600 text-[var(--text-primary)] hover:bg-emerald-700'
                 }`}
               >
                 Proceed to Confirmation

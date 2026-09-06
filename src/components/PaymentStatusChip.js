@@ -31,7 +31,7 @@ const toneClasses = {
   emerald: 'bg-emerald-50 text-emerald-700',
   amber: 'bg-amber-50 text-amber-700',
   rose: 'bg-rose-50 text-rose-700',
-  slate: 'bg-slate-100 text-slate-600',
+  slate: 'bg-[var(--glass-bg-strong)] text-[var(--text-secondary)]',
 };
 
 const PaymentStatusChip = ({ order }) => {

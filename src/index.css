@@ -2,6 +2,203 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================================================
+   THEME SSOT — Customer Portal only
+   ----------------------------------------------------------------------------
+   Three modes, set as data-theme on <html>:
+     immersive  BG.png + dark glass   (DEFAULT — today's look, unchanged)
+     dark       solid dark, no image
+     light      solid white
+
+   WHY LIGHT IS NOT A MIRROR OF DARK
+   Dark glass works by laying a *lighter* film over a dark ground: white at 10%
+   over #020617 lifts the card away from the page (contrast 1.23) and the blur
+   has something to bite on. Mirroring that arithmetic onto a white page —
+   slate at 10% over #f1f5f9 — produced a card at contrast 1.01, i.e. invisible,
+   which is why the first attempt looked flat and cheap.
+
+   On white there is no headroom above the page for a film to lift into. So in
+   light mode the depth comes from the other two glass cues instead:
+     · a real border, heavier and darker (1.5px, slate-900 @ 20% → contrast
+       1.53, matching dark's 1.61)
+     · a two-layer shadow — a tight contact shadow plus a wide soft one
+   and the fill stays a genuine translucent white (72%) so backdrop-blur still
+   frosts whatever scrolls beneath it.
+
+   Components consume semantic tokens (--glass-bg, --glass-border, …) rather
+   than composing rgb(var(--x)/N) inline, so a value is defined exactly once.
+   ========================================================================== */
+
+:root,
+:root[data-theme="immersive"] {
+  --page-bg: #020617;
+  --page-decoration: url('./assets/BG.png');
+  --scrim: rgb(2 6 23 / 0.55);
+  --shell-bg: #020617;
+
+  /* glass */
+  --glass-bg: rgb(255 255 255 / 0.10);
+  --glass-bg-strong: rgb(255 255 255 / 0.15);
+  --glass-bg-subtle: rgb(255 255 255 / 0.05);
+  --glass-bg-hover: rgb(255 255 255 / 0.16);
+  --glass-border: rgb(255 255 255 / 0.18);
+  --glass-border-strong: rgb(255 255 255 / 0.28);
+  --glass-border-width: 1px;
+  --glass-sheen: rgb(255 255 255 / 0.12);
+  --field-bg: rgb(255 255 255 / 0.06);
+  --field-border: rgb(255 255 255 / 0.16);
+  --divider: rgb(255 255 255 / 0.10);
+
+  /* type */
+  --text-primary: rgb(255 255 255);
+  --text-secondary: rgb(203 213 225);
+  --text-muted: rgb(148 163 184);
+  --ink-rgb: 255 255 255;
+
+  /* chrome */
+  --header-bg: rgb(2 6 23 / 0.95);
+  --menu-bg: rgb(15 23 42);
+  --sidebar-border: rgb(30 41 59);
+
+  --card-shadow: 0 8px 32px rgb(0 0 0 / 0.35);
+  --glow-opacity: 0.30;
+
+  /* Navigation selection + destructive action. Emerald reads the same on both
+     dark grounds, so immersive and dark share these values; light needs its
+     own (see there). */
+  --nav-active-bg: rgb(16 185 129);
+  --nav-active-fg: rgb(2 6 23);
+  --nav-active-shadow: 0 8px 20px rgb(2 44 34 / 0.30);
+  --danger-fg: rgb(254 202 202);
+  --danger-bg: rgb(239 68 68 / 0.10);
+  --danger-border: rgb(239 68 68 / 0.20);
+  --danger-bg-hover: rgb(239 68 68 / 0.20);
+
+  color-scheme: dark;
+}
+
+:root[data-theme="dark"] {
+  --page-bg: #020617;
+  --page-decoration: none;
+  --scrim: transparent;
+  --shell-bg: #020617;
+
+  --glass-bg: rgb(255 255 255 / 0.10);
+  --glass-bg-strong: rgb(255 255 255 / 0.15);
+  --glass-bg-subtle: rgb(255 255 255 / 0.05);
+  --glass-bg-hover: rgb(255 255 255 / 0.16);
+  --glass-border: rgb(255 255 255 / 0.18);
+  --glass-border-strong: rgb(255 255 255 / 0.28);
+  --glass-border-width: 1px;
+  --glass-sheen: rgb(255 255 255 / 0.12);
+  --field-bg: rgb(255 255 255 / 0.06);
+  --field-border: rgb(255 255 255 / 0.16);
+  --divider: rgb(255 255 255 / 0.10);
+
+  --text-primary: rgb(255 255 255);
+  --text-secondary: rgb(203 213 225);
+  --text-muted: rgb(148 163 184);
+  --ink-rgb: 255 255 255;
+
+  --header-bg: rgb(2 6 23 / 0.95);
+  --menu-bg: rgb(15 23 42);
+  --sidebar-border: rgb(30 41 59);
+
+  --card-shadow: 0 8px 32px rgb(0 0 0 / 0.35);
+  --glow-opacity: 0.30;
+
+  --nav-active-bg: rgb(16 185 129);
+  --nav-active-fg: rgb(2 6 23);
+  --nav-active-shadow: 0 8px 20px rgb(2 44 34 / 0.30);
+  --danger-fg: rgb(254 202 202);
+  --danger-bg: rgb(239 68 68 / 0.10);
+  --danger-border: rgb(239 68 68 / 0.20);
+  --danger-bg-hover: rgb(239 68 68 / 0.20);
+
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] {
+  /* Not pure white. A white card on a white page separates at contrast 1.00 —
+     nothing to see, and backdrop-blur has nothing behind it to frost. This
+     tint sits far enough below the card (1.13, against dark mode's 1.23) for
+     the glass to read as a distinct surface, while still looking like a white
+     page rather than a grey one. */
+  --page-bg: #e8edf3;
+  --page-decoration: none;
+  --scrim: transparent;
+  --shell-bg: #e8edf3;
+
+  /* Translucent white, not a solid fill — backdrop-blur still has work to do.
+     Depth is carried by the border and the two-layer shadow below. */
+  --glass-bg: rgb(255 255 255 / 0.72);
+  --glass-bg-strong: rgb(255 255 255 / 0.88);
+  --glass-bg-subtle: rgb(255 255 255 / 0.55);
+  --glass-bg-hover: rgb(255 255 255 / 0.95);
+  --glass-border: rgb(15 23 42 / 0.20);
+  --glass-border-strong: rgb(15 23 42 / 0.30);
+  --glass-border-width: 1.5px;
+  --glass-sheen: rgb(255 255 255 / 0.60);
+  --field-bg: rgb(255 255 255 / 0.90);
+  --field-border: rgb(15 23 42 / 0.18);
+  --divider: rgb(15 23 42 / 0.12);
+
+  --text-primary: rgb(15 23 42);
+  --text-secondary: rgb(51 65 85);
+  --text-muted: rgb(100 116 139);
+  --ink-rgb: 15 23 42;
+
+  --header-bg: rgb(255 255 255 / 0.85);
+  --menu-bg: rgb(255 255 255);
+  --sidebar-border: rgb(15 23 42 / 0.14);
+
+  /* Tight contact shadow + wide ambient one: the pair is what reads as "lifted"
+     on a white page, where a translucent fill cannot. */
+  --card-shadow: 0 2px 8px rgb(15 23 42 / 0.06), 0 8px 24px rgb(15 23 42 / 0.05);
+  --glow-opacity: 0.14;
+
+  /* A darker emerald than dark mode uses: emerald-500 on a light page is bright
+     enough to glare, and white text on it falls under 4.5:1. emerald-600 with
+     white clears it. --danger-* is the same story — red-200 was picked for a
+     dark ground and all but vanishes here, so light gets red-700 on a tinted
+     fill. */
+  --nav-active-bg: rgb(5 150 105);
+  --nav-active-fg: rgb(255 255 255);
+  --nav-active-shadow: 0 4px 12px rgb(5 150 105 / 0.25);
+  --danger-fg: rgb(185 28 28);
+  --danger-bg: rgb(239 68 68 / 0.08);
+  --danger-border: rgb(185 28 28 / 0.25);
+  --danger-bg-hover: rgb(239 68 68 / 0.16);
+
+  color-scheme: light;
+}
+
+/* The portal shell paints foundation + optional decoration. Scoped to the
+   customer portal so the admin panel is never touched. */
+.portal-surface {
+  background-color: var(--page-bg);
+  background-image: var(--page-decoration);
+  background-size: cover;
+  background-position: center;
+}
+
+/* One glass recipe, used by every card/panel in the portal. Border width is a
+   token because light mode needs a heavier line to read as an edge.
+
+   In @layer components so that Tailwind utilities — hover:border-*, bg-* —
+   reliably override it; a plain rule would tie on specificity and be decided
+   by source order. */
+@layer components {
+  .glass-panel {
+    background-color: var(--glass-bg);
+    border: var(--glass-border-width) solid var(--glass-border);
+    box-shadow: var(--card-shadow);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+  }
+}
+
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',

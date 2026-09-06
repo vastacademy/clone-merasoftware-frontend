@@ -353,17 +353,95 @@ Behaviour is covered by throwaway tests written during the build (not committed)
 
 ## 11. UI Design System (conventions to follow — not optional)
 
-- **Background**: `frontend/src/assets/BG.png` (dark navy/emerald wave) + `bg-slate-950/40` overlay, portal-wide.
-- **3-tier glass pattern** (established, reused across most customer-portal pages):
-  1. Dark-glass card — `rounded-3xl border border-white/20 bg-white/10 backdrop-blur-2xl backdrop-saturate-150` (+ hover emerald glow) — headings/action cards.
-  2. Light-glass — `bg-white/55 backdrop-blur-xl`, **black text**, for dense/tabular data (never white text on dense data).
-  3. Action-pill — `border-emerald-400/40 bg-emerald-500/20 text-white backdrop-blur-md` — CTAs and status pills.
-  Exception: payment-input forms (wallet recharge modal, `DirectPayment.js` internals) stay solid, not glassed. **`InstallmentPayment.js` is no longer an exception** — it now follows the detail-page template (open centred header + one dark-glass card with `border-t` dividers) and confirms payment in the portal's two-step popup (wallet step → UPI-QR step, the same shape as `InvoiceDetailPage.js`'s). Its payment logic was not touched in that pass — only the render.
-- **Detail-page template** (site-wide standard — `ProjectDetails.js`, `PlanDetails.js`, `OrderDetailPage.js`, `InvoiceDetailPage.js`, `UserInvoices.js`, `TicketDetail.js`): open centered header, no bounding banner card — Back button `absolute left-0`, `rounded-2xl border border-white/15 bg-white/10 px-5 py-3 text-lg backdrop-blur-md`; heading truly centered; content in ONE dark-glass card (`bg-white/10 backdrop-blur-2xl`) with internal `border-t`/`border-r` dividers instead of multiple bordered sub-cards.
-- **Zero-blue color rule**: emerald = progress/completion/real action; neutral white/slate-glass = in-progress/active/selected; amber = pending/waiting; red = paused/error only. Real action buttons stay solid (`bg-emerald-600`), never glass — glass/badge styling is reserved for status pills only.
-- **Full-page glass "documentation" layout** (preferred over the bounding-card template for any page with dropdowns/popovers that must escape clipping — established on `StartNewWebsiteCustomize.js`): frameless sheet `rounded-[2rem] bg-white/[0.06] p-6 backdrop-blur-2xl` — **no border, no shadow, no `overflow-hidden`**; responsive `grid-cols-[minmax(0,1fr)_360px]` (main + sticky summary rail); `border-t border-white/10` section dividers, no nested sub-cards.
-- **Open-heading + single-card list pattern** (`ProjectsAndPlans.js`, `CustomerDashboard.js`): no boxed banner — plain centered `<h1>` + subtext, then one `TicketsList.js`-style dark-glass card (title + filters + counters in one header row, `bg-white/5` table-header band, alternating row shading `bg-white/[0.02]`/`bg-white/[0.06]`).
-- **Typography scale** (5 sizes max — do not introduce others): H1 `text-2xl` bold, H2 `text-xl` bold, H3 `text-lg` semibold, body `text-base`, sub-text `text-sm`. Canonical near-black is `text-black` (not `text-slate-950`) on light backgrounds, `text-white` on dark. Status badges/pills are exempt from the black/white rule (keep semantic colors).
+### 11a. Theme system — three modes, customer portal only (current)
+
+**Before**: every customer page hard-coded its colours and painted `BG.png` itself — ~2000 class occurrences across 26 pages and 15 components, including a second "light-glass" tier (`bg-white/55` + `text-black`) that stayed white even in the dark portal. One look, no way to change it.
+
+**Now**: colours come from CSS variables keyed off `data-theme` on `<html>`. Three modes:
+
+| Mode | Page | Decoration | Notes |
+|---|---|---|---|
+| `immersive` | `#020617` | `BG.png` + `--scrim` | **DEFAULT** — identical to the pre-theme look |
+| `dark` | `#020617` | none | same glass, no image |
+| `light` | `#e8edf3` | none | frosted white cards |
+
+**Default is `immersive` deliberately**: an existing customer who never touches the switch sees no change.
+
+**Where it lives**
+| Concern | File |
+|---|---|
+| Token values (all 3 modes) | `src/index.css` — the only place a colour is written |
+| Mode choice / persistence | `src/context/ThemeContext.js` — knows no colours |
+| Picker UI | `src/components/ThemeSwitch.js` |
+| Anti-flash (pre-paint) | `public/index.html` inline script — mirrors `DEFAULT_THEME`, keep in step |
+
+Persisted under the `theme` localStorage key, which `DatabaseContext.js` already preserves across its cache clear (`keysToKeep`).
+
+**Tokens** (the complete set — components use these names, never a raw colour):
+
+| Group | Tokens |
+|---|---|
+| Ground | `--page-bg`, `--page-decoration`, `--scrim`, `--shell-bg` |
+| Glass | `--glass-bg`, `--glass-bg-strong`, `--glass-bg-subtle`, `--glass-bg-hover`, `--glass-border`, `--glass-border-strong`, `--glass-border-width`, `--glass-sheen`, `--divider` |
+| Form fields | `--field-bg`, `--field-border` — inputs sit *inside* glass, so they read as recessed wells, not another raised card |
+| Type | `--text-primary`, `--text-secondary`, `--text-muted`, `--ink-rgb` |
+| Chrome | `--header-bg`, `--menu-bg`, `--sidebar-border` |
+| Depth | `--card-shadow`, `--glow-opacity` |
+
+Two shared recipes in `index.css`: `.portal-surface` (foundation + decoration) and `.glass-panel` (fill + border + shadow + blur). `.glass-panel` is inside `@layer components` so Tailwind utilities reliably override it — a plain rule would tie on specificity and be settled by source order.
+
+`--ink-rgb` is the inverted-button token: solid CTAs are `bg-[rgb(var(--ink-rgb))] text-[var(--page-bg)]`, so they read light-on-dark in dark mode and dark-on-light in light mode without a second class.
+
+**Why light is NOT a mirror of dark** (binding — do not "simplify" this):
+Dark glass = a *lighter* film over a dark ground; white/0.10 over `#020617` lifts the card (contrast 1.23). Applying the same arithmetic to a white page (slate/0.10 over white) gives contrast **1.01 — invisible**, which is exactly what the first attempt produced. On white there is no headroom above the page for a film to lift into, so light mode carries depth differently:
+- page is tinted `#e8edf3`, **not** pure white — a white card on a white page separates at 1.00 and `backdrop-blur` has nothing to frost; this tint gives 1.13
+- border is heavier and darker: `slate-900/0.20` at **1.5px** (`--glass-border-width`) → contrast 1.53, against dark's 1.77 at 1px
+- two-layer shadow (tight contact + wide ambient) does the lifting a translucent fill cannot
+- fill stays genuinely translucent (`white/0.72`) so blur still works
+
+Glow blobs and card shadows are tuned for a dark ground, so both are tokens (`--glow-opacity` 0.30 dark / 0.14 light). Left fixed, they wash a light card out.
+
+**Admin panel is untouched and must stay so.** Shared surfaces take an opt-in prop that defaults to the original fixed-dark classes; the admin panel simply never passes it:
+
+| Component | Mechanism |
+|---|---|
+| `PortalHeader.js` | `showThemeSwitch` (also gates the picker) |
+| `MobileSidebarDrawer.js` | `themed` |
+| `MobileBottomNav.js` | `themed` |
+| `UploadedDataList.js` | pre-existing `theme="glass"｜"light"` — only the `glass` branch was converted |
+| `ProjectDetails.js` | renders in **both** portals; two switches decide which side a class belongs to — `g(adminClass, customerClass)` and an `isGlass` prop passed as `{!isAdminView}`. Only the customer side was converted; the admin literals are deliberate, not missed work. |
+
+**Conversion status: complete.** All 26 customer pages and 15 customer-facing components are on tokens. Verified end state: `text-black` in client pages **0** (was 174), light-glass tier `bg-white/40…90` **0**, self-painted `BG.png` **0** (was 25), all 131 pages/components compile.
+
+**Deliberately left as literals** (correct in every mode, do not "fix"):
+- `bg-black/30…60` modal backdrops
+- `bg-white` QR-code tiles — scanners need real white
+- `text-white` on emerald buttons — emerald is dark in both themes
+
+**Build note (pre-existing, unrelated to theming)**: `package.json` declares `tailwindcss@4.0.14`, but `react-scripts` resolves its own nested **v3.4.17**, which is what actually compiles (verified by running PostCSS). `index.css` uses v3 syntax accordingly. Note also that v3 cannot apply an opacity modifier to a variable — `bg-[var(--x)]/10` fails to compile; `bg-[rgb(var(--x)/0.1)]` works. Any `npm install` that removes the nested v3 will break all CSS.
+
+### 11b. Layout patterns (still current — now expressed in tokens)
+
+These are structural conventions and remain in force. Only their **colours** changed: what used to be written as a literal is now the matching token from 11a. Write the token, never the literal.
+
+- **Background**: painted once by the shell (`.portal-surface` on `DashboardLayout`), from `--page-decoration` + `--scrim`. **Never re-add `import backgroundImage from '../assets/BG.png'` to a page** — 25 pages used to paint their own copy on top of the shell's, which is a bug, not a pattern.
+- **Glass surfaces** — one scale, no separate tiers:
+  - card / panel — the `.glass-panel` recipe, or `bg-[var(--glass-bg)]` + `border-[var(--glass-border)]`
+  - recessed band (table headers, sub-wells) — `bg-[var(--glass-bg-subtle)]`
+  - raised chip / active pill — `bg-[var(--glass-bg-strong)]`
+  - hover — always `bg-[var(--glass-bg-hover)]`, never another level's resting value
+  - form fields — `bg-[var(--field-bg)]` + `border-[var(--field-border)]`
+- **Detail-page template** (site-wide standard — `ProjectDetails.js`, `PlanDetails.js`, `OrderDetailPage.js`, `InvoiceDetailPage.js`, `UserInvoices.js`, `TicketDetail.js`): open centered header, no bounding banner card — Back button `absolute left-0` on a glass pill; heading truly centered; content in ONE glass card with internal `border-t`/`border-r` dividers (`border-[var(--divider)]`) instead of multiple bordered sub-cards.
+- **Zero-blue color rule**: emerald = progress/completion/real action; neutral glass = in-progress/active/selected; amber = pending/waiting; red = paused/error only. Real action buttons stay solid (`bg-emerald-600`), never glass — glass/badge styling is reserved for status pills only. Inverted neutral CTAs use `bg-[rgb(var(--ink-rgb))] text-[var(--page-bg)]`.
+- **Full-page glass "documentation" layout** (preferred over the bounding-card template for any page with dropdowns/popovers that must escape clipping — established on `StartNewWebsiteCustomize.js`): frameless sheet `rounded-[2rem] bg-[var(--glass-bg-subtle)] p-6 backdrop-blur-2xl` — **no border, no shadow, no `overflow-hidden`**; responsive `grid-cols-[minmax(0,1fr)_360px]` (main + sticky summary rail); `border-t border-[var(--divider)]` section dividers, no nested sub-cards.
+- **Open-heading + single-card list pattern** (`ProjectsAndPlans.js`, `CustomerDashboard.js`): no boxed banner — plain centered `<h1>` + subtext, then one `TicketsList.js`-style glass card (title + filters + counters in one header row, `bg-[var(--glass-bg-subtle)]` table-header band, alternating row shading via `--glass-bg-subtle` / `--glass-bg`).
+- **Typography scale** (5 sizes max — do not introduce others): H1 `text-2xl` bold, H2 `text-xl` bold, H3 `text-lg` semibold, body `text-base`, sub-text `text-sm`. Colour comes from `--text-primary` / `--text-secondary` / `--text-muted`. Status badges/pills keep their semantic colours.
+
+**Three conventions were retired by the theme work — do not reinstate them:**
+1. **The "light-glass" second tier** (`bg-white/55` + `text-black` for dense data) is gone. It rendered white-on-white cards in the dark portal. There is now one glass scale, and text colour comes from tokens.
+2. **`text-black` / `text-white` as canonical type colours** — replaced by `--text-primary`; a fixed value is wrong in at least one of the three modes. Client pages contain zero `text-black`.
+3. **"Payment-input forms stay solid, not glassed"** — the wallet recharge modal, `DirectPayment.js` and `CompleteProfile.js` are now glass like everything else, on the owner's instruction.
+
 
 ---
 
@@ -424,4 +502,5 @@ Behaviour is covered by throwaway tests written during the build (not committed)
 | Client documents | `backend/helpers/clientDocumentsTimeline.js`, `backend/controller/user/{uploadClientDocument,getClientDocuments,getAdminClientDocuments}.js` |
 | Project/plan classification | `helpers/orderType.js`, `helpers/orderPresentation.js`, `components/OrderListRow.js` |
 | Chess | `frontend/src/chess/*`, `backend/chess/*` |
-| UI design system | `assets/BG.png`, any file using `bg-white/10 backdrop-blur-2xl` |
+| UI design system | `src/index.css` (§11a tokens + `.glass-panel`/`.portal-surface`), any file using `bg-[var(--glass-bg)]` |
+| Theme system (3 modes) | `src/index.css` (all token values), `context/ThemeContext.js` (choice/persistence), `components/ThemeSwitch.js` (picker), `public/index.html` (anti-flash script) |

@@ -9,7 +9,6 @@ import DashboardLayout from '../components/DashboardLayout';
 import SummaryApi from '../common';
 import { BILLING_CYCLE_MONTHS, buildTenureOptions } from '../helpers/serviceTenure';
 import Context from '../context';
-import backgroundImage from '../assets/BG.png';
 import GlassPageState from '../components/GlassPageState';
 
 const PLAN_TYPE_LABELS = {
@@ -91,7 +90,7 @@ const getValidityLine = (servicePlan) => {
 };
 
 const SectionHeading = ({ children }) => (
-  <h2 className="border-b border-white/15 pb-2 text-xl font-bold text-white">
+  <h2 className="border-b border-[var(--glass-border)] pb-2 text-xl font-bold text-[var(--text-primary)]">
     {children}
   </h2>
 );
@@ -245,8 +244,8 @@ const ServicePlanDetail = () => {
   if (!loaded) {
     return (
       <DashboardLayout user={user}>
-        <div className="relative min-h-[calc(100vh-4rem)] overflow-hidden bg-slate-950 bg-cover bg-center px-4 py-8 sm:px-6 lg:px-8 lg:py-12" style={{ backgroundImage: `url(${backgroundImage})` }}>
-          <div className="pointer-events-none absolute inset-0 bg-slate-950/40" />
+        <div className="relative min-h-[calc(100vh-4rem)] overflow-hidden px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
+          <div className="pointer-events-none absolute inset-0 bg-[var(--scrim)]" />
           <div className="relative mx-auto w-full max-w-7xl"><GlassPageState message="Loading service details…" /></div>
         </div>
       </DashboardLayout>
@@ -256,15 +255,15 @@ const ServicePlanDetail = () => {
   if (!plan) {
     return (
       <DashboardLayout user={user}>
-        <div className="relative min-h-[calc(100vh-4rem)] overflow-hidden bg-slate-950 bg-cover bg-center px-4 py-8 pb-10 sm:px-6 lg:px-8 lg:py-12" style={{ backgroundImage: `url(${backgroundImage})` }}>
-          <div className="pointer-events-none absolute inset-0 bg-slate-950/40" />
+        <div className="relative min-h-[calc(100vh-4rem)] overflow-hidden px-4 py-8 pb-10 sm:px-6 lg:px-8 lg:py-12">
+          <div className="pointer-events-none absolute inset-0 bg-[var(--scrim)]" />
           <div className="mx-auto flex w-full max-w-7xl flex-col gap-4">
-            <div className="relative overflow-hidden rounded-[2rem] border border-white/20 bg-white/10 px-5 py-10 text-center text-white shadow-[0_25px_80px_-35px_rgba(0,0,0,0.55)] backdrop-blur-2xl">
+            <div className="relative overflow-hidden rounded-[2rem] border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] px-5 py-10 text-center text-[var(--text-primary)] shadow-[0_25px_80px_-35px_rgba(0,0,0,0.55)] backdrop-blur-2xl">
               <GlassPageState type="error" message={loadError || 'This service could not be found.'} onRetry={() => window.location.reload()} />
               <button
                 type="button"
                 onClick={handleBack}
-                className="mt-4 rounded-2xl bg-emerald-500 px-4 py-2 text-base font-semibold text-white hover:bg-emerald-400"
+                className="mt-4 rounded-2xl bg-emerald-500 px-4 py-2 text-base font-semibold text-[var(--text-primary)] hover:bg-emerald-400"
               >
                 Back to Plans
               </button>
@@ -288,25 +287,25 @@ const ServicePlanDetail = () => {
 
   return (
     <DashboardLayout user={user}>
-      <div className="relative min-h-[calc(100vh-4rem)] overflow-hidden bg-slate-950 bg-cover bg-center px-4 py-8 pb-10 sm:px-6 lg:px-8 lg:py-12" style={{ backgroundImage: `url(${backgroundImage})` }}>
-        <div className="pointer-events-none absolute inset-0 bg-slate-950/40" />
+      <div className="relative min-h-[calc(100vh-4rem)] overflow-hidden px-4 py-8 pb-10 sm:px-6 lg:px-8 lg:py-12">
+        <div className="pointer-events-none absolute inset-0 bg-[var(--scrim)]" />
         <div className="relative mx-auto flex w-full max-w-7xl flex-col gap-4">
-          <article className="relative overflow-hidden rounded-[2rem] border border-white/20 bg-white/10 text-white shadow-[0_25px_80px_-35px_rgba(0,0,0,0.55)] backdrop-blur-2xl backdrop-saturate-150">
+          <article className="relative overflow-hidden rounded-[2rem] border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] text-[var(--text-primary)] shadow-[0_25px_80px_-35px_rgba(0,0,0,0.55)] backdrop-blur-2xl backdrop-saturate-150">
             {/* Header */}
-            <div className="relative bg-slate-950/45 px-5 py-5 text-white sm:px-6 lg:px-8">
-              <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/[0.14] to-transparent" />
+            <div className="relative bg-[var(--glass-bg-subtle)] px-5 py-5 text-[var(--text-primary)] sm:px-6 lg:px-8">
+              <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-[var(--glass-sheen)] to-transparent" />
               <button
                 type="button"
                 onClick={handleBack}
-                className="inline-flex items-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-3 py-2 text-base font-semibold text-white transition hover:bg-white/15"
+                className="inline-flex items-center gap-2 rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg)] px-3 py-2 text-base font-semibold text-[var(--text-primary)] transition hover:bg-[var(--glass-bg-strong)]"
               >
                 <ArrowLeft className="h-4 w-4" />
                 Back
               </button>
-              <h1 className="mt-4 text-2xl font-bold tracking-tight text-white">
+              <h1 className="mt-4 text-2xl font-bold tracking-tight text-[var(--text-primary)]">
                 {plan.serviceName}
               </h1>
-              <p className="mt-2 text-base font-medium text-white">{planTypeLabel}</p>
+              <p className="mt-2 text-base font-medium text-[var(--text-primary)]">{planTypeLabel}</p>
             </div>
 
             <div className="space-y-8 px-5 py-6 sm:px-8 sm:py-8">
@@ -315,7 +314,7 @@ const ServicePlanDetail = () => {
                 <section>
                   <SectionHeading>What is this plan?</SectionHeading>
                   <div
-                    className="prose prose-lg prose-invert mt-3 max-w-none text-base leading-7 text-white/85"
+                    className="prose prose-lg prose-invert mt-3 max-w-none text-base leading-7 text-[var(--text-secondary)]"
                     dangerouslySetInnerHTML={{ __html: description }}
                   />
                 </section>
@@ -328,13 +327,13 @@ const ServicePlanDetail = () => {
                 <SectionHeading>What You Get</SectionHeading>
                 <ul className="mt-3 space-y-2">
                   {portalAccessLine && (
-                    <li className="flex items-start gap-2.5 text-base text-white/85">
+                    <li className="flex items-start gap-2.5 text-base text-[var(--text-secondary)]">
                       <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" />
                       {portalAccessLine}
                     </li>
                   )}
                   {servicePlan.filesLimit && (
-                    <li className="flex items-start gap-2.5 text-base text-white/85">
+                    <li className="flex items-start gap-2.5 text-base text-[var(--text-secondary)]">
                       <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" />
                       Up to {servicePlan.filesLimit} file(s) per request
                     </li>
@@ -348,13 +347,13 @@ const ServicePlanDetail = () => {
                 <SectionHeading>Plan Validity</SectionHeading>
                 <ul className="mt-3 space-y-2">
                   {validityLine && (
-                    <li className="flex items-start gap-2.5 text-base text-white/85">
+                    <li className="flex items-start gap-2.5 text-base text-[var(--text-secondary)]">
                       <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" />
                       Valid for {validityLine}
                     </li>
                   )}
                   {billingCycleLabel && (
-                    <li className="flex items-start gap-2.5 text-base text-white/85">
+                    <li className="flex items-start gap-2.5 text-base text-[var(--text-secondary)]">
                       <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" />
                       {billingCycleLabel}
                     </li>
@@ -368,20 +367,20 @@ const ServicePlanDetail = () => {
                   <SectionHeading>Price</SectionHeading>
                   <div className="mt-3 flex items-baseline gap-3">
                     {showStrikethroughBasePrice && (
-                      <span className="text-lg text-slate-400 line-through">{formatPrice(plan.price)}</span>
+                      <span className="text-lg text-[var(--text-muted)] line-through">{formatPrice(plan.price)}</span>
                     )}
-                    <span className="text-2xl font-bold text-white">{formatPrice(plan.sellingPrice)}</span>
+                    <span className="text-2xl font-bold text-[var(--text-primary)]">{formatPrice(plan.sellingPrice)}</span>
                   </div>
                 </section>
               )}
             </div>
 
             {/* 5. Purchase action */}
-            <div className="border-t border-white/15 px-5 py-6 sm:px-8 sm:py-8">
+            <div className="border-t border-[var(--glass-border)] px-5 py-6 sm:px-8 sm:py-8">
               <button
                 type="button"
                 onClick={handleOpenPayment}
-                className="inline-flex w-full items-center justify-center rounded-2xl bg-emerald-500 px-4 py-3 text-base font-semibold text-white transition hover:bg-emerald-400 sm:w-auto"
+                className="inline-flex w-full items-center justify-center rounded-2xl bg-emerald-500 px-4 py-3 text-base font-semibold text-[var(--text-primary)] transition hover:bg-emerald-400 sm:w-auto"
               >
                 Proceed to Payment
               </button>
@@ -392,39 +391,39 @@ const ServicePlanDetail = () => {
 
       {/* Payment confirmation — wallet first, UPI QR only for any remainder. */}
       {showPaymentModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 px-4 py-6">
-          <div className="max-h-full w-full max-w-md overflow-y-auto rounded-[1.75rem] border border-white/20 bg-slate-950/95 p-6 text-white shadow-2xl backdrop-blur-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--glass-bg-subtle)] px-4 py-6">
+          <div className="max-h-full w-full max-w-md overflow-y-auto rounded-[1.75rem] border border-[var(--glass-border-strong)] bg-[var(--menu-bg)] p-6 text-[var(--text-primary)] shadow-2xl backdrop-blur-2xl">
             {!showQR ? (
               <>
-                <h2 className="text-xl font-bold text-white">Confirm your purchase</h2>
-                <p className="mt-1 text-base text-slate-300">{plan.serviceName}</p>
+                <h2 className="text-xl font-bold text-[var(--text-primary)]">Confirm your purchase</h2>
+                <p className="mt-1 text-base text-[var(--text-secondary)]">{plan.serviceName}</p>
 
                 {catalogueBillingOptions.length > 0 && (
                   <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                    <label><span className="mb-1.5 block text-sm font-semibold text-slate-200">Billing period</span><select className="w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2.5 text-sm text-white" value={selectedBillingCycle} onChange={(event) => { setSelectedBillingCycle(event.target.value); setTenureMonths(''); }}><option value="">Select billing period</option>{catalogueBillingOptions.map((option) => <option key={option.billingCycle} value={option.billingCycle}>{BILLING_CYCLE_LABELS[option.billingCycle]} — {formatPrice(option.pricePerCycle)}</option>)}</select></label>
-                    <label><span className="mb-1.5 block text-sm font-semibold text-slate-200">Total tenure</span><select required className="w-full rounded-xl border border-white/20 bg-white/10 px-3 py-2.5 text-sm text-white disabled:opacity-50" disabled={!selectedBillingCycle} value={tenureMonths} onChange={(event) => setTenureMonths(event.target.value)}><option value="">Select tenure</option>{buildTenureOptions(selectedCycleMonths).map((option) => <option key={option.months} value={option.months}>{option.label}</option>)}</select></label>
+                    <label><span className="mb-1.5 block text-sm font-semibold text-[var(--text-secondary)]">Billing period</span><select className="w-full rounded-xl border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] px-3 py-2.5 text-sm text-[var(--text-primary)]" value={selectedBillingCycle} onChange={(event) => { setSelectedBillingCycle(event.target.value); setTenureMonths(''); }}><option value="">Select billing period</option>{catalogueBillingOptions.map((option) => <option key={option.billingCycle} value={option.billingCycle}>{BILLING_CYCLE_LABELS[option.billingCycle]} — {formatPrice(option.pricePerCycle)}</option>)}</select></label>
+                    <label><span className="mb-1.5 block text-sm font-semibold text-[var(--text-secondary)]">Total tenure</span><select required className="w-full rounded-xl border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] px-3 py-2.5 text-sm text-[var(--text-primary)] disabled:opacity-50" disabled={!selectedBillingCycle} value={tenureMonths} onChange={(event) => setTenureMonths(event.target.value)}><option value="">Select tenure</option>{buildTenureOptions(selectedCycleMonths).map((option) => <option key={option.months} value={option.months}>{option.label}</option>)}</select></label>
                   </div>
                 )}
-                {catalogueBillingOptions.length > 0 && <p className="mt-2 text-xs text-slate-400">{tenureMonths && selectedCycleMonths ? `${Number(tenureMonths) / selectedCycleMonths} billing cycles. ` : ''}First selected period is paid now; further invoices follow this billing period until the selected tenure ends.</p>}
+                {catalogueBillingOptions.length > 0 && <p className="mt-2 text-xs text-[var(--text-muted)]">{tenureMonths && selectedCycleMonths ? `${Number(tenureMonths) / selectedCycleMonths} billing cycles. ` : ''}First selected period is paid now; further invoices follow this billing period until the selected tenure ends.</p>}
 
-                <div className="mt-5 space-y-2 rounded-2xl border border-white/15 bg-white/5 p-4">
-                  <div className="flex items-center justify-between text-base text-white/85">
+                <div className="mt-5 space-y-2 rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg-subtle)] p-4">
+                  <div className="flex items-center justify-between text-base text-[var(--text-secondary)]">
                     <span>Amount due</span>
                     <span className="font-semibold">{formatPrice(planPrice)}</span>
                   </div>
-                  <div className="flex items-center justify-between text-base text-white/85">
+                  <div className="flex items-center justify-between text-base text-[var(--text-secondary)]">
                     <span>Paid from wallet</span>
                     <span className="font-semibold">{formatPrice(currentWalletPart)}</span>
                   </div>
                   {currentUpiPart > 0 && (
-                    <div className="flex items-center justify-between border-t border-white/15 pt-2 text-base text-white/85">
+                    <div className="flex items-center justify-between border-t border-[var(--glass-border)] pt-2 text-base text-[var(--text-secondary)]">
                       <span>To pay via UPI</span>
                       <span className="font-semibold">{formatPrice(currentUpiPart)}</span>
                     </div>
                   )}
                 </div>
 
-                <p className="mt-3 text-sm text-slate-400">
+                <p className="mt-3 text-sm text-[var(--text-muted)]">
                   Wallet balance: {formatPrice(currentWalletBalance)}
                   {currentUpiPart > 0
                     ? ' — the remaining amount needs admin approval after you pay by UPI.'
@@ -436,7 +435,7 @@ const ServicePlanDetail = () => {
                     type="button"
                     onClick={handleConfirmPayment}
                     disabled={payProcessing}
-                    className="inline-flex flex-1 items-center justify-center rounded-2xl bg-emerald-500 px-4 py-3 text-base font-semibold text-white transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-white/15"
+                    className="inline-flex flex-1 items-center justify-center rounded-2xl bg-emerald-500 px-4 py-3 text-base font-semibold text-[var(--text-primary)] transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-[var(--glass-bg-strong)]"
                   >
                     {payProcessing ? 'Processing…' : currentUpiPart === 0 ? 'Pay from Wallet' : 'Continue to UPI'}
                   </button>
@@ -444,7 +443,7 @@ const ServicePlanDetail = () => {
                     type="button"
                     onClick={() => setShowPaymentModal(false)}
                     disabled={payProcessing}
-                    className="inline-flex flex-1 items-center justify-center rounded-2xl border border-white/20 bg-white/5 px-4 py-3 text-base font-semibold text-white transition hover:bg-white/10 disabled:cursor-not-allowed"
+                    className="inline-flex flex-1 items-center justify-center rounded-2xl border border-[var(--glass-border-strong)] bg-[var(--glass-bg-subtle)] px-4 py-3 text-base font-semibold text-[var(--text-primary)] transition hover:bg-[var(--glass-bg)] disabled:cursor-not-allowed"
                   >
                     Cancel
                   </button>
@@ -452,21 +451,21 @@ const ServicePlanDetail = () => {
               </>
             ) : (
               <>
-                <h2 className="text-xl font-bold text-white">Pay {formatPrice(currentUpiPart)}</h2>
-                <p className="mt-1 text-sm text-slate-300">
+                <h2 className="text-xl font-bold text-[var(--text-primary)]">Pay {formatPrice(currentUpiPart)}</h2>
+                <p className="mt-1 text-sm text-[var(--text-secondary)]">
                   Scan the QR, then enter your UPI transaction ID below.
                 </p>
 
-                <div className="mt-4 flex justify-center rounded-2xl border border-white/15 bg-white p-4">
+                <div className="mt-4 flex justify-center rounded-2xl border border-[var(--glass-border)] bg-white p-4">
                   <QRCodeSVG value={upiLink} size={190} />
                 </div>
 
                 <label className="mt-4 block">
-                  <span className="mb-1.5 block text-base font-semibold text-slate-200">
+                  <span className="mb-1.5 block text-base font-semibold text-[var(--text-secondary)]">
                     UPI Transaction ID
                   </span>
                   <input
-                    className="w-full rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-base text-white outline-none placeholder:text-white/40 focus:border-emerald-400 focus:ring-4 focus:ring-emerald-400/20"
+                    className="w-full rounded-xl border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] px-4 py-3 text-base text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)] focus:border-emerald-400 focus:ring-4 focus:ring-emerald-400/20"
                     type="text"
                     inputMode="numeric"
                     placeholder="12-digit reference number"
@@ -480,7 +479,7 @@ const ServicePlanDetail = () => {
                     type="button"
                     onClick={handleVerifyUpi}
                     disabled={payProcessing || upiTransactionId.trim().length < 12}
-                    className="inline-flex flex-1 items-center justify-center rounded-2xl bg-emerald-500 px-4 py-3 text-base font-semibold text-white transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-white/15"
+                    className="inline-flex flex-1 items-center justify-center rounded-2xl bg-emerald-500 px-4 py-3 text-base font-semibold text-[var(--text-primary)] transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-[var(--glass-bg-strong)]"
                   >
                     {payProcessing ? 'Submitting…' : 'Submit for Approval'}
                   </button>
@@ -488,7 +487,7 @@ const ServicePlanDetail = () => {
                     type="button"
                     onClick={() => setShowQR(false)}
                     disabled={payProcessing}
-                    className="inline-flex flex-1 items-center justify-center rounded-2xl border border-white/20 bg-white/5 px-4 py-3 text-base font-semibold text-white transition hover:bg-white/10 disabled:cursor-not-allowed"
+                    className="inline-flex flex-1 items-center justify-center rounded-2xl border border-[var(--glass-border-strong)] bg-[var(--glass-bg-subtle)] px-4 py-3 text-base font-semibold text-[var(--text-primary)] transition hover:bg-[var(--glass-bg)] disabled:cursor-not-allowed"
                   >
                     Back
                   </button>
@@ -501,13 +500,13 @@ const ServicePlanDetail = () => {
 
       {/* Success */}
       {showSuccess && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 px-4 py-6">
-          <div className="w-full max-w-md rounded-[1.75rem] border border-white/20 bg-slate-950/95 p-6 text-center text-white shadow-2xl backdrop-blur-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--glass-bg-subtle)] px-4 py-6">
+          <div className="w-full max-w-md rounded-[1.75rem] border border-[var(--glass-border-strong)] bg-[var(--menu-bg)] p-6 text-center text-[var(--text-primary)] shadow-2xl backdrop-blur-2xl">
             <CheckCircle2 className="mx-auto h-12 w-12 text-emerald-300" />
-            <h2 className="mt-4 text-xl font-bold text-white">
+            <h2 className="mt-4 text-xl font-bold text-[var(--text-primary)]">
               {currentUpiPart === 0 ? 'Your service is active' : 'Payment submitted'}
             </h2>
-            <p className="mt-2 text-base text-slate-300">
+            <p className="mt-2 text-base text-[var(--text-secondary)]">
               {currentUpiPart === 0
                 ? `${plan.serviceName} has been activated.`
                 : 'Your payment is awaiting admin approval, usually within a few hours.'}
@@ -515,7 +514,7 @@ const ServicePlanDetail = () => {
             <button
               type="button"
               onClick={() => navigate('/projects-and-plans')}
-              className="mt-5 inline-flex w-full items-center justify-center rounded-2xl bg-emerald-500 px-4 py-3 text-base font-semibold text-white transition hover:bg-emerald-400"
+              className="mt-5 inline-flex w-full items-center justify-center rounded-2xl bg-emerald-500 px-4 py-3 text-base font-semibold text-[var(--text-primary)] transition hover:bg-emerald-400"
             >
               View My Plans
             </button>

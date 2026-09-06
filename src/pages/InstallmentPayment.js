@@ -8,7 +8,6 @@ import Context from '../context';
 import TriangleMazeLoader from '../components/TriangleMazeLoader';
 import displayINRCurrency from '../helpers/displayCurrency';
 import DashboardLayout from '../components/DashboardLayout';
-import backgroundImage from '../assets/BG.png';
 import { goToCustomerReturn } from '../helpers/customerReturnNavigation';
 import { getOrderDisplayName } from '../helpers/orderPresentation';
 import { getInstallmentPaymentEligibility } from '../helpers/installmentPaymentEligibility';
@@ -318,16 +317,15 @@ const InstallmentPayment = () => {
     return (
       <DashboardLayout user={user}>
         <div
-          className="relative min-h-[calc(100vh-4rem)] overflow-hidden bg-slate-950 bg-cover bg-center px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
-          style={{ backgroundImage: `url(${backgroundImage})` }}
+          className="relative min-h-[calc(100vh-4rem)] overflow-hidden px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
         >
-          <div className="pointer-events-none absolute inset-0 bg-slate-950/40" />
-          <div className="relative mx-auto max-w-3xl rounded-[1.75rem] border border-white/20 bg-white/10 p-8 text-center shadow-[0_8px_32px_rgba(0,0,0,0.25)] backdrop-blur-2xl backdrop-saturate-150">
+          <div className="pointer-events-none absolute inset-0 bg-[var(--scrim)]" />
+          <div className="relative mx-auto max-w-3xl rounded-[1.75rem] border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] p-8 text-center shadow-[var(--card-shadow)] backdrop-blur-2xl backdrop-saturate-150">
             <h2 className="mb-2 text-lg font-semibold text-red-400">Payment Error</h2>
-            <p className="mb-4 text-base text-slate-300">This installment is not available or has already been paid.</p>
+            <p className="mb-4 text-base text-[var(--text-secondary)]">This installment is not available or has already been paid.</p>
             <button
               onClick={returnToParent}
-              className="rounded-lg bg-emerald-600 px-4 py-2 text-base font-semibold text-white hover:bg-emerald-700"
+              className="rounded-lg bg-emerald-600 px-4 py-2 text-base font-semibold text-[var(--text-primary)] hover:bg-emerald-700"
             >
               Back to Project
             </button>
@@ -343,10 +341,9 @@ const InstallmentPayment = () => {
   return (
     <DashboardLayout user={user}>
       <div
-        className="relative min-h-[calc(100vh-4rem)] overflow-hidden bg-slate-950 bg-cover bg-center px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
-        style={{ backgroundImage: `url(${backgroundImage})` }}
+        className="relative min-h-[calc(100vh-4rem)] overflow-hidden px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
       >
-        <div className="pointer-events-none absolute inset-0 bg-slate-950/40" />
+        <div className="pointer-events-none absolute inset-0 bg-[var(--scrim)]" />
 
         <div className="relative mx-auto flex w-full max-w-3xl flex-col gap-4">
           {/* Detail-page header: back button absolute-left, heading truly centred. */}
@@ -354,31 +351,31 @@ const InstallmentPayment = () => {
             <button
               type="button"
               onClick={returnToParent}
-              className="absolute left-0 inline-flex w-fit shrink-0 items-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-5 py-3 text-lg font-semibold text-white backdrop-blur-md transition hover:bg-white/15"
+              className="absolute left-0 inline-flex w-fit shrink-0 items-center gap-2 rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg)] px-5 py-3 text-lg font-semibold text-[var(--text-primary)] backdrop-blur-md transition hover:bg-[var(--glass-bg-strong)]"
             >
               <ArrowLeft className="h-5 w-5" />
               Back
             </button>
 
             <div className="text-center">
-              <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
+              <h1 className="text-2xl font-bold tracking-tight text-[var(--text-primary)] sm:text-3xl">
                 {getInstallmentName(installmentNumber)}
               </h1>
-              <p className="mt-1 text-base text-slate-300">
+              <p className="mt-1 text-base text-[var(--text-secondary)]">
                 {getOrderDisplayName(order, 'Project')}
               </p>
             </div>
           </div>
 
           {/* One dark-glass card with internal dividers, not a stack of sub-cards. */}
-          <div className="relative overflow-hidden rounded-[1.75rem] border border-white/20 bg-white/10 p-5 shadow-[0_8px_32px_rgba(0,0,0,0.25)] backdrop-blur-2xl backdrop-saturate-150 sm:p-6 lg:p-8">
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/[0.12] to-transparent" />
+          <div className="relative overflow-hidden rounded-[1.75rem] border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] p-5 shadow-[var(--card-shadow)] backdrop-blur-2xl backdrop-saturate-150 sm:p-6 lg:p-8">
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-[var(--glass-sheen)] to-transparent" />
 
             <div className="relative">
               <div className="flex flex-wrap items-baseline justify-between gap-3">
                 <div>
-                  <p className="text-sm text-slate-300">Amount due</p>
-                  <p className="mt-1 text-3xl font-bold text-white">{displayINRCurrency(installment.amount)}</p>
+                  <p className="text-sm text-[var(--text-secondary)]">Amount due</p>
+                  <p className="mt-1 text-3xl font-bold text-[var(--text-primary)]">{displayINRCurrency(installment.amount)}</p>
                 </div>
                 <span className="inline-flex items-center gap-1 rounded-full border border-amber-400/40 bg-amber-500/20 px-3 py-1 text-sm font-semibold text-amber-300">
                   <CalendarClock className="h-3.5 w-3.5" />
@@ -386,43 +383,43 @@ const InstallmentPayment = () => {
                 </span>
               </div>
 
-              <p className="mt-3 text-sm leading-relaxed text-slate-300">
+              <p className="mt-3 text-sm leading-relaxed text-[var(--text-secondary)]">
                 {getProgressText(installmentNumber)} Project progress is {Math.round(order.projectProgress)}%.
               </p>
 
-              <div className="mt-5 border-t border-white/10 pt-5">
+              <div className="mt-5 border-t border-[var(--glass-border)] pt-5">
                 <div className="flex items-baseline justify-between gap-4">
-                  <span className="text-sm text-slate-300">Wallet balance</span>
+                  <span className="text-sm text-[var(--text-secondary)]">Wallet balance</span>
                   <span className="text-sm font-semibold text-emerald-300">{displayINRCurrency(context.walletBalance)}</span>
                 </div>
 
                 {/* The split only means something when the wallet cannot cover the whole amount. */}
                 {!walletCoversAll && (
-                  <div className="mt-3 divide-y divide-white/10 rounded-xl border border-emerald-400/25 bg-emerald-500/[0.06] px-4 py-2">
+                  <div className="mt-3 divide-y divide-[var(--divider)] rounded-xl border border-emerald-400/25 bg-emerald-500/[0.06] px-4 py-2">
                     <div className="flex items-baseline justify-between gap-4 py-2 text-sm">
-                      <span className="text-slate-300">Paid from wallet (instant)</span>
+                      <span className="text-[var(--text-secondary)]">Paid from wallet (instant)</span>
                       <span className="font-medium text-emerald-300">{displayINRCurrency(walletPart)}</span>
                     </div>
                     <div className="flex items-baseline justify-between gap-4 py-2 text-sm">
-                      <span className="text-slate-300">To pay via UPI</span>
-                      <span className="font-medium text-white">{displayINRCurrency(remainingAmount)}</span>
+                      <span className="text-[var(--text-secondary)]">To pay via UPI</span>
+                      <span className="font-medium text-[var(--text-primary)]">{displayINRCurrency(remainingAmount)}</span>
                     </div>
                   </div>
                 )}
               </div>
 
-              <div className="mt-5 border-t border-white/10 pt-5">
+              <div className="mt-5 border-t border-[var(--glass-border)] pt-5">
                 <button
                   type="button"
                   onClick={() => { setShowPayment(true); setShowQR(false); }}
                   disabled={loading || paymentProcessed}
-                  className="w-full rounded-lg bg-emerald-600 py-3 text-base font-medium text-white transition-colors hover:bg-emerald-700 disabled:opacity-60"
+                  className="w-full rounded-lg bg-emerald-600 py-3 text-base font-medium text-[var(--text-primary)] transition-colors hover:bg-emerald-700 disabled:opacity-60"
                 >
                   Pay Now
                 </button>
               </div>
 
-              <div className="mt-5 space-y-2 border-t border-white/10 pt-5 text-sm text-slate-300">
+              <div className="mt-5 space-y-2 border-t border-[var(--glass-border)] pt-5 text-sm text-[var(--text-secondary)]">
                 <p>Wallet money is your own already-approved balance, so it is paid instantly.</p>
                 <p>A UPI payment is verified by our team, usually within a few hours.</p>
                 <p>Project development continues as soon as the payment is confirmed.</p>
@@ -437,21 +434,21 @@ const InstallmentPayment = () => {
           paying an installment looks and behaves identically wherever it is started from. */}
       {showPayment && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-md rounded-[1.5rem] border border-white/15 bg-slate-900/95 p-6 text-white shadow-2xl backdrop-blur-2xl">
+          <div className="w-full max-w-md rounded-[1.5rem] border border-[var(--glass-border)] bg-[var(--menu-bg)] p-6 text-[var(--text-primary)] shadow-2xl backdrop-blur-2xl">
             {!showQR ? (
               <>
                 <h3 className="text-lg font-bold">{getInstallmentName(installmentNumber)}</h3>
                 <div className="mt-4 space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-slate-300">Amount due</span>
-                    <span className="font-semibold text-white">{displayINRCurrency(installment.amount)}</span>
+                    <span className="text-[var(--text-secondary)]">Amount due</span>
+                    <span className="font-semibold text-[var(--text-primary)]">{displayINRCurrency(installment.amount)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-300">Wallet balance</span>
+                    <span className="text-[var(--text-secondary)]">Wallet balance</span>
                     <span className="font-semibold text-emerald-300">{displayINRCurrency(context.walletBalance)}</span>
                   </div>
                 </div>
-                <p className="mt-3 text-xs text-slate-400">
+                <p className="mt-3 text-xs text-[var(--text-muted)]">
                   {walletCoversAll
                     ? 'Your wallet covers this amount. It will be deducted instantly.'
                     : `Wallet covers ${displayINRCurrency(walletPart)} — the remaining ${displayINRCurrency(remainingAmount)} is paid by UPI QR next.`}
@@ -460,14 +457,14 @@ const InstallmentPayment = () => {
                   <button
                     onClick={() => setShowPayment(false)}
                     disabled={loading}
-                    className="flex-1 rounded-lg border border-white/20 py-2.5 text-sm font-semibold text-slate-200 hover:bg-white/10 disabled:opacity-60"
+                    className="flex-1 rounded-lg border border-[var(--glass-border-strong)] py-2.5 text-sm font-semibold text-[var(--text-secondary)] hover:bg-[var(--glass-bg)] disabled:opacity-60"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleWalletPayment}
                     disabled={loading}
-                    className="flex-1 rounded-lg bg-emerald-600 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
+                    className="flex-1 rounded-lg bg-emerald-600 py-2.5 text-sm font-semibold text-[var(--text-primary)] hover:bg-emerald-700 disabled:opacity-60"
                   >
                     {loading ? 'Processing...' : walletCoversAll ? 'Pay from Wallet' : 'Continue to UPI'}
                   </button>
@@ -479,8 +476,8 @@ const InstallmentPayment = () => {
                 <div className="mt-4 flex justify-center rounded-2xl bg-white p-4">
                   <QRCodeSVG value={upiLink} size={190} />
                 </div>
-                <p className="mt-3 text-center text-xs text-slate-400">Transaction ID: {transactionId}</p>
-                <label className="mt-4 block text-sm font-medium text-slate-200">
+                <p className="mt-3 text-center text-xs text-[var(--text-muted)]">Transaction ID: {transactionId}</p>
+                <label className="mt-4 block text-sm font-medium text-[var(--text-secondary)]">
                   UPI Transaction ID
                 </label>
                 <input
@@ -488,9 +485,9 @@ const InstallmentPayment = () => {
                   value={upiTransactionId}
                   onChange={(event) => setUpiTransactionId(event.target.value)}
                   placeholder="Enter the UPI reference after paying"
-                  className="mt-1.5 w-full rounded-lg border border-white/20 bg-white/5 px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-emerald-400 focus:outline-none"
+                  className="mt-1.5 w-full rounded-lg border border-[var(--glass-border-strong)] bg-[var(--glass-bg-subtle)] px-3 py-2.5 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-emerald-400 focus:outline-none"
                 />
-                <p className="mt-1.5 text-xs text-slate-400">
+                <p className="mt-1.5 text-xs text-[var(--text-muted)]">
                   Find this in your UPI app payment history. It is required for verification.
                 </p>
                 {verificationStatus && (
@@ -500,14 +497,14 @@ const InstallmentPayment = () => {
                   <button
                     onClick={() => setShowQR(false)}
                     disabled={loading}
-                    className="flex-1 rounded-lg border border-white/20 py-2.5 text-sm font-semibold text-slate-200 hover:bg-white/10 disabled:opacity-60"
+                    className="flex-1 rounded-lg border border-[var(--glass-border-strong)] py-2.5 text-sm font-semibold text-[var(--text-secondary)] hover:bg-[var(--glass-bg)] disabled:opacity-60"
                   >
                     Back
                   </button>
                   <button
                     onClick={verifyPayment}
                     disabled={loading || !upiTransactionId.trim()}
-                    className="flex-1 rounded-lg bg-emerald-600 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
+                    className="flex-1 rounded-lg bg-emerald-600 py-2.5 text-sm font-semibold text-[var(--text-primary)] hover:bg-emerald-700 disabled:opacity-60"
                   >
                     {loading ? 'Verifying...' : 'Submit for Verification'}
                   </button>

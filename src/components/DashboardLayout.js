@@ -1,6 +1,6 @@
 // src/components/DashboardLayout.jsx
 import React, { useState, useEffect } from 'react';
-import { useLocation, Link, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'sonner';
 import {
@@ -15,9 +15,10 @@ import { useOnlineStatus } from '../App';
 import MobileSidebarDrawer from './MobileSidebarDrawer';
 import MobileBottomNav from './MobileBottomNav';
 import PortalHeader from './PortalHeader';
+import SidebarNavItem from './SidebarNavItem';
 import DraftOrderSavedDrawer from './DraftOrderSavedDrawer';
 import FloatingCartButton from './FloatingCartButton';
-import backgroundImage from '../assets/BG.png';
+import { ThemeProvider } from '../context/ThemeContext';
 import { PageTransition } from './PageMotion';
 
 const DashboardLayout = ({ children, user, walletBalance, cartCount, isLoading, activeProject }) => {
@@ -43,28 +44,6 @@ const DashboardLayout = ({ children, user, walletBalance, cartCount, isLoading, 
     }
   }, [currentUser, isLoading, navigate]);
   
-  // Get the page title based on current path
-  const getPageTitle = () => {
-    if (currentPath.startsWith('/dashboard')) return 'Dashboard';
-    if (currentPath.startsWith('/projects-and-plans')) return 'Projects and Plans';
-    if (currentPath.startsWith('/order')) return 'Your Orders';
-    if (currentPath.startsWith('/project-details')) return 'Your Project';
-    if (currentPath.startsWith('/start-new-project')) return 'Explore Services';
-    if (currentPath.startsWith('/profile')) return 'Account Details';
-    if (currentPath.startsWith('/wallet')) return 'Wallet Details';
-    if (currentPath.startsWith('/support-tickets')) return 'Support Tickets';
-    if (currentPath.startsWith('/support')) return 'Contact Support';
-    if (currentPath.startsWith('/my-updates')) return 'My Updates';
-    if (currentPath.startsWith('/my-invoices')) return 'My Invoices';
-    if (currentPath.startsWith('/documents')) return 'Documents';
-    if (currentPath.startsWith('/direct-payment')) return 'Direct Payment';
-    if (currentPath.startsWith('/installment-payment')) return 'Installment Payment';
-    if (currentPath.startsWith('/cart')) return 'Cart';
-    if (currentPath.startsWith('/complete-profile')) return 'Complete Profile';
-    if (currentPath.startsWith('/games')) return 'Games';
-    return 'Dashboard';
-  };
-
   const projectsAndPlansActive = currentPath.startsWith('/projects-and-plans');
   const quickLinks = [
     {
@@ -186,11 +165,11 @@ const DashboardLayout = ({ children, user, walletBalance, cartCount, isLoading, 
   // Loading state or no user
   if (!currentUser) {
     return (
-      <div className="flex min-h-full bg-gray-50">
+      <div className="portal-surface flex min-h-full">
         <div className="w-full p-4 flex flex-col">
           <div className="animate-pulse">
-            <div className="h-32 bg-gray-200 rounded mb-4"></div>
-            <div className="h-64 bg-gray-200 rounded"></div>
+            <div className="h-32 rounded mb-4 bg-[var(--glass-bg-subtle)]"></div>
+            <div className="h-64 rounded bg-[var(--glass-bg-subtle)]"></div>
           </div>
         </div>
       </div>
@@ -199,9 +178,9 @@ const DashboardLayout = ({ children, user, walletBalance, cartCount, isLoading, 
 
   const sidebarContent = (
     <div className="flex h-full w-full flex-col">
-      <div className="border-b border-white/10 px-5 pt-8 pb-5">
+      <div className="border-b border-[var(--glass-border)] px-5 pt-8 pb-5">
         <div className="flex items-center gap-3">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-300 ring-1 ring-emerald-400/20">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--glass-bg-strong)] text-[var(--text-primary)] ring-1 ring-[var(--glass-border)]">
             {currentUser?.profilePic ? (
               <img
                 src={currentUser.profilePic}
@@ -215,73 +194,53 @@ const DashboardLayout = ({ children, user, walletBalance, cartCount, isLoading, 
             )}
           </div>
           <div className="min-w-0">
-            <p className="truncate text-base font-semibold text-white">
+            <p className="truncate text-base font-semibold text-[var(--text-primary)]">
               {currentUser?.name || 'User'}
             </p>
-            <p className="truncate text-sm text-white">
+            <p className="truncate text-sm text-[var(--text-secondary)]">
               {currentUser?.email || 'Customer Portal'}
             </p>
           </div>
         </div>
-
-        <div className="mt-6 inline-flex rounded-full border border-emerald-400/30 bg-emerald-500/10 px-3 py-1 text-sm font-semibold uppercase text-emerald-300">
-          {getPageTitle()}
-        </div>
       </div>
 
       <div className="flex-1 px-3 py-4">
-        <p className="px-3 text-sm font-semibold uppercase text-white">
+        <p className="px-3 text-sm font-semibold uppercase text-[var(--text-muted)]">
           Quick Links
         </p>
 
         <div className="mt-3 space-y-2">
-          {quickLinks.map(({ to, label, icon: Icon, active }) => (
-            <Link
-              key={label}
-              to={to}
-              onClick={() => setMobileMenuOpen(false)}
-              className={[
-                "group flex items-center gap-3 rounded-2xl px-4 py-3 text-base font-semibold transition-all",
-                active
-                  ? 'bg-emerald-500 text-black shadow-lg shadow-emerald-950/30'
-                  : 'bg-slate-900/70 text-white hover:bg-slate-800',
-              ].join(' ')}
-            >
-              <Icon size={18} className="shrink-0" />
-              <span className="flex-1">{label}</span>
-            </Link>
+          {quickLinks.map((link) => (
+            <SidebarNavItem
+              key={link.label}
+              {...link}
+              variant="primary"
+              onNavigate={() => setMobileMenuOpen(false)}
+            />
           ))}
         </div>
 
-        <div className="mt-6 border-t border-white/10 pt-4">
-          <p className="px-3 text-sm font-semibold uppercase text-white">
+        <div className="mt-6 border-t border-[var(--glass-border)] pt-4">
+          <p className="px-3 text-sm font-semibold uppercase text-[var(--text-muted)]">
             More
           </p>
           <div className="mt-3 space-y-2">
-            {secondaryLinks.map(({ to, label, icon: Icon, active }) => (
-              <Link
-                key={label}
-                to={to}
-                onClick={() => setMobileMenuOpen(false)}
-                className={[
-                  "group flex items-center gap-3 rounded-2xl px-4 py-2.5 text-base font-medium transition-all",
-                  active
-                    ? 'bg-slate-800 text-white'
-                    : 'bg-slate-900/40 text-white hover:bg-slate-800',
-                ].join(' ')}
-              >
-                <Icon size={16} className="shrink-0" />
-                <span className="flex-1">{label}</span>
-              </Link>
+            {secondaryLinks.map((link) => (
+              <SidebarNavItem
+                key={link.label}
+                {...link}
+                variant="secondary"
+                onNavigate={() => setMobileMenuOpen(false)}
+              />
             ))}
           </div>
         </div>
       </div>
 
-      <div className="border-t border-white/10 p-4">
+      <div className="border-t border-[var(--glass-border)] p-4">
         <button
           onClick={handleLogoutClick}
-          className="flex w-full items-center gap-3 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-left text-base font-semibold text-red-200 transition hover:bg-red-500/20"
+          className="flex w-full items-center gap-3 rounded-2xl border border-[var(--danger-border)] bg-[var(--danger-bg)] px-4 py-3 text-left text-base font-semibold text-[var(--danger-fg)] transition hover:bg-[var(--danger-bg-hover)]"
           disabled={isLoggingOut}
         >
           <LogOut size={18} className="shrink-0" />
@@ -294,32 +253,31 @@ const DashboardLayout = ({ children, user, walletBalance, cartCount, isLoading, 
   );
 
   return (
-    <>
+    <ThemeProvider>
       <PortalHeader
         user={currentUser}
         portalLabel="Customer Portal"
         dashboardTo="/dashboard"
         onLogout={handleLogoutClick}
+        showThemeSwitch
         links={[...quickLinks, ...secondaryLinks].map(({ to, label }) => ({ to, label }))}
       />
-      <div className="flex min-h-full items-stretch bg-slate-950">
+      <div className="flex min-h-full items-stretch bg-[var(--shell-bg)]">
         <aside
-          className="sticky top-16 z-40 hidden h-[calc(100vh-4rem)] w-72 shrink-0 flex-col self-start overflow-y-auto border-r border-slate-800 bg-slate-950 bg-cover bg-center text-white shadow-2xl lg:flex"
-          style={{ backgroundImage: `url(${backgroundImage})` }}
+          className="portal-surface sticky top-16 z-40 hidden h-[calc(100vh-4rem)] w-72 shrink-0 flex-col self-start overflow-y-auto border-r border-[var(--sidebar-border)] text-[var(--text-primary)] shadow-2xl lg:flex"
         >
-          <div className="flex h-full w-full flex-col bg-slate-950/55">
+          <div className="flex h-full w-full flex-col bg-[var(--scrim)]">
             {sidebarContent}
           </div>
         </aside>
 
-        <MobileSidebarDrawer isOpen={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)}>
+        <MobileSidebarDrawer isOpen={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} themed>
           {sidebarContent}
         </MobileSidebarDrawer>
 
         <div className="min-w-0 flex-1">
           <main
-            className="min-h-full bg-slate-950 bg-cover bg-center pb-16 lg:pb-0"
-            style={{ backgroundImage: `url(${backgroundImage})` }}
+            className="portal-surface min-h-full pb-16 lg:pb-0"
           >
             <PageTransition pageKey={location.key}>
               {children}
@@ -328,7 +286,7 @@ const DashboardLayout = ({ children, user, walletBalance, cartCount, isLoading, 
         </div>
       </div>
 
-      <MobileBottomNav tabs={bottomNavTabs} onMoreClick={() => setMobileMenuOpen(true)} />
+      <MobileBottomNav tabs={bottomNavTabs} onMoreClick={() => setMobileMenuOpen(true)} themed />
 
       {/* Customer cart (moved from AppContent — cart is a customer-portal feature). */}
       <DraftOrderSavedDrawer />
@@ -337,12 +295,12 @@ const DashboardLayout = ({ children, user, walletBalance, cartCount, isLoading, 
       {/* Logout Confirmation Popup */}
       {showLogoutConfirmation && currentUser && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+          <div className="glass-panel rounded-2xl p-6 max-w-md w-full mx-4">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold text-black">Confirm Logout</h3>
+              <h3 className="text-lg font-semibold text-[var(--text-primary)]">Confirm Logout</h3>
               <button
                 onClick={handleCancelLogout}
-                className="text-black hover:text-slate-600"
+                className="text-[var(--text-secondary)] transition hover:text-[var(--text-primary)]"
                 disabled={isLoggingOut}
               >
                 <X size={20} />
@@ -350,10 +308,10 @@ const DashboardLayout = ({ children, user, walletBalance, cartCount, isLoading, 
             </div>
 
             <div className="mb-6">
-              <p className="text-base text-black mb-2">
-                Hello <span className="font-medium text-black">{currentUser?.name || 'User'}</span>,
+              <p className="text-base text-[var(--text-secondary)] mb-2">
+                Hello <span className="font-medium text-[var(--text-primary)]">{currentUser?.name || 'User'}</span>,
               </p>
-              <p className="text-base text-black">
+              <p className="text-base text-[var(--text-secondary)]">
                 Are you sure you want to logout from your account?
               </p>
             </div>
@@ -361,7 +319,7 @@ const DashboardLayout = ({ children, user, walletBalance, cartCount, isLoading, 
             <div className="flex space-x-3">
               <button
                 onClick={handleCancelLogout}
-                className="flex-1 px-4 py-2 border border-gray-300 text-black rounded-lg hover:bg-gray-50 font-medium"
+                className="flex-1 px-4 py-2 border border-[var(--glass-border)] text-[var(--text-primary)] rounded-lg hover:bg-[var(--glass-bg-hover)] font-medium"
                 disabled={isLoggingOut}
               >
                 No, Cancel
@@ -377,7 +335,7 @@ const DashboardLayout = ({ children, user, walletBalance, cartCount, isLoading, 
           </div>
         </div>
       )}
-    </>
+    </ThemeProvider>
   );
 };
 

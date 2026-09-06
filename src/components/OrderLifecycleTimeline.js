@@ -20,7 +20,7 @@ const EVENT_META = {
   created: {
     label: 'Order created',
     Icon: Sparkles,
-    tone: { light: 'text-slate-600 bg-slate-100', dark: 'text-slate-300 bg-white/10' },
+    tone: { light: 'text-[var(--text-secondary)] bg-[var(--glass-bg-strong)]', dark: 'text-[var(--text-secondary)] bg-[var(--glass-bg)]' },
   },
   approved: {
     label: 'Payment approved',
@@ -50,14 +50,14 @@ const EVENT_META = {
   cancelled: {
     label: 'Project cancelled',
     Icon: XCircle,
-    tone: { light: 'text-slate-700 bg-slate-200', dark: 'text-slate-300 bg-white/10' },
+    tone: { light: 'text-[var(--text-secondary)] bg-[var(--glass-bg-strong)]', dark: 'text-[var(--text-secondary)] bg-[var(--glass-bg)]' },
   },
 };
 
 const FALLBACK_META = {
   label: 'Update',
   Icon: CircleDot,
-  tone: { light: 'text-slate-600 bg-slate-100', dark: 'text-slate-300 bg-white/10' },
+  tone: { light: 'text-[var(--text-secondary)] bg-[var(--glass-bg-strong)]', dark: 'text-[var(--text-secondary)] bg-[var(--glass-bg)]' },
 };
 
 const formatWhen = (value) => {
@@ -77,7 +77,7 @@ const OrderLifecycleTimeline = ({ timeline = [], dark = false, className = '' })
 
   if (!entries.length) {
     return (
-      <p className={dark ? 'text-sm text-slate-400' : 'text-sm text-slate-500'}>
+      <p className={dark ? 'text-sm text-[var(--text-muted)]' : 'text-sm text-[var(--text-muted)]'}>
         No lifecycle history recorded for this order yet.
       </p>
     );
@@ -99,7 +99,7 @@ const OrderLifecycleTimeline = ({ timeline = [], dark = false, className = '' })
             {!isLast ? (
               <span
                 aria-hidden="true"
-                className={`absolute left-[13px] top-7 bottom-0 w-px ${dark ? 'bg-white/10' : 'bg-slate-200'}`}
+                className={`absolute left-[13px] top-7 bottom-0 w-px ${dark ? 'bg-[var(--glass-bg)]' : 'bg-[var(--glass-bg-strong)]'}`}
               />
             ) : null}
 
@@ -109,11 +109,11 @@ const OrderLifecycleTimeline = ({ timeline = [], dark = false, className = '' })
 
             <div className="min-w-0 flex-1 pt-0.5">
               <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                <span className={dark ? 'text-sm font-semibold text-white' : 'text-sm font-semibold text-black'}>
+                <span className={dark ? 'text-sm font-semibold text-[var(--text-primary)]' : 'text-sm font-semibold text-[var(--text-primary)]'}>
                   {meta.label}
                 </span>
                 {typeof entry.progressAtEvent === 'number' && entry.eventType === 'work_started' ? (
-                  <span className={dark ? 'text-xs text-slate-400' : 'text-xs text-slate-500'}>
+                  <span className={dark ? 'text-xs text-[var(--text-muted)]' : 'text-xs text-[var(--text-muted)]'}>
                     at {entry.progressAtEvent}%
                   </span>
                 ) : null}
@@ -122,8 +122,8 @@ const OrderLifecycleTimeline = ({ timeline = [], dark = false, className = '' })
                     title={entry.derivedFrom ? `Reconstructed from: ${entry.derivedFrom}` : 'Reconstructed from earlier records'}
                     className={
                       dark
-                        ? 'rounded-full bg-white/10 px-2 py-0.5 text-[11px] font-medium text-slate-300'
-                        : 'rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600'
+                        ? 'rounded-full bg-[var(--glass-bg)] px-2 py-0.5 text-[11px] font-medium text-[var(--text-secondary)]'
+                        : 'rounded-full bg-[var(--glass-bg-strong)] px-2 py-0.5 text-[11px] font-medium text-[var(--text-secondary)]'
                     }
                   >
                     estimated
@@ -131,12 +131,12 @@ const OrderLifecycleTimeline = ({ timeline = [], dark = false, className = '' })
                 ) : null}
               </div>
 
-              <p className={dark ? 'mt-0.5 text-xs text-slate-400' : 'mt-0.5 text-xs text-slate-500'}>
+              <p className={dark ? 'mt-0.5 text-xs text-[var(--text-muted)]' : 'mt-0.5 text-xs text-[var(--text-muted)]'}>
                 {formatWhen(entry.occurredAt)}
               </p>
 
               {entry.reason ? (
-                <p className={dark ? 'mt-1 text-xs text-slate-300' : 'mt-1 text-xs text-slate-600'}>
+                <p className={dark ? 'mt-1 text-xs text-[var(--text-secondary)]' : 'mt-1 text-xs text-[var(--text-secondary)]'}>
                   {entry.reason}
                 </p>
               ) : null}

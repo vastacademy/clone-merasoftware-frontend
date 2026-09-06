@@ -9,7 +9,6 @@ import {
 import SummaryApi from '../common';
 import DashboardLayout from '../components/DashboardLayout';
 import { AnimatedSection } from '../components/PageMotion';
-import backgroundImage from '../assets/BG.png';
 import CustomerWorkspaceTabs from '../components/CustomerWorkspaceTabs';
 import OrderListRow, { OrderListHeader } from '../components/OrderListRow';
 import Context from '../context';
@@ -100,26 +99,25 @@ const ProjectsAndPlans = () => {
       activeWorkItemsCount={activeWorkCount}
     >
       <div
-        className="relative min-h-[calc(100vh-4rem)] overflow-hidden bg-slate-950 bg-cover bg-center px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
-        style={{ backgroundImage: `url(${backgroundImage})` }}
+        className="relative min-h-[calc(100vh-4rem)] overflow-hidden px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
       >
-        <div className="pointer-events-none absolute inset-0 bg-slate-950/40" />
+        <div className="pointer-events-none absolute inset-0 bg-[var(--scrim)]" />
 
         <div className="relative mx-auto max-w-7xl">
           <div className="text-center">
-            <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl lg:text-4xl">
+            <h1 className="text-2xl font-bold tracking-tight text-[var(--text-primary)] sm:text-3xl lg:text-4xl">
               Projects and Plans
             </h1>
-            <p className="mx-auto mt-3 max-w-2xl text-base text-slate-300 sm:text-lg">
+            <p className="mx-auto mt-3 max-w-2xl text-base text-[var(--text-secondary)] sm:text-lg">
               Compact list of all project and plan records with status, type, progress, and ownership in one view.
             </p>
           </div>
 
-          <AnimatedSection className="relative mt-10 overflow-hidden rounded-3xl border border-white/20 bg-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.25)] backdrop-blur-2xl backdrop-saturate-150">
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/[0.12] to-transparent" />
+          <AnimatedSection className="relative mt-10 overflow-hidden rounded-3xl border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] shadow-[var(--card-shadow)] backdrop-blur-2xl backdrop-saturate-150">
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-[var(--glass-sheen)] to-transparent" />
 
-            <div className="relative flex flex-col gap-3 border-b border-white/15 p-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:px-6">
-              <h2 className="flex items-center text-xl font-semibold text-white">
+            <div className="relative flex flex-col gap-3 border-b border-[var(--glass-border)] p-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:px-6">
+              <h2 className="flex items-center text-xl font-semibold text-[var(--text-primary)]">
                 <Layers3 className="mr-2 h-5 w-5" />
                 Projects and Plans
               </h2>
@@ -135,16 +133,16 @@ const ProjectsAndPlans = () => {
                 variant="inline"
               />
               <div className="flex flex-wrap items-center justify-center gap-2">
-                <div className="rounded-2xl border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-white backdrop-blur-md">
+                <div className="rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg)] px-4 py-2 text-sm font-semibold text-[var(--text-primary)] backdrop-blur-md">
                   Total: {items.length}
                 </div>
-                <div className="rounded-2xl border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-white backdrop-blur-md">
+                <div className="rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg)] px-4 py-2 text-sm font-semibold text-[var(--text-primary)] backdrop-blur-md">
                   Active: {activeWorkCount}
                 </div>
                 <button
                   type="button"
                   onClick={fetchData}
-                  className="inline-flex items-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-sm font-semibold text-white backdrop-blur-md transition hover:bg-white/15"
+                  className="inline-flex items-center gap-2 rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg)] px-4 py-3 text-sm font-semibold text-[var(--text-primary)] backdrop-blur-md transition hover:bg-[var(--glass-bg-strong)]"
                 >
                   <RefreshCw size={16} />
                   Refresh
@@ -155,9 +153,9 @@ const ProjectsAndPlans = () => {
             <OrderListHeader />
 
             {loading ? (
-              <div className="relative px-5 py-10 text-center text-base text-slate-300 sm:px-6">Loading projects and plans...</div>
+              <div className="relative px-5 py-10 text-center text-base text-[var(--text-secondary)] sm:px-6">Loading projects and plans...</div>
             ) : visibleItems.length > 0 ? (
-                  <div className="relative divide-y divide-white/10">
+                  <div className="relative divide-y divide-[var(--divider)]">
                     {visibleItems.map((order, index) => (
                       <OrderListRow
                         key={order._id}
@@ -169,21 +167,21 @@ const ProjectsAndPlans = () => {
               </div>
             ) : (
               <div className="relative px-5 py-12 text-center sm:px-6">
-                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-white/20 bg-white/10 text-white backdrop-blur-md">
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] text-[var(--text-primary)] backdrop-blur-md">
                   <FileText className="h-6 w-6" />
                 </div>
-                <h3 className="mt-4 text-lg font-semibold text-white">No items found</h3>
-                <p className="mt-2 text-base text-slate-300">There are no projects or plans in this view.</p>
+                <h3 className="mt-4 text-lg font-semibold text-[var(--text-primary)]">No items found</h3>
+                <p className="mt-2 text-base text-[var(--text-secondary)]">There are no projects or plans in this view.</p>
                 <div className="mt-5 flex flex-wrap justify-center gap-3">
                   <Link
                     to="/dashboard"
-                    className="inline-flex items-center gap-2 rounded-2xl bg-white px-4 py-3 text-base font-semibold text-slate-900 transition hover:bg-slate-100"
+                    className="inline-flex items-center gap-2 rounded-2xl bg-[rgb(var(--ink-rgb))] px-4 py-3 text-base font-semibold text-[var(--page-bg)] transition hover:bg-[rgb(var(--ink-rgb)/0.85)]"
                   >
                     Back to Dashboard
                   </Link>
                   <Link
                     to="/start-new-project"
-                    className="inline-flex items-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-4 py-3 text-base font-semibold text-white backdrop-blur-md transition hover:bg-white/20"
+                    className="inline-flex items-center gap-2 rounded-2xl border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] px-4 py-3 text-base font-semibold text-[var(--text-primary)] backdrop-blur-md transition hover:bg-[var(--glass-bg-strong)]"
                   >
                     Explore Services
                   </Link>

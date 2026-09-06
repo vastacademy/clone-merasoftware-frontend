@@ -24,7 +24,7 @@ const formatDate = (date) => {
 // The ProjectsAndPlans layout is the canonical one.
 
 export const OrderListHeader = () => (
-  <div className="relative grid grid-cols-12 gap-3 border-b border-white/15 bg-white/5 px-5 py-3 text-sm font-semibold uppercase text-slate-300 sm:px-6">
+  <div className="relative grid grid-cols-12 gap-3 border-b border-[var(--glass-border)] bg-[var(--glass-bg-subtle)] px-5 py-3 text-sm font-semibold uppercase text-[var(--text-secondary)] sm:px-6">
     <div className="col-span-12 lg:col-span-5">Item</div>
     <div className="col-span-6 lg:col-span-2">Type</div>
     <div className="col-span-6 lg:col-span-2">Status</div>
@@ -51,14 +51,14 @@ const OrderListRow = ({ order, index = 0, onClick }) => {
       type="button"
       onClick={() => onClick?.(order)}
       className={[
-        'grid w-full grid-cols-12 gap-3 border-l-4 px-5 py-4 text-left transition hover:bg-white/[0.1] sm:px-6',
+        'grid w-full grid-cols-12 gap-3 border-l-4 px-5 py-4 text-left transition hover:bg-[var(--glass-bg-hover)] sm:px-6',
         accent.border,
-        index % 2 === 0 ? 'bg-white/[0.02]' : 'bg-white/[0.06]',
+        index % 2 === 0 ? 'bg-[var(--glass-bg-subtle)]' : 'bg-[var(--glass-bg-subtle)]',
       ].join(' ')}
     >
       <div className="col-span-12 lg:col-span-5">
         <div className="flex items-start gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/20 bg-white/10 text-white backdrop-blur-md">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border-[length:var(--glass-border-width)] border-[var(--glass-border-strong)] bg-[var(--glass-bg)] text-[var(--text-primary)] backdrop-blur-md">
             {isProject ? <LayoutGrid className="h-5 w-5" /> : <Layers3 className="h-5 w-5" />}
           </div>
           <div className="min-w-0">
@@ -67,18 +67,18 @@ const OrderListRow = ({ order, index = 0, onClick }) => {
                 {getItemTypeLabel(order)}
               </span>
               {summary && (
-                <span className="rounded-full border border-white/20 bg-white/10 px-2.5 py-1 text-sm font-semibold uppercase text-slate-200">
+                <span className="rounded-full border-[length:var(--glass-border-width)] border-[var(--glass-border-strong)] bg-[var(--glass-bg)] px-2.5 py-1 text-sm font-semibold uppercase text-[var(--text-secondary)]">
                   {summary}
                 </span>
               )}
             </div>
-            <h3 className="mt-2 truncate text-lg font-semibold text-white">
+            <h3 className="mt-2 truncate text-lg font-semibold text-[var(--text-primary)]">
               {/* Shared SSOT: productId while it exists, else the name frozen on the order
                   itself, so a retired or deleted plan never blanks a purchase history row. */}
               {getOrderDisplayName(order)}
             </h3>
-            <p className="mt-1 truncate text-sm text-slate-300">{category}</p>
-            <p className="mt-2 text-sm text-slate-300 sm:hidden">
+            <p className="mt-1 truncate text-sm text-[var(--text-secondary)]">{category}</p>
+            <p className="mt-2 text-sm text-[var(--text-secondary)] sm:hidden">
               Updated {formatDate(order.updatedAt || order.createdAt)}
             </p>
           </div>
@@ -87,8 +87,8 @@ const OrderListRow = ({ order, index = 0, onClick }) => {
 
       <div className="col-span-6 lg:col-span-2 lg:flex lg:items-center">
         <div className="space-y-1">
-          <p className="text-base font-semibold text-white">{isPlan ? 'Plan' : 'Project'}</p>
-          <p className="text-sm text-slate-300">
+          <p className="text-base font-semibold text-[var(--text-primary)]">{isPlan ? 'Plan' : 'Project'}</p>
+          <p className="text-sm text-[var(--text-secondary)]">
             {isPlan ? (order.productId?.isMonthlyRenewablePlan || order.productId?.isMonthlyLimitedPlan ? 'Monthly' : 'Update based') : 'Work item'}
           </p>
         </div>
@@ -102,20 +102,20 @@ const OrderListRow = ({ order, index = 0, onClick }) => {
 
       <div className="col-span-6 lg:col-span-2 lg:flex lg:items-center">
         <div className="space-y-1">
-          <p className="text-base font-semibold text-white">{formatDate(order.updatedAt || order.createdAt)}</p>
-          {isPlan && <p className="text-sm text-slate-300">{currentValue}</p>}
+          <p className="text-base font-semibold text-[var(--text-primary)]">{formatDate(order.updatedAt || order.createdAt)}</p>
+          {isPlan && <p className="text-sm text-[var(--text-secondary)]">{currentValue}</p>}
         </div>
       </div>
 
       <div className="col-span-6 flex items-center justify-end lg:col-span-1">
         <div className="hidden text-right lg:block">
           {isPlan && (
-            <p className="text-sm text-slate-300">
+            <p className="text-sm text-[var(--text-secondary)]">
               {currentValue}
             </p>
           )}
         </div>
-        <ArrowRight className="h-5 w-5 text-slate-400" />
+        <ArrowRight className="h-5 w-5 text-[var(--text-muted)]" />
       </div>
     </button>
   );

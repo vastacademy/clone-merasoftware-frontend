@@ -5,14 +5,14 @@ const GlassPageState = ({ type = 'loading', message, onRetry }) => {
   const isError = type === 'error';
 
   return (
-    <div className="flex min-h-[280px] items-center justify-center rounded-[1.75rem] border border-white/20 bg-white/10 px-6 py-12 text-center shadow-[0_8px_32px_rgba(0,0,0,0.25)] backdrop-blur-2xl">
+    <div className="glass-panel flex min-h-[280px] items-center justify-center rounded-[1.75rem] px-6 py-12 text-center">
       <div className="max-w-md">
         {isError ? (
           <AlertTriangle className="mx-auto h-10 w-10 text-amber-300" />
         ) : (
           <Loader2 className="mx-auto h-10 w-10 animate-spin text-emerald-300" />
         )}
-        <p className="mt-4 text-base font-semibold text-white">
+        <p className="mt-4 text-base font-semibold text-[var(--text-primary)]">
           {message || (isError ? 'Something went wrong.' : 'Loading…')}
         </p>
         {isError && onRetry && (

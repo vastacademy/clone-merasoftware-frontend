@@ -4,7 +4,6 @@ import { useSelector } from 'react-redux';
 import { ArrowLeft, FileText, Download } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
 import SummaryApi from '../common';
-import backgroundImage from '../assets/BG.png';
 import { goToCustomerReturn } from '../helpers/customerReturnNavigation';
 
 const formatFileSize = (bytes) => {
@@ -44,7 +43,7 @@ const getDocMeta = (doc) => {
   }
   return {
     label: 'Document',
-    badge: 'border-white/25 bg-white/10 text-slate-200',
+    badge: 'border-[var(--glass-border-strong)] bg-[var(--glass-bg)] text-[var(--text-secondary)]',
   };
 };
 
@@ -88,10 +87,9 @@ const CustomerDocuments = () => {
   return (
     <DashboardLayout user={user}>
       <div
-        className="relative min-h-[calc(100vh-4rem)] overflow-hidden bg-slate-950 bg-cover bg-center px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
-        style={{ backgroundImage: `url(${backgroundImage})` }}
+        className="relative min-h-[calc(100vh-4rem)] overflow-hidden px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
       >
-        <div className="pointer-events-none absolute inset-0 bg-slate-950/40" />
+        <div className="pointer-events-none absolute inset-0 bg-[var(--scrim)]" />
 
         <div className="relative mx-auto flex w-full max-w-4xl flex-col gap-6">
           {/* Header */}
@@ -99,38 +97,38 @@ const CustomerDocuments = () => {
             <button
               type="button"
               onClick={handleBack}
-              className="absolute left-0 inline-flex w-fit shrink-0 items-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-5 py-3 text-lg font-semibold text-white backdrop-blur-md transition hover:bg-white/15"
+              className="absolute left-0 inline-flex w-fit shrink-0 items-center gap-2 rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg)] px-5 py-3 text-lg font-semibold text-[var(--text-primary)] backdrop-blur-md transition hover:bg-[var(--glass-bg-strong)]"
             >
               <ArrowLeft className="h-5 w-5" />
               Back
             </button>
 
             <div className="text-center">
-              <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl lg:text-4xl">
+              <h1 className="text-2xl font-bold tracking-tight text-[var(--text-primary)] sm:text-3xl lg:text-4xl">
                 Documents
               </h1>
-              <p className="mt-1 text-base text-slate-300 sm:text-lg">
+              <p className="mt-1 text-base text-[var(--text-secondary)] sm:text-lg">
                 Proposals and agreements shared with you
               </p>
             </div>
           </div>
 
           {/* Timeline card */}
-          <div className="relative overflow-hidden rounded-[1.75rem] border border-white/20 bg-white/10 p-5 shadow-[0_8px_32px_rgba(0,0,0,0.25)] backdrop-blur-2xl backdrop-saturate-150 sm:p-6">
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/[0.12] to-transparent" />
+          <div className="relative overflow-hidden rounded-[1.75rem] border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] p-5 shadow-[var(--card-shadow)] backdrop-blur-2xl backdrop-saturate-150 sm:p-6">
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-[var(--glass-sheen)] to-transparent" />
 
             <div className="relative">
-              <div className="flex items-center gap-2 text-white">
+              <div className="flex items-center gap-2 text-[var(--text-primary)]">
                 <FileText className="h-5 w-5" />
                 <h2 className="text-lg font-bold">Your Documents</h2>
               </div>
 
               {loading ? (
-                <p className="mt-6 text-sm text-slate-300">Loading documents…</p>
+                <p className="mt-6 text-sm text-[var(--text-secondary)]">Loading documents…</p>
               ) : error ? (
                 <p className="mt-6 text-sm text-rose-300">{error}</p>
               ) : documents.length === 0 ? (
-                <p className="mt-6 text-sm text-slate-300">
+                <p className="mt-6 text-sm text-[var(--text-secondary)]">
                   No documents yet. Any document shared with you before or after becoming a client will appear here.
                 </p>
               ) : (
@@ -141,18 +139,18 @@ const CustomerDocuments = () => {
                     return (
                       <li
                         key={doc.id}
-                        className="flex items-start justify-between gap-4 rounded-2xl border border-white/15 bg-white/[0.06] px-4 py-3.5"
+                        className="flex items-start justify-between gap-4 rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg-subtle)] px-4 py-3.5"
                       >
                         <div className="min-w-0">
                           <div className="flex flex-wrap items-center gap-2">
                             <span className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold ${meta.badge}`}>
                               {meta.label}
                             </span>
-                            <span className="truncate text-sm font-semibold text-white">
+                            <span className="truncate text-sm font-semibold text-[var(--text-primary)]">
                               {doc.name || 'Document'}
                             </span>
                           </div>
-                          <p className="mt-1 text-xs text-slate-300">
+                          <p className="mt-1 text-xs text-[var(--text-secondary)]">
                             {formatDateTime(doc.date)}
                             {sizeLabel ? ` · ${sizeLabel}` : ''}
                           </p>
@@ -162,7 +160,7 @@ const CustomerDocuments = () => {
                             href={doc.downloadLink}
                             target="_blank"
                             rel="noreferrer"
-                            className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-white/15"
+                            className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] px-3 py-1.5 text-xs font-semibold text-[var(--text-primary)] transition hover:bg-[var(--glass-bg-strong)]"
                           >
                             <Download className="h-3.5 w-3.5" />
                             Download

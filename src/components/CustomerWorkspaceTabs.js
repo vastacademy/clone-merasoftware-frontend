@@ -8,7 +8,7 @@ const CustomerWorkspaceTabs = ({ tabs, activeTab, onChange, ariaLabel = 'Workspa
       className={
         isInline
           ? ''
-          : 'border-b border-white/40 bg-white/40 px-5 backdrop-blur-xl backdrop-saturate-150 sm:px-6'
+          : 'border-b border-[var(--glass-border)] bg-[var(--glass-bg-subtle)] px-5 backdrop-blur-xl backdrop-saturate-150 sm:px-6'
       }
     >
       <div
@@ -28,10 +28,8 @@ const CustomerWorkspaceTabs = ({ tabs, activeTab, onChange, ariaLabel = 'Workspa
               className={[
                 'relative -mb-px inline-flex shrink-0 cursor-pointer items-center justify-center border-b-2 px-1 py-4 text-base font-semibold transition',
                 isActive
-                  ? 'border-emerald-500 text-emerald-700'
-                  : isInline
-                    ? 'border-transparent text-slate-300 hover:border-white/40 hover:text-white'
-                    : 'border-transparent text-black hover:border-slate-300 hover:text-black',
+                  ? 'border-emerald-500 text-emerald-500'
+                  : 'border-transparent text-[var(--text-secondary)] hover:border-[var(--glass-border-strong)] hover:text-[var(--text-primary)]',
               ].join(' ')}
             >
               {tab.label}

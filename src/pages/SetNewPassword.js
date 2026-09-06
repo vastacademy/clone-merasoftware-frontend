@@ -54,44 +54,44 @@ const SetNewPassword = () => {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-950 px-4 py-10">
-      <div className="w-full max-w-md rounded-3xl border border-slate-800 bg-slate-900 p-8 shadow-2xl">
+    <div className="portal-surface flex min-h-screen items-center justify-center px-4 py-10">
+      <div className="glass-panel w-full max-w-md rounded-3xl p-8">
         <div className="flex flex-col items-center text-center">
           <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-300">
             <KeyRound size={26} />
           </div>
-          <h1 className="mt-4 text-xl font-bold text-white">Set your password</h1>
-          <p className="mt-2 text-sm text-slate-400">
+          <h1 className="mt-4 text-xl font-bold text-[var(--text-primary)]">Set your password</h1>
+          <p className="mt-2 text-sm text-[var(--text-muted)]">
             Your account was created with a default password. Set your own password to secure it.
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
           <div>
-            <label className="mb-1 block text-sm font-semibold text-slate-300">New Password</label>
+            <label className="mb-1 block text-sm font-semibold text-[var(--text-secondary)]">New Password</label>
             <input
               type="password"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               placeholder="Enter new password"
-              className="w-full rounded-2xl border border-slate-700 bg-slate-800 px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-emerald-400/50 focus:bg-slate-900"
+              className="w-full rounded-2xl border border-[var(--field-border)] bg-[var(--field-bg)] px-4 py-3 text-sm text-[var(--text-primary)] outline-none transition placeholder:text-[var(--text-muted)] focus:border-emerald-400/50 focus:bg-[var(--glass-bg)]"
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-semibold text-slate-300">Confirm Password</label>
+            <label className="mb-1 block text-sm font-semibold text-[var(--text-secondary)]">Confirm Password</label>
             <input
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="Re-enter new password"
-              className="w-full rounded-2xl border border-slate-700 bg-slate-800 px-4 py-3 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-emerald-400/50 focus:bg-slate-900"
+              className="w-full rounded-2xl border border-[var(--field-border)] bg-[var(--field-bg)] px-4 py-3 text-sm text-[var(--text-primary)] outline-none transition placeholder:text-[var(--text-muted)] focus:border-emerald-400/50 focus:bg-[var(--glass-bg)]"
             />
           </div>
 
           <button
             type="submit"
             disabled={saving}
-            className="w-full rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-60"
+            className="w-full rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-[var(--text-primary)] transition hover:bg-emerald-700 disabled:opacity-60"
           >
             {saving ? "Saving..." : "Save Password"}
           </button>
@@ -100,7 +100,7 @@ const SetNewPassword = () => {
         <button
           type="button"
           onClick={handleSkip}
-          className="mt-4 w-full text-center text-sm font-medium text-slate-400 transition hover:text-slate-200"
+          className="mt-4 w-full text-center text-sm font-medium text-[var(--text-muted)] transition hover:text-[var(--text-secondary)]"
         >
           Skip for now
         </button>

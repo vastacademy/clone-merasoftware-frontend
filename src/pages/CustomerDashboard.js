@@ -13,7 +13,6 @@ import {
 } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
 import { AnimatedSection, getStaggerDelay } from '../components/PageMotion';
-import backgroundImage from '../assets/BG.png';
 import SummaryApi from '../common';
 import Context from '../context';
 import OrderListRow, { OrderListHeader } from '../components/OrderListRow';
@@ -27,10 +26,10 @@ const getItemLink = (order) =>
 
 const MetricCard = ({ icon: Icon, label, value, helper, tone = 'slate', to, state, highlight = false }) => {
   const glowMap = {
-    slate: 'bg-slate-400/25',
-    blue: 'bg-blue-400/30',
-    emerald: 'bg-emerald-400/30',
-    violet: 'bg-violet-400/30',
+    slate: 'bg-[rgb(var(--tint-rgb))]',
+    blue: 'bg-blue-400',
+    emerald: 'bg-emerald-400',
+    violet: 'bg-violet-400',
   };
 
   const Wrapper = to ? Link : 'div';
@@ -40,24 +39,27 @@ const MetricCard = ({ icon: Icon, label, value, helper, tone = 'slate', to, stat
     <Wrapper
       {...wrapperProps}
       className={[
-        'group relative overflow-hidden rounded-[1.75rem] border p-5 shadow-[0_8px_32px_rgba(0,0,0,0.35)] backdrop-blur-xl backdrop-saturate-150 transition-all duration-300',
+        'glass-panel group relative overflow-hidden rounded-[1.75rem] p-5 transition-all duration-300',
         highlight
-          ? 'border-emerald-400/50 bg-emerald-500/20 hover:-translate-y-1 hover:border-emerald-300/70 hover:bg-emerald-500/30 hover:shadow-[0_16px_40px_rgba(16,185,129,0.3)]'
-          : 'border-white/15 bg-slate-950/60 hover:border-white/25 hover:bg-slate-950/70',
+          ? 'border-emerald-500/50 hover:-translate-y-1 hover:border-emerald-500/60 hover:bg-[var(--glass-bg-hover)]'
+          : 'hover:border-[var(--glass-border-strong)] hover:bg-[var(--glass-bg-hover)]',
         to ? 'block' : '',
       ].join(' ')}
     >
-      <div className={`pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full ${highlight ? 'bg-emerald-300/30' : glowMap[tone]} blur-3xl`} />
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/10 to-transparent" />
+      <div
+        className={`pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full ${highlight ? 'bg-emerald-300' : glowMap[tone]} blur-3xl`}
+        style={{ opacity: 'var(--glow-opacity)' }}
+      />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-[var(--glass-sheen)] to-transparent" />
 
       <div className="relative flex items-start justify-between gap-4">
         <div>
-          <p className="text-base font-semibold uppercase text-white">{label}</p>
-          <p className="mt-2 text-2xl font-bold text-white">{value}</p>
-          {helper ? <p className="mt-2 text-sm text-slate-200">{helper}</p> : null}
+          <p className="text-base font-semibold uppercase text-[var(--text-primary)]">{label}</p>
+          <p className="mt-2 text-2xl font-bold text-[var(--text-primary)]">{value}</p>
+          {helper ? <p className="mt-2 text-sm text-[var(--text-secondary)]">{helper}</p> : null}
         </div>
-        <div className={`rounded-2xl border p-3 backdrop-blur-md ${highlight ? 'border-emerald-300/50 bg-emerald-400/25' : 'border-white/20 bg-white/10'}`}>
-          {to ? <ArrowRight className="h-5 w-5 text-white transition-transform group-hover:translate-x-0.5" /> : <Icon className="h-5 w-5 text-white" />}
+        <div className={`rounded-2xl border p-3 backdrop-blur-md ${highlight ? 'border-emerald-500/40 bg-emerald-500/15' : 'border-[var(--glass-border-strong)] bg-[var(--glass-bg)]'}`}>
+          {to ? <ArrowRight className="h-5 w-5 text-[var(--text-primary)] transition-transform group-hover:translate-x-0.5" /> : <Icon className="h-5 w-5 text-[var(--text-primary)]" />}
         </div>
       </div>
     </Wrapper>
@@ -186,10 +188,9 @@ const CustomerDashboard = () => {
   return (
       <DashboardLayout user={user} activeProject={activeProject}>
       <div
-        className="relative min-h-[calc(100vh-4rem)] overflow-hidden bg-slate-950 bg-cover bg-center px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
-        style={{ backgroundImage: `url(${backgroundImage})` }}
+        className="relative min-h-[calc(100vh-4rem)] overflow-hidden px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
       >
-        <div className="pointer-events-none absolute inset-0 bg-slate-950/40" />
+        <div className="pointer-events-none absolute inset-0 bg-[var(--scrim)]" />
 
         <div className="relative mx-auto max-w-7xl">
           {user?.isGuest ? (
@@ -202,10 +203,10 @@ const CustomerDashboard = () => {
           ) : null}
 
           <div className="text-center">
-            <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl lg:text-4xl">
+            <h1 className="text-2xl font-bold tracking-tight text-[var(--text-primary)] sm:text-3xl lg:text-4xl">
               Dashboard
             </h1>
-            <p className="mx-auto mt-3 max-w-2xl text-base text-slate-300 sm:text-lg">
+            <p className="mx-auto mt-3 max-w-2xl text-base text-[var(--text-secondary)] sm:text-lg">
               Open the live project, check wallet balance, or start new work from here.
             </p>
           </div>
@@ -223,18 +224,18 @@ const CustomerDashboard = () => {
             <AnimatedSection delay={getStaggerDelay(3)}><MetricCard icon={TriangleAlert} label="Open alerts" value={String(pendingApprovalCount + rejectedCount)} helper="Pending approvals and rejected payments" tone="violet" /></AnimatedSection>
           </div>
 
-          <div className="relative mt-10 overflow-hidden rounded-3xl border border-white/20 bg-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.25)] backdrop-blur-2xl backdrop-saturate-150">
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/[0.12] to-transparent" />
+          <div className="glass-panel relative mt-10 overflow-hidden rounded-3xl">
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-[var(--glass-sheen)] to-transparent" />
 
-            <div className="relative flex flex-col gap-3 border-b border-white/15 p-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:px-6">
-              <h2 className="flex items-center text-xl font-semibold text-white">
+            <div className="relative flex flex-col gap-3 border-b border-[var(--glass-border)] p-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:px-6">
+              <h2 className="flex items-center text-xl font-semibold text-[var(--text-primary)]">
                 <Layers3 className="mr-2 h-5 w-5" />
                 Recent projects & plans
               </h2>
               <div className="flex flex-wrap items-center justify-center gap-2">
                 <Link
                   to="/order"
-                  className="inline-flex items-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white backdrop-blur-md transition hover:bg-white/15"
+                  className="inline-flex items-center gap-2 rounded-2xl border-[length:var(--glass-border-width)] border-[var(--glass-border)] bg-[var(--glass-bg)] px-4 py-2.5 text-sm font-semibold text-[var(--text-primary)] backdrop-blur-md transition hover:bg-[var(--glass-bg-hover)]"
                 >
                   View all orders
                   <ArrowRight className="h-4 w-4" />
@@ -242,7 +243,7 @@ const CustomerDashboard = () => {
                 <button
                   type="button"
                   onClick={fetchDashboardData}
-                  className="inline-flex items-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white backdrop-blur-md transition hover:bg-white/15"
+                  className="inline-flex items-center gap-2 rounded-2xl border-[length:var(--glass-border-width)] border-[var(--glass-border)] bg-[var(--glass-bg)] px-4 py-2.5 text-sm font-semibold text-[var(--text-primary)] backdrop-blur-md transition hover:bg-[var(--glass-bg-hover)]"
                 >
                   <RefreshCw className="h-4 w-4" />
                   Refresh
@@ -254,7 +255,7 @@ const CustomerDashboard = () => {
               <>
                 <OrderListHeader />
 
-                <div className="relative divide-y divide-white/10">
+                <div className="relative divide-y divide-[var(--divider)]">
                   {dashboardItems.map((order, index) => (
                     <OrderListRow
                       key={order._id}
@@ -267,17 +268,17 @@ const CustomerDashboard = () => {
               </>
             ) : (
               <div className="relative px-5 py-12 text-center sm:px-6">
-                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-white/20 bg-white/10 text-white backdrop-blur-md">
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border-[length:var(--glass-border-width)] border-[var(--glass-border-strong)] bg-[var(--glass-bg)] text-[var(--text-primary)] backdrop-blur-md">
                   <Layers3 className="h-6 w-6" />
                 </div>
-                <h3 className="mt-4 text-lg font-semibold text-white">No projects or plans yet</h3>
-                <p className="mt-2 text-base text-slate-300">
+                <h3 className="mt-4 text-lg font-semibold text-[var(--text-primary)]">No projects or plans yet</h3>
+                <p className="mt-2 text-base text-[var(--text-secondary)]">
                   Your admin-created projects and purchased services will appear here.
                 </p>
                 <div className="mt-5">
                   <Link
                     to="/start-new-project"
-                    className="inline-flex items-center gap-2 rounded-2xl bg-white px-4 py-3 text-base font-semibold text-slate-900 transition hover:bg-slate-100"
+                    className="inline-flex items-center gap-2 rounded-2xl bg-[rgb(var(--ink-rgb))] px-4 py-3 text-base font-semibold text-[var(--page-bg)] transition hover:bg-[rgb(var(--ink-rgb)/0.85)]"
                   >
                     <PlusCircle className="h-4 w-4" />
                     Explore Services

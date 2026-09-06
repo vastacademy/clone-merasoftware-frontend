@@ -31,7 +31,7 @@ const UploadedDataList = ({
   const t = (lightClass, glassClass) => (isGlass ? glassClass : lightClass);
 
   if (loading) {
-    return <p className={t('py-4 text-sm text-slate-500', 'py-4 text-sm text-slate-400')}>Loading…</p>;
+    return <p className={t('py-4 text-sm text-slate-500', 'py-4 text-sm text-[var(--text-muted)]')}>Loading…</p>;
   }
 
   if (error) {
@@ -39,11 +39,11 @@ const UploadedDataList = ({
   }
 
   if (!uploads || uploads.length === 0) {
-    return <p className={t('py-4 text-sm text-slate-500', 'py-4 text-sm text-slate-400')}>{emptyText}</p>;
+    return <p className={t('py-4 text-sm text-slate-500', 'py-4 text-sm text-[var(--text-muted)]')}>{emptyText}</p>;
   }
 
   return (
-    <div className={t('divide-y divide-slate-200', 'divide-y divide-white/10')}>
+    <div className={t('divide-y divide-slate-200', 'divide-y divide-[var(--divider)]')}>
       {uploads.map((attempt) => {
         const files = attempt.files || [];
         const notes = attempt.notes || [];
@@ -53,7 +53,7 @@ const UploadedDataList = ({
         return (
           <div key={attempt.id} className="py-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <span className={t('text-sm font-semibold text-black', 'text-sm font-semibold text-white')}>
+              <span className={t('text-sm font-semibold text-black', 'text-sm font-semibold text-[var(--text-primary)]')}>
                 {attempt.createdAt ? new Date(attempt.createdAt).toLocaleString('en-GB', {
                   day: 'numeric', month: 'short', year: 'numeric',
                   hour: '2-digit', minute: '2-digit',
@@ -75,13 +75,13 @@ const UploadedDataList = ({
 
             {files.length > 0 ? (
               <div className="mt-2">
-                <ul className={t('space-y-1 text-sm text-slate-700', 'space-y-1 text-sm text-slate-300')}>
+                <ul className={t('space-y-1 text-sm text-slate-700', 'space-y-1 text-sm text-[var(--text-secondary)]')}>
                   {files.map((file) => (
                     <li key={file.id} className="flex items-center justify-between gap-3">
-                      <span className={t('truncate text-black', 'truncate text-white')}>
+                      <span className={t('truncate text-black', 'truncate text-[var(--text-primary)]')}>
                         {file.name || 'File'}
                       </span>
-                      <span className={t('shrink-0 text-xs text-slate-500', 'shrink-0 text-xs text-slate-400')}>
+                      <span className={t('shrink-0 text-xs text-slate-500', 'shrink-0 text-xs text-[var(--text-muted)]')}>
                         {file.isExpired ? 'Expired' : formatFileSize(file.size)}
                       </span>
                     </li>
@@ -109,7 +109,7 @@ const UploadedDataList = ({
                     {isDownloading ? 'Preparing…' : `Download ${files.length > 1 ? 'All' : ''}`.trim()}
                   </button>
                 ) : (
-                  <p className={t('mt-2 text-xs text-slate-500', 'mt-2 text-xs text-slate-400')}>
+                  <p className={t('mt-2 text-xs text-slate-500', 'mt-2 text-xs text-[var(--text-muted)]')}>
                     Files are no longer available.
                   </p>
                 )}

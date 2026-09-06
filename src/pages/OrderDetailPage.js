@@ -3,7 +3,6 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft, CheckCircle2, Clock3, XCircle, CalendarClock, ChevronRight, FileText } from 'lucide-react';
 import SummaryApi from '../common';
 import DashboardLayout from '../components/DashboardLayout';
-import backgroundImage from '../assets/BG.png';
 import TriangleMazeLoader from '../components/TriangleMazeLoader';
 import { getOrderCategory, getOrderDisplayName } from '../helpers/orderPresentation';
 import { getInstallmentPaymentEligibility } from '../helpers/installmentPaymentEligibility';
@@ -28,7 +27,7 @@ const getInstallmentStatus = (installment) => {
     return { label: 'Paid', tone: 'border-emerald-400/40 bg-emerald-500/20 text-emerald-300', Icon: CheckCircle2 };
   }
   if (installment.paymentStatus === 'pending-approval') {
-    return { label: 'Verification Pending', tone: 'border-white/25 bg-white/15 text-white', Icon: Clock3 };
+    return { label: 'Verification Pending', tone: 'border-[var(--glass-border-strong)] bg-[var(--glass-bg-strong)] text-[var(--text-primary)]', Icon: Clock3 };
   }
   if (installment.paymentStatus === 'rejected') {
     return { label: 'Rejected', tone: 'border-red-400/40 bg-red-500/20 text-red-300', Icon: XCircle };
@@ -40,9 +39,9 @@ const INVOICE_STATUS_META = {
   paid: { label: 'Paid', tone: 'border-emerald-400/40 bg-emerald-500/20 text-emerald-300', Icon: CheckCircle2 },
   unpaid: { label: 'Due', tone: 'border-amber-400/40 bg-amber-500/20 text-amber-300', Icon: CalendarClock },
   overdue: { label: 'Overdue', tone: 'border-red-400/40 bg-red-500/20 text-red-300', Icon: XCircle },
-  cancelled: { label: 'Cancelled', tone: 'border-white/15 bg-white/10 text-slate-300', Icon: XCircle },
+  cancelled: { label: 'Cancelled', tone: 'border-[var(--glass-border)] bg-[var(--glass-bg)] text-[var(--text-secondary)]', Icon: XCircle },
   // Not a payable status — used for the project_final statement, which is never collected on.
-  statement: { label: 'Full Invoice', tone: 'border-white/20 bg-white/10 text-white', Icon: FileText },
+  statement: { label: 'Full Invoice', tone: 'border-[var(--glass-border-strong)] bg-[var(--glass-bg)] text-[var(--text-primary)]', Icon: FileText },
 };
 
 // TEMP UI-preview only — real invoice-generation backend doesn't exist for every order yet.
@@ -156,16 +155,15 @@ const OrderDetailPage = () => {
     return (
       <DashboardLayout user={user}>
         <div
-          className="relative min-h-[calc(100vh-4rem)] overflow-hidden bg-slate-950 bg-cover bg-center px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
-          style={{ backgroundImage: `url(${backgroundImage})` }}
+          className="relative min-h-[calc(100vh-4rem)] overflow-hidden px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
         >
-          <div className="pointer-events-none absolute inset-0 bg-slate-950/40" />
-          <div className="relative mx-auto max-w-3xl rounded-[1.75rem] border border-white/20 bg-white/10 p-8 text-center shadow-[0_8px_32px_rgba(0,0,0,0.25)] backdrop-blur-2xl backdrop-saturate-150">
+          <div className="pointer-events-none absolute inset-0 bg-[var(--scrim)]" />
+          <div className="relative mx-auto max-w-3xl rounded-[1.75rem] border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] p-8 text-center shadow-[var(--card-shadow)] backdrop-blur-2xl backdrop-saturate-150">
             <h2 className="text-lg font-semibold text-red-400 mb-2">Order Not Found</h2>
-            <p className="text-base text-slate-300 mb-4">The order you're looking for doesn't exist or you don't have access to it.</p>
+            <p className="text-base text-[var(--text-secondary)] mb-4">The order you're looking for doesn't exist or you don't have access to it.</p>
             <button
               onClick={handleBack}
-              className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-base font-semibold"
+              className="px-4 py-2 bg-emerald-600 text-[var(--text-primary)] rounded-lg hover:bg-emerald-700 text-base font-semibold"
             >
               Back to Orders
             </button>
@@ -196,34 +194,33 @@ const OrderDetailPage = () => {
   return (
     <DashboardLayout user={user}>
       <div
-        className="relative min-h-[calc(100vh-4rem)] overflow-hidden bg-slate-950 bg-cover bg-center px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
-        style={{ backgroundImage: `url(${backgroundImage})` }}
+        className="relative min-h-[calc(100vh-4rem)] overflow-hidden px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
       >
-        <div className="pointer-events-none absolute inset-0 bg-slate-950/40" />
+        <div className="pointer-events-none absolute inset-0 bg-[var(--scrim)]" />
 
         <div className="relative mx-auto flex w-full max-w-7xl flex-col gap-4">
           <div className="relative flex items-center justify-center">
             <button
               type="button"
               onClick={handleBack}
-              className="absolute left-0 inline-flex w-fit shrink-0 items-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-5 py-3 text-lg font-semibold text-white backdrop-blur-md transition hover:bg-white/15"
+              className="absolute left-0 inline-flex w-fit shrink-0 items-center gap-2 rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg)] px-5 py-3 text-lg font-semibold text-[var(--text-primary)] backdrop-blur-md transition hover:bg-[var(--glass-bg-strong)]"
             >
               <ArrowLeft className="h-5 w-5" />
               Back
             </button>
 
             <div className="text-center">
-              <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl lg:text-4xl">
+              <h1 className="text-2xl font-bold tracking-tight text-[var(--text-primary)] sm:text-3xl lg:text-4xl">
                 {getOrderDisplayName(order, 'Plan')}
               </h1>
-              <p className="mt-1 text-base text-slate-300 sm:text-lg">
+              <p className="mt-1 text-base text-[var(--text-secondary)] sm:text-lg">
                 {getOrderCategory(order, 'General').split('_').join(' ')}
               </p>
             </div>
           </div>
 
-          <div className="relative overflow-hidden rounded-[1.75rem] border border-white/20 bg-white/10 p-5 shadow-[0_8px_32px_rgba(0,0,0,0.25)] backdrop-blur-2xl backdrop-saturate-150 sm:p-6 lg:p-8">
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/[0.12] to-transparent" />
+          <div className="relative overflow-hidden rounded-[1.75rem] border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] p-5 shadow-[var(--card-shadow)] backdrop-blur-2xl backdrop-saturate-150 sm:p-6 lg:p-8">
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-[var(--glass-sheen)] to-transparent" />
 
             {isInstallmentProject ? (
               /* Installment project — one section, no sub-cards. The order's own facts (started,
@@ -233,15 +230,15 @@ const OrderDetailPage = () => {
               <div className="relative">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div>
-                    <h3 className="text-xl font-bold text-white">Installments</h3>
-                    <p className="mt-1 text-sm text-slate-300">
+                    <h3 className="text-xl font-bold text-[var(--text-primary)]">Installments</h3>
+                    <p className="mt-1 text-sm text-[var(--text-secondary)]">
                       Started {formatDate(startDate)} · Installments ({order.installments.length}) · Total ₹{installmentsTotal.toLocaleString()}
                     </p>
                   </div>
                   {projectStatement ? (
                     <a
                       href={`${SummaryApi.invoices.downloadDocument.url}/${projectStatement._id}/download`}
-                      className="inline-flex w-fit shrink-0 items-center gap-2 rounded-2xl border border-emerald-300/60 px-4 py-2.5 text-sm font-semibold text-emerald-100 transition hover:bg-white/10"
+                      className="inline-flex w-fit shrink-0 items-center gap-2 rounded-2xl border border-emerald-300/60 px-4 py-2.5 text-sm font-semibold text-emerald-100 transition hover:bg-[var(--glass-bg)]"
                     >
                       <FileText className="h-4 w-4" />
                       Download Invoice
@@ -249,7 +246,7 @@ const OrderDetailPage = () => {
                   ) : null}
                 </div>
 
-                <div className="mt-5 border-t border-white/10">
+                <div className="mt-5 border-t border-[var(--glass-border)]">
                   {order.installments.map((installment) => {
                     const st = getInstallmentStatus(installment);
                     const label = INSTALLMENT_LABELS[installment.installmentNumber] || `Installment #${installment.installmentNumber}`;
@@ -261,25 +258,25 @@ const OrderDetailPage = () => {
                       <div
                         key={installment.installmentNumber}
                         onClick={canPay ? () => handlePayInstallment(installment) : undefined}
-                        className={`flex flex-col gap-2 border-b border-white/10 px-1 py-4 sm:flex-row sm:items-center sm:justify-between ${canPay ? 'cursor-pointer hover:bg-white/[0.04]' : ''}`}
+                        className={`flex flex-col gap-2 border-b border-[var(--glass-border)] px-1 py-4 sm:flex-row sm:items-center sm:justify-between ${canPay ? 'cursor-pointer hover:bg-[var(--glass-bg-subtle)]' : ''}`}
                       >
                         <div>
                           <div className="flex flex-wrap items-center gap-2">
-                            <span className="text-base font-medium text-white">{label}</span>
+                            <span className="text-base font-medium text-[var(--text-primary)]">{label}</span>
                             <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-sm font-semibold backdrop-blur-md ${st.tone}`}>
                               <st.Icon className="h-3.5 w-3.5" />
                               {st.label}
                             </span>
                           </div>
-                          <p className="mt-1 text-sm text-slate-300">
+                          <p className="mt-1 text-sm text-[var(--text-secondary)]">
                             {installment.paid
                               ? `Paid on ${formatDate(installment.paidDate)}`
                               : `Due on ${formatDate(installment.dueDate)}`}
                           </p>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="text-base font-semibold text-white">₹{installment.amount.toLocaleString()}</span>
-                          {canPay && <ChevronRight className="h-4 w-4 text-slate-300" />}
+                          <span className="text-base font-semibold text-[var(--text-primary)]">₹{installment.amount.toLocaleString()}</span>
+                          {canPay && <ChevronRight className="h-4 w-4 text-[var(--text-secondary)]" />}
                         </div>
                       </div>
                     );
@@ -290,35 +287,35 @@ const OrderDetailPage = () => {
             <div className="relative grid w-full grid-cols-1 gap-5 lg:grid-cols-2">
 
               {/* Snapshot card */}
-              <div className="rounded-[1.5rem] border border-white/15 bg-white/[0.03] p-5">
-                <h3 className="mb-3 text-lg font-semibold text-white">Plan Snapshot</h3>
+              <div className="rounded-[1.5rem] border border-[var(--glass-border)] bg-[var(--glass-bg-subtle)] p-5">
+                <h3 className="mb-3 text-lg font-semibold text-[var(--text-primary)]">Plan Snapshot</h3>
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between rounded-2xl bg-white/5 px-4 py-2.5 text-base">
-                    <span className="text-slate-300">Start Date</span>
-                    <span className="font-medium text-white">{formatDate(startDate)}</span>
+                  <div className="flex items-center justify-between rounded-2xl bg-[var(--glass-bg-subtle)] px-4 py-2.5 text-base">
+                    <span className="text-[var(--text-secondary)]">Start Date</span>
+                    <span className="font-medium text-[var(--text-primary)]">{formatDate(startDate)}</span>
                   </div>
 
                   {isRecurringPlan ? (
                     <>
-                      <div className="flex items-center justify-between rounded-2xl bg-white/5 px-4 py-2.5 text-base">
-                        <span className="text-slate-300">End Date</span>
-                        <span className="font-medium text-white">{formatDate(endDate)}</span>
+                      <div className="flex items-center justify-between rounded-2xl bg-[var(--glass-bg-subtle)] px-4 py-2.5 text-base">
+                        <span className="text-[var(--text-secondary)]">End Date</span>
+                        <span className="font-medium text-[var(--text-primary)]">{formatDate(endDate)}</span>
                       </div>
-                      <div className="flex items-center justify-between rounded-2xl bg-white/5 px-4 py-2.5 text-base">
-                        <span className="text-slate-300">Payment Due Date</span>
-                        <span className="font-medium text-white">
+                      <div className="flex items-center justify-between rounded-2xl bg-[var(--glass-bg-subtle)] px-4 py-2.5 text-base">
+                        <span className="text-[var(--text-secondary)]">Payment Due Date</span>
+                        <span className="font-medium text-[var(--text-primary)]">
                           {formatDate(order.monthlyLimitResetDate || order.currentMonthExpiryDate)}
                         </span>
                       </div>
-                      <div className="flex items-center justify-between rounded-2xl bg-white/5 px-4 py-2.5 text-base">
-                        <span className="text-slate-300">Payment Cycle</span>
-                        <span className="font-medium text-white">Monthly</span>
+                      <div className="flex items-center justify-between rounded-2xl bg-[var(--glass-bg-subtle)] px-4 py-2.5 text-base">
+                        <span className="text-[var(--text-secondary)]">Payment Cycle</span>
+                        <span className="font-medium text-[var(--text-primary)]">Monthly</span>
                       </div>
                     </>
                   ) : (
-                    <div className="flex items-center justify-between rounded-2xl bg-white/5 px-4 py-2.5 text-base">
-                      <span className="text-slate-300">Payment Method</span>
-                      <span className="font-medium text-white">
+                    <div className="flex items-center justify-between rounded-2xl bg-[var(--glass-bg-subtle)] px-4 py-2.5 text-base">
+                      <span className="text-[var(--text-secondary)]">Payment Method</span>
+                      <span className="font-medium text-[var(--text-primary)]">
                         {order.isPartialPayment ? 'Installments (3)' : 'Full Payment'}
                       </span>
                     </div>
@@ -328,8 +325,8 @@ const OrderDetailPage = () => {
 
               {/* Invoice history — shown whenever this order has any invoice records */}
               {invoices.length > 0 && (
-                <div className="rounded-[1.5rem] border border-white/15 bg-white/[0.03] p-5">
-                  <h3 className="mb-3 text-lg font-semibold text-white">Invoice History</h3>
+                <div className="rounded-[1.5rem] border border-[var(--glass-border)] bg-[var(--glass-bg-subtle)] p-5">
+                  <h3 className="mb-3 text-lg font-semibold text-[var(--text-primary)]">Invoice History</h3>
                   <div className="space-y-3">
                     {invoices.map((invoice) => {
                       // A project_final invoice is a statement of the whole project, not an amount
@@ -346,17 +343,17 @@ const OrderDetailPage = () => {
                           onClick={() => navigate(`/invoice-detail/${invoice._id}`, {
                             state: customerChildState(location),
                           })}
-                          className="flex cursor-pointer items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 hover:border-white/20 hover:bg-white/[0.07]"
+                          className="flex cursor-pointer items-center justify-between gap-3 rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg-subtle)] px-4 py-3 hover:border-[var(--glass-border-strong)] hover:bg-[var(--glass-bg-subtle)]"
                         >
                           <div>
                             <div className="flex items-center gap-2">
-                              <span className="text-base font-medium text-white">{invoice.invoiceNumber}</span>
+                              <span className="text-base font-medium text-[var(--text-primary)]">{invoice.invoiceNumber}</span>
                               <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-sm font-semibold backdrop-blur-md ${meta.tone}`}>
                                 <meta.Icon className="h-3.5 w-3.5" />
                                 {meta.label}
                               </span>
                             </div>
-                            <p className="mt-1 text-sm text-slate-300">
+                            <p className="mt-1 text-sm text-[var(--text-secondary)]">
                               {isStatement
                                 ? 'Complete project invoice · download available'
                                 : invoice.status === 'paid'
@@ -365,8 +362,8 @@ const OrderDetailPage = () => {
                             </p>
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className="text-base font-semibold text-white">₹{invoice.amount.toLocaleString()}</span>
-                            <ChevronRight className="h-4 w-4 shrink-0 text-slate-300" />
+                            <span className="text-base font-semibold text-[var(--text-primary)]">₹{invoice.amount.toLocaleString()}</span>
+                            <ChevronRight className="h-4 w-4 shrink-0 text-[var(--text-secondary)]" />
                           </div>
                         </div>
                       );
@@ -378,10 +375,10 @@ const OrderDetailPage = () => {
             )}
 
             {order.orderVisibility === 'payment-rejected' && (
-              <div className="relative mt-5 rounded-[1.5rem] border border-white/15 bg-white/[0.03] p-5">
+              <div className="relative mt-5 rounded-[1.5rem] border border-[var(--glass-border)] bg-[var(--glass-bg-subtle)] p-5">
                 <button
                   onClick={handleRetryPayment}
-                  className="w-full rounded-lg bg-red-600 py-3 text-base font-medium text-white transition-colors hover:bg-red-700 sm:w-auto sm:px-8"
+                  className="w-full rounded-lg bg-red-600 py-3 text-base font-medium text-[var(--text-primary)] transition-colors hover:bg-red-700 sm:w-auto sm:px-8"
                 >
                   Retry Payment
                 </button>

@@ -4,7 +4,7 @@ import React from 'react';
 const LoaderContainer = ({ children, label }) => (
   <div className="flex flex-col items-center justify-center p-4 space-y-2">
     {children}
-    <span className="text-sm text-gray-600">{label}</span>
+    <span className="text-sm text-[var(--text-secondary)]">{label}</span>
   </div>
 );
 

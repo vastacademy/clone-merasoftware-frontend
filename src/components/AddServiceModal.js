@@ -319,12 +319,12 @@ const AddServiceModal = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 px-4 py-6">
-      <div className="flex max-h-full w-full max-w-2xl flex-col overflow-hidden rounded-[1.75rem] border border-white/20 bg-slate-900/95 shadow-2xl backdrop-blur-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--glass-bg-subtle)] px-4 py-6">
+      <div className="flex max-h-full w-full max-w-2xl flex-col overflow-hidden rounded-[1.75rem] border border-[var(--glass-border-strong)] bg-[var(--menu-bg)] shadow-2xl backdrop-blur-2xl">
         {/* Header */}
-        <div className="flex items-start justify-between gap-4 border-b border-white/10 px-6 py-5">
+        <div className="flex items-start justify-between gap-4 border-b border-[var(--glass-border)] px-6 py-5">
           <div>
-            <h2 className="text-xl font-bold text-white">
+            <h2 className="text-xl font-bold text-[var(--text-primary)]">
               {purchasedSummary
                 ? purchaseApproved
                   ? 'Service added'
@@ -335,7 +335,7 @@ const AddServiceModal = ({
                 ? 'Ongoing servicing'
                 : 'Add a service'}
             </h2>
-            <p className="mt-1 text-sm text-white/70">
+            <p className="mt-1 text-sm text-[var(--text-secondary)]">
               {purchasedSummary
                 ? purchaseApproved
                   ? 'Your service is active now.'
@@ -348,7 +348,7 @@ const AddServiceModal = ({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-xl border border-white/15 bg-white/5 p-2 text-white transition hover:bg-white/10"
+            className="rounded-xl border border-[var(--glass-border)] bg-[var(--glass-bg-subtle)] p-2 text-[var(--text-primary)] transition hover:bg-[var(--glass-bg)]"
             aria-label="Close"
           >
             <X className="h-4 w-4" />
@@ -367,7 +367,7 @@ const AddServiceModal = ({
                     : 'border-amber-400/30 bg-amber-500/10',
                 ].join(' ')}
               >
-                <span className="flex items-center gap-2 text-base font-semibold text-white">
+                <span className="flex items-center gap-2 text-base font-semibold text-[var(--text-primary)]">
                   {purchaseApproved ? (
                     <Check className="h-4 w-4 text-emerald-300" />
                   ) : (
@@ -375,7 +375,7 @@ const AddServiceModal = ({
                   )}
                   {purchasedName}
                 </span>
-                <span className="text-base text-white/80">{formatPrice(purchasedSummary.finalPrice)}</span>
+                <span className="text-base text-[var(--text-secondary)]">{formatPrice(purchasedSummary.finalPrice)}</span>
               </div>
 
               {!purchaseApproved && (
@@ -391,19 +391,19 @@ const AddServiceModal = ({
                 <QRCodeSVG value={upiLink} size={190} />
               </div>
 
-              <div className="w-full rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white/80">
+              <div className="w-full rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg-subtle)] px-4 py-3 text-sm text-[var(--text-secondary)]">
                 <div className="flex items-center justify-between">
                   <span>Paid from wallet</span>
-                  <span className="text-white">{formatPrice(walletPart)}</span>
+                  <span className="text-[var(--text-primary)]">{formatPrice(walletPart)}</span>
                 </div>
                 <div className="mt-1 flex items-center justify-between font-semibold">
-                  <span className="text-white">Pay by UPI now</span>
-                  <span className="text-white">{formatPrice(upiPart)}</span>
+                  <span className="text-[var(--text-primary)]">Pay by UPI now</span>
+                  <span className="text-[var(--text-primary)]">{formatPrice(upiPart)}</span>
                 </div>
               </div>
 
               <label className="w-full">
-                <span className="mb-1 block text-sm font-semibold text-white/80">
+                <span className="mb-1 block text-sm font-semibold text-[var(--text-secondary)]">
                   UPI reference number
                 </span>
                 <input
@@ -412,20 +412,20 @@ const AddServiceModal = ({
                   value={upiReference}
                   onChange={(event) => setUpiReference(event.target.value.replace(/\D/g, ''))}
                   placeholder="12-digit reference"
-                  className="w-full rounded-xl border border-white/20 bg-slate-950 px-3 py-2.5 text-base text-white placeholder:text-white/40"
+                  className="w-full rounded-xl border border-[var(--glass-border-strong)] bg-[var(--glass-bg-subtle)] px-3 py-2.5 text-base text-[var(--text-primary)] placeholder:text-[var(--text-muted)]"
                 />
-                <span className="mt-1 block text-xs text-white/50">
+                <span className="mt-1 block text-xs text-[var(--text-muted)]">
                   Find this in your UPI app after paying.
                 </span>
               </label>
             </div>
           ) : loading ? (
-            <div className="flex items-center justify-center gap-2 py-10 text-white/70">
+            <div className="flex items-center justify-center gap-2 py-10 text-[var(--text-secondary)]">
               <Loader2 className="h-4 w-4 animate-spin" />
               Loading services…
             </div>
           ) : plans.length === 0 ? (
-            <p className="py-10 text-center text-base text-white/70">
+            <p className="py-10 text-center text-base text-[var(--text-secondary)]">
               No services are available right now.
             </p>
           ) : (
@@ -451,20 +451,20 @@ const AddServiceModal = ({
                       className={[
                         'flex w-full items-start gap-3 rounded-2xl border p-4 text-left transition',
                         isSeparatePurchase
-                          ? 'border-white/10 bg-white/[0.03] hover:bg-white/[0.07]'
+                          ? 'border-[var(--glass-border)] bg-[var(--glass-bg-subtle)] hover:bg-[var(--glass-bg-subtle)]'
                           : isSelected
                           ? 'border-emerald-400/50 bg-emerald-500/15'
-                          : 'border-white/15 bg-white/5 hover:bg-white/10',
+                          : 'border-[var(--glass-border)] bg-[var(--glass-bg-subtle)] hover:bg-[var(--glass-bg)]',
                       ].join(' ')}
                     >
                       <span
                         className={[
                           'mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border',
                           isSeparatePurchase
-                            ? 'border-white/20 bg-transparent text-white/40'
+                            ? 'border-[var(--glass-border-strong)] bg-transparent text-[var(--text-muted)]'
                             : isSelected
-                            ? 'border-emerald-400 bg-emerald-500 text-white'
-                            : 'border-white/30 bg-transparent',
+                            ? 'border-emerald-400 bg-emerald-500 text-[var(--text-primary)]'
+                            : 'border-[var(--glass-border-strong)] bg-transparent',
                         ].join(' ')}
                       >
                         {isSeparatePurchase ? (
@@ -476,20 +476,20 @@ const AddServiceModal = ({
 
                       <span className="min-w-0 flex-1">
                         <span className="flex flex-wrap items-baseline justify-between gap-2">
-                          <span className="text-base font-semibold text-white">{plan.serviceName}</span>
-                          <span className="text-base font-semibold text-white">
+                          <span className="text-base font-semibold text-[var(--text-primary)]">{plan.serviceName}</span>
+                          <span className="text-base font-semibold text-[var(--text-primary)]">
                             {formatPrice(getSelectedPrice(plan))}
                           </span>
                         </span>
-                        <span className="mt-1 block text-sm text-white/60">
+                        <span className="mt-1 block text-sm text-[var(--text-secondary)]">
                           {PLAN_TYPE_LABELS[servicePlan.planType] || 'Service'}
                           {accessLine ? ` · ${accessLine}` : ''}
                         </span>
                         {validityLine && (
-                          <span className="mt-0.5 block text-sm text-white/60">{validityLine}</span>
+                          <span className="mt-0.5 block text-sm text-[var(--text-secondary)]">{validityLine}</span>
                         )}
                         {isSeparatePurchase && (
-                          <span className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-white/20 bg-white/10 px-2 py-1 text-xs font-semibold text-white/80">
+                          <span className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] px-2 py-1 text-xs font-semibold text-[var(--text-secondary)]">
                             <ExternalLink className="h-3 w-3" />
                             Bought separately
                           </span>
@@ -502,8 +502,8 @@ const AddServiceModal = ({
                         )}
                         {isSelected && servicePlan.billingOptions?.length > 0 && (
                           <span className="mt-3 grid gap-2 sm:grid-cols-2" onClick={(event) => event.stopPropagation()}>
-                            <label><span className="mb-1 block text-xs font-semibold text-white/70">Billing period</span><select className="w-full rounded-lg border border-white/20 bg-slate-950 px-2.5 py-2 text-sm text-white" value={selections[plan._id]?.selectedBillingCycle || ''} onChange={(event) => setSelections((current) => ({ ...current, [plan._id]: { ...current[plan._id], selectedBillingCycle: event.target.value, tenureMonths: '' } }))}><option value="">Select period</option>{servicePlan.billingOptions.map((option) => <option key={option.billingCycle} value={option.billingCycle}>{BILLING_CYCLE_LABELS[option.billingCycle]} — {formatPrice(option.pricePerCycle)}</option>)}</select></label>
-                            <label><span className="mb-1 block text-xs font-semibold text-white/70">Total tenure</span><select required className="w-full rounded-lg border border-white/20 bg-slate-950 px-2.5 py-2 text-sm text-white disabled:opacity-50" disabled={!selections[plan._id]?.selectedBillingCycle} value={selections[plan._id]?.tenureMonths || ''} onChange={(event) => setSelections((current) => ({ ...current, [plan._id]: { ...current[plan._id], tenureMonths: event.target.value } }))}><option value="">Select tenure</option>{buildTenureOptions(BILLING_CYCLE_MONTHS[selections[plan._id]?.selectedBillingCycle]).map((option) => <option key={option.months} value={option.months}>{option.label}</option>)}</select></label>
+                            <label><span className="mb-1 block text-xs font-semibold text-[var(--text-secondary)]">Billing period</span><select className="w-full rounded-lg border border-[var(--glass-border-strong)] bg-[var(--glass-bg-subtle)] px-2.5 py-2 text-sm text-[var(--text-primary)]" value={selections[plan._id]?.selectedBillingCycle || ''} onChange={(event) => setSelections((current) => ({ ...current, [plan._id]: { ...current[plan._id], selectedBillingCycle: event.target.value, tenureMonths: '' } }))}><option value="">Select period</option>{servicePlan.billingOptions.map((option) => <option key={option.billingCycle} value={option.billingCycle}>{BILLING_CYCLE_LABELS[option.billingCycle]} — {formatPrice(option.pricePerCycle)}</option>)}</select></label>
+                            <label><span className="mb-1 block text-xs font-semibold text-[var(--text-secondary)]">Total tenure</span><select required className="w-full rounded-lg border border-[var(--glass-border-strong)] bg-[var(--glass-bg-subtle)] px-2.5 py-2 text-sm text-[var(--text-primary)] disabled:opacity-50" disabled={!selections[plan._id]?.selectedBillingCycle} value={selections[plan._id]?.tenureMonths || ''} onChange={(event) => setSelections((current) => ({ ...current, [plan._id]: { ...current[plan._id], tenureMonths: event.target.value } }))}><option value="">Select tenure</option>{buildTenureOptions(BILLING_CYCLE_MONTHS[selections[plan._id]?.selectedBillingCycle]).map((option) => <option key={option.months} value={option.months}>{option.label}</option>)}</select></label>
                           </span>
                         )}
                       </span>
@@ -516,12 +516,12 @@ const AddServiceModal = ({
         </div>
 
         {/* Footer */}
-        <div className="border-t border-white/10 px-6 py-5">
+        <div className="border-t border-[var(--glass-border)] px-6 py-5">
           {purchasedSummary ? (
             <button
               type="button"
               onClick={onClose}
-              className="w-full rounded-2xl bg-emerald-500 px-4 py-3 text-base font-semibold text-white transition hover:bg-emerald-400"
+              className="w-full rounded-2xl bg-emerald-500 px-4 py-3 text-base font-semibold text-[var(--text-primary)] transition hover:bg-emerald-400"
             >
               Done
             </button>
@@ -531,7 +531,7 @@ const AddServiceModal = ({
                 type="button"
                 onClick={() => setShowQR(false)}
                 disabled={submitting}
-                className="rounded-2xl border border-white/20 bg-white/5 px-4 py-3 text-base font-semibold text-white transition hover:bg-white/10 disabled:opacity-50"
+                className="rounded-2xl border border-[var(--glass-border-strong)] bg-[var(--glass-bg-subtle)] px-4 py-3 text-base font-semibold text-[var(--text-primary)] transition hover:bg-[var(--glass-bg)] disabled:opacity-50"
               >
                 Back
               </button>
@@ -539,19 +539,19 @@ const AddServiceModal = ({
                 type="button"
                 onClick={handleVerifyUpi}
                 disabled={submitting || upiReference.trim().length < 12}
-                className="flex-1 rounded-2xl bg-emerald-500 px-4 py-3 text-base font-semibold text-white transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-white/15 disabled:text-white/50"
+                className="flex-1 rounded-2xl bg-emerald-500 px-4 py-3 text-base font-semibold text-[var(--text-primary)] transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-[var(--glass-bg-strong)] disabled:text-[var(--text-muted)]"
               >
                 {submitting ? 'Submitting…' : 'Submit Payment'}
               </button>
             </div>
           ) : (
             <>
-              <div className="flex items-center justify-between text-base text-white">
+              <div className="flex items-center justify-between text-base text-[var(--text-primary)]">
                 <span>{selectedPlan ? selectedPlan.serviceName : 'Select a service'}</span>
                 <span className="font-bold">{formatPrice(total)}</span>
               </div>
 
-              <p className="mt-1 text-sm text-white/60">
+              <p className="mt-1 text-sm text-[var(--text-secondary)]">
                 Wallet balance: {formatPrice(walletBalance)}
               </p>
 
@@ -559,14 +559,14 @@ const AddServiceModal = ({
 
               {/* Split breakdown — shown only when the payment actually is a split. */}
               {selectedPlan && upiPart > 0 && (
-                <div className="mt-2 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm">
-                  <div className="flex items-center justify-between text-white/70">
+                <div className="mt-2 rounded-xl border border-[var(--glass-border)] bg-[var(--glass-bg-subtle)] px-3 py-2 text-sm">
+                  <div className="flex items-center justify-between text-[var(--text-secondary)]">
                     <span>From wallet</span>
-                    <span className="text-white">{formatPrice(walletPart)}</span>
+                    <span className="text-[var(--text-primary)]">{formatPrice(walletPart)}</span>
                   </div>
-                  <div className="mt-1 flex items-center justify-between text-white/70">
+                  <div className="mt-1 flex items-center justify-between text-[var(--text-secondary)]">
                     <span>By UPI</span>
-                    <span className="text-white">{formatPrice(upiPart)}</span>
+                    <span className="text-[var(--text-primary)]">{formatPrice(upiPart)}</span>
                   </div>
                 </div>
               )}
@@ -575,7 +575,7 @@ const AddServiceModal = ({
                 type="button"
                 onClick={handlePay}
                 disabled={!canPay || submitting}
-                className="mt-3 w-full rounded-2xl bg-emerald-500 px-4 py-3 text-base font-semibold text-white transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-white/15 disabled:text-white/50"
+                className="mt-3 w-full rounded-2xl bg-emerald-500 px-4 py-3 text-base font-semibold text-[var(--text-primary)] transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-[var(--glass-bg-strong)] disabled:text-[var(--text-muted)]"
               >
                 {submitting
                   ? 'Processing…'
@@ -593,38 +593,38 @@ const AddServiceModal = ({
           and lands on the page that can actually complete it. */}
       {redirectPlan && (
         <div
-          className="absolute inset-0 z-10 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm"
+          className="absolute inset-0 z-10 flex items-center justify-center bg-[var(--glass-bg-subtle)] p-4 backdrop-blur-sm"
           onClick={() => setRedirectPlan(null)}
         >
           <div
-            className="w-full max-w-md rounded-3xl border border-white/20 bg-slate-900 p-6 text-left"
+            className="w-full max-w-md rounded-3xl border border-[var(--glass-border-strong)] bg-[var(--menu-bg)] p-6 text-left"
             onClick={(event) => event.stopPropagation()}
           >
-            <span className="inline-flex items-center gap-1.5 rounded-lg border border-white/20 bg-white/10 px-2 py-1 text-xs font-semibold text-white/80">
+            <span className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] px-2 py-1 text-xs font-semibold text-[var(--text-secondary)]">
               <ExternalLink className="h-3 w-3" />
               Bought separately
             </span>
-            <h3 className="mt-3 text-lg font-semibold text-white">{redirectPlan.serviceName}</h3>
-            <p className="mt-2 text-sm text-white/70">
+            <h3 className="mt-3 text-lg font-semibold text-[var(--text-primary)]">{redirectPlan.serviceName}</h3>
+            <p className="mt-2 text-sm text-[var(--text-secondary)]">
               This service runs on its own and cannot be attached to
               {projectName ? ` ${projectName}` : ' this project'}. It is bought separately, and
               works the same either way.
             </p>
-            <p className="mt-2 text-sm text-white/70">
+            <p className="mt-2 text-sm text-[var(--text-secondary)]">
               Continue to buy it on its own page?
             </p>
             <div className="mt-5 flex gap-3">
               <button
                 type="button"
                 onClick={() => setRedirectPlan(null)}
-                className="flex-1 rounded-2xl border border-white/20 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/15"
+                className="flex-1 rounded-2xl border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] px-4 py-2.5 text-sm font-semibold text-[var(--text-primary)] transition hover:bg-[var(--glass-bg-strong)]"
               >
                 Stay here
               </button>
               <button
                 type="button"
                 onClick={handleRedirectConfirm}
-                className="flex-1 rounded-2xl bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-400"
+                className="flex-1 rounded-2xl bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-[var(--text-primary)] transition hover:bg-emerald-400"
               >
                 Continue
               </button>

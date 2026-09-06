@@ -13,7 +13,6 @@ import {
 } from 'lucide-react';
 import SummaryApi from '../common';
 import DashboardLayout from '../components/DashboardLayout';
-import backgroundImage from '../assets/BG.png';
 import CustomerWorkspaceTabs from '../components/CustomerWorkspaceTabs';
 import displayINRCurrency from '../helpers/displayCurrency';
 import { isOrderApproved } from '../helpers/orderVisibility';
@@ -75,15 +74,15 @@ const matchesTab = (order, tab) => {
 const OrderStatusBadge = ({ status }) => {
   const statusConfig = {
     'In progress': {
-      color: 'bg-blue-500 text-white',
+      color: 'bg-blue-500 text-[var(--text-primary)]',
       icon: <RefreshCw size={14} className="mr-1" />,
     },
     'Pending approval': {
-      color: 'bg-amber-500 text-white',
+      color: 'bg-amber-500 text-[var(--text-primary)]',
       icon: <Clock size={14} className="mr-1" />,
     },
     Rejected: {
-      color: 'bg-red-500 text-white',
+      color: 'bg-red-500 text-[var(--text-primary)]',
       icon: <AlertCircle size={14} className="mr-1" />,
     },
     Completed: {
@@ -91,7 +90,7 @@ const OrderStatusBadge = ({ status }) => {
       icon: <CheckCircle size={14} className="mr-1" />,
     },
     Processing: {
-      color: 'bg-gray-500 text-white',
+      color: 'bg-[var(--glass-bg-strong)] text-[var(--text-secondary)]',
       icon: <Clock size={14} className="mr-1" />,
     },
   };
@@ -137,26 +136,26 @@ const OrderRow = ({ order, navigate, location, formatDate, index }) => {
       onClick={handleClick}
       type="button"
       className={[
-        'grid w-full grid-cols-12 gap-3 px-5 py-4 text-left transition hover:bg-white/[0.1] sm:px-6',
-        index % 2 === 0 ? 'bg-white/[0.02]' : 'bg-white/[0.06]',
+        'grid w-full grid-cols-12 gap-3 px-5 py-4 text-left transition hover:bg-[var(--glass-bg-hover)] sm:px-6',
+        index % 2 === 0 ? 'bg-[var(--glass-bg-subtle)]' : 'bg-[var(--glass-bg-subtle)]',
       ].join(' ')}
     >
       <div className="col-span-12 lg:col-span-5">
         <div className="flex items-start gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/20 bg-white/10 text-white backdrop-blur-md">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] text-[var(--text-primary)] backdrop-blur-md">
             {isProject ? <LayoutGrid className="h-5 w-5" /> : isPlan ? <Layers3 className="h-5 w-5" /> : <FileText className="h-5 w-5" />}
           </div>
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="rounded-full bg-white px-2.5 py-1 text-sm font-semibold uppercase text-slate-900">
+              <span className="rounded-full bg-[rgb(var(--ink-rgb))] px-2.5 py-1 text-sm font-semibold uppercase text-[var(--page-bg)]">
                 {purchaseType}
               </span>
             </div>
-            <h3 className="mt-2 truncate text-lg font-semibold text-white">
+            <h3 className="mt-2 truncate text-lg font-semibold text-[var(--text-primary)]">
               {getOrderDisplayName(order)}
             </h3>
-            <p className="mt-1 truncate text-sm text-slate-300">{category}</p>
-            <p className="mt-2 text-sm text-slate-300 sm:hidden">
+            <p className="mt-1 truncate text-sm text-[var(--text-secondary)]">{category}</p>
+            <p className="mt-2 text-sm text-[var(--text-secondary)] sm:hidden">
               Purchased {formatDate(order.createdAt)}
             </p>
           </div>
@@ -165,8 +164,8 @@ const OrderRow = ({ order, navigate, location, formatDate, index }) => {
 
       <div className="col-span-6 lg:col-span-2 lg:flex lg:items-center">
         <div className="space-y-1">
-          <p className="text-base font-semibold text-white">{purchaseType}</p>
-          <p className="text-sm text-slate-300">
+          <p className="text-base font-semibold text-[var(--text-primary)]">{purchaseType}</p>
+          <p className="text-sm text-[var(--text-secondary)]">
             {isPlan ? 'Plan purchase' : isProject ? 'Project purchase' : 'Order purchase'}
           </p>
         </div>
@@ -178,23 +177,23 @@ const OrderRow = ({ order, navigate, location, formatDate, index }) => {
 
       <div className="col-span-6 lg:col-span-2 lg:flex lg:items-center">
         <div className="space-y-1">
-          <div className="flex items-center gap-2 text-base font-semibold text-white">
+          <div className="flex items-center gap-2 text-base font-semibold text-[var(--text-primary)]">
             <Calendar size={14} />
             <span>{formatDate(order.createdAt)}</span>
           </div>
-          <p className="text-sm text-slate-300">Purchased on</p>
+          <p className="text-sm text-[var(--text-secondary)]">Purchased on</p>
         </div>
       </div>
 
       <div className="col-span-6 flex items-center justify-between lg:col-span-1 lg:justify-end">
         <div className="text-right">
-          <p className="text-base font-semibold text-white">{price}</p>
-          <p className="text-sm text-slate-300">Price</p>
+          <p className="text-base font-semibold text-[var(--text-primary)]">{price}</p>
+          <p className="text-sm text-[var(--text-secondary)]">Price</p>
           <div className="mt-1 flex lg:justify-end">
             <PaymentStatusChip order={order} />
           </div>
         </div>
-        <ArrowRight className="h-5 w-5 text-slate-400" />
+        <ArrowRight className="h-5 w-5 text-[var(--text-muted)]" />
       </div>
     </button>
   );
@@ -312,26 +311,25 @@ const OrdersPage = () => {
       activeProject={activeProject}
     >
       <div
-        className="relative min-h-[calc(100vh-4rem)] overflow-hidden bg-slate-950 bg-cover bg-center px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
-        style={{ backgroundImage: `url(${backgroundImage})` }}
+        className="relative min-h-[calc(100vh-4rem)] overflow-hidden px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
       >
-        <div className="pointer-events-none absolute inset-0 bg-slate-950/40" />
+        <div className="pointer-events-none absolute inset-0 bg-[var(--scrim)]" />
 
         <div className="relative mx-auto max-w-7xl">
           <div className="text-center">
-            <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl lg:text-4xl">
+            <h1 className="text-2xl font-bold tracking-tight text-[var(--text-primary)] sm:text-3xl lg:text-4xl">
               Purchase history
             </h1>
-            <p className="mx-auto mt-3 max-w-2xl text-base text-slate-300 sm:text-lg">
+            <p className="mx-auto mt-3 max-w-2xl text-base text-[var(--text-secondary)] sm:text-lg">
               Clean order records with price, purchase date, type, and current status. Detail pages stay unchanged.
             </p>
           </div>
 
-          <div className="relative mt-10 overflow-hidden rounded-3xl border border-white/20 bg-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.25)] backdrop-blur-2xl backdrop-saturate-150">
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/[0.12] to-transparent" />
+          <div className="relative mt-10 overflow-hidden rounded-3xl border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] shadow-[var(--card-shadow)] backdrop-blur-2xl backdrop-saturate-150">
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-[var(--glass-sheen)] to-transparent" />
 
-            <div className="relative flex flex-col gap-3 border-b border-white/15 p-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:px-6">
-              <h2 className="flex items-center text-xl font-semibold text-white">
+            <div className="relative flex flex-col gap-3 border-b border-[var(--glass-border)] p-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:px-6">
+              <h2 className="flex items-center text-xl font-semibold text-[var(--text-primary)]">
                 <FileText className="mr-2 h-5 w-5" />
                 Orders
               </h2>
@@ -343,13 +341,13 @@ const OrdersPage = () => {
                 variant="inline"
               />
               <div className="flex flex-wrap items-center justify-center gap-2">
-                <div className="rounded-2xl border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-white backdrop-blur-md">
+                <div className="rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg)] px-4 py-2 text-sm font-semibold text-[var(--text-primary)] backdrop-blur-md">
                   Total: {orders.length}
                 </div>
                 <button
                   type="button"
                   onClick={fetchOrders}
-                  className="inline-flex items-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-sm font-semibold text-white backdrop-blur-md transition hover:bg-white/15"
+                  className="inline-flex items-center gap-2 rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg)] px-4 py-3 text-sm font-semibold text-[var(--text-primary)] backdrop-blur-md transition hover:bg-[var(--glass-bg-strong)]"
                 >
                   <RefreshCw size={16} />
                   Refresh
@@ -357,7 +355,7 @@ const OrdersPage = () => {
               </div>
             </div>
 
-            <div className="relative grid grid-cols-12 gap-3 border-b border-white/15 bg-white/5 px-5 py-3 text-sm font-semibold uppercase text-slate-300 sm:px-6">
+            <div className="relative grid grid-cols-12 gap-3 border-b border-[var(--glass-border)] bg-[var(--glass-bg-subtle)] px-5 py-3 text-sm font-semibold uppercase text-[var(--text-secondary)] sm:px-6">
               <div className="col-span-12 lg:col-span-5">Order</div>
               <div className="col-span-6 lg:col-span-2">Type</div>
               <div className="col-span-6 lg:col-span-2">Status</div>
@@ -366,9 +364,9 @@ const OrdersPage = () => {
             </div>
 
             {loading ? (
-              <div className="relative px-5 py-10 text-center text-base text-slate-300 sm:px-6">Loading orders...</div>
+              <div className="relative px-5 py-10 text-center text-base text-[var(--text-secondary)] sm:px-6">Loading orders...</div>
             ) : filteredOrders.length > 0 ? (
-              <div className="relative divide-y divide-white/10">
+              <div className="relative divide-y divide-[var(--divider)]">
                 {filteredOrders.map((order, index) => (
                   <OrderRow
                     key={order._id}
@@ -382,23 +380,23 @@ const OrdersPage = () => {
               </div>
             ) : (
               <div className="relative px-5 py-12 text-center sm:px-6">
-                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-white/20 bg-white/10 text-white backdrop-blur-md">
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] text-[var(--text-primary)] backdrop-blur-md">
                   <FileText className="h-6 w-6" />
                 </div>
-                <h3 className="mt-4 text-lg font-semibold text-white">{emptyTitle}</h3>
-                <p className="mt-2 text-base text-slate-300">{emptyMessage}</p>
+                <h3 className="mt-4 text-lg font-semibold text-[var(--text-primary)]">{emptyTitle}</h3>
+                <p className="mt-2 text-base text-[var(--text-secondary)]">{emptyMessage}</p>
                 <div className="mt-5 flex flex-wrap justify-center gap-3">
                   <button
                     type="button"
                     onClick={() => navigate('/start-new-project')}
-                    className="inline-flex items-center gap-2 rounded-2xl bg-white px-4 py-3 text-base font-semibold text-slate-900 transition hover:bg-slate-100"
+                    className="inline-flex items-center gap-2 rounded-2xl bg-[rgb(var(--ink-rgb))] px-4 py-3 text-base font-semibold text-[var(--page-bg)] transition hover:bg-[rgb(var(--ink-rgb)/0.85)]"
                   >
                     Browse Services
                   </button>
                   <button
                     type="button"
                     onClick={fetchOrders}
-                    className="inline-flex items-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-4 py-3 text-base font-semibold text-white backdrop-blur-md transition hover:bg-white/20"
+                    className="inline-flex items-center gap-2 rounded-2xl border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] px-4 py-3 text-base font-semibold text-[var(--text-primary)] backdrop-blur-md transition hover:bg-[var(--glass-bg-strong)]"
                   >
                     Refresh Orders
                   </button>

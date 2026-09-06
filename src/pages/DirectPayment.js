@@ -5,7 +5,6 @@ import Context from '../context';
 import SummaryApi from '../common';
 import TriangleMazeLoader from '../components/TriangleMazeLoader';
 import DashboardLayout from '../components/DashboardLayout';
-import backgroundImage from '../assets/BG.png';
 import displayINRCurrency from '../helpers/displayCurrency';
 import { toast } from 'sonner';
 import { QRCodeSVG } from 'qrcode.react';
@@ -545,30 +544,30 @@ if (paymentData.selectedFeatures && paymentData.selectedFeatures.length > 0) {
     
     return (
       <div className="border-b pb-4 mb-4">
-        <h3 className="text-lg font-semibold text-black mb-2">Installment Information</h3>
+        <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">Installment Information</h3>
 
         <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 mb-4">
           <div className="flex justify-between items-center mb-2">
-            <span className="text-base font-medium text-black">Current Installment:</span>
-            <span className="text-base font-semibold text-black">#{installmentNumber} (30%)</span>
+            <span className="text-base font-medium text-[var(--text-primary)]">Current Installment:</span>
+            <span className="text-base font-semibold text-[var(--text-primary)]">#{installmentNumber} (30%)</span>
           </div>
           <div className="flex justify-between items-center">
-            <span className="text-base text-black">Amount Due Now:</span>
+            <span className="text-base text-[var(--text-primary)]">Amount Due Now:</span>
             <span className="text-lg font-bold text-blue-600">
               ₹{paymentData.currentPaymentAmount.toLocaleString()}
             </span>
           </div>
         </div>
 
-        <h4 className="text-base font-medium text-black mb-2">Remaining Installments</h4>
+        <h4 className="text-base font-medium text-[var(--text-primary)] mb-2">Remaining Installments</h4>
         {remainingPayments.map((payment, index) => (
-          <div key={index} className="flex justify-between items-center mb-2 text-sm text-black">
+          <div key={index} className="flex justify-between items-center mb-2 text-sm text-[var(--text-primary)]">
             <span>Installment #{payment.installmentNumber} ({payment.percentage}%)</span>
             <span>₹{payment.amount.toLocaleString()}</span>
           </div>
         ))}
 
-        <p className="text-sm text-black mt-3">
+        <p className="text-sm text-[var(--text-primary)] mt-3">
           You will be notified when the next installment is due. Your project will progress as payments are made.
         </p>
       </div>
@@ -594,8 +593,7 @@ if (paymentData.selectedFeatures && paymentData.selectedFeatures.length > 0) {
   return (
     <DashboardLayout user={user}>
       <div
-        className="min-h-full bg-slate-950 bg-cover bg-center px-4 py-5 sm:px-6 lg:px-8 lg:py-8"
-        style={{ backgroundImage: `url(${backgroundImage})` }}
+        className="min-h-full px-4 py-5 sm:px-6 lg:px-8 lg:py-8"
       >
       <div className="mx-auto max-w-3xl">
        {(loading || isSubmittingVerification) && (
@@ -606,24 +604,24 @@ if (paymentData.selectedFeatures && paymentData.selectedFeatures.length > 0) {
 
 
 
-      <div className="overflow-hidden rounded-[2rem] border border-slate-900/10 bg-slate-950 text-white shadow-2xl">
+      <div className="overflow-hidden rounded-[2rem] border border-[var(--glass-border)] bg-[var(--glass-bg-subtle)] text-[var(--text-primary)] shadow-2xl">
         <div className="px-5 py-5 sm:px-6 lg:px-8">
-          <h1 className="text-2xl font-bold tracking-tight text-white">Payment Summary</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-[var(--text-primary)]">Payment Summary</h1>
         </div>
 
-        <div className="bg-white p-6 text-black">
-          <h2 className="text-xl font-bold text-black mb-4">{paymentData.product.serviceName}</h2>
+        <div className="bg-[var(--glass-bg)] p-6 text-[var(--text-primary)]">
+          <h2 className="text-xl font-bold text-[var(--text-primary)] mb-4">{paymentData.product.serviceName}</h2>
 
           {/* Order Summary */}
           <div className="border-b pb-4 mb-4">
-            <h3 className="text-lg font-semibold text-black mb-2">Order Summary</h3>
+            <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">Order Summary</h3>
             
             {/* Main Product with discount */}
-  <div className="flex justify-between items-center mb-2 text-base text-black">
+  <div className="flex justify-between items-center mb-2 text-base text-[var(--text-primary)]">
     <span>{paymentData.product.serviceName}</span>
     {paymentData.couponData ? (
       <div className="text-right">
-        <span className="line-through text-black mr-2">
+        <span className="line-through text-[var(--text-primary)] mr-2">
           ₹{paymentData.product.sellingPrice.toLocaleString()}
         </span>
         <span>
@@ -643,7 +641,7 @@ if (paymentData.selectedFeatures && paymentData.selectedFeatures.length > 0) {
   {/* Selected Features with proper discounts */}
   {paymentData.selectedFeatures && paymentData.selectedFeatures.length > 0 && (
     <>
-      <h4 className="text-base font-medium text-black mt-3 mb-2">Selected Features</h4>
+      <h4 className="text-base font-medium text-[var(--text-primary)] mt-3 mb-2">Selected Features</h4>
 
      {paymentData.selectedFeatures.map((feature, index) => {
   // Check if feature is valid
@@ -682,7 +680,7 @@ if (paymentData.selectedFeatures && paymentData.selectedFeatures.length > 0) {
   const discountedPrice = originalPrice - itemDiscount;
   
   return (
-    <div key={index} className="flex justify-between items-center mb-2 text-base text-black">
+    <div key={index} className="flex justify-between items-center mb-2 text-base text-[var(--text-primary)]">
       <div>
         <span>{featureName}</span>
         {isAddNewPage && displayQuantity > 0 && (
@@ -709,7 +707,7 @@ if (paymentData.selectedFeatures && paymentData.selectedFeatures.length > 0) {
   )}
 
   {/* Original Total Price (before coupon) */}
-<div className="flex justify-between items-center mb-2 mt-4 pt-3 border-t border-gray-200 text-base text-black">
+<div className="flex justify-between items-center mb-2 mt-4 pt-3 border-t border-[var(--field-border)] text-base text-[var(--text-primary)]">
   <span className="font-medium">Subtotal</span>
   <span className="line-through">₹{(paymentData.originalTotalPrice || 0).toLocaleString()}</span>
 </div>
@@ -723,8 +721,8 @@ if (paymentData.selectedFeatures && paymentData.selectedFeatures.length > 0) {
   )}
 
   {/* Total */}
-  <div className="flex justify-between items-center mt-4 pt-4 border-t border-gray-200">
-    <span className="text-lg font-semibold text-black">Total Amount</span>
+  <div className="flex justify-between items-center mt-4 pt-4 border-t border-[var(--field-border)]">
+    <span className="text-lg font-semibold text-[var(--text-primary)]">Total Amount</span>
     <span className="text-xl font-bold text-blue-600">
       ₹{paymentData.totalPrice.toLocaleString()}
     </span>
@@ -735,15 +733,15 @@ if (paymentData.selectedFeatures && paymentData.selectedFeatures.length > 0) {
 
           {/* Payment Section */}
           <div>
-            <h3 className="text-lg font-semibold text-black mb-3">Payment Method</h3>
+            <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-3">Payment Method</h3>
 
             {/* Wallet Balance */}
-            <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg mb-4">
+            <div className="flex justify-between items-center p-3 bg-[var(--field-bg)] rounded-lg mb-4">
               <div>
-                <span className="text-base font-medium text-black">Wallet Balance</span>
-                <p className="text-sm text-black">Available balance in your account</p>
+                <span className="text-base font-medium text-[var(--text-primary)]">Wallet Balance</span>
+                <p className="text-sm text-[var(--text-primary)]">Available balance in your account</p>
               </div>
-              <span className="text-base font-semibold text-black">
+              <span className="text-base font-semibold text-[var(--text-primary)]">
                 {displayINRCurrency(context.walletBalance)}
               </span>
             </div>
@@ -752,15 +750,15 @@ if (paymentData.selectedFeatures && paymentData.selectedFeatures.length > 0) {
               <>
                 {/* Payment Breakdown */}
                 {remainingAmount > 0 && (
-                  <div className="border-t border-gray-200 pt-4 mt-4">
-                    <h4 className="text-base font-medium text-black mb-2">Payment Breakdown</h4>
+                  <div className="border-t border-[var(--field-border)] pt-4 mt-4">
+                    <h4 className="text-base font-medium text-[var(--text-primary)] mb-2">Payment Breakdown</h4>
 
-                    <div className="flex justify-between items-center mb-2 text-base text-black">
+                    <div className="flex justify-between items-center mb-2 text-base text-[var(--text-primary)]">
                       <span>From Wallet</span>
                       <span>{displayINRCurrency(context.walletBalance)}</span>
                     </div>
 
-                    <div className="flex justify-between items-center mb-2 text-base text-black">
+                    <div className="flex justify-between items-center mb-2 text-base text-[var(--text-primary)]">
                       <span>Remaining Amount (via QR)</span>
                       <span>{displayINRCurrency(remainingAmount)}</span>
                     </div>
@@ -771,7 +769,7 @@ if (paymentData.selectedFeatures && paymentData.selectedFeatures.length > 0) {
                 <div className="flex justify-between mt-6">
                   <button
                     onClick={handleBackToProductDetails}
-                    className="bg-gray-100 text-black px-6 py-3 rounded-lg text-base font-medium hover:bg-gray-200 transition-colors"
+                    className="bg-[var(--field-bg)] text-[var(--text-primary)] px-6 py-3 rounded-lg text-base font-medium hover:bg-[var(--glass-bg-strong)] transition-colors"
                   >
                     Back
                   </button>
@@ -779,7 +777,7 @@ if (paymentData.selectedFeatures && paymentData.selectedFeatures.length > 0) {
                   <button
                     onClick={handleWalletPayment}
                     disabled={loading}
-                    className="bg-blue-600 text-white px-6 py-3 rounded-lg text-base font-medium hover:bg-blue-700 transition-colors"
+                    className="bg-blue-600 text-[var(--text-primary)] px-6 py-3 rounded-lg text-base font-medium hover:bg-blue-700 transition-colors"
                   >
                     {remainingAmount > 0
                       ? 'Pay with QR & Continue'
@@ -790,7 +788,7 @@ if (paymentData.selectedFeatures && paymentData.selectedFeatures.length > 0) {
             ) : (
               /* QR Code Payment */
               <div className="flex flex-col items-center mt-4">
-              <h3 className="text-center text-lg font-semibold text-black mb-3">
+              <h3 className="text-center text-lg font-semibold text-[var(--text-primary)] mb-3">
                 Scan QR Code to Pay Remaining Amount
               </h3>
 
@@ -799,10 +797,10 @@ if (paymentData.selectedFeatures && paymentData.selectedFeatures.length > 0) {
               </div>
 
               {/* <p className="text-center mb-2">Scan with any UPI app to pay {displayINRCurrency(remainingAmount)}</p> */}
-              <p className="text-sm text-black mb-4 text-center">Transaction ID: {transactionId}</p>
+              <p className="text-sm text-[var(--text-primary)] mb-4 text-center">Transaction ID: {transactionId}</p>
 
               <div className="w-full mb-4">
-                <label htmlFor="upiTransactionId" className="block text-base font-medium text-black mb-2">
+                <label htmlFor="upiTransactionId" className="block text-base font-medium text-[var(--text-primary)] mb-2">
                   UPI Transaction ID:
                 </label>
                 <input
@@ -810,11 +808,11 @@ if (paymentData.selectedFeatures && paymentData.selectedFeatures.length > 0) {
                   id="upiTransactionId"
                   value={upiTransactionId}
                   onChange={(e) => setUpiTransactionId(e.target.value)}
-                  className="w-full border border-gray-300 rounded-md p-2 text-base text-black"
+                  className="w-full border border-[var(--field-border)] rounded-md p-2 text-base text-[var(--text-primary)]"
                   placeholder="Enter the transaction ID from your UPI app"
                   required
                 />
-                <p className="text-sm text-black mt-1">
+                <p className="text-sm text-[var(--text-primary)] mt-1">
                   This is required for payment verification. You'll find it in your UPI app payment history.
                 </p>
               </div>
@@ -822,13 +820,13 @@ if (paymentData.selectedFeatures && paymentData.selectedFeatures.length > 0) {
                <button
       onClick={verifyPayment}
       disabled={loading || !upiTransactionId.trim() || isSubmittingVerification}
-      className="bg-green-600 text-white px-6 py-2 rounded-lg text-base font-medium hover:bg-green-700 transition-colors w-full disabled:bg-gray-400"
+      className="bg-green-600 text-[var(--text-primary)] px-6 py-2 rounded-lg text-base font-medium hover:bg-green-700 transition-colors w-full disabled:bg-[var(--glass-bg-strong)]"
     >
       {isSubmittingVerification ? 'Processing...' : (loading ? 'Verifying...' : 'Submit for Verification')}
     </button>
 
               {verificationStatus && (
-                <p className="mt-3 text-center text-base text-black">
+                <p className="mt-3 text-center text-base text-[var(--text-primary)]">
                   {verificationStatus}
                 </p>
               )}

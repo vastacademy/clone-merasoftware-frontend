@@ -1,0 +1,252 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================================
+   THEME SSOT — Customer Portal only
+   ----------------------------------------------------------------------------
+   Three modes, set as data-theme on <html>:
+     immersive  BG.png + dark glass   (DEFAULT — today's look, unchanged)
+     dark       solid dark, no image
+     light      solid white
+
+   Two knobs drive everything:
+     --page-bg          the foundation colour
+     --page-decoration  the image layer (none = solid)
+
+   Glass tints are RGB TRIPLETS, not colours, because Tailwind v3 cannot apply
+   an opacity modifier to a var(): `bg-[var(--x)]/10` fails to compile, while
+   `bg-[rgb(var(--x)/0.1)]` works. Verified against tailwindcss 3.4.17.
+     --tint-rgb   the glass/overlay tint  (white on dark, slate-900 on light)
+     --ink-rgb    the text colour         (white on dark, slate-900 on light)
+   ========================================================================== */
+
+:root,
+:root[data-theme="immersive"] {
+  --page-bg: #020617;
+  --page-decoration: url('./assets/BG.png');
+  --scrim: rgb(2 6 23 / 0.55);
+  --tint-rgb: 255 255 255;
+  --line-rgb: 255 255 255;
+  --ink-rgb: 255 255 255;
+  --text-primary: rgb(255 255 255);
+  --text-secondary: rgb(203 213 225);
+  --text-muted: rgb(148 163 184);
+  --shell-bg: #020617;
+  --header-bg: rgb(2 6 23 / 0.95);
+  --sidebar-border: rgb(30 41 59);
+  --menu-bg: rgb(15 23 42);
+  --glow-opacity: 0.30;
+  --card-shadow: 0 8px 32px rgb(0 0 0 / 0.35);
+  color-scheme: dark;
+}
+
+:root[data-theme="dark"] {
+  --page-bg: #020617;
+  --page-decoration: none;
+  --scrim: transparent;
+  --tint-rgb: 255 255 255;
+  --line-rgb: 255 255 255;
+  --ink-rgb: 255 255 255;
+  --text-primary: rgb(255 255 255);
+  --text-secondary: rgb(203 213 225);
+  --text-muted: rgb(148 163 184);
+  --shell-bg: #020617;
+  --header-bg: rgb(2 6 23 / 0.95);
+  --sidebar-border: rgb(30 41 59);
+  --menu-bg: rgb(15 23 42);
+  --glow-opacity: 0.30;
+  --card-shadow: 0 8px 32px rgb(0 0 0 / 0.35);
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] {
+  /* Inverted on purpose. On dark, a glass card is a *lighter* film over the
+     ground (white at low alpha) and reads as raised. Mirroring that literally
+     on white — slate at low alpha — paints every card grey and the whole page
+     goes flat, which is exactly what it did.
+
+     So light mode flips the relationship: the page is the tinted surface and
+     the cards are pure white, with a real border and shadow doing the lifting
+     that translucency does on dark. --tint-rgb stays white so every
+     bg-[rgb(var(--tint-rgb)/N)] in the components resolves to white-on-grey,
+     and the borders come from --line-rgb instead. */
+  --page-bg: #f1f5f9;
+  --page-decoration: none;
+  --scrim: transparent;
+  --tint-rgb: 255 255 255;
+  --line-rgb: 100 116 139;
+  --ink-rgb: 15 23 42;
+  --text-primary: rgb(15 23 42);
+  --text-secondary: rgb(51 65 85);
+  --text-muted: rgb(100 116 139);
+  --shell-bg: #f1f5f9;
+  --header-bg: rgb(255 255 255 / 0.95);
+  --sidebar-border: rgb(203 213 225);
+  --menu-bg: rgb(255 255 255);
+  --glow-opacity: 0.10;
+  --card-shadow: 0 4px 16px rgb(15 23 42 / 0.08);
+  color-scheme: light;
+}
+
+
+/* The portal shell paints foundation + optional decoration. Scoped to the
+   customer portal so the admin panel is never touched. */
+.portal-surface {
+  background-color: var(--page-bg);
+  background-image: var(--page-decoration);
+  background-size: cover;
+  background-position: center;
+}
+
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: linear-gradient(
+    to bottom,
+    #f0f0f0 0%,      /* Start with bright blue */
+    /* gray 0%,     */
+    /*#ffffff 40%,     /* Transition to lighter blue */
+    #f3f3f3 100%     /* End with light grey background */
+  );
+  min-height: 100vh;
+  /* background-attachment: fixed; */
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+.fade-in {
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+}
+.fade-in.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+.feature-item {
+  display: flex !important;
+  align-items: flex-start !important;
+  gap: 1rem !important;
+  width: 100% !important;
+}
+
+.feature-item .content {
+  flex: 1 !important;
+}
+
+.feature-item .title {
+  font-weight: 500 !important;
+  color: #374151 !important;
+  font-size: 0.875rem !important;
+  line-height: 1.25rem !important;
+}
+
+.feature-item .description {
+  color: #6B7280 !important;
+  font-size: 0.875rem !important;
+  margin-top: 0.25rem !important;
+}
+
+/* Icon container styling */
+.bg-blue-50 {
+  background-color: #EFF6FF !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 0.5rem !important;
+}
+
+.text-blue-600 {
+  color: #2563EB !important;
+}
+
+.icon-placeholder {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+}
+
+.tiptap .icon-placeholder svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #2563eb;
+}
+
+/* Phone Input styling */
+.phone-input-container {
+  width: 100%;
+}
+
+.react-tel-input .form-control {
+  width: 100% !important;
+  height: 42px !important;
+  border-color: #e5e7eb !important;
+  border-radius: 0.375rem !important;
+  font-size: 0.875rem !important;
+  line-height: 1.25rem !important;
+}
+
+.react-tel-input .form-control:focus {
+  box-shadow: 0 0 0 2px #ef4444 !important;
+  border-color: #ef4444 !important;
+}
+
+.react-tel-input .selected-flag {
+  background-color: #f3f4f6 !important;
+  border-top-left-radius: 0.375rem !important;
+  border-bottom-left-radius: 0.375rem !important;
+}
+
+.react-tel-input .selected-flag:hover,
+.react-tel-input .selected-flag:focus {
+  background-color: #e5e7eb !important;
+}
+
+.react-tel-input .flag-dropdown.open {
+  background-color: #f3f4f6 !important;
+}
+
+/* Add these animations to your global CSS file */
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes slideUp {
+  from { 
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to { 
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideDown {
+  from { 
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to { 
+    opacity: 0;
+    transform: translateY(20px);
+  }
+}

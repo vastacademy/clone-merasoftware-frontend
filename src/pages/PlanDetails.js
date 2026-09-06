@@ -10,7 +10,6 @@ import DashboardLayout from '../components/DashboardLayout';
 import TriangleMazeLoader from '../components/TriangleMazeLoader';
 import UpdateRequestModal from '../components/UpdateRequestModal';
 import SummaryApi from '../common';
-import backgroundImage from '../assets/BG.png';
 import { isPlanItem } from '../helpers/orderType';
 import { goToCustomerReturn } from '../helpers/customerReturnNavigation';
 import UploadedDataList from '../components/UploadedDataList';
@@ -120,9 +119,9 @@ const getPlanVisualStatus = (plan) => {
 const BADGE_TONE_CLASSES = {
   active: 'border border-emerald-400/40 bg-emerald-500/20 text-emerald-300',
   used_up: 'border border-amber-400/40 bg-amber-500/20 text-amber-300',
-  expired: 'border border-white/25 bg-white/15 text-white',
+  expired: 'border border-[var(--glass-border-strong)] bg-[var(--glass-bg-strong)] text-[var(--text-primary)]',
   paused: 'border border-rose-400/40 bg-rose-500/20 text-rose-300',
-  closed: 'border border-white/25 bg-white/15 text-white',
+  closed: 'border border-[var(--glass-border-strong)] bg-[var(--glass-bg-strong)] text-[var(--text-primary)]',
 };
 
 const PlanDetails = ({ isProjectServiceView = false }) => {
@@ -244,12 +243,12 @@ const PlanDetails = ({ isProjectServiceView = false }) => {
     return (
       <DashboardLayout user={user}>
         <div className="p-6">
-          <div className="bg-white rounded-lg p-6 text-center shadow-sm">
+          <div className="glass-panel rounded-lg p-6 text-center">
             <h2 className="text-lg font-semibold text-red-600 mb-2">Plan Not Found</h2>
-            <p className="text-base text-black mb-4">The plan you're looking for doesn't exist or you don't have access to it.</p>
+            <p className="text-base text-[var(--text-primary)] mb-4">The plan you're looking for doesn't exist or you don't have access to it.</p>
             <button
               onClick={handleBack}
-              className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-base font-semibold"
+              className="px-4 py-2 bg-emerald-600 text-[var(--text-primary)] rounded-lg hover:bg-emerald-700 text-base font-semibold"
             >
               Back to Projects and Plans
             </button>
@@ -288,17 +287,16 @@ const PlanDetails = ({ isProjectServiceView = false }) => {
   return (
     <DashboardLayout user={user}>
       <div
-        className="relative min-h-[calc(100vh-4rem)] overflow-hidden bg-slate-950 bg-cover bg-center px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
-        style={{ backgroundImage: `url(${backgroundImage})` }}
+        className="relative min-h-[calc(100vh-4rem)] overflow-hidden px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
       >
-        <div className="pointer-events-none absolute inset-0 bg-slate-950/40" />
+        <div className="pointer-events-none absolute inset-0 bg-[var(--scrim)]" />
 
         <div className="relative mx-auto flex w-full max-w-7xl flex-col gap-4">
           <div className="relative flex items-center justify-center">
             <button
               type="button"
               onClick={handleBack}
-              className="absolute left-0 inline-flex w-fit shrink-0 items-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-5 py-3 text-lg font-semibold text-white backdrop-blur-md transition hover:bg-white/15"
+              className="absolute left-0 inline-flex w-fit shrink-0 items-center gap-2 rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg)] px-5 py-3 text-lg font-semibold text-[var(--text-primary)] backdrop-blur-md transition hover:bg-[var(--glass-bg-strong)]"
             >
               <ArrowLeft className="h-5 w-5" />
               Back
@@ -306,40 +304,40 @@ const PlanDetails = ({ isProjectServiceView = false }) => {
 
             <div className="text-center">
               <div className="flex flex-wrap items-center justify-center gap-3">
-                <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl lg:text-4xl">
+                <h1 className="text-2xl font-bold tracking-tight text-[var(--text-primary)] sm:text-3xl lg:text-4xl">
                   {purchasedName}
                 </h1>
                 <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${BADGE_TONE_CLASSES[status.tone]}`}>
                   {status.badge}
                 </span>
               </div>
-              <p className="mt-1 text-base text-slate-300 sm:text-lg">
+              <p className="mt-1 text-base text-[var(--text-secondary)] sm:text-lg">
                 {isProjectServiceView ? 'Service linked to this project' : (purchasedCategory?.split('_').join(' ') || 'Plan')}
               </p>
             </div>
           </div>
 
-          <div className="relative overflow-hidden rounded-[1.75rem] border border-white/20 bg-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.25)] backdrop-blur-2xl backdrop-saturate-150">
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/[0.12] to-transparent" />
+          <div className="relative overflow-hidden rounded-[1.75rem] border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] shadow-[var(--card-shadow)] backdrop-blur-2xl backdrop-saturate-150">
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-[var(--glass-sheen)] to-transparent" />
 
             {plan.isServicePlan && (
-              <section className="relative border-b border-white/15 px-5 py-4 text-white sm:px-6">
+              <section className="relative border-b border-[var(--glass-border)] px-5 py-4 text-[var(--text-primary)] sm:px-6">
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div><p className="font-semibold">{status.isReminderOnly ? 'Service information' : 'Service controls'}</p><p className="mt-1 text-sm text-slate-300">{product.formattedDescriptions?.[0]?.content?.replace(/<[^>]*>/g, '') || 'No additional service information.'}</p></div>
+                  <div><p className="font-semibold">{status.isReminderOnly ? 'Service information' : 'Service controls'}</p><p className="mt-1 text-sm text-[var(--text-secondary)]">{product.formattedDescriptions?.[0]?.content?.replace(/<[^>]*>/g, '') || 'No additional service information.'}</p></div>
                 </div>
                 {serviceActionMessage && <p className="mt-2 text-sm text-emerald-200">{serviceActionMessage}</p>}
-                {status.isReminderOnly && <p className="mt-3 text-sm text-slate-300">Upload Data is not available for this reminder service.</p>}
-                <div className="mt-3"><p className="text-sm font-semibold">Billing</p>{plan.serviceInvoices?.length ? <ul className="mt-1 space-y-2 text-sm text-slate-300">{plan.serviceInvoices.map((invoice) => <li key={invoice._id} className="flex flex-wrap items-center justify-between gap-2"><span>{invoice.invoiceType === 'service_statement' ? 'Live Billing Statement' : `Cycle ${invoice.serviceCycleNumber || 1} invoice`} · {invoice.invoiceNumber} · ₹{invoice.amount} · {invoice.status}</span>{invoice.invoiceType === 'service_statement' ? <button type="button" onClick={() => navigate(`/invoice-detail/${invoice._id}`, { state: location.state })} className="rounded-lg border border-white/30 px-2.5 py-1 text-xs font-semibold text-white">View statement</button> : ['unpaid', 'partially_paid', 'overdue'].includes(invoice.status) ? <button type="button" onClick={() => navigate(`/invoice-detail/${invoice._id}`, { state: location.state })} className="rounded-lg border border-emerald-300/60 px-2.5 py-1 text-xs font-semibold text-emerald-100">Pay now</button> : <button type="button" onClick={() => navigate(`/invoice-detail/${invoice._id}`, { state: location.state })} className="rounded-lg border border-white/30 px-2.5 py-1 text-xs font-semibold text-white">View invoice</button>}</li>)}</ul> : <p className="mt-1 text-sm text-slate-400">No invoices yet.</p>}</div>
+                {status.isReminderOnly && <p className="mt-3 text-sm text-[var(--text-secondary)]">Upload Data is not available for this reminder service.</p>}
+                <div className="mt-3"><p className="text-sm font-semibold">Billing</p>{plan.serviceInvoices?.length ? <ul className="mt-1 space-y-2 text-sm text-[var(--text-secondary)]">{plan.serviceInvoices.map((invoice) => <li key={invoice._id} className="flex flex-wrap items-center justify-between gap-2"><span>{invoice.invoiceType === 'service_statement' ? 'Live Billing Statement' : `Cycle ${invoice.serviceCycleNumber || 1} invoice`} · {invoice.invoiceNumber} · ₹{invoice.amount} · {invoice.status}</span>{invoice.invoiceType === 'service_statement' ? <button type="button" onClick={() => navigate(`/invoice-detail/${invoice._id}`, { state: location.state })} className="rounded-lg border border-[var(--glass-border-strong)] px-2.5 py-1 text-xs font-semibold text-[var(--text-primary)]">View statement</button> : ['unpaid', 'partially_paid', 'overdue'].includes(invoice.status) ? <button type="button" onClick={() => navigate(`/invoice-detail/${invoice._id}`, { state: location.state })} className="rounded-lg border border-emerald-300/60 px-2.5 py-1 text-xs font-semibold text-emerald-100">Pay now</button> : <button type="button" onClick={() => navigate(`/invoice-detail/${invoice._id}`, { state: location.state })} className="rounded-lg border border-[var(--glass-border-strong)] px-2.5 py-1 text-xs font-semibold text-[var(--text-primary)]">View invoice</button>}</li>)}</ul> : <p className="mt-1 text-sm text-[var(--text-muted)]">No invoices yet.</p>}</div>
               </section>
             )}
 
             {/* Desktop 3-column layout, same skeleton as ProjectDetails.js */}
             <div className="relative hidden lg:grid lg:grid-cols-[280px_minmax(0,1fr)_360px] lg:items-stretch">
-              <aside className="relative h-[620px] border-r border-white/15">
+              <aside className="relative h-[620px] border-r border-[var(--glass-border)]">
                 <div className="flex h-full min-h-0 flex-col p-4">
                   <div className="flex items-center justify-center">
                       <div className="relative flex h-40 w-40 items-center justify-center">
-                        <div className="absolute inset-0 rounded-full border-[12px] border-white/15"></div>
+                        <div className="absolute inset-0 rounded-full border-[12px] border-[var(--glass-border)]"></div>
                         <svg className="absolute inset-0 h-full w-full" viewBox="0 0 100 100">
                           <circle
                             cx="50"
@@ -354,8 +352,8 @@ const PlanDetails = ({ isProjectServiceView = false }) => {
                           />
                         </svg>
                         <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-                          <span className="text-2xl font-bold text-white">{usedUpdates} / {totalUpdates}</span>
-                          <span className="mt-1 text-sm font-medium text-slate-300">Updates Used</span>
+                          <span className="text-2xl font-bold text-[var(--text-primary)]">{usedUpdates} / {totalUpdates}</span>
+                          <span className="mt-1 text-sm font-medium text-[var(--text-secondary)]">Updates Used</span>
                         </div>
                       </div>
                     </div>
@@ -366,8 +364,8 @@ const PlanDetails = ({ isProjectServiceView = false }) => {
                       disabled={!status.canRequest}
                       className={`mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-2.5 text-base font-semibold transition ${
                         status.canRequest
-                          ? 'bg-emerald-600 text-white hover:bg-emerald-700'
-                          : 'bg-white/10 text-slate-400 cursor-not-allowed'
+                          ? 'bg-emerald-600 text-[var(--text-primary)] hover:bg-emerald-700'
+                          : 'bg-[var(--glass-bg)] text-[var(--text-muted)] cursor-not-allowed'
                       }`}
                     >
                       <Upload className="h-4 w-4" />
@@ -382,7 +380,7 @@ const PlanDetails = ({ isProjectServiceView = false }) => {
                       </p>
                     )}
                     {status.tone === 'expired' && (
-                      <p className="mt-2 text-center text-sm text-slate-300">
+                      <p className="mt-2 text-center text-sm text-[var(--text-secondary)]">
                         {status.isRecurring ? 'Yearly plan has ended.' : 'Plan validity has expired.'}
                       </p>
                     )}
@@ -393,18 +391,18 @@ const PlanDetails = ({ isProjectServiceView = false }) => {
                       </p>
                     )}
                     {status.tone === 'closed' && (
-                      <p className="mt-2 flex items-start gap-1.5 text-center text-sm text-slate-300">
+                      <p className="mt-2 flex items-start gap-1.5 text-center text-sm text-[var(--text-secondary)]">
                         <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                         This plan was closed.
                       </p>
                     )}
 
-                    <div className="mt-4 border-t border-white/15 pt-4">
-                      <p className="text-lg font-semibold text-white">Plan Snapshot</p>
+                    <div className="mt-4 border-t border-[var(--glass-border)] pt-4">
+                      <p className="text-lg font-semibold text-[var(--text-primary)]">Plan Snapshot</p>
                       <div className="mt-3 space-y-2.5">
-                        <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/10 px-4 py-2.5">
-                          <span className="text-sm text-slate-300">{status.isRecurring ? 'Resets on' : status.daysLeft === null ? 'Duration' : 'Days left'}</span>
-                          <span className="flex items-center gap-1 text-base font-semibold text-white">
+                        <div className="flex items-center justify-between rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg)] px-4 py-2.5">
+                          <span className="text-sm text-[var(--text-secondary)]">{status.isRecurring ? 'Resets on' : status.daysLeft === null ? 'Duration' : 'Days left'}</span>
+                          <span className="flex items-center gap-1 text-base font-semibold text-[var(--text-primary)]">
                             {status.isRecurring ? (
                               <>
                                 <CalendarClock className="h-3.5 w-3.5" />
@@ -418,13 +416,13 @@ const PlanDetails = ({ isProjectServiceView = false }) => {
                             )}
                           </span>
                         </div>
-                        <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/10 px-4 py-2.5">
-                          <span className="text-sm text-slate-300">Total updates granted</span>
-                          <span className="text-base font-semibold text-white">{totalUpdates}</span>
+                        <div className="flex items-center justify-between rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg)] px-4 py-2.5">
+                          <span className="text-sm text-[var(--text-secondary)]">Total updates granted</span>
+                          <span className="text-base font-semibold text-[var(--text-primary)]">{totalUpdates}</span>
                         </div>
-                        <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/10 px-4 py-2.5">
-                          <span className="text-sm text-slate-300">File limit per request</span>
-                          <span className="text-base font-semibold text-white">Up to 20 files, 5MB each</span>
+                        <div className="flex items-center justify-between rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg)] px-4 py-2.5">
+                          <span className="text-sm text-[var(--text-secondary)]">File limit per request</span>
+                          <span className="text-base font-semibold text-[var(--text-primary)]">Up to 20 files, 5MB each</span>
                         </div>
                       </div>
                     </div>
@@ -438,12 +436,12 @@ const PlanDetails = ({ isProjectServiceView = false }) => {
                   records and offers the same zip download. */}
               <section className="relative min-w-0 h-[620px]">
                 <div className="flex h-full min-h-0 flex-col p-4">
-                  <div className="flex flex-col gap-2 border-b border-white/15 pb-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex flex-col gap-2 border-b border-[var(--glass-border)] pb-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                      <p className="text-sm font-medium text-slate-300">Uploaded Data</p>
-                      <h2 className="mt-1 text-xl font-bold text-white">Everything you have sent on this plan</h2>
+                      <p className="text-sm font-medium text-[var(--text-secondary)]">Uploaded Data</p>
+                      <h2 className="mt-1 text-xl font-bold text-[var(--text-primary)]">Everything you have sent on this plan</h2>
                     </div>
-                    <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-sm font-semibold text-white backdrop-blur-md">
+                    <span className="rounded-full border border-[var(--glass-border)] bg-[var(--glass-bg)] px-3 py-1 text-sm font-semibold text-[var(--text-primary)] backdrop-blur-md">
                       {requests.length} request{requests.length === 1 ? '' : 's'}
                     </span>
                   </div>
@@ -463,15 +461,15 @@ const PlanDetails = ({ isProjectServiceView = false }) => {
 
               {/* Mobile stacked layout */}
               <div className="relative space-y-4 p-5 lg:hidden">
-                <section className="relative overflow-hidden rounded-[1.75rem] border border-white/20 bg-white/10 p-5 shadow-[0_8px_32px_rgba(0,0,0,0.25)] backdrop-blur-2xl backdrop-saturate-150">
-                  <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/[0.12] to-transparent" />
+                <section className="relative overflow-hidden rounded-[1.75rem] border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] p-5 shadow-[var(--card-shadow)] backdrop-blur-2xl backdrop-saturate-150">
+                  <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-[var(--glass-sheen)] to-transparent" />
                   <div className="relative flex items-center justify-between gap-4">
                     <div>
-                      <p className="text-sm font-medium text-slate-300">Plan Status</p>
-                      <h2 className="mt-1 text-xl font-bold text-white">{status.badge}</h2>
+                      <p className="text-sm font-medium text-[var(--text-secondary)]">Plan Status</p>
+                      <h2 className="mt-1 text-xl font-bold text-[var(--text-primary)]">{status.badge}</h2>
                     </div>
                     <div className="relative flex h-24 w-24 items-center justify-center">
-                      <div className="absolute inset-0 rounded-full border-8 border-white/15"></div>
+                      <div className="absolute inset-0 rounded-full border-8 border-[var(--glass-border)]"></div>
                       <svg className="absolute inset-0 h-full w-full" viewBox="0 0 100 100">
                         <circle
                           cx="50"
@@ -486,22 +484,22 @@ const PlanDetails = ({ isProjectServiceView = false }) => {
                         />
                       </svg>
                       <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-                        <span className="text-lg font-bold text-white">{usedUpdates}/{totalUpdates}</span>
-                        <span className="text-sm font-medium text-slate-300">Used</span>
+                        <span className="text-lg font-bold text-[var(--text-primary)]">{usedUpdates}/{totalUpdates}</span>
+                        <span className="text-sm font-medium text-[var(--text-secondary)]">Used</span>
                       </div>
                     </div>
                   </div>
 
                   <div className="relative mt-4 grid grid-cols-2 gap-3">
-                    <div className="rounded-2xl border border-white/10 bg-white/10 p-3">
-                      <p className="text-sm uppercase text-slate-300">{status.isRecurring ? 'Resets' : 'Days left'}</p>
-                      <p className="mt-1 text-base font-semibold text-white">
+                    <div className="rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg)] p-3">
+                      <p className="text-sm uppercase text-[var(--text-secondary)]">{status.isRecurring ? 'Resets' : 'Days left'}</p>
+                      <p className="mt-1 text-base font-semibold text-[var(--text-primary)]">
                         {status.isRecurring ? formatDate(plan.monthlyLimitResetDate || plan.currentMonthExpiryDate) : `${status.daysLeft} days`}
                       </p>
                     </div>
-                    <div className="rounded-2xl border border-white/10 bg-white/10 p-3">
-                      <p className="text-sm uppercase text-slate-300">Requests</p>
-                      <p className="mt-1 text-base font-semibold text-white">{requests.length}</p>
+                    <div className="rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg)] p-3">
+                      <p className="text-sm uppercase text-[var(--text-secondary)]">Requests</p>
+                      <p className="mt-1 text-base font-semibold text-[var(--text-primary)]">{requests.length}</p>
                     </div>
                   </div>
 
@@ -512,8 +510,8 @@ const PlanDetails = ({ isProjectServiceView = false }) => {
                       disabled={!status.canRequest}
                       className={`inline-flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-base font-semibold transition ${
                         status.canRequest
-                          ? 'bg-emerald-600 text-white hover:bg-emerald-700'
-                          : 'bg-white/10 text-slate-400 cursor-not-allowed'
+                          ? 'bg-emerald-600 text-[var(--text-primary)] hover:bg-emerald-700'
+                          : 'bg-[var(--glass-bg)] text-[var(--text-muted)] cursor-not-allowed'
                       }`}
                     >
                       <Upload className="h-4 w-4" />
@@ -522,12 +520,12 @@ const PlanDetails = ({ isProjectServiceView = false }) => {
                   </div>
                 </section>
 
-                <section className="relative overflow-hidden rounded-[1.75rem] border border-white/20 bg-white/10 p-5 shadow-[0_8px_32px_rgba(0,0,0,0.25)] backdrop-blur-2xl backdrop-saturate-150">
-                  <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/[0.12] to-transparent" />
+                <section className="relative overflow-hidden rounded-[1.75rem] border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] p-5 shadow-[var(--card-shadow)] backdrop-blur-2xl backdrop-saturate-150">
+                  <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-[var(--glass-sheen)] to-transparent" />
                   <div className="relative flex items-center justify-between gap-3">
                     <div>
-                      <p className="text-sm font-medium text-slate-300">Uploaded Data</p>
-                      <h2 className="mt-1 text-lg font-semibold text-white">{requests.length} request{requests.length === 1 ? '' : 's'}</h2>
+                      <p className="text-sm font-medium text-[var(--text-secondary)]">Uploaded Data</p>
+                      <h2 className="mt-1 text-lg font-semibold text-[var(--text-primary)]">{requests.length} request{requests.length === 1 ? '' : 's'}</h2>
                     </div>
                   </div>
 

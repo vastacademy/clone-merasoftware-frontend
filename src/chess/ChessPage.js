@@ -7,7 +7,6 @@ import useChessSocket from './useChessSocket';
 import ChessLobby from './ChessLobby';
 import ChessBoardFlat from './ChessBoardFlat';
 import DashboardLayout from '../components/DashboardLayout';
-import backgroundImage from '../assets/BG.png';
 
 export default function ChessPage() {
   const [searchParams] = useSearchParams();
@@ -93,31 +92,30 @@ export default function ChessPage() {
     return (
       <DashboardLayout user={currentUser}>
         <div
-          className="relative min-h-[calc(100vh-4rem)] overflow-hidden bg-slate-950 bg-cover bg-center px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
-          style={{ backgroundImage: `url(${backgroundImage})` }}
+          className="relative min-h-[calc(100vh-4rem)] overflow-hidden px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
         >
-          <div className="pointer-events-none absolute inset-0 bg-slate-950/40" />
+          <div className="pointer-events-none absolute inset-0 bg-[var(--scrim)]" />
           <div className="relative mx-auto flex w-full max-w-6xl flex-col items-center gap-6">
             <button
               type="button"
               onClick={() => navigate('/games', { replace: true })}
-              className="mr-auto inline-flex w-fit items-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-5 py-3 text-lg font-semibold text-white backdrop-blur-md transition hover:bg-white/15"
+              className="mr-auto inline-flex w-fit items-center gap-2 rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg)] px-5 py-3 text-lg font-semibold text-[var(--text-primary)] backdrop-blur-md transition hover:bg-[var(--glass-bg-strong)]"
             >
               <ArrowLeft className="h-5 w-5" />
               Back
             </button>
 
             {myGames.length > 0 && (
-              <div className="w-full max-w-xl space-y-3 rounded-[1.5rem] border border-white/20 bg-white/10 p-4 backdrop-blur-2xl backdrop-saturate-150">
-                <p className="font-semibold text-white">Resume a game</p>
+              <div className="w-full max-w-xl space-y-3 rounded-[1.5rem] border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] p-4 backdrop-blur-2xl backdrop-saturate-150">
+                <p className="font-semibold text-[var(--text-primary)]">Resume a game</p>
                 {myGames.map((game) => (
                   <button
                     key={game.roomCode}
                     onClick={() => joinRoomByCode(game.roomCode)}
-                    className="w-full flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-2 text-left hover:border-white/20 hover:bg-white/[0.07]"
+                    className="w-full flex items-center justify-between rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg-subtle)] px-3 py-2 text-left hover:border-[var(--glass-border-strong)] hover:bg-[var(--glass-bg-subtle)]"
                   >
-                    <span className="text-white">
-                      vs {game.opponentName || 'Unknown player'} <span className="text-slate-400">— playing {game.color}</span>
+                    <span className="text-[var(--text-primary)]">
+                      vs {game.opponentName || 'Unknown player'} <span className="text-[var(--text-muted)]">— playing {game.color}</span>
                     </span>
                     <span className="text-sm text-emerald-300 underline">Resume</span>
                   </button>
@@ -150,10 +148,9 @@ export default function ChessPage() {
   return (
     <DashboardLayout user={currentUser}>
       <div
-        className="relative min-h-[calc(100vh-4rem)] overflow-hidden bg-slate-950 bg-cover bg-center px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
-        style={{ backgroundImage: `url(${backgroundImage})` }}
+        className="relative min-h-[calc(100vh-4rem)] overflow-hidden px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
       >
-        <div className="pointer-events-none absolute inset-0 bg-slate-950/40" />
+        <div className="pointer-events-none absolute inset-0 bg-[var(--scrim)]" />
         <div className="relative mx-auto flex w-full max-w-7xl flex-col items-center gap-4">
           <div className="relative flex w-full items-center justify-center">
             <button
@@ -162,12 +159,12 @@ export default function ChessPage() {
                 leaveRoomView();
                 navigate('/games/chess', { replace: true });
               }}
-              className="absolute left-0 inline-flex w-fit shrink-0 items-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-5 py-3 text-lg font-semibold text-white backdrop-blur-md transition hover:bg-white/15"
+              className="absolute left-0 inline-flex w-fit shrink-0 items-center gap-2 rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg)] px-5 py-3 text-lg font-semibold text-[var(--text-primary)] backdrop-blur-md transition hover:bg-[var(--glass-bg-strong)]"
             >
               <ArrowLeft className="h-5 w-5" />
               Back
             </button>
-            <h1 className="text-2xl font-bold text-white text-center sm:text-3xl">Chess</h1>
+            <h1 className="text-2xl font-bold text-[var(--text-primary)] text-center sm:text-3xl">Chess</h1>
           </div>
 
           <div className="w-full max-w-2xl space-y-4">
@@ -176,9 +173,9 @@ export default function ChessPage() {
             )}
 
             {roomCode && (
-              <div className="text-center space-y-2 rounded-[1.5rem] border border-white/20 bg-white/10 p-4 backdrop-blur-2xl backdrop-saturate-150">
+              <div className="text-center space-y-2 rounded-[1.5rem] border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] p-4 backdrop-blur-2xl backdrop-saturate-150">
                 <div className="flex items-center justify-center gap-2">
-                  <p className="text-white">Room Code: <span className="font-bold">{roomCode}</span></p>
+                  <p className="text-[var(--text-primary)]">Room Code: <span className="font-bold">{roomCode}</span></p>
                   <button
                     type="button"
                     onClick={() => copyToClipboard(roomCode, 'Room code')}
@@ -189,7 +186,7 @@ export default function ChessPage() {
                 </div>
                 {shareLink && (
                   <div className="flex items-center justify-center gap-2">
-                    <p className="text-sm text-slate-300 break-all">{shareLink}</p>
+                    <p className="text-sm text-[var(--text-secondary)] break-all">{shareLink}</p>
                     <button
                       type="button"
                       onClick={() => copyToClipboard(shareLink, 'Link')}
@@ -199,18 +196,18 @@ export default function ChessPage() {
                     </button>
                   </div>
                 )}
-                <p className="text-white">You are playing: <span className="font-bold capitalize">{assignedColor}</span></p>
+                <p className="text-[var(--text-primary)]">You are playing: <span className="font-bold capitalize">{assignedColor}</span></p>
                 {opponent && (
-                  <p className="text-white">
+                  <p className="text-[var(--text-primary)]">
                     Playing against: <span className="font-bold">{opponent.name || 'Unknown player'}</span>
-                    {opponent.email && <span className="text-slate-300"> ({opponent.email})</span>}
+                    {opponent.email && <span className="text-[var(--text-secondary)]"> ({opponent.email})</span>}
                   </p>
                 )}
               </div>
             )}
 
             {status === 'waiting-for-opponent' && (
-              <p className="text-center text-slate-300">Waiting for opponent to join...</p>
+              <p className="text-center text-[var(--text-secondary)]">Waiting for opponent to join...</p>
             )}
 
             {status === 'opponent-left' && (
@@ -218,22 +215,22 @@ export default function ChessPage() {
             )}
 
             {isResetRequestedByMe && (
-              <p className="text-center text-slate-300">Reset request sent. Waiting for the other player to respond...</p>
+              <p className="text-center text-[var(--text-secondary)]">Reset request sent. Waiting for the other player to respond...</p>
             )}
 
             {isResetRequestedByOpponent && (
-              <div className="text-center space-y-2 rounded-[1.5rem] border border-white/20 bg-white/10 p-4 backdrop-blur-2xl backdrop-saturate-150">
-                <p className="text-white">The other player wants to reset this game.</p>
+              <div className="text-center space-y-2 rounded-[1.5rem] border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] p-4 backdrop-blur-2xl backdrop-saturate-150">
+                <p className="text-[var(--text-primary)]">The other player wants to reset this game.</p>
                 <div className="flex justify-center gap-3">
                   <button
                     onClick={() => respondReset(true)}
-                    className="px-4 py-2 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700"
+                    className="px-4 py-2 rounded-xl bg-emerald-600 text-[var(--text-primary)] hover:bg-emerald-700"
                   >
                     Accept
                   </button>
                   <button
                     onClick={() => respondReset(false)}
-                    className="px-4 py-2 rounded-xl border border-white/15 bg-white/[0.03] text-white hover:bg-white/[0.07]"
+                    className="px-4 py-2 rounded-xl border border-[var(--glass-border)] bg-[var(--glass-bg-subtle)] text-[var(--text-primary)] hover:bg-[var(--glass-bg-subtle)]"
                   >
                     Reject
                   </button>
@@ -242,22 +239,22 @@ export default function ChessPage() {
             )}
 
             {isEndRequestedByMe && (
-              <p className="text-center text-slate-300">End request sent. If the other player doesn't respond within 12 hours, this game will be removed automatically.</p>
+              <p className="text-center text-[var(--text-secondary)]">End request sent. If the other player doesn't respond within 12 hours, this game will be removed automatically.</p>
             )}
 
             {isEndRequestedByOpponent && (
               <div className="text-center space-y-2 rounded-[1.5rem] border border-red-400/40 bg-red-500/10 p-4 backdrop-blur-2xl backdrop-saturate-150">
-                <p className="text-white">The other player wants to end and delete this game.</p>
+                <p className="text-[var(--text-primary)]">The other player wants to end and delete this game.</p>
                 <div className="flex justify-center gap-3">
                   <button
                     onClick={() => respondEnd(true)}
-                    className="px-4 py-2 rounded-xl bg-red-600 text-white hover:bg-red-700"
+                    className="px-4 py-2 rounded-xl bg-red-600 text-[var(--text-primary)] hover:bg-red-700"
                   >
                     Accept
                   </button>
                   <button
                     onClick={() => respondEnd(false)}
-                    className="px-4 py-2 rounded-xl border border-white/15 bg-white/[0.03] text-white hover:bg-white/[0.07]"
+                    className="px-4 py-2 rounded-xl border border-[var(--glass-border)] bg-[var(--glass-bg-subtle)] text-[var(--text-primary)] hover:bg-[var(--glass-bg-subtle)]"
                   >
                     Reject
                   </button>
@@ -267,7 +264,7 @@ export default function ChessPage() {
 
             {board && (
               <div className="flex flex-col items-center gap-4">
-                <p className="text-white">Turn: <span className="font-bold capitalize">{turn}</span></p>
+                <p className="text-[var(--text-primary)]">Turn: <span className="font-bold capitalize">{turn}</span></p>
                 <ChessBoardFlat
                   board={board}
                   turn={turn}
@@ -278,14 +275,14 @@ export default function ChessPage() {
                 <div className="flex gap-3">
                   <button
                     onClick={undoMove}
-                    className="px-4 py-2 rounded-xl border border-white/15 bg-white/[0.03] text-white hover:bg-white/[0.07]"
+                    className="px-4 py-2 rounded-xl border border-[var(--glass-border)] bg-[var(--glass-bg-subtle)] text-[var(--text-primary)] hover:bg-[var(--glass-bg-subtle)]"
                   >
                     Undo Last Move
                   </button>
                   <button
                     onClick={requestReset}
                     disabled={gameStatus !== 'active'}
-                    className="px-4 py-2 rounded-xl border border-white/15 bg-white/[0.03] text-white hover:bg-white/[0.07] disabled:opacity-50"
+                    className="px-4 py-2 rounded-xl border border-[var(--glass-border)] bg-[var(--glass-bg-subtle)] text-[var(--text-primary)] hover:bg-[var(--glass-bg-subtle)] disabled:opacity-50"
                   >
                     Reset Game
                   </button>

@@ -11,7 +11,6 @@ import SummaryApi from '../common';
 import TriangleMazeLoader from '../components/TriangleMazeLoader';
 import DashboardLayout from '../components/DashboardLayout';
 import AdminLayout from '../components/AdminLayout';
-import backgroundImage from '../assets/BG.png';
 import UpdateRequestModal from '../components/UpdateRequestModal';
 import PaymentAlert from '../components/PaymentAlert';
 import { logout } from '../store/userSlice';
@@ -84,55 +83,55 @@ const TimelineCheckpointItem = ({
 
   const statusTone = isDeleted
     ? isGlass
-      ? 'border-white/15 bg-white/10 text-slate-300'
-      : 'border-slate-300 bg-slate-100 text-slate-500'
+      ? 'border-[var(--glass-border)] bg-[var(--glass-bg)] text-[var(--text-secondary)]'
+      : 'border-[var(--glass-border)] bg-slate-100 text-[var(--text-muted)]'
     : isGlass
       ? isCompleted
         ? 'border-emerald-400/40 bg-emerald-500/20 text-emerald-300'
         : isInProgress
-          ? 'border-white/25 bg-white/15 text-white'
-          : 'border-white/15 bg-white/10 text-slate-300'
+          ? 'border-[var(--glass-border-strong)] bg-[var(--glass-bg-strong)] text-[var(--text-primary)]'
+          : 'border-[var(--glass-border)] bg-[var(--glass-bg)] text-[var(--text-secondary)]'
       : isCompleted
         ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
         : isInProgress
-          ? 'border-slate-300 bg-slate-100 text-slate-700'
-          : 'border-slate-200 bg-white text-slate-600';
+          ? 'border-[var(--glass-border)] bg-slate-100 text-[var(--text-secondary)]'
+          : 'border-[var(--glass-border)] bg-white text-[var(--text-secondary)]';
 
   const cardTone = isDeleted
     ? isGlass
-      ? 'border-white/5 bg-white/[0.02]'
-      : 'border-slate-200 bg-slate-50'
+      ? 'border-[var(--glass-border)] bg-[var(--glass-bg-subtle)]'
+      : 'border-[var(--glass-border)] bg-slate-50'
     : isGlass
       ? isSelected
         ? compact
-          ? 'border-white/40 bg-white/[0.1] ring-2 ring-white/20'
-          : 'border-white/40 bg-white/[0.1] shadow-md ring-2 ring-white/20'
-        : 'border-white/10 bg-white/[0.03] hover:border-white/20 hover:bg-white/[0.07]'
+          ? 'border-[var(--glass-border-strong)] bg-[var(--glass-bg)] ring-2 ring-[var(--glass-border-strong)]'
+          : 'border-[var(--glass-border-strong)] bg-[var(--glass-bg)] shadow-md ring-2 ring-[var(--glass-border-strong)]'
+        : 'border-[var(--glass-border)] bg-[var(--glass-bg-subtle)] hover:border-[var(--glass-border-strong)] hover:bg-[var(--glass-bg-subtle)]'
       : isSelected
         ? compact
-          ? 'border-slate-300 bg-slate-50 ring-2 ring-slate-200'
-          : 'border-slate-300 bg-white shadow-md ring-2 ring-slate-200'
-        : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50';
+          ? 'border-[var(--glass-border)] bg-slate-50 ring-2 ring-slate-200'
+          : 'border-[var(--glass-border)] bg-white shadow-md ring-2 ring-slate-200'
+        : 'border-[var(--glass-border)] bg-white hover:border-[var(--glass-border)] hover:bg-slate-50';
 
   const badgeTone = isDeleted
     ? isGlass
-      ? 'border-white/20 bg-white/15'
-      : 'border-slate-300 bg-slate-200'
+      ? 'border-[var(--glass-border-strong)] bg-[var(--glass-bg-strong)]'
+      : 'border-[var(--glass-border)] bg-slate-200'
     : isGlass
       ? isSelected
-        ? 'border-white/40 bg-white/15'
+        ? 'border-[var(--glass-border-strong)] bg-[var(--glass-bg-strong)]'
         : isCompleted
           ? 'border-emerald-400/60 bg-emerald-500/20'
           : isInProgress
-            ? 'border-white/30 bg-white/15'
-            : 'border-white/15 bg-white/10'
+            ? 'border-[var(--glass-border-strong)] bg-[var(--glass-bg-strong)]'
+            : 'border-[var(--glass-border)] bg-[var(--glass-bg)]'
       : isSelected
         ? 'border-slate-400 bg-slate-100'
         : isCompleted
           ? 'border-emerald-500 bg-emerald-50'
           : isInProgress
             ? 'border-slate-400 bg-slate-100'
-            : 'border-slate-300 bg-white';
+            : 'border-[var(--glass-border)] bg-white';
 
   // The node row is a button, so the expanded record cannot be nested inside it
   // (interactive content inside a button is invalid and breaks keyboard use).
@@ -164,13 +163,13 @@ const TimelineCheckpointItem = ({
         ].join(' ')}
       >
         {isDeleted ? (
-          <X className={isGlass ? 'h-4 w-4 text-slate-200' : 'h-4 w-4 text-slate-600'} />
+          <X className={isGlass ? 'h-4 w-4 text-[var(--text-secondary)]' : 'h-4 w-4 text-[var(--text-secondary)]'} />
         ) : isCompleted ? (
           <Check className={isGlass ? 'h-4 w-4 text-emerald-400' : 'h-4 w-4 text-emerald-500'} />
         ) : isInProgress ? (
-          <Clock className={isGlass ? 'h-4 w-4 text-white' : 'h-4 w-4 text-slate-600'} />
+          <Clock className={isGlass ? 'h-4 w-4 text-[var(--text-primary)]' : 'h-4 w-4 text-[var(--text-secondary)]'} />
         ) : (
-          <span className={isGlass ? 'h-3 w-3 rounded-full bg-white/30' : 'h-3 w-3 rounded-full bg-slate-300'}></span>
+          <span className={isGlass ? 'h-3 w-3 rounded-full bg-[var(--glass-bg-strong)]' : 'h-3 w-3 rounded-full bg-slate-300'}></span>
         )}
       </div>
 
@@ -179,7 +178,7 @@ const TimelineCheckpointItem = ({
           <h3 className={[
             'truncate text-base font-semibold',
             isDeleted ? 'line-through' : '',
-            isDeleted ? (isGlass ? 'text-slate-300' : 'text-slate-500') : (isGlass ? 'text-white' : 'text-black'),
+            isDeleted ? (isGlass ? 'text-[var(--text-secondary)]' : 'text-[var(--text-muted)]') : (isGlass ? 'text-[var(--text-primary)]' : 'text-[var(--text-primary)]'),
           ].join(' ')}>
             {node.title}
           </h3>
@@ -193,7 +192,7 @@ const TimelineCheckpointItem = ({
         {/* Collapsed only. Once the node is open its record carries the full date and
             time per update, so showing a date here too would print it twice. */}
         {!isExpanded ? (
-          <div className={isGlass ? 'mt-2 flex flex-wrap gap-x-3 gap-y-1 text-sm text-slate-300' : 'mt-2 flex flex-wrap gap-x-3 gap-y-1 text-sm text-black'}>
+          <div className={isGlass ? 'mt-2 flex flex-wrap gap-x-3 gap-y-1 text-sm text-[var(--text-secondary)]' : 'mt-2 flex flex-wrap gap-x-3 gap-y-1 text-sm text-[var(--text-primary)]'}>
             <span>{formatDate(node.createdAt)}</span>
           </div>
         ) : null}
@@ -203,7 +202,7 @@ const TimelineCheckpointItem = ({
         className={[
           'mt-1 h-4 w-4 shrink-0 transition-transform',
           isExpanded ? 'rotate-180' : '',
-          isGlass ? 'text-slate-300' : 'text-slate-500',
+          isGlass ? 'text-[var(--text-secondary)]' : 'text-[var(--text-muted)]',
         ].join(' ')}
       />
     </button>
@@ -213,7 +212,7 @@ const TimelineCheckpointItem = ({
     {isExpanded ? (
       <div className={[
         compact ? 'px-3.5 pb-3.5' : 'px-3 pb-3',
-        isGlass ? 'border-t border-white/10' : 'border-t border-slate-200',
+        isGlass ? 'border-t border-[var(--glass-border)]' : 'border-t border-[var(--glass-border)]',
       ].join(' ')}>
         {/* Only what the row above does not already say. The row carries the node's
             title, date and update count, so repeating them here (and labelling each
@@ -222,20 +221,20 @@ const TimelineCheckpointItem = ({
             column of its own. Message titles are dropped too — checkpointName is the
             node's own name in practice, printed two lines above. */}
         {messages.length > 0 ? (
-          <div className={isGlass ? 'divide-y divide-white/10' : 'divide-y divide-slate-200'}>
+          <div className={isGlass ? 'divide-y divide-[var(--divider)]' : 'divide-y divide-slate-200'}>
             {messages.map((message, index) => (
               <div
                 key={message._id || message.id || `${node.nodeId}-message-${index}`}
                 className="py-3"
               >
-                <p className={isGlass ? 'whitespace-pre-line text-base leading-6 text-slate-200' : 'whitespace-pre-line text-base leading-6 text-slate-700'}>
+                <p className={isGlass ? 'whitespace-pre-line text-base leading-6 text-[var(--text-secondary)]' : 'whitespace-pre-line text-base leading-6 text-[var(--text-secondary)]'}>
                   {message.message || message.remark || message.notes || '—'}
                 </p>
                 {/* Progress belongs to the node, not to each update, so it is printed
                     once below rather than repeated on every row. */}
                 <div className={[
                   'mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm tabular-nums',
-                  isGlass ? 'text-slate-400' : 'text-slate-500',
+                  isGlass ? 'text-[var(--text-muted)]' : 'text-[var(--text-muted)]',
                 ].join(' ')}>
                   {message.timestamp && formatDateTimeValue ? (
                     <span>{formatDateTimeValue(message.timestamp)}</span>
@@ -253,7 +252,7 @@ const TimelineCheckpointItem = ({
         ) : (
           <p className={[
             'pt-3 text-sm',
-            isGlass ? 'text-slate-400' : 'text-slate-500',
+            isGlass ? 'text-[var(--text-muted)]' : 'text-[var(--text-muted)]',
           ].join(' ')}>
             No update recorded
           </p>
@@ -739,7 +738,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
                 <div className="mt-4 flex space-x-4">
                   <button
                     onClick={handleBack}
-                    className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-base font-semibold"
+                    className="px-4 py-2 bg-gray-600 text-[var(--text-primary)] rounded-lg hover:bg-gray-700 text-base font-semibold"
                   >
                     Back
                   </button>
@@ -757,7 +756,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
                         });
                       }
                     }}
-                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-base font-semibold"
+                    className="px-4 py-2 bg-red-600 text-[var(--text-primary)] rounded-lg hover:bg-red-700 text-base font-semibold"
                   >
                     Retry Payment
                   </button>
@@ -776,10 +775,10 @@ const ProjectDetails = ({ isAdminView = false }) => {
         <div className="p-6">
           <div className="bg-white rounded-lg p-6 text-center shadow-sm">
             <h2 className="text-lg font-semibold text-red-600 mb-2">Project Not Found</h2>
-            <p className="text-base text-black mb-4">The project you're looking for doesn't exist or you don't have access to it.</p>
+            <p className="text-base text-[var(--text-primary)] mb-4">The project you're looking for doesn't exist or you don't have access to it.</p>
             <button
                     onClick={handleBack}
-              className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-base font-semibold"
+              className="px-4 py-2 bg-emerald-600 text-[var(--text-primary)] rounded-lg hover:bg-emerald-700 text-base font-semibold"
             >
               Back
             </button>
@@ -870,11 +869,10 @@ const ProjectDetails = ({ isAdminView = false }) => {
         className={
           isAdminView
             ? 'w-full bg-slate-50 px-4 py-4 pb-8 sm:px-6 lg:px-8 lg:pb-10'
-            : 'relative min-h-[calc(100vh-4rem)] overflow-hidden bg-slate-950 bg-cover bg-center px-4 py-10 sm:px-6 lg:px-8 lg:py-14'
+            : 'relative min-h-[calc(100vh-4rem)] overflow-hidden px-4 py-10 sm:px-6 lg:px-8 lg:py-14'
         }
-        style={isAdminView ? undefined : { backgroundImage: `url(${backgroundImage})` }}
       >
-        {!isAdminView && <div className="pointer-events-none absolute inset-0 bg-slate-950/40" />}
+        {!isAdminView && <div className="pointer-events-none absolute inset-0 bg-[var(--scrim)]" />}
 
         <div className="relative mx-auto flex w-full max-w-7xl flex-col gap-4">
           <div className="relative flex items-center justify-center">
@@ -882,19 +880,17 @@ const ProjectDetails = ({ isAdminView = false }) => {
               type="button"
               onClick={handleBack}
               className={g(
-                'absolute left-0 inline-flex w-fit shrink-0 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3 text-lg font-semibold text-black transition hover:bg-slate-50',
-                'absolute left-0 inline-flex w-fit shrink-0 items-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-5 py-3 text-lg font-semibold text-white backdrop-blur-md transition hover:bg-white/15'
-              )}
+                'absolute left-0 inline-flex w-fit shrink-0 items-center gap-2 rounded-2xl border border-[var(--glass-border)] bg-white px-5 py-3 text-lg font-semibold text-[var(--text-primary)] transition hover:bg-slate-50', 'absolute left-0 inline-flex w-fit shrink-0 items-center gap-2 rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg)] px-5 py-3 text-lg font-semibold text-[var(--text-primary)] backdrop-blur-md transition hover:bg-[var(--glass-bg-strong)]')}
             >
               <ArrowLeft className="h-5 w-5" />
               Back
             </button>
 
             <div className="text-center">
-              <h1 className={g('text-2xl font-bold tracking-tight text-black sm:text-3xl', 'text-2xl font-bold tracking-tight text-white sm:text-3xl lg:text-4xl')}>
+              <h1 className={g('text-2xl font-bold tracking-tight text-[var(--text-primary)] sm:text-3xl', 'text-2xl font-bold tracking-tight text-[var(--text-primary)] sm:text-3xl lg:text-4xl')}>
                 {getOrderDisplayName(order)}
               </h1>
-              <p className={g('mt-1 text-base text-black', 'mt-1 text-base text-slate-300 sm:text-lg')}>
+              <p className={g('mt-1 text-base text-[var(--text-primary)]', 'mt-1 text-base text-[var(--text-secondary)] sm:text-lg')}>
                 {getOrderCategory(order, 'Project').split('_').join(' ')}
               </p>
             </div>
@@ -926,27 +922,25 @@ const ProjectDetails = ({ isAdminView = false }) => {
               settled, so "payment pending" / "awaiting approval" no longer mean anything. */}
           {isOrderCancelled && (
             <div className={g(
-              'mb-6 rounded-2xl border border-slate-300 bg-slate-100 p-4',
-              'mb-6 rounded-2xl border border-white/20 bg-white/10 p-4 backdrop-blur-md'
-            )}>
-              <p className={g('text-base font-semibold text-slate-800', 'text-base font-semibold text-white')}>
+              'mb-6 rounded-2xl border border-[var(--glass-border)] bg-slate-100 p-4', 'mb-6 rounded-2xl border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] p-4 backdrop-blur-md')}>
+              <p className={g('text-base font-semibold text-[var(--text-primary)]', 'text-base font-semibold text-[var(--text-primary)]')}>
                 Project Cancelled
               </p>
               {order.cancellationReason ? (
-                <p className={g('mt-1 text-sm text-slate-600', 'mt-1 text-sm text-white/80')}>
+                <p className={g('mt-1 text-sm text-[var(--text-secondary)]', 'mt-1 text-sm text-[var(--text-secondary)]')}>
                   {order.cancellationReason}
                 </p>
               ) : null}
               {Number(order.refundTotal || 0) > 0 ? (
                 <div className="mt-3">
-                  <p className={g('text-sm font-semibold text-slate-700', 'text-sm font-semibold text-white/90')}>
+                  <p className={g('text-sm font-semibold text-[var(--text-secondary)]', 'text-sm font-semibold text-[var(--text-secondary)]')}>
                     Refunded ₹{Number(order.refundTotal).toLocaleString('en-IN')}
                   </p>
                   <div className="mt-2 space-y-1">
                     {(order.refunds || []).map((refund, index) => (
                       <p
                         key={`${refund.method}-${index}`}
-                        className={g('text-sm text-slate-600', 'text-sm text-white/75')}
+                        className={g('text-sm text-[var(--text-secondary)]', 'text-sm text-[var(--text-secondary)]')}
                       >
                         <span className="capitalize">{String(refund.method).replace('_', ' ')}</span>
                         {' — ₹'}
@@ -966,9 +960,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
 
           {!isAdminView && !isOrderCancelled && hasPendingPayment && (
             <div className={g(
-              'mb-6 rounded-2xl border border-emerald-300 bg-emerald-50 p-4',
-              'mb-6 rounded-2xl border border-emerald-400/40 bg-emerald-500/15 p-4 backdrop-blur-md'
-            )}>
+              'mb-6 rounded-2xl border border-emerald-300 bg-emerald-50 p-4', 'mb-6 rounded-2xl border border-emerald-400/40 bg-emerald-500/15 p-4 backdrop-blur-md')}>
               <p className={g('text-base font-semibold text-emerald-800', 'text-base font-semibold text-emerald-200')}>
                 Payment Submitted — Awaiting Approval
               </p>
@@ -982,9 +974,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
 
           {!isAdminView && !isOrderCancelled && !hasPendingPayment && order.hasUnpaidInvoice && (
             <div className={g(
-              'mb-6 rounded-2xl border border-amber-300 bg-amber-50 p-4',
-              'mb-6 rounded-2xl border border-amber-400/40 bg-amber-500/15 p-4 backdrop-blur-md'
-            )}>
+              'mb-6 rounded-2xl border border-amber-300 bg-amber-50 p-4', 'mb-6 rounded-2xl border border-amber-400/40 bg-amber-500/15 p-4 backdrop-blur-md')}>
               <p className={g('text-base font-semibold text-amber-800', 'text-base font-semibold text-amber-200')}>
                 Payment Pending
               </p>
@@ -999,9 +989,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
                     state: customerChildState(location),
                   })}
                   className={g(
-                    'mt-2 text-sm font-semibold text-amber-800 underline underline-offset-2 transition hover:text-amber-900',
-                    'mt-2 text-sm font-semibold text-amber-200 underline underline-offset-2 transition hover:text-amber-100'
-                  )}
+                    'mt-2 text-sm font-semibold text-amber-800 underline underline-offset-2 transition hover:text-amber-900', 'mt-2 text-sm font-semibold text-amber-200 underline underline-offset-2 transition hover:text-amber-100')}
                 >
                   Proceed for payment
                 </button>
@@ -1024,19 +1012,17 @@ const ProjectDetails = ({ isAdminView = false }) => {
           {/* One card for the whole page — the service offer, the summary band and the
               timeline are separated by dividers rather than by cards of their own. The
               card is the wrapper; the two-column band is a grid nested inside it. */}
-          <div className={g('hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-sm lg:block', 'relative hidden overflow-hidden rounded-[1.75rem] border border-white/20 bg-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.25)] backdrop-blur-2xl backdrop-saturate-150 lg:block')}>
-                {!isAdminView && <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/[0.12] to-transparent" />}
+          <div className={g('hidden rounded-[1.75rem] border border-[var(--glass-border)] bg-white shadow-sm lg:block', 'relative hidden overflow-hidden rounded-[1.75rem] border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] shadow-[var(--card-shadow)] backdrop-blur-2xl backdrop-saturate-150 lg:block')}>
+                {!isAdminView && <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-[var(--glass-sheen)] to-transparent" />}
 
                 {!isAdminView && canAddService && (
                   <div className={g(
-                    'relative flex flex-col gap-3 border-b border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between',
-                    'relative flex flex-col gap-3 border-b border-white/15 p-4 sm:flex-row sm:items-center sm:justify-between'
-                  )}>
+                    'relative flex flex-col gap-3 border-b border-[var(--glass-border)] p-4 sm:flex-row sm:items-center sm:justify-between', 'relative flex flex-col gap-3 border-b border-[var(--glass-border)] p-4 sm:flex-row sm:items-center sm:justify-between')}>
                     <div>
-                      <p className={g('text-base font-semibold text-black', 'text-base font-semibold text-white')}>
+                      <p className={g('text-base font-semibold text-[var(--text-primary)]', 'text-base font-semibold text-[var(--text-primary)]')}>
                         {isProjectFinished ? 'Ongoing servicing for this project' : 'Add a service to this project'}
                       </p>
-                      <p className={g('mt-1 text-sm text-slate-600', 'mt-1 text-sm text-white/70')}>
+                      <p className={g('mt-1 text-sm text-[var(--text-secondary)]', 'mt-1 text-sm text-[var(--text-secondary)]')}>
                         {isProjectFinished
                           ? 'Keep this project maintained with a recurring service — maintenance, marketing, renewals and more.'
                           : 'Add extra services alongside your running project, such as marketing, content or maintenance.'}
@@ -1046,9 +1032,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
                       type="button"
                       onClick={handleAddService}
                       className={g(
-                        'inline-flex shrink-0 items-center justify-center rounded-xl bg-emerald-600 px-4 py-2.5 text-base font-semibold text-white transition hover:bg-emerald-700',
-                        'inline-flex shrink-0 items-center justify-center rounded-xl bg-emerald-500 px-4 py-2.5 text-base font-semibold text-white transition hover:bg-emerald-400'
-                      )}
+                        'inline-flex shrink-0 items-center justify-center rounded-xl bg-emerald-600 px-4 py-2.5 text-base font-semibold text-[var(--text-primary)] transition hover:bg-emerald-700', 'inline-flex shrink-0 items-center justify-center rounded-xl bg-emerald-500 px-4 py-2.5 text-base font-semibold text-[var(--text-primary)] transition hover:bg-emerald-400')}
                     >
                       Add a Service
                     </button>
@@ -1056,13 +1040,13 @@ const ProjectDetails = ({ isAdminView = false }) => {
                 )}
 
                 <div className="grid grid-cols-2 items-stretch">
-                <aside className={g('h-[620px] border-r border-slate-200', 'relative h-[620px] border-r border-white/15')}>
+                <aside className={g('h-[620px] border-r border-[var(--glass-border)]', 'relative h-[620px] border-r border-[var(--glass-border)]')}>
                   <div className="flex h-full min-h-0 flex-col p-4">
                       {/* Donut on the left, the snapshot facts it summarises on the right,
                           with the actions sitting under those facts. */}
                       <div className="grid grid-cols-2 items-start gap-5">
                         <div className="relative mx-auto flex h-40 w-40 shrink-0 items-center justify-center">
-                          <div className={g('absolute inset-0 rounded-full border-[12px] border-slate-200', 'absolute inset-0 rounded-full border-[12px] border-white/15')}></div>
+                          <div className={g('absolute inset-0 rounded-full border-[12px] border-[var(--glass-border)]', 'absolute inset-0 rounded-full border-[12px] border-[var(--glass-border)]')}></div>
                           <svg className="absolute inset-0 h-full w-full" viewBox="0 0 100 100">
                             <circle
                               cx="50"
@@ -1077,28 +1061,28 @@ const ProjectDetails = ({ isAdminView = false }) => {
                             />
                           </svg>
                           <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-                            <span className={g('text-2xl font-bold text-black', 'text-2xl font-bold text-white')}>{progressPercentage}%</span>
-                            <span className={g('mt-1 text-sm font-medium text-black', 'mt-1 text-sm font-medium text-slate-300')}>Complete</span>
+                            <span className={g('text-2xl font-bold text-[var(--text-primary)]', 'text-2xl font-bold text-[var(--text-primary)]')}>{progressPercentage}%</span>
+                            <span className={g('mt-1 text-sm font-medium text-[var(--text-primary)]', 'mt-1 text-sm font-medium text-[var(--text-secondary)]')}>Complete</span>
                           </div>
                         </div>
 
                         <div className="min-w-0">
                           {/* Document style: divider-separated key/value rows, no boxes */}
-                          <div className={g('divide-y divide-slate-200', 'divide-y divide-white/10')}>
+                          <div className={g('divide-y divide-slate-200', 'divide-y divide-[var(--divider)]')}>
                             <div className="flex items-center justify-between gap-3 py-2">
-                              <span className={g('text-sm text-slate-600', 'text-sm text-slate-300')}>Last update</span>
-                              <span className={g('text-right text-base font-semibold text-black', 'text-right text-base font-semibold text-white')}>{formatDateTime(order.updatedAt || order.createdAt)}</span>
+                              <span className={g('text-sm text-[var(--text-secondary)]', 'text-sm text-[var(--text-secondary)]')}>Last update</span>
+                              <span className={g('text-right text-base font-semibold text-[var(--text-primary)]', 'text-right text-base font-semibold text-[var(--text-primary)]')}>{formatDateTime(order.updatedAt || order.createdAt)}</span>
                             </div>
                             <div className="flex items-center justify-between gap-3 py-2">
-                              <span className={g('text-sm text-slate-600', 'text-sm text-slate-300')}>Updates linked</span>
-                              <span className={g('text-base font-semibold tabular-nums text-black', 'text-base font-semibold tabular-nums text-white')}>{totalUpdates}</span>
+                              <span className={g('text-sm text-[var(--text-secondary)]', 'text-sm text-[var(--text-secondary)]')}>Updates linked</span>
+                              <span className={g('text-base font-semibold tabular-nums text-[var(--text-primary)]', 'text-base font-semibold tabular-nums text-[var(--text-primary)]')}>{totalUpdates}</span>
                             </div>
                             <div className="flex items-center justify-between gap-3 py-2">
-                              <span className={g('text-sm text-slate-600', 'text-sm text-slate-300')}>Current phase</span>
+                              <span className={g('text-sm text-[var(--text-secondary)]', 'text-sm text-[var(--text-secondary)]')}>Current phase</span>
                               {/* Derived by backend/helpers/orderStatusEngine.js, not the stored
                                   currentPhase column: that column only ever moves to 'completed'
                                   at 100%, so a project at 1% displayed "planning" indefinitely. */}
-                              <span className={g('text-base font-semibold text-black', 'text-base font-semibold text-white')}>{order.orderState?.phaseLabel || order.currentPhase || 'N/A'}</span>
+                              <span className={g('text-base font-semibold text-[var(--text-primary)]', 'text-base font-semibold text-[var(--text-primary)]')}>{order.orderState?.phaseLabel || order.currentPhase || 'N/A'}</span>
                             </div>
                           </div>
 
@@ -1106,8 +1090,8 @@ const ProjectDetails = ({ isAdminView = false }) => {
                               when it finished. Comes from backend/helpers/orderLifecycleLog.js;
                               before that log existed none of these dates were recorded at all. */}
                           {order.lifecycleTimeline?.length ? (
-                            <div className={g('mt-5 border-t border-slate-200 pt-4', 'mt-5 border-t border-white/10 pt-4')}>
-                              <p className={g('mb-3 text-sm font-semibold text-black', 'mb-3 text-sm font-semibold text-white')}>Project history</p>
+                            <div className={g('mt-5 border-t border-[var(--glass-border)] pt-4', 'mt-5 border-t border-[var(--glass-border)] pt-4')}>
+                              <p className={g('mb-3 text-sm font-semibold text-[var(--text-primary)]', 'mb-3 text-sm font-semibold text-[var(--text-primary)]')}>Project history</p>
                               {/* g() takes (adminClass, customerClass) and the admin classes here
                                   are the light ones — this page renders light for admin and dark
                                   for the customer, so the timeline's palette follows the same way. */}
@@ -1121,7 +1105,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
                               onClick={() => setUpdateModalOpen(true)}
                               disabled={isUploadLocked}
                               title={uploadLockMeta.title}
-                              className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-2.5 text-base font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-400 disabled:hover:bg-slate-400"
+                              className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-2.5 text-base font-semibold text-[var(--text-primary)] transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-400 disabled:hover:bg-slate-400"
                             >
                               {/* A completed project says so instead of offering an upload it
                                   will not accept. Payment locks keep their own wording. */}
@@ -1140,7 +1124,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
                                   <Upload className="h-4 w-4" />
                                   Upload Data
                                   {uploadLockMeta.badge && (
-                                    <span className="ml-1 rounded-full bg-white/20 px-2 py-0.5 text-xs font-semibold">{uploadLockMeta.badge}</span>
+                                    <span className="ml-1 rounded-full bg-[var(--glass-bg-strong)] px-2 py-0.5 text-xs font-semibold">{uploadLockMeta.badge}</span>
                                   )}
                                 </>
                               )}
@@ -1153,9 +1137,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
                               target="_blank"
                               rel="noopener noreferrer"
                               className={g(
-                                'mt-2 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-base font-semibold text-emerald-700 transition hover:bg-emerald-100',
-                                'mt-2 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-4 py-2.5 text-base font-semibold text-white backdrop-blur-md transition hover:bg-white/15'
-                              )}
+                                'mt-2 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-base font-semibold text-emerald-700 transition hover:bg-emerald-100', 'mt-2 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg)] px-4 py-2.5 text-base font-semibold text-[var(--text-primary)] backdrop-blur-md transition hover:bg-[var(--glass-bg-strong)]')}
                             >
                               <ExternalLink className="h-4 w-4" />
                               View Project
@@ -1167,10 +1149,10 @@ const ProjectDetails = ({ isAdminView = false }) => {
                       {/* Uploaded data history fills whatever space the summary band leaves,
                           separated from it by a divider rather than by a card of its own.
                           Scrolls internally so the column keeps its fixed height. */}
-                      <div className={g('mt-4 flex min-h-0 flex-1 flex-col border-t border-slate-200 pt-4', 'mt-4 flex min-h-0 flex-1 flex-col border-t border-white/15 pt-4')}>
+                      <div className={g('mt-4 flex min-h-0 flex-1 flex-col border-t border-[var(--glass-border)] pt-4', 'mt-4 flex min-h-0 flex-1 flex-col border-t border-[var(--glass-border)] pt-4')}>
                         <div className="flex items-center justify-between gap-3">
-                          <p className={g('text-sm font-medium text-black', 'text-sm font-medium text-slate-300')}>Uploaded Data</p>
-                          <span className={g('rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600', 'rounded-full border border-white/15 bg-white/10 px-2.5 py-0.5 text-xs font-semibold text-white')}>
+                          <p className={g('text-sm font-medium text-[var(--text-primary)]', 'text-sm font-medium text-[var(--text-secondary)]')}>Uploaded Data</p>
+                          <span className={g('rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-[var(--text-secondary)]', 'rounded-full border border-[var(--glass-border)] bg-[var(--glass-bg)] px-2.5 py-0.5 text-xs font-semibold text-[var(--text-primary)]')}>
                             {uploadHistory.length}
                           </span>
                         </div>
@@ -1191,12 +1173,12 @@ const ProjectDetails = ({ isAdminView = false }) => {
 
                 <section className={g('min-w-0 h-[620px]', 'relative min-w-0 h-[620px]')}>
                   <div className="flex h-full min-h-0 flex-col p-4">
-                    <div className={g('flex flex-col gap-2 border-b border-slate-200 pb-4 sm:flex-row sm:items-center sm:justify-between', 'flex flex-col gap-2 border-b border-white/15 pb-4 sm:flex-row sm:items-center sm:justify-between')}>
+                    <div className={g('flex flex-col gap-2 border-b border-[var(--glass-border)] pb-4 sm:flex-row sm:items-center sm:justify-between', 'flex flex-col gap-2 border-b border-[var(--glass-border)] pb-4 sm:flex-row sm:items-center sm:justify-between')}>
                       <div>
-                        <p className={g('text-sm font-medium text-black', 'text-sm font-medium text-slate-300')}>Progress Timeline</p>
-                        <h2 className={g('mt-1 text-xl font-bold text-black', 'mt-1 text-xl font-bold text-white')}>Click any checkpoint to open its record</h2>
+                        <p className={g('text-sm font-medium text-[var(--text-primary)]', 'text-sm font-medium text-[var(--text-secondary)]')}>Progress Timeline</p>
+                        <h2 className={g('mt-1 text-xl font-bold text-[var(--text-primary)]', 'mt-1 text-xl font-bold text-[var(--text-primary)]')}>Click any checkpoint to open its record</h2>
                       </div>
-                      <span className={g('rounded-full bg-white px-3 py-1 text-sm font-semibold text-black', 'rounded-full border border-white/15 bg-white/10 px-3 py-1 text-sm font-semibold text-white backdrop-blur-md')}>
+                      <span className={g('rounded-full bg-white px-3 py-1 text-sm font-semibold text-[var(--text-primary)]', 'rounded-full border border-[var(--glass-border)] bg-[var(--glass-bg)] px-3 py-1 text-sm font-semibold text-[var(--text-primary)] backdrop-blur-md')}>
                         {timelineNodes.length} stages
                       </span>
                     </div>
@@ -1252,15 +1234,15 @@ const ProjectDetails = ({ isAdminView = false }) => {
               </div>
 
               <div className="space-y-4 lg:hidden">
-                <section className={g('rounded-[1.75rem] border border-slate-200 bg-slate-50 p-5 shadow-sm', 'relative overflow-hidden rounded-[1.75rem] border border-white/20 bg-white/10 p-5 shadow-[0_8px_32px_rgba(0,0,0,0.25)] backdrop-blur-2xl backdrop-saturate-150')}>
-                  {!isAdminView && <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/[0.12] to-transparent" />}
+                <section className={g('rounded-[1.75rem] border border-[var(--glass-border)] bg-slate-50 p-5 shadow-sm', 'relative overflow-hidden rounded-[1.75rem] border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] p-5 shadow-[var(--card-shadow)] backdrop-blur-2xl backdrop-saturate-150')}>
+                  {!isAdminView && <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-[var(--glass-sheen)] to-transparent" />}
                   <div className="relative flex items-center justify-between gap-4">
                     <div>
-                      <p className={g('text-sm font-medium text-black', 'text-sm font-medium text-slate-300')}>Current Stage</p>
-                      <h2 className={g('mt-1 text-xl font-bold text-black', 'mt-1 text-xl font-bold text-white')}>{currentStageLabel}</h2>
+                      <p className={g('text-sm font-medium text-[var(--text-primary)]', 'text-sm font-medium text-[var(--text-secondary)]')}>Current Stage</p>
+                      <h2 className={g('mt-1 text-xl font-bold text-[var(--text-primary)]', 'mt-1 text-xl font-bold text-[var(--text-primary)]')}>{currentStageLabel}</h2>
                     </div>
                     <div className="relative flex h-24 w-24 items-center justify-center">
-                      <div className={g('absolute inset-0 rounded-full border-8 border-slate-200', 'absolute inset-0 rounded-full border-8 border-white/15')}></div>
+                      <div className={g('absolute inset-0 rounded-full border-8 border-[var(--glass-border)]', 'absolute inset-0 rounded-full border-8 border-[var(--glass-border)]')}></div>
                       <svg className="absolute inset-0 h-full w-full" viewBox="0 0 100 100">
                         <circle
                           cx="50"
@@ -1275,20 +1257,20 @@ const ProjectDetails = ({ isAdminView = false }) => {
                         />
                       </svg>
                       <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-                        <span className={g('text-lg font-bold text-black', 'text-lg font-bold text-white')}>{progressPercentage}%</span>
-                        <span className={g('text-sm font-medium text-black', 'text-sm font-medium text-slate-300')}>Complete</span>
+                        <span className={g('text-lg font-bold text-[var(--text-primary)]', 'text-lg font-bold text-[var(--text-primary)]')}>{progressPercentage}%</span>
+                        <span className={g('text-sm font-medium text-[var(--text-primary)]', 'text-sm font-medium text-[var(--text-secondary)]')}>Complete</span>
                       </div>
                     </div>
                   </div>
 
                   <div className="relative mt-4 grid grid-cols-2 gap-3">
-                    <div className={g('rounded-2xl border border-slate-200 bg-white p-3', 'rounded-2xl border border-white/10 bg-white/10 p-3')}>
-                      <p className={g('text-sm uppercase text-black', 'text-sm uppercase text-slate-300')}>Updates</p>
-                      <p className={g('mt-1 text-base font-semibold text-black', 'mt-1 text-base font-semibold text-white')}>{totalUpdates}</p>
+                    <div className={g('rounded-2xl border border-[var(--glass-border)] bg-white p-3', 'rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg)] p-3')}>
+                      <p className={g('text-sm uppercase text-[var(--text-primary)]', 'text-sm uppercase text-[var(--text-secondary)]')}>Updates</p>
+                      <p className={g('mt-1 text-base font-semibold text-[var(--text-primary)]', 'mt-1 text-base font-semibold text-[var(--text-primary)]')}>{totalUpdates}</p>
                     </div>
-                    <div className={g('rounded-2xl border border-slate-200 bg-white p-3', 'rounded-2xl border border-white/10 bg-white/10 p-3')}>
-                      <p className={g('text-sm uppercase text-black', 'text-sm uppercase text-slate-300')}>Checkpoints</p>
-                      <p className={g('mt-1 text-base font-semibold text-black', 'mt-1 text-base font-semibold text-white')}>{timelineNodes.length}</p>
+                    <div className={g('rounded-2xl border border-[var(--glass-border)] bg-white p-3', 'rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg)] p-3')}>
+                      <p className={g('text-sm uppercase text-[var(--text-primary)]', 'text-sm uppercase text-[var(--text-secondary)]')}>Checkpoints</p>
+                      <p className={g('mt-1 text-base font-semibold text-[var(--text-primary)]', 'mt-1 text-base font-semibold text-[var(--text-primary)]')}>{timelineNodes.length}</p>
                     </div>
                   </div>
 
@@ -1297,7 +1279,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
                       <button
                         type="button"
                         onClick={() => setUpdateModalOpen(true)}
-                        className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-3 text-base font-semibold text-white transition hover:bg-emerald-700"
+                        className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-3 text-base font-semibold text-[var(--text-primary)] transition hover:bg-emerald-700"
                       >
                         <Upload className="h-4 w-4" />
                         Upload Data
@@ -1307,7 +1289,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
                           href={order.projectLink}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-base font-semibold text-white backdrop-blur-md transition hover:bg-white/15"
+                          className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg)] px-4 py-3 text-base font-semibold text-[var(--text-primary)] backdrop-blur-md transition hover:bg-[var(--glass-bg-strong)]"
                         >
                           <ExternalLink className="h-4 w-4" />
                           View Project
@@ -1317,16 +1299,16 @@ const ProjectDetails = ({ isAdminView = false }) => {
                   ) : null}
                 </section>
 
-                <section className={g('rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm', 'relative overflow-hidden rounded-[1.75rem] border border-white/20 bg-white/10 p-5 shadow-[0_8px_32px_rgba(0,0,0,0.25)] backdrop-blur-2xl backdrop-saturate-150')}>
-                  {!isAdminView && <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/[0.12] to-transparent" />}
+                <section className={g('rounded-[1.75rem] border border-[var(--glass-border)] bg-white p-5 shadow-sm', 'relative overflow-hidden rounded-[1.75rem] border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] p-5 shadow-[var(--card-shadow)] backdrop-blur-2xl backdrop-saturate-150')}>
+                  {!isAdminView && <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-[var(--glass-sheen)] to-transparent" />}
                   <div className="relative flex items-center justify-between gap-3">
                     <div>
-                      <p className={g('text-sm font-medium text-black', 'text-sm font-medium text-slate-300')}>Progress Timeline</p>
-                      <h2 className={g('mt-1 text-lg font-semibold text-black', 'mt-1 text-lg font-semibold text-white')}>Timeline</h2>
+                      <p className={g('text-sm font-medium text-[var(--text-primary)]', 'text-sm font-medium text-[var(--text-secondary)]')}>Progress Timeline</p>
+                      <h2 className={g('mt-1 text-lg font-semibold text-[var(--text-primary)]', 'mt-1 text-lg font-semibold text-[var(--text-primary)]')}>Timeline</h2>
                     </div>
                     <button
                       onClick={() => setTimelineExpanded(!timelineExpanded)}
-                      className={g('inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-base font-semibold text-black transition hover:bg-slate-100', 'inline-flex items-center justify-center rounded-2xl border border-white/15 bg-white/10 px-3 py-2 text-base font-semibold text-white backdrop-blur-md transition hover:bg-white/15')}
+                      className={g('inline-flex items-center justify-center rounded-2xl border border-[var(--glass-border)] bg-slate-50 px-3 py-2 text-base font-semibold text-[var(--text-primary)] transition hover:bg-slate-100', 'inline-flex items-center justify-center rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg)] px-3 py-2 text-base font-semibold text-[var(--text-primary)] backdrop-blur-md transition hover:bg-[var(--glass-bg-strong)]')}
                     >
                       {timelineExpanded ? (
                         <>
@@ -1373,18 +1355,18 @@ const ProjectDetails = ({ isAdminView = false }) => {
                       </div>
                     </div>
                   ) : (
-                    <div className={g('mt-4 rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4 text-base text-black', 'relative mt-4 rounded-2xl border border-dashed border-white/15 bg-white/10 p-4 text-base text-slate-300')}>
+                    <div className={g('mt-4 rounded-2xl border border-dashed border-[var(--glass-border)] bg-slate-50 p-4 text-base text-[var(--text-primary)]', 'relative mt-4 rounded-2xl border border-dashed border-[var(--glass-border)] bg-[var(--glass-bg)] p-4 text-base text-[var(--text-secondary)]')}>
                       Open the timeline to select a node.
                     </div>
                   )}
                 </section>
 
-                <section className={g('rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm', 'relative overflow-hidden rounded-[1.75rem] border border-white/20 bg-white/10 p-5 shadow-[0_8px_32px_rgba(0,0,0,0.25)] backdrop-blur-2xl backdrop-saturate-150')}>
-                  {!isAdminView && <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/[0.12] to-transparent" />}
-                  <div className={g('flex items-start justify-between gap-4 border-b border-slate-200 pb-4', 'relative flex items-start justify-between gap-4 border-b border-white/15 pb-4')}>
+                <section className={g('rounded-[1.75rem] border border-[var(--glass-border)] bg-white p-5 shadow-sm', 'relative overflow-hidden rounded-[1.75rem] border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] p-5 shadow-[var(--card-shadow)] backdrop-blur-2xl backdrop-saturate-150')}>
+                  {!isAdminView && <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-[var(--glass-sheen)] to-transparent" />}
+                  <div className={g('flex items-start justify-between gap-4 border-b border-[var(--glass-border)] pb-4', 'relative flex items-start justify-between gap-4 border-b border-[var(--glass-border)] pb-4')}>
                     <div>
-                      <p className={g('text-sm font-medium text-black', 'text-sm font-medium text-slate-300')}>Checkpoint Details</p>
-                      <h2 className={g('mt-1 text-lg font-semibold text-black', 'mt-1 text-lg font-semibold text-white')}>
+                      <p className={g('text-sm font-medium text-[var(--text-primary)]', 'text-sm font-medium text-[var(--text-secondary)]')}>Checkpoint Details</p>
+                      <h2 className={g('mt-1 text-lg font-semibold text-[var(--text-primary)]', 'mt-1 text-lg font-semibold text-[var(--text-primary)]')}>
                         {selectedNode ? selectedNode.title : 'No node selected'}
                       </h2>
                     </div>
@@ -1392,9 +1374,9 @@ const ProjectDetails = ({ isAdminView = false }) => {
                       <span className={[
                         "rounded-full px-3 py-1 text-sm font-semibold",
                         selectedNode.status === 'deleted'
-                          ? g('bg-slate-100 text-slate-400', 'border border-white/10 bg-white/5 text-slate-500')
+                          ? g('bg-slate-100 text-[var(--text-muted)]', 'border border-[var(--glass-border)] bg-[var(--glass-bg-subtle)] text-[var(--text-muted)]')
                           : selectedNode === inProgressNode
-                            ? g('bg-slate-100 text-slate-700', 'border border-white/25 bg-white/15 text-white')
+                            ? g('bg-slate-100 text-[var(--text-secondary)]', 'border border-[var(--glass-border-strong)] bg-[var(--glass-bg-strong)] text-[var(--text-primary)]')
                             : g('bg-emerald-100 text-emerald-700', 'border border-emerald-400/40 bg-emerald-500/20 text-emerald-300'),
                       ].join(" ")}>
                         {selectedNode.status === 'deleted' ? 'Deleted' : selectedNode === inProgressNode ? 'Active' : 'Completed'}
@@ -1405,45 +1387,45 @@ const ProjectDetails = ({ isAdminView = false }) => {
                   {selectedNode ? (
                     <div className="relative mt-4 space-y-4">
                       <div className="grid grid-cols-2 gap-3">
-                        <div className={g('rounded-2xl border border-slate-200 bg-slate-50 p-3', 'rounded-2xl border border-white/10 bg-white/10 p-3')}>
-                          <p className={g('text-sm uppercase text-black', 'text-sm uppercase text-slate-300')}>Date</p>
-                          <p className={g('mt-1 text-base font-semibold text-black', 'mt-1 text-base font-semibold text-white')}>
+                        <div className={g('rounded-2xl border border-[var(--glass-border)] bg-slate-50 p-3', 'rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg)] p-3')}>
+                          <p className={g('text-sm uppercase text-[var(--text-primary)]', 'text-sm uppercase text-[var(--text-secondary)]')}>Date</p>
+                          <p className={g('mt-1 text-base font-semibold text-[var(--text-primary)]', 'mt-1 text-base font-semibold text-[var(--text-primary)]')}>
                             {formatDate(selectedNode.createdAt)}
                           </p>
                         </div>
-                        <div className={g('rounded-2xl border border-slate-200 bg-slate-50 p-3', 'rounded-2xl border border-white/10 bg-white/10 p-3')}>
-                          <p className={g('text-sm uppercase text-black', 'text-sm uppercase text-slate-300')}>Updates</p>
-                          <p className={g('mt-1 text-base font-semibold text-black', 'mt-1 text-base font-semibold text-white')}>{selectedNodeMessages.length}</p>
+                        <div className={g('rounded-2xl border border-[var(--glass-border)] bg-slate-50 p-3', 'rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg)] p-3')}>
+                          <p className={g('text-sm uppercase text-[var(--text-primary)]', 'text-sm uppercase text-[var(--text-secondary)]')}>Updates</p>
+                          <p className={g('mt-1 text-base font-semibold text-[var(--text-primary)]', 'mt-1 text-base font-semibold text-[var(--text-primary)]')}>{selectedNodeMessages.length}</p>
                         </div>
                       </div>
 
-                      <div className={g('rounded-[1.25rem] border border-slate-200 bg-slate-50 p-4', 'rounded-[1.25rem] border border-white/10 bg-white/10 p-4')}>
-                        <p className={g('text-base font-semibold text-black', 'text-base font-semibold text-white')}>Textual Record</p>
+                      <div className={g('rounded-[1.25rem] border border-[var(--glass-border)] bg-slate-50 p-4', 'rounded-[1.25rem] border border-[var(--glass-border)] bg-[var(--glass-bg)] p-4')}>
+                        <p className={g('text-base font-semibold text-[var(--text-primary)]', 'text-base font-semibold text-[var(--text-primary)]')}>Textual Record</p>
                         <div className="mt-3 space-y-3">
                           {selectedNodeMessages.length > 0 ? (
                             selectedNodeMessages.map((message, index) => (
-                              <div key={message._id || message.id || `${selectedNode.nodeId}-message-${index}`} className={g('rounded-2xl border border-slate-200 bg-white p-3', 'rounded-2xl border border-white/15 bg-white/10 p-3')}>
+                              <div key={message._id || message.id || `${selectedNode.nodeId}-message-${index}`} className={g('rounded-2xl border border-[var(--glass-border)] bg-white p-3', 'rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg)] p-3')}>
                                 <div className="flex items-center justify-between gap-3">
-                                  <p className={g('text-base font-semibold text-black', 'text-base font-semibold text-white')}>
+                                  <p className={g('text-base font-semibold text-[var(--text-primary)]', 'text-base font-semibold text-[var(--text-primary)]')}>
                                     {message.checkpointName || selectedNode.title}
                                   </p>
-                                  <p className={g('text-sm text-black', 'text-sm text-slate-300')}>
+                                  <p className={g('text-sm text-[var(--text-primary)]', 'text-sm text-[var(--text-secondary)]')}>
                                     {message.timestamp ? formatDateTime(message.timestamp) : 'No date'}
                                   </p>
                                 </div>
-                                <p className={g('mt-2 whitespace-pre-line text-base text-black', 'mt-2 whitespace-pre-line text-base text-slate-200')}>
+                                <p className={g('mt-2 whitespace-pre-line text-base text-[var(--text-primary)]', 'mt-2 whitespace-pre-line text-base text-[var(--text-secondary)]')}>
                                   {message.message || message.remark || message.notes || 'No textual details available.'}
                                 </p>
                               </div>
                             ))
                           ) : (
-                            <p className={g('text-base text-black', 'text-base text-slate-300')}>No textual record is linked to this node yet.</p>
+                            <p className={g('text-base text-[var(--text-primary)]', 'text-base text-[var(--text-secondary)]')}>No textual record is linked to this node yet.</p>
                           )}
                         </div>
                       </div>
                     </div>
                   ) : (
-                    <div className={g('mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-base text-black', 'relative mt-4 rounded-2xl border border-white/10 bg-white/10 p-4 text-base text-slate-300')}>
+                    <div className={g('mt-4 rounded-2xl border border-[var(--glass-border)] bg-slate-50 p-4 text-base text-[var(--text-primary)]', 'relative mt-4 rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg)] p-4 text-base text-[var(--text-secondary)]')}>
                       Timeline data is not available yet.
                     </div>
                   )}

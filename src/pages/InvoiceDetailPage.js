@@ -8,7 +8,6 @@ import Context from '../context';
 import displayINRCurrency from '../helpers/displayCurrency';
 import DashboardLayout from '../components/DashboardLayout';
 import TriangleMazeLoader from '../components/TriangleMazeLoader';
-import backgroundImage from '../assets/BG.png';
 import { getOrderDisplayName } from '../helpers/orderPresentation';
 import { isPlanItem } from '../helpers/orderType';
 import { goToCustomerReturn } from '../helpers/customerReturnNavigation';
@@ -30,7 +29,7 @@ const INVOICE_STATUS_META = {
   partially_paid: { label: 'Partially Paid', tone: 'border-amber-400/40 bg-amber-500/20 text-amber-300', Icon: CalendarClock },
   unpaid: { label: 'Due', tone: 'border-amber-400/40 bg-amber-500/20 text-amber-300', Icon: CalendarClock },
   overdue: { label: 'Overdue', tone: 'border-red-400/40 bg-red-500/20 text-red-300', Icon: XCircle },
-  cancelled: { label: 'Cancelled', tone: 'border-white/15 bg-white/10 text-slate-300', Icon: XCircle },
+  cancelled: { label: 'Cancelled', tone: 'border-[var(--glass-border)] bg-[var(--glass-bg)] text-[var(--text-secondary)]', Icon: XCircle },
 };
 
 // TEMP UI-preview only — matches OrderDetailPage.js's DUMMY_INVOICES. Remove both once
@@ -259,16 +258,15 @@ const InvoiceDetailPage = () => {
     return (
       <DashboardLayout user={user}>
         <div
-          className="relative min-h-[calc(100vh-4rem)] overflow-hidden bg-slate-950 bg-cover bg-center px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
-          style={{ backgroundImage: `url(${backgroundImage})` }}
+          className="relative min-h-[calc(100vh-4rem)] overflow-hidden px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
         >
-          <div className="pointer-events-none absolute inset-0 bg-slate-950/40" />
-          <div className="relative mx-auto max-w-3xl rounded-[1.75rem] border border-white/20 bg-white/10 p-8 text-center shadow-[0_8px_32px_rgba(0,0,0,0.25)] backdrop-blur-2xl backdrop-saturate-150">
+          <div className="pointer-events-none absolute inset-0 bg-[var(--scrim)]" />
+          <div className="relative mx-auto max-w-3xl rounded-[1.75rem] border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] p-8 text-center shadow-[var(--card-shadow)] backdrop-blur-2xl backdrop-saturate-150">
             <h2 className="text-lg font-semibold text-red-400 mb-2">Invoice Not Found</h2>
-            <p className="text-base text-slate-300 mb-4">The invoice you're looking for doesn't exist or you don't have access to it.</p>
+            <p className="text-base text-[var(--text-secondary)] mb-4">The invoice you're looking for doesn't exist or you don't have access to it.</p>
             <button
               onClick={handleBack}
-              className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-base font-semibold"
+              className="px-4 py-2 bg-emerald-600 text-[var(--text-primary)] rounded-lg hover:bg-emerald-700 text-base font-semibold"
             >
               Back
             </button>
@@ -283,17 +281,16 @@ const InvoiceDetailPage = () => {
   return (
     <DashboardLayout user={user}>
       <div
-        className="relative min-h-[calc(100vh-4rem)] overflow-hidden bg-slate-950 bg-cover bg-center px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
-        style={{ backgroundImage: `url(${backgroundImage})` }}
+        className="relative min-h-[calc(100vh-4rem)] overflow-hidden px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
       >
-        <div className="pointer-events-none absolute inset-0 bg-slate-950/40" />
+        <div className="pointer-events-none absolute inset-0 bg-[var(--scrim)]" />
 
         <div className="relative mx-auto flex w-full max-w-7xl flex-col gap-4">
           <div className="relative flex items-center justify-center">
             <button
               type="button"
               onClick={handleBack}
-              className="absolute left-0 inline-flex w-fit shrink-0 items-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-5 py-3 text-lg font-semibold text-white backdrop-blur-md transition hover:bg-white/15"
+              className="absolute left-0 inline-flex w-fit shrink-0 items-center gap-2 rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg)] px-5 py-3 text-lg font-semibold text-[var(--text-primary)] backdrop-blur-md transition hover:bg-[var(--glass-bg-strong)]"
             >
               <ChevronLeft className="h-5 w-5" />
               Back
@@ -304,10 +301,10 @@ const InvoiceDetailPage = () => {
                 <Sparkles className="h-3.5 w-3.5" />
                 Invoice
               </div>
-              <h1 className="mt-3 text-2xl font-bold tracking-tight text-white sm:text-3xl lg:text-4xl">
+              <h1 className="mt-3 text-2xl font-bold tracking-tight text-[var(--text-primary)] sm:text-3xl lg:text-4xl">
                 {invoice.invoiceNumber}
               </h1>
-              <p className="mt-1 text-base text-slate-300 sm:text-lg">
+              <p className="mt-1 text-base text-[var(--text-secondary)] sm:text-lg">
                 {getOrderDisplayName(invoice.orderId, 'Plan')}
               </p>
             </div>
@@ -320,31 +317,31 @@ const InvoiceDetailPage = () => {
             </span>
           </div>
 
-          <div className="relative mx-auto w-full max-w-xl overflow-hidden rounded-[1.75rem] border border-white/20 bg-white/10 p-5 shadow-[0_8px_32px_rgba(0,0,0,0.25)] backdrop-blur-2xl backdrop-saturate-150 sm:p-6">
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/[0.12] to-transparent" />
+          <div className="relative mx-auto w-full max-w-xl overflow-hidden rounded-[1.75rem] border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] p-5 shadow-[var(--card-shadow)] backdrop-blur-2xl backdrop-saturate-150 sm:p-6">
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-[var(--glass-sheen)] to-transparent" />
             <div className="relative space-y-2">
-              <div className="flex items-center justify-between rounded-2xl bg-white/5 px-4 py-2.5 text-base">
-                <span className="text-slate-300">Amount</span>
-                <span className="font-semibold text-white">₹{invoice.amount.toLocaleString()}</span>
+              <div className="flex items-center justify-between rounded-2xl bg-[var(--glass-bg-subtle)] px-4 py-2.5 text-base">
+                <span className="text-[var(--text-secondary)]">Amount</span>
+                <span className="font-semibold text-[var(--text-primary)]">₹{invoice.amount.toLocaleString()}</span>
               </div>
-              <div className="flex items-center justify-between rounded-2xl bg-white/5 px-4 py-2.5 text-base">
-                <span className="text-slate-300">Invoice Date</span>
-                <span className="font-medium text-white">{formatDate(invoice.invoiceDate)}</span>
+              <div className="flex items-center justify-between rounded-2xl bg-[var(--glass-bg-subtle)] px-4 py-2.5 text-base">
+                <span className="text-[var(--text-secondary)]">Invoice Date</span>
+                <span className="font-medium text-[var(--text-primary)]">{formatDate(invoice.invoiceDate)}</span>
               </div>
-              <div className="flex items-center justify-between rounded-2xl bg-white/5 px-4 py-2.5 text-base">
-                <span className="text-slate-300">Due Date</span>
-                <span className="font-medium text-white">{formatDate(invoice.dueDate)}</span>
+              <div className="flex items-center justify-between rounded-2xl bg-[var(--glass-bg-subtle)] px-4 py-2.5 text-base">
+                <span className="text-[var(--text-secondary)]">Due Date</span>
+                <span className="font-medium text-[var(--text-primary)]">{formatDate(invoice.dueDate)}</span>
               </div>
               {invoice.status === 'paid' && (
-                <div className="flex items-center justify-between rounded-2xl bg-white/5 px-4 py-2.5 text-base">
-                  <span className="text-slate-300">Paid Date</span>
-                  <span className="font-medium text-white">{formatDate(invoice.paidDate)}</span>
+                <div className="flex items-center justify-between rounded-2xl bg-[var(--glass-bg-subtle)] px-4 py-2.5 text-base">
+                  <span className="text-[var(--text-secondary)]">Paid Date</span>
+                  <span className="font-medium text-[var(--text-primary)]">{formatDate(invoice.paidDate)}</span>
                 </div>
               )}
               {invoice.paymentMethod && (
-                <div className="flex items-center justify-between rounded-2xl bg-white/5 px-4 py-2.5 text-base">
-                  <span className="text-slate-300">Payment Method</span>
-                  <span className="font-medium capitalize text-white">{invoice.paymentMethod}</span>
+                <div className="flex items-center justify-between rounded-2xl bg-[var(--glass-bg-subtle)] px-4 py-2.5 text-base">
+                  <span className="text-[var(--text-secondary)]">Payment Method</span>
+                  <span className="font-medium capitalize text-[var(--text-primary)]">{invoice.paymentMethod}</span>
                 </div>
               )}
             </div>
@@ -357,16 +354,16 @@ const InvoiceDetailPage = () => {
               {isStatement ? (
                 invoiceDocumentUrl && (
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                    <a href={`${invoiceDocumentUrl}/view`} target="_blank" rel="noopener noreferrer" className="rounded-lg border border-emerald-300/60 py-3 text-center text-base font-medium text-emerald-100 hover:bg-white/10">View Invoice</a>
-                    <a href={`${invoiceDocumentUrl}/download`} className="rounded-lg bg-emerald-600 py-3 text-center text-base font-medium text-white hover:bg-emerald-700">Download Invoice</a>
-                    <button type="button" onClick={handleShareInvoice} disabled={sharingInvoice} className="inline-flex items-center justify-center gap-2 rounded-lg border border-emerald-300/60 py-3 text-base font-medium text-emerald-100 hover:bg-white/10 disabled:opacity-60"><Share2 size={17} />{sharingInvoice ? 'Preparing…' : 'Share'}</button>
+                    <a href={`${invoiceDocumentUrl}/view`} target="_blank" rel="noopener noreferrer" className="rounded-lg border border-emerald-300/60 py-3 text-center text-base font-medium text-emerald-100 hover:bg-[var(--glass-bg)]">View Invoice</a>
+                    <a href={`${invoiceDocumentUrl}/download`} className="rounded-lg bg-emerald-600 py-3 text-center text-base font-medium text-[var(--text-primary)] hover:bg-emerald-700">Download Invoice</a>
+                    <button type="button" onClick={handleShareInvoice} disabled={sharingInvoice} className="inline-flex items-center justify-center gap-2 rounded-lg border border-emerald-300/60 py-3 text-base font-medium text-emerald-100 hover:bg-[var(--glass-bg)] disabled:opacity-60"><Share2 size={17} />{sharingInvoice ? 'Preparing…' : 'Share'}</button>
                   </div>
                 )
               ) : (
                 invoice.status !== 'cancelled' && !isStatement && amountDueNow > 0 && (
                   <button
                     onClick={() => { setShowPayment(true); setShowQR(false); }}
-                    className="w-full rounded-lg bg-emerald-600 py-3 text-base font-medium text-white hover:bg-emerald-700"
+                    className="w-full rounded-lg bg-emerald-600 py-3 text-base font-medium text-[var(--text-primary)] hover:bg-emerald-700"
                   >
                     Pay Now
                   </button>
@@ -379,21 +376,21 @@ const InvoiceDetailPage = () => {
 
       {showPayment && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-md rounded-[1.5rem] border border-white/15 bg-slate-900/95 p-6 text-white shadow-2xl backdrop-blur-2xl">
+          <div className="w-full max-w-md rounded-[1.5rem] border border-[var(--glass-border)] bg-[var(--menu-bg)] p-6 text-[var(--text-primary)] shadow-2xl backdrop-blur-2xl">
             {!showQR ? (
               <>
                 <h3 className="text-lg font-bold">Pay Invoice {invoice.invoiceNumber}</h3>
                 <div className="mt-4 space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-slate-300">Amount due</span>
-                    <span className="font-semibold text-white">{displayINRCurrency(amountDueNow)}</span>
+                    <span className="text-[var(--text-secondary)]">Amount due</span>
+                    <span className="font-semibold text-[var(--text-primary)]">{displayINRCurrency(amountDueNow)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-300">Wallet balance</span>
+                    <span className="text-[var(--text-secondary)]">Wallet balance</span>
                     <span className="font-semibold text-emerald-300">{displayINRCurrency(context?.walletBalance || 0)}</span>
                   </div>
                 </div>
-                <p className="mt-3 text-xs text-slate-400">
+                <p className="mt-3 text-xs text-[var(--text-muted)]">
                   {(context?.walletBalance || 0) >= amountDueNow
                     ? 'Your wallet covers this amount. It will be deducted and sent for admin approval.'
                     : 'Not enough wallet balance — you will pay via UPI QR next.'}
@@ -402,14 +399,14 @@ const InvoiceDetailPage = () => {
                   <button
                     onClick={() => setShowPayment(false)}
                     disabled={payProcessing}
-                    className="flex-1 rounded-lg border border-white/20 py-2.5 text-sm font-semibold text-slate-200 hover:bg-white/10 disabled:opacity-60"
+                    className="flex-1 rounded-lg border border-[var(--glass-border-strong)] py-2.5 text-sm font-semibold text-[var(--text-secondary)] hover:bg-[var(--glass-bg)] disabled:opacity-60"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleConfirmPayment}
                     disabled={payProcessing}
-                    className="flex-1 rounded-lg bg-emerald-600 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
+                    className="flex-1 rounded-lg bg-emerald-600 py-2.5 text-sm font-semibold text-[var(--text-primary)] hover:bg-emerald-700 disabled:opacity-60"
                   >
                     {payProcessing
                       ? 'Processing...'
@@ -425,7 +422,7 @@ const InvoiceDetailPage = () => {
                 <div className="mt-4 flex justify-center rounded-2xl bg-white p-4">
                   <QRCodeSVG value={upiLink} size={190} />
                 </div>
-                <label className="mt-4 block text-sm font-medium text-slate-200">
+                <label className="mt-4 block text-sm font-medium text-[var(--text-secondary)]">
                   UPI Transaction ID
                 </label>
                 <input
@@ -433,20 +430,20 @@ const InvoiceDetailPage = () => {
                   value={upiRef}
                   onChange={(event) => setUpiRef(event.target.value)}
                   placeholder="Enter the UPI reference after paying"
-                  className="mt-1.5 w-full rounded-lg border border-white/20 bg-white/5 px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-emerald-400 focus:outline-none"
+                  className="mt-1.5 w-full rounded-lg border border-[var(--glass-border-strong)] bg-[var(--glass-bg-subtle)] px-3 py-2.5 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-emerald-400 focus:outline-none"
                 />
                 <div className="mt-5 flex gap-3">
                   <button
                     onClick={() => setShowQR(false)}
                     disabled={payProcessing}
-                    className="flex-1 rounded-lg border border-white/20 py-2.5 text-sm font-semibold text-slate-200 hover:bg-white/10 disabled:opacity-60"
+                    className="flex-1 rounded-lg border border-[var(--glass-border-strong)] py-2.5 text-sm font-semibold text-[var(--text-secondary)] hover:bg-[var(--glass-bg)] disabled:opacity-60"
                   >
                     Back
                   </button>
                   <button
                     onClick={handleVerifyUpi}
                     disabled={payProcessing}
-                    className="flex-1 rounded-lg bg-emerald-600 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
+                    className="flex-1 rounded-lg bg-emerald-600 py-2.5 text-sm font-semibold text-[var(--text-primary)] hover:bg-emerald-700 disabled:opacity-60"
                   >
                     {payProcessing ? 'Submitting...' : 'Submit for Approval'}
                   </button>

@@ -68,15 +68,15 @@ const StartNewProjectDetail = () => {
 
   return (
     <DashboardLayout user={user}>
-      <div className="w-full bg-slate-50 px-4 py-4 pb-8 sm:px-6 lg:px-8 lg:pb-10">
+      <div className="w-full px-4 py-4 pb-8 sm:px-6 lg:px-8 lg:pb-10">
         <div className="mx-auto flex w-full max-w-7xl flex-col gap-4">
           {!loaded ? null : !project ? (
-            <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white px-5 py-10 text-center shadow-sm">
-              <p className="text-base text-black">Project not found.</p>
+            <div className="glass-panel overflow-hidden rounded-[2rem] px-5 py-10 text-center">
+              <p className="text-base text-[var(--text-primary)]">Project not found.</p>
               <button
                 type="button"
                 onClick={handleBack}
-                className="mt-4 rounded-2xl bg-slate-900 px-4 py-2 text-base font-semibold text-white hover:bg-slate-800"
+                className="mt-4 rounded-2xl bg-[rgb(var(--ink-rgb))] px-4 py-2 text-base font-semibold text-[var(--page-bg)] transition hover:bg-[rgb(var(--ink-rgb)/0.85)]"
               >
                 Back to Projects
               </button>

@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { ChevronDown, HelpCircle } from "lucide-react";
 
+import ThemeSwitch from "./ThemeSwitch";
+
 /**
  * Slim portal top bar: MeraSoftware logo (left) + profile dropdown (right).
  * No nav links or cart here — navigation lives in the sidebar. Reuses the
@@ -11,12 +13,17 @@ import { ChevronDown, HelpCircle } from "lucide-react";
  * Rendered full-width at the very top of both portals, above the sidebar
  * (height h-16 = 64px, which is why the sidebars sit at top-16).
  */
-const PortalHeader = ({ user, portalLabel = "Portal", dashboardTo = "/dashboard", onLogout, showProfileLink = true, links = [] }) => {
+const PortalHeader = ({ user, portalLabel = "Portal", dashboardTo = "/dashboard", onLogout, showProfileLink = true, showThemeSwitch = false, links = [] }) => {
   const menuRef = useRef(null);
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [demoInfoOpen, setDemoInfoOpen] = useState(false);
   const userInitial = (user?.name || "A").trim().charAt(0).toUpperCase();
+
+  // Only the customer portal opts in (showThemeSwitch). The admin panel passes
+  // nothing and so keeps the original fixed-dark classes untouched.
+  const themed = showThemeSwitch;
+  const c = (adminClass, themedClass) => (themed ? themedClass : adminClass);
 
   const isLinkActive = (to) =>
     location.pathname === to || location.pathname.startsWith(`${to}/`);
@@ -32,15 +39,15 @@ const PortalHeader = ({ user, portalLabel = "Portal", dashboardTo = "/dashboard"
   }, []);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-white/10 bg-slate-950/95 backdrop-blur">
+    <header className={`sticky top-0 z-50 border-b backdrop-blur ${c("border-white/10 bg-slate-950/95", "border-[var(--glass-border)] bg-[var(--header-bg)]")}`}>
       <div className="mx-auto flex h-16 max-w-[120rem] items-center justify-between gap-6 px-4 sm:px-6 lg:px-8">
         <Link to={dashboardTo} className="flex shrink-0 items-center gap-3">
           <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500 font-bold text-white">
             M
           </span>
           <div className="hidden sm:block">
-            <p className="text-sm font-bold leading-tight text-white">MeraSoftware</p>
-            <p className="text-[11px] leading-tight text-slate-400">{portalLabel}</p>
+            <p className={`text-sm font-bold leading-tight ${c("text-white", "text-[var(--text-primary)]")}`}>MeraSoftware</p>
+            <p className={`text-[11px] leading-tight ${c("text-slate-400", "text-[var(--text-muted)]")}`}>{portalLabel}</p>
           </div>
         </Link>
 
@@ -87,7 +94,7 @@ const PortalHeader = ({ user, portalLabel = "Portal", dashboardTo = "/dashboard"
                 className={`whitespace-nowrap rounded-xl px-3 py-2 text-sm font-semibold transition ${
                   isLinkActive(to)
                     ? "bg-emerald-500 text-black"
-                    : "text-slate-300 hover:bg-white/10 hover:text-white"
+                    : c("text-slate-300 hover:bg-white/10 hover:text-white", "text-[var(--text-secondary)] hover:bg-[var(--glass-bg-hover)] hover:text-[var(--text-primary)]")
                 }`}
               >
                 {label}
@@ -95,6 +102,8 @@ const PortalHeader = ({ user, portalLabel = "Portal", dashboardTo = "/dashboard"
             ))}
           </nav>
         ) : null}
+
+        {showThemeSwitch ? <ThemeSwitch /> : null}
 
         <div
           className="relative"
@@ -106,7 +115,7 @@ const PortalHeader = ({ user, portalLabel = "Portal", dashboardTo = "/dashboard"
             <button
               type="button"
               onClick={() => setMenuOpen((open) => !open)}
-              className="flex items-center gap-2 rounded-xl px-2 py-1.5 transition hover:bg-white/10"
+              className={`flex items-center gap-2 rounded-xl px-2 py-1.5 transition ${c("hover:bg-white/10", "hover:bg-[var(--glass-bg-hover)]")}`}
               aria-label="Open profile menu"
             >
               {user?.profilePic ? (
@@ -116,16 +125,16 @@ const PortalHeader = ({ user, portalLabel = "Portal", dashboardTo = "/dashboard"
                   className="h-9 w-9 rounded-full object-cover"
                 />
               ) : (
-                <span className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-white/15 bg-white/10 text-sm font-bold text-white">
+                <span className={`flex h-9 w-9 items-center justify-center rounded-full border-2 text-sm font-bold ${c("border-white/15 bg-white/10 text-white", "border-[var(--glass-border)] bg-[var(--glass-bg)] text-[var(--text-primary)]")}`}>
                   {userInitial}
                 </span>
               )}
-              <span className="hidden max-w-28 truncate text-sm font-semibold text-slate-200 sm:block">
+              <span className={`hidden max-w-28 truncate text-sm font-semibold sm:block ${c("text-slate-200", "text-[var(--text-secondary)]")}`}>
                 {user?.name || "Account"}
               </span>
               <ChevronDown
                 size={16}
-                className={`text-slate-400 transition ${menuOpen ? "rotate-180" : ""}`}
+                className={`${c("text-slate-400", "text-[var(--text-muted)]")} transition ${menuOpen ? "rotate-180" : ""}`}
               />
             </button>
           ) : (
@@ -138,21 +147,21 @@ const PortalHeader = ({ user, portalLabel = "Portal", dashboardTo = "/dashboard"
           )}
 
           {menuOpen && user ? (
-            <div className="absolute right-0 top-12 w-56 rounded-2xl border border-white/10 bg-slate-900 p-2 shadow-xl">
-              <div className="border-b border-white/10 px-3 py-2">
+            <div className={`absolute right-0 top-12 w-56 rounded-2xl border p-2 shadow-xl ${c("border-white/10 bg-slate-900", "border-[var(--glass-border)] bg-[var(--menu-bg)]")}`}>
+              <div className={`border-b px-3 py-2 ${c("border-white/10", "border-[var(--glass-border)]")}`}>
                 <div className="flex items-center gap-2">
-                  <p className="truncate text-sm font-semibold text-white">{user.name || "Account"}</p>
+                  <p className={`truncate text-sm font-semibold ${c("text-white", "text-[var(--text-primary)]")}`}>{user.name || "Account"}</p>
                   {user.isGuest ? (
                     <span className="shrink-0 rounded-full bg-purple-500/20 px-2 py-0.5 text-[10px] font-semibold text-purple-200">
                       Guest
                     </span>
                   ) : null}
                 </div>
-                <p className="truncate text-xs text-slate-400">{user.email || ""}</p>
+                <p className={`truncate text-xs ${c("text-slate-400", "text-[var(--text-muted)]")}`}>{user.email || ""}</p>
               </div>
               <Link
                 to={dashboardTo}
-                className="mt-1 block rounded-xl px-3 py-2 text-sm font-medium text-slate-200 hover:bg-white/10"
+                className={`mt-1 block rounded-xl px-3 py-2 text-sm font-medium ${c("text-slate-200 hover:bg-white/10", "text-[var(--text-secondary)] hover:bg-[var(--glass-bg-hover)]")}`}
                 onClick={() => setMenuOpen(false)}
               >
                 Dashboard
@@ -160,7 +169,7 @@ const PortalHeader = ({ user, portalLabel = "Portal", dashboardTo = "/dashboard"
               {showProfileLink ? (
                 <Link
                   to="/profile"
-                  className="mt-1 block rounded-xl px-3 py-2 text-sm font-medium text-slate-200 hover:bg-white/10"
+                  className={`mt-1 block rounded-xl px-3 py-2 text-sm font-medium ${c("text-slate-200 hover:bg-white/10", "text-[var(--text-secondary)] hover:bg-[var(--glass-bg-hover)]")}`}
                   onClick={() => setMenuOpen(false)}
                 >
                   Profile

@@ -5,7 +5,6 @@ import SummaryApi from '../common';
 import imageTobase64 from '../helpers/imageTobase64';
 import { toast } from 'sonner';
 import DashboardLayout from '../components/DashboardLayout';
-import backgroundImage from '../assets/BG.png';
 import {
   CheckCircle,
   ArrowRight,
@@ -282,8 +281,8 @@ const CompleteProfile = ({ user, onKycComplete, onCancel, initialData }) => {
             <div
               className={`flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 ${
                 currentStep >= step.id
-                  ? 'bg-blue-600 border-blue-600 text-white'
-                  : 'bg-gray-100 border-gray-300 text-gray-400'
+                  ? 'bg-blue-600 border-blue-600 text-[var(--text-primary)]'
+                  : 'bg-[var(--field-bg)] border-[var(--field-border)] text-[var(--text-muted)]'
               }`}
             >
               {currentStep > step.id ? (
@@ -295,7 +294,7 @@ const CompleteProfile = ({ user, onKycComplete, onCancel, initialData }) => {
             <div className="hidden sm:block">
               <span
                 className={`ml-2 text-sm font-medium ${
-                  currentStep >= step.id ? 'text-blue-600' : 'text-gray-400'
+                  currentStep >= step.id ? 'text-blue-600' : 'text-[var(--text-muted)]'
                 }`}
               >
                 {step.title}
@@ -303,7 +302,7 @@ const CompleteProfile = ({ user, onKycComplete, onCancel, initialData }) => {
             </div>
             {index < steps.length - 1 && (
               <div className="flex-1 mx-2 sm:mx-4">
-                <div className={`h-0.5 ${currentStep > step.id ? 'bg-blue-600' : 'bg-gray-300'}`} />
+                <div className={`h-0.5 ${currentStep > step.id ? 'bg-blue-600' : 'bg-[var(--glass-bg-strong)]'}`} />
               </div>
             )}
           </div>
@@ -318,55 +317,55 @@ const renderCurrentStep = () => {
             case 1:
                 return (
                     <div className="space-y-4 sm:space-y-6">
-                        <h2 className="text-xl font-bold text-black mb-4 sm:mb-6">Basic Details</h2>
+                        <h2 className="text-xl font-bold text-[var(--text-primary)] mb-4 sm:mb-6">Basic Details</h2>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                             <div>
-                                <label className="block text-base font-medium text-black mb-2">Full Name</label>
+                                <label className="block text-base font-medium text-[var(--text-primary)] mb-2">Full Name</label>
                                 <input
                                     type="text"
                                     value={basicDetails.name}
                                     onChange={(e) => setBasicDetails((prev) => ({ ...prev, name: e.target.value }))}
                                     autoComplete="name"
-                                    className="w-full px-3 py-2 sm:px-4 sm:py-3 border border-gray-300 rounded-lg text-black"
+                                    className="w-full px-3 py-2 sm:px-4 sm:py-3 border border-[var(--field-border)] rounded-lg text-[var(--text-primary)]"
                                 />
                             </div>
                             <div>
-                                <label className="block text-base font-medium text-black mb-2">Email Address</label>
+                                <label className="block text-base font-medium text-[var(--text-primary)] mb-2">Email Address</label>
                                 <input
                                     type="email"
                                     value={basicDetails.email}
                                     disabled
-                                    className="w-full px-3 py-2 sm:px-4 sm:py-3 border border-gray-300 rounded-lg bg-gray-100 text-black"
+                                    className="w-full px-3 py-2 sm:px-4 sm:py-3 border border-[var(--field-border)] rounded-lg bg-[var(--field-bg)] text-[var(--text-primary)]"
                                 />
                             </div>
                             {/* REMOVE PHONE FIELD */}
                             {/* <div>
-                                <label className="block text-base font-medium text-black mb-2">Phone Number *</label>
+                                <label className="block text-base font-medium text-[var(--text-primary)] mb-2">Phone Number *</label>
                                 <input
                                     type="tel"
                                     value={basicDetails.phone}
                                     onChange={(e) => setBasicDetails((prev) => ({ ...prev, phone: e.target.value }))}
-                                    className="w-full px-3 py-2 sm:px-4 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    className="w-full px-3 py-2 sm:px-4 sm:py-3 border border-[var(--field-border)] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                     placeholder="Enter your phone number"
                                     autoComplete="tel"
                                 />
                             </div> */}
                             <div>
-                                <label className="block text-base font-medium text-black mb-2">Date of Birth *</label>
+                                <label className="block text-base font-medium text-[var(--text-primary)] mb-2">Date of Birth *</label>
                                 <input
                                     type="date"
                                     value={basicDetails.dob}
                                     onChange={handleDobChange}
-                                    className="w-full px-3 py-2 sm:px-4 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    className="w-full px-3 py-2 sm:px-4 sm:py-3 border border-[var(--field-border)] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                 />
                             </div>
                             <div>
-                                <label className="block text-base font-medium text-black mb-2">Age</label>
+                                <label className="block text-base font-medium text-[var(--text-primary)] mb-2">Age</label>
                                 <input
                                     type="number"
                                     value={basicDetails.age}
                                     readOnly
-                                    className="w-full px-3 py-2 sm:px-4 sm:py-3 border border-gray-300 rounded-lg bg-gray-100 text-black"
+                                    className="w-full px-3 py-2 sm:px-4 sm:py-3 border border-[var(--field-border)] rounded-lg bg-[var(--field-bg)] text-[var(--text-primary)]"
                                 />
                             </div>
                         </div>
@@ -375,59 +374,59 @@ const renderCurrentStep = () => {
             case 2: // This is now Address
                 return (
                     <div className="space-y-4 sm:space-y-6">
-                        <h2 className="text-xl font-bold text-black mb-4 sm:mb-6">Permanent Address</h2>
+                        <h2 className="text-xl font-bold text-[var(--text-primary)] mb-4 sm:mb-6">Permanent Address</h2>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                             <div className="sm:col-span-2">
-                                <label className="block text-base font-medium text-black mb-2">Street Address *</label>
+                                <label className="block text-base font-medium text-[var(--text-primary)] mb-2">Street Address *</label>
                                 <input
                                     type="text"
                                     value={address.streetAddress}
                                     onChange={(e) => updateAddressField('streetAddress', e.target.value)}
-                                    className="w-full px-3 py-2 sm:px-4 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    className="w-full px-3 py-2 sm:px-4 sm:py-3 border border-[var(--field-border)] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                     placeholder="Enter street address"
                                     autoComplete="street-address"
                                 />
                             </div>
                             <div>
-                                <label className="block text-base font-medium text-black mb-2">City *</label>
+                                <label className="block text-base font-medium text-[var(--text-primary)] mb-2">City *</label>
                                 <input
                                     type="text"
                                     value={address.city}
                                     onChange={(e) => updateAddressField('city', e.target.value)}
-                                    className="w-full px-3 py-2 sm:px-4 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    className="w-full px-3 py-2 sm:px-4 sm:py-3 border border-[var(--field-border)] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                     placeholder="Enter city"
                                     autoComplete="address-level2"
                                 />
                             </div>
                             <div>
-                                <label className="block text-base font-medium text-black mb-2">State *</label>
+                                <label className="block text-base font-medium text-[var(--text-primary)] mb-2">State *</label>
                                 <input
                                     type="text"
                                     value={address.state}
                                     onChange={(e) => updateAddressField('state', e.target.value)}
-                                    className="w-full px-3 py-2 sm:px-4 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    className="w-full px-3 py-2 sm:px-4 sm:py-3 border border-[var(--field-border)] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                     placeholder="Enter state"
                                     autoComplete="address-level1"
                                 />
                             </div>
                             <div>
-                                <label className="block text-base font-medium text-black mb-2">PIN Code *</label>
+                                <label className="block text-base font-medium text-[var(--text-primary)] mb-2">PIN Code *</label>
                                 <input
                                     type="text"
                                     value={address.pinCode}
                                     onChange={(e) => updateAddressField('pinCode', e.target.value)}
-                                    className="w-full px-3 py-2 sm:px-4 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    className="w-full px-3 py-2 sm:px-4 sm:py-3 border border-[var(--field-border)] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                     placeholder="Enter PIN code"
                                     autoComplete="postal-code"
                                 />
                             </div>
                             <div>
-                                <label className="block text-base font-medium text-black mb-2">Landmark</label>
+                                <label className="block text-base font-medium text-[var(--text-primary)] mb-2">Landmark</label>
                                 <input
                                     type="text"
                                     value={address.landmark}
                                     onChange={(e) => updateAddressField('landmark', e.target.value)}
-                                    className="w-full px-3 py-2 sm:px-4 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    className="w-full px-3 py-2 sm:px-4 sm:py-3 border border-[var(--field-border)] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                     placeholder="Enter landmark (optional)"
                                     autoComplete="off"
                                 />
@@ -438,15 +437,15 @@ const renderCurrentStep = () => {
             case 3: // This is now Documents
                 return (
                     <div className="space-y-4 sm:space-y-6">
-                        <h2 className="text-xl font-bold text-black mb-4 sm:mb-6">Documents</h2>
+                        <h2 className="text-xl font-bold text-[var(--text-primary)] mb-4 sm:mb-6">Documents</h2>
 
                         {/* Document Type Selection */}
                         <div>
-                            <label className="block text-base font-medium text-black mb-2">Select Document Type *</label>
+                            <label className="block text-base font-medium text-[var(--text-primary)] mb-2">Select Document Type *</label>
                             <select
                                 value={documents.documentType}
                                 onChange={(e) => setDocuments(prev => ({ ...prev, documentType: e.target.value }))}
-                                className="w-full px-3 py-2 sm:px-4 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                                className="w-full px-3 py-2 sm:px-4 sm:py-3 border border-[var(--field-border)] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
                             >
                                 <option value="">-- Select --</option>
                                 <option value="aadhar">Aadhaar Card</option>
@@ -458,7 +457,7 @@ const renderCurrentStep = () => {
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                                 {/* Document Front Photo */}
                                 <div>
-                                    <label className="block text-base font-medium text-black mb-2">
+                                    <label className="block text-base font-medium text-[var(--text-primary)] mb-2">
                                         {documents.documentType === 'aadhar' ? 'Aadhaar Front' : 'Driving License Front'} (JPG/JPEG) *
                                     </label>
                                     <div className="relative">
@@ -475,10 +474,10 @@ const renderCurrentStep = () => {
                                         />
                                         <label
                                             htmlFor="documentFront"
-                                            className="flex flex-col items-center justify-center w-full h-24 sm:h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-400 hover:bg-blue-50"
+                                            className="flex flex-col items-center justify-center w-full h-24 sm:h-32 border-2 border-dashed border-[var(--field-border)] rounded-lg cursor-pointer hover:border-blue-400 hover:bg-blue-50"
                                         >
-                                            <Upload className="w-6 h-6 sm:w-8 sm:h-8 text-gray-400 mb-1 sm:mb-2" />
-                                            <span className="text-black text-base text-center px-2">
+                                            <Upload className="w-6 h-6 sm:w-8 sm:h-8 text-[var(--text-muted)] mb-1 sm:mb-2" />
+                                            <span className="text-[var(--text-primary)] text-base text-center px-2">
                                                 {documents.documentFrontPhoto ? 'Change Photo' : 'Upload Photo'}
                                             </span>
                                         </label>
@@ -491,7 +490,7 @@ const renderCurrentStep = () => {
                                 {/* Document Back Photo (Conditional for Aadhaar) */}
                                 {documents.documentType === 'aadhar' && (
                                     <div>
-                                        <label className="block text-base font-medium text-black mb-2">Aadhaar Back (JPG/JPEG) *</label>
+                                        <label className="block text-base font-medium text-[var(--text-primary)] mb-2">Aadhaar Back (JPG/JPEG) *</label>
                                         <div className="relative">
                                             <input
                                                 type="file"
@@ -506,10 +505,10 @@ const renderCurrentStep = () => {
                                             />
                                             <label
                                                 htmlFor="documentBack"
-                                                className="flex flex-col items-center justify-center w-full h-24 sm:h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-400 hover:bg-blue-50"
+                                                className="flex flex-col items-center justify-center w-full h-24 sm:h-32 border-2 border-dashed border-[var(--field-border)] rounded-lg cursor-pointer hover:border-blue-400 hover:bg-blue-50"
                                             >
-                                                <Upload className="w-6 h-6 sm:w-8 sm:h-8 text-gray-400 mb-1 sm:mb-2" />
-                                                <span className="text-black text-base text-center px-2">
+                                                <Upload className="w-6 h-6 sm:w-8 sm:h-8 text-[var(--text-muted)] mb-1 sm:mb-2" />
+                                                <span className="text-[var(--text-primary)] text-base text-center px-2">
                                                     {documents.documentBackPhoto ? 'Change Photo' : 'Upload Photo'}
                                                 </span>
                                             </label>
@@ -522,7 +521,7 @@ const renderCurrentStep = () => {
 
                                 {/* Selfie Photo */}
                                 <div>
-                                    <label className="block text-base font-medium text-black mb-2">Selfie (Camera, JPG/JPEG) *</label>
+                                    <label className="block text-base font-medium text-[var(--text-primary)] mb-2">Selfie (Camera, JPG/JPEG) *</label>
                                     <div className="relative">
                                         <input
                                             type="file"
@@ -538,10 +537,10 @@ const renderCurrentStep = () => {
                                         />
                                         <label
                                             htmlFor="selfie"
-                                            className="flex flex-col items-center justify-center w-full h-24 sm:h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-400 hover:bg-blue-50"
+                                            className="flex flex-col items-center justify-center w-full h-24 sm:h-32 border-2 border-dashed border-[var(--field-border)] rounded-lg cursor-pointer hover:border-blue-400 hover:bg-blue-50"
                                         >
-                                            <Camera className="w-6 h-6 sm:w-8 sm:h-8 text-gray-400 mb-1 sm:mb-2" />
-                                            <span className="text-black text-base text-center px-2">
+                                            <Camera className="w-6 h-6 sm:w-8 sm:h-8 text-[var(--text-muted)] mb-1 sm:mb-2" />
+                                            <span className="text-[var(--text-primary)] text-base text-center px-2">
                                                 {documents.selfiePhoto ? 'Retake Selfie' : 'Take Selfie'}
                                             </span>
                                         </label>
@@ -563,18 +562,17 @@ const renderCurrentStep = () => {
   return (
     <DashboardLayout user={currentUser}>
       <div
-        className="min-h-full bg-slate-950 bg-cover bg-center px-4 py-5 sm:px-6 lg:px-8 lg:py-8"
-        style={{ backgroundImage: `url(${backgroundImage})` }}
+        className="min-h-full px-4 py-5 sm:px-6 lg:px-8 lg:py-8"
       >
         <div className="mx-auto max-w-4xl">
-                <section className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
-                    <div className="rounded-t-[2rem] bg-gradient-to-r from-slate-950 via-slate-900 to-blue-950 px-5 py-5 text-center text-white sm:px-6 lg:px-8">
+                <section className="glass-panel overflow-hidden rounded-[2rem]">
+                    <div className="rounded-t-[2rem] border-b border-[var(--divider)] bg-[var(--glass-bg-subtle)] px-5 py-5 text-center text-[var(--text-primary)] sm:px-6 lg:px-8">
                         <div className="inline-flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-sm font-semibold uppercase text-emerald-300">
                             <Sparkles className="h-3.5 w-3.5" />
                             KYC
                         </div>
-                        <h1 className="mt-3 text-2xl font-bold tracking-tight text-white">Complete Your KYC</h1>
-                        <p className="mt-2 text-base text-white">Fill in the details below to complete your KYC</p>
+                        <h1 className="mt-3 text-2xl font-bold tracking-tight text-[var(--text-primary)]">Complete Your KYC</h1>
+                        <p className="mt-2 text-base text-[var(--text-primary)]">Fill in the details below to complete your KYC</p>
                     </div>
 
                     <div className="p-4 sm:p-8">
@@ -582,11 +580,11 @@ const renderCurrentStep = () => {
 
                     <div className="min-h-80 sm:min-h-96">{renderCurrentStep()}</div>
 
-                    <div className="flex flex-col sm:flex-row sm:justify-between gap-4 mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-gray-200">
+                    <div className="flex flex-col sm:flex-row sm:justify-between gap-4 mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-[var(--field-border)]">
                         <button
                             onClick={handlePrevious}
                             disabled={currentStep === 1}
-                            className="flex items-center justify-center px-4 py-2 sm:px-6 sm:py-3 bg-gray-100 text-black rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed text-base order-2 sm:order-1"
+                            className="flex items-center justify-center px-4 py-2 sm:px-6 sm:py-3 bg-[var(--field-bg)] text-[var(--text-primary)] rounded-lg hover:bg-[var(--glass-bg-strong)] disabled:opacity-50 disabled:cursor-not-allowed text-base order-2 sm:order-1"
                         >
                             <ArrowLeft className="w-4 h-4 mr-2" /> Previous
                         </button>
@@ -594,14 +592,14 @@ const renderCurrentStep = () => {
                         {currentStep < 3 ? ( // Changed from 4 to 3
                             <button
                                 onClick={handleNext}
-                                className="flex items-center justify-center px-4 py-2 sm:px-6 sm:py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-base order-1 sm:order-2"
+                                className="flex items-center justify-center px-4 py-2 sm:px-6 sm:py-3 bg-blue-600 text-[var(--text-primary)] rounded-lg hover:bg-blue-700 text-base order-1 sm:order-2"
                             >
                                 Next <ArrowRight className="w-4 h-4 ml-2" />
                             </button>
                         ) : (
                             <button
                                 onClick={handleFinish} // This now triggers confirmation popup
-                                className="flex items-center justify-center px-4 py-2 sm:px-6 sm:py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 text-base order-1 sm:order-2"
+                                className="flex items-center justify-center px-4 py-2 sm:px-6 sm:py-3 bg-green-600 text-[var(--text-primary)] rounded-lg hover:bg-green-700 text-base order-1 sm:order-2"
                             >
                                 Finish <CheckCircle className="w-4 h-4 ml-2" />
                             </button>
@@ -615,19 +613,19 @@ const renderCurrentStep = () => {
             {/* Confirmation Popup */}
             {showConfirmationPopup && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-lg p-6 w-full max-w-sm mx-4 shadow-lg">
-                        <h3 className="text-lg font-semibold text-black mb-4">Confirm Submission</h3>
-                        <p className="text-base text-black mb-6">Please review your details carefully. Are you sure you want to submit?</p>
+                    <div className="glass-panel rounded-lg p-6 w-full max-w-sm mx-4">
+                        <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-4">Confirm Submission</h3>
+                        <p className="text-base text-[var(--text-primary)] mb-6">Please review your details carefully. Are you sure you want to submit?</p>
                         <div className="flex justify-end gap-3">
                             <button
                                 onClick={() => setShowConfirmationPopup(false)}
-                                className="px-4 py-2 text-black bg-gray-100 hover:bg-gray-200 rounded-lg text-base font-medium transition-colors"
+                                className="px-4 py-2 text-[var(--text-primary)] bg-[var(--field-bg)] hover:bg-[var(--glass-bg-strong)] rounded-lg text-base font-medium transition-colors"
                             >
                                 No
                             </button>
                             <button
                                 onClick={confirmSubmission}
-                                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-base font-medium transition-colors"
+                                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-[var(--text-primary)] rounded-lg text-base font-medium transition-colors"
                             >
                                 Yes, Submit
                             </button>
