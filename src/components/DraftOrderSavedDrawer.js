@@ -28,14 +28,14 @@ const DraftOrderSavedDrawer = () => {
 
   return (
     <div className="fixed inset-0 z-[60]">
-      <div className="fixed inset-0 bg-black/40" onClick={onClose} />
+      <div className="modal-backdrop fixed inset-0" onClick={onClose} />
 
       <div className="portal-surface fixed inset-y-0 right-0 flex w-full max-w-md flex-col shadow-2xl">
         <div className="pointer-events-none absolute inset-0 bg-[var(--glass-bg-strong)] backdrop-blur-2xl" />
         <div className="relative flex min-h-0 flex-1 flex-col">
         <div className="flex items-center justify-between border-b border-[var(--divider)] px-6 py-5">
           <div className="flex items-center gap-2">
-            <ShoppingBag className="h-6 w-6 text-emerald-500" />
+            <ShoppingBag className="h-6 w-6 text-[var(--text-primary)]" />
             <span className="text-lg font-semibold text-[var(--text-primary)]">
               Your Cart ({draftOrders.length})
             </span>
@@ -108,7 +108,7 @@ const DraftOrderSavedDrawer = () => {
                 type="button"
                 onClick={() => {}}
                 disabled={selectedDrafts.length === 0}
-                className="mt-2 w-full rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-[var(--glass-bg-subtle)] disabled:text-[var(--text-muted)]"
+                className="mt-2 w-full rounded-xl bg-[rgb(var(--ink-rgb))] px-4 py-2.5 text-sm font-semibold text-[var(--page-bg)] transition hover:bg-[rgb(var(--ink-rgb)/0.85)] disabled:cursor-not-allowed disabled:bg-[var(--glass-bg-subtle)] disabled:text-[var(--text-muted)]"
               >
                 Pay Now
               </button>

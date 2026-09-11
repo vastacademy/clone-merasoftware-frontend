@@ -54,7 +54,7 @@ Project root: `e:\merasoftware-new` — `backend/` (Node/Express/Mongoose) + `fr
 - Pages: `AdminLeadsPage.js` (`/admin-panel/leads`, list + Add-Lead modal, phone required at create, email optional) — filter badges: source (All/Normal/Guest) + status (All/Matured/Not Matured — **"Matured" is a display-only rename of the stored `"Won"` value**, DB/enum unchanged). `AdminLeadDetailPage.js` (`/admin-panel/leads/:leadId`) — 6-stage pipeline pill (`New→Contacted→Qualified→Proposal Sent→Won→Lost`), follow-up log (separate action from status-change), versioned `proposals[]` upload via `GoogleDriveService`, Convert-to-Client button.
 - **Convert mechanics** (`convertLead.js`, the only place a `userModel` customer is created from a lead): reuses `userSignUp.js`'s bcrypt hashing, sets the **universal default password `"1234"`** + additive `userModel.mustResetPassword: true`. Links lead (`convertedToUserId`, status → `Won`, becomes read-only). Requires both email **and** phone (email is the login identifier). `userSignIn.js` returns `mustResetPassword`; `postLogin.js` routes first-login user to `/set-new-password` (soft "Skip for now" allowed). `setNewPassword.js` (`POST /api/set-new-password`) is the **only** password-change endpoint in the app.
 - `getAdminClients.js` filters by role so leads never leak into the Clients list.
-- Not built: CSV bulk import, in-app quotation builder, email/WhatsApp send integration (everything today is manual/record-only).
+- Not built: CSV bulk import, in-app quotation builder, email/WhatsApp send integration (everything today is manual/record-only). A WhatsApp **sender** does exist but is dormant and wired to nothing — see §14a before assuming it has to be built from scratch.
 
 ---
 
@@ -478,6 +478,92 @@ These are structural conventions and remain in force. Only their **colours** cha
 
 ---
 
+- **`components/RoleDirectoryPage.js` imports `../pages/SignUp`, which does not exist** — the file is
+  nowhere in the repo, not even in the `backup-publicremoval-*` folders, so this import has been dead
+  since the public signup page was removed. It does not break the build today only because the whole
+  chain is unreachable: `RoleDirectoryPage` is imported by `AdminManagement`, `CustomerManagement`,
+  `DeveloperManagement`, `ManagerManagement` and `PartnerManagement`, and **none of those five has a
+  consumer either**. Found 07-09-2026 while verifying an unrelated deletion; left alone because
+  removing six more files was outside what was asked.
+
+---
+
+## 14a. Dormant Subsystems — built, switched off, **do not delete**
+
+### WhatsApp customer notifications — RETAINED ON PURPOSE (owner decision, 07-09-2026)
+
+**What it was for.** Sending customers their order/payment updates over WhatsApp, without paying for the
+official WhatsApp Business API — by driving a **real WhatsApp Web session** on a separate host.
+
+**Three parts, all still in the repo:**
+
+| Part | File | State today |
+|---|---|---|
+| Sender + rate-limit queue | `backend/helpers/whatsappService.js` | present, **zero callers** in the whole backend |
+| Socket client | `frontend/src/components/socket.js` | present, imported only by `QRModal.js` and a commented import in `AppContent.js` |
+| Reconnect QR dialog | `frontend/src/components/QRModal.js` | present, **no live consumer** |
+
+**How it worked.**
+`sendWhatsAppMessage(number, message)` pushes onto an in-process queue and POSTs to
+`WHATSAPP_API_URL = http://35.208.75.95:3000/send`, releasing **one message every `DELAY_MS = 10000`ms
+(10 s)** so WhatsApp does not flag the number for spam. A logged-out session answers
+`{ status: 'not_logged_in' }`. That endpoint is **not in this repo** — it is a separate host running the
+WhatsApp Web session.
+
+A WhatsApp Web session has to be re-paired from a phone every few days, which is what `QRModal` existed
+for. `socket.merasoftware.com` (also not in this repo) emitted three events — `qr` (the QR image),
+`ready` (paired), `disconnected` (dropped). `components/socket.js` connects to it; `QRModal` rendered the
+image under "Scan QR to Reconnect WhatsApp" and closed itself 1 s after `ready`.
+
+**Why nothing happens today** (verified by reading the files, not by grep counts):
+- `AppContent.js` — the `QRModal` and `socket` imports are commented out, and so are **both** socket
+  `useEffect`s (`qr` → open, `ready` → close).
+- `whatsappService.js` has **zero callers** anywhere in `backend/` (excluding `node_modules` and backups).
+- The backend's socket.io is initialised **only for chess** (`index.js` → `initChessSocket`). No `qr`,
+  `ready` or `disconnected` is emitted anywhere in the backend.
+
+**To switch it back on**, in order: (1) bring the WhatsApp Web host at `WHATSAPP_API_URL` back up;
+(2) bring back the socket server behind `socket.merasoftware.com` emitting `qr`/`ready`/`disconnected`;
+(3) uncomment the two imports and two `useEffect`s in `AppContent.js` and render
+`<QRModal show={showQR} onClose={() => setShowQR(false)} />`; (4) call `sendWhatsAppMessage(...)` from
+wherever the notification belongs — **no controller calls it today**, so re-enabling the plumbing alone
+sends nothing.
+
+**Fix this at the same time:** `WHATSAPP_API_URL` is a hardcoded IP over plain `http://`, so message
+bodies and customer phone numbers travel unencrypted.
+
+> **Do not delete `whatsappService.js`, `socket.js` or `QRModal.js` in any dead-code cleanup.** They read
+> as unused because the feature is off, not because it is unwanted — the owner wants this working again.
+
+### Orphaned components — DELETED 07-09-2026
+
+Deleted on the owner's instruction after verification. Kept here as a record of what existed and what
+took over each job, so a future session does not go looking for a file that was removed on purpose.
+Backup: `frontend/src/_backup_dead_code_work1/`.
+
+Verified three ways before deleting: full-`src` name search, no `components/index.js` barrel exists, and
+no `lazy()`/dynamic `import()` anywhere except `reportWebVitals.js`. Backend hits for these names were
+checked one by one and were all unrelated locals (`isWalletRecharge`, `sendWalletRechargeConfirmationEmail`
+and friends), not imports.
+
+| File | What it did | What does that job now |
+|---|---|---|
+| `components/RenewalModal.js` (480) | Plan renewal payment dialog — wallet or UPI QR, own transaction ids, part-wallet/part-UPI | Superseded by the wallet/instant-pay flow; `PlanDetails.js` now handles renewal via `stopServiceRenewal` |
+| `components/YearlyPlanDetailsModal.js` (262) | Popup breakdown of a plan — yearly days left, current-month days, updates used, next renewal | Became a full page — the plan details screen |
+| `components/EditProfileModal.js` (240) | Profile edit popup — name/email/phone/age + Cloudinary picture upload | `pages/Profile.js` now has the same form inline |
+| `components/OrderDetailsModal.js` (194) | Admin approve/reject an order, with a rejection reason | `pages/AdminClientWorkspace.js` |
+| `components/TransactionModal.js` (187) | Admin approve/reject a transaction (payment / recharge / installment) | `pages/AdminPaymentRecordDetail.js` |
+| `components/ImagePopup.js` (52) | Full-screen product image gallery with thumbnails | Belonged to the removed public shop pages (`backup-publicremoval-*`); not imported even there |
+| `components/WalletRecharge.js` (220) | Wallet recharge form → UPI QR → transaction-id verification | `pages/WalletDetails.js` recharge panel — which then became the reference design for `components/Modal.js` |
+
+**1,635 lines removed.** After deletion, every relative import in all 190 live source files still
+resolves and all 190 compile.
+
+One pre-existing broken import surfaced during that check and is **not** related to this deletion —
+see §14 (`RoleDirectoryPage` → `../pages/SignUp`).
+
+---
+
 ## 15. Where To Look First (quick index)
 
 | Task | Primary files |
@@ -502,5 +588,6 @@ These are structural conventions and remain in force. Only their **colours** cha
 | Client documents | `backend/helpers/clientDocumentsTimeline.js`, `backend/controller/user/{uploadClientDocument,getClientDocuments,getAdminClientDocuments}.js` |
 | Project/plan classification | `helpers/orderType.js`, `helpers/orderPresentation.js`, `components/OrderListRow.js` |
 | Chess | `frontend/src/chess/*`, `backend/chess/*` |
+| WhatsApp notifications (dormant, keep) | `backend/helpers/whatsappService.js`, `frontend/src/components/{socket,QRModal}.js`, commented block in `AppContent.js` — see §14a |
 | UI design system | `src/index.css` (§11a tokens + `.glass-panel`/`.portal-surface`), any file using `bg-[var(--glass-bg)]` |
 | Theme system (3 modes) | `src/index.css` (all token values), `context/ThemeContext.js` (choice/persistence), `components/ThemeSwitch.js` (picker), `public/index.html` (anti-flash script) |

@@ -3,6 +3,9 @@ import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { ArrowRight, Layers3, Sparkles } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
+import Surface from '../components/Surface';
+import Badge from '../components/Badge';
+import GlassButton from '../components/GlassButton';
 import { customerChildState } from '../helpers/customerReturnNavigation';
 import CustomerWorkspaceTabs from '../components/CustomerWorkspaceTabs';
 import SummaryApi from '../common';
@@ -88,15 +91,14 @@ const StartNewProject = () => {
         className="relative min-h-[calc(100vh-4rem)] overflow-hidden px-4 py-8 sm:px-6 lg:px-8 lg:py-12"
       >
         <div className="pointer-events-none absolute inset-0 bg-[var(--scrim)]" />
-        <section className="relative mx-auto max-w-7xl overflow-hidden rounded-[2rem] border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] shadow-[0_25px_80px_-35px_rgba(0,0,0,0.55)] backdrop-blur-2xl backdrop-saturate-150">
+        <Surface as="section" radius="panel" className="mx-auto max-w-7xl overflow-hidden">
           <div className="relative bg-[var(--glass-bg-subtle)] px-5 py-5 text-[var(--text-primary)] sm:px-6 lg:px-8">
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-[var(--glass-sheen)] to-transparent" />
             <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
               <div className="relative max-w-3xl">
-                <div className="inline-flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-sm font-semibold uppercase text-emerald-300">
+                <Badge tone="success" size="sm" className="uppercase">
                   <Sparkles className="h-3.5 w-3.5" />
                   Explore Services
-                </div>
+                </Badge>
                 <h1 className="mt-3 text-2xl font-bold tracking-tight text-[var(--text-primary)]">
                   Choose a service
                 </h1>
@@ -106,9 +108,9 @@ const StartNewProject = () => {
               </div>
 
               <div className="relative flex flex-wrap items-center gap-2">
-                <div className="rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg)] px-4 py-2 text-sm font-semibold text-[var(--text-primary)]">
+                <GlassButton as="div">
                   Total: {projects.length}
-                </div>
+                </GlassButton>
               </div>
             </div>
           </div>
@@ -158,9 +160,9 @@ const StartNewProject = () => {
                     >
                       <div className="col-span-8 lg:col-span-10">
                         <div className="flex items-start gap-3">
-                          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg)]">
+                          <Surface className="flex h-11 w-11 shrink-0 items-center justify-center">
                             <Icon className={`h-5 w-5 ${style.color}`} />
-                          </div>
+                          </Surface>
                           <div className="min-w-0">
                             <h3 className="truncate text-lg font-semibold text-[var(--text-primary)]">
                               {project.serviceName}
@@ -182,7 +184,7 @@ const StartNewProject = () => {
               <div className="px-5 py-10 text-center text-base text-[var(--text-secondary)] sm:px-6">No projects found.</div>
             )}
           </div>
-        </section>
+        </Surface>
       </div>
     </DashboardLayout>
   );

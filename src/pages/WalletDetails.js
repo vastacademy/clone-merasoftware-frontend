@@ -11,7 +11,6 @@ import {
   Search,
   ShieldCheck,
   ShoppingCart,
-  X,
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { toast } from 'sonner';
@@ -20,6 +19,9 @@ import SummaryApi from '../common';
 import displayINRCurrency from '../helpers/displayCurrency';
 import TriangleMazeLoader from '../components/TriangleMazeLoader';
 import DashboardLayout from '../components/DashboardLayout';
+import Surface from '../components/Surface';
+import Badge from '../components/Badge';
+import Modal from '../components/Modal';
 import { getOrderCategory, getOrderDisplayName, isActiveWorkItem } from '../helpers/orderPresentation';
 
 const WalletDetails = () => {
@@ -117,22 +119,27 @@ const WalletDetails = () => {
   const getTransactionDisplay = transaction => {
     const serviceName = transaction.productId?.serviceName || getOrderDisplayName(transaction.orderId, '');
     if (transaction.type === 'refund') {
-      return { sign: '+', color: 'text-emerald-600', title: 'Refund received', icon: <ArrowDownLeft size={17} />, iconBg: 'bg-emerald-100 text-emerald-700' };
+      return { sign: '+', color: 'text-[var(--badge-success-fg)]', title: 'Refund received', icon: <ArrowDownLeft size={17} />, iconBg: 'badge badge-success' };
     }
     if (transaction.type === 'deposit') {
-      return { sign: '+', color: 'text-emerald-600', title: 'Wallet recharge', icon: <CreditCard size={17} />, iconBg: 'bg-emerald-100 text-emerald-700' };
+      return { sign: '+', color: 'text-[var(--badge-success-fg)]', title: 'Wallet recharge', icon: <CreditCard size={17} />, iconBg: 'badge badge-success' };
     }
     if (transaction.type === 'renewal') {
-      return { sign: '-', color: 'text-rose-600', title: serviceName ? `Plan renewal · ${serviceName}` : (transaction.description || 'Plan renewal'), icon: <ShoppingCart size={17} />, iconBg: 'bg-[var(--glass-bg-strong)] text-[var(--text-secondary)]' };
+      return { sign: '-', color: 'text-[var(--badge-error-fg)]', title: serviceName ? `Plan renewal · ${serviceName}` : (transaction.description || 'Plan renewal'), icon: <ShoppingCart size={17} />, iconBg: 'bg-[var(--glass-bg-strong)] text-[var(--text-secondary)]' };
     }
-    return { sign: '-', color: 'text-rose-600', title: serviceName ? `Payment for ${serviceName}` : (transaction.description || 'Service payment'), icon: <ShoppingCart size={17} />, iconBg: 'bg-[var(--glass-bg-strong)] text-[var(--text-secondary)]' };
+    return { sign: '-', color: 'text-[var(--badge-error-fg)]', title: serviceName ? `Payment for ${serviceName}` : (transaction.description || 'Service payment'), icon: <ShoppingCart size={17} />, iconBg: 'bg-[var(--glass-bg-strong)] text-[var(--text-secondary)]' };
   };
 
+  // Tones, not classes. These were `bg-emerald-50 text-emerald-700` and
+  // friends: a light tint with same-hue text, which is thin on the light page
+  // and a lit slab on the dark one, because -50 shades ignore the theme.
+  // Refunded was sky — the portal's palette has no blue, and a refund is not a
+  // fourth status, it is money arriving, so it reads as success.
   const getStatus = status => {
-    if (status === 'completed') return { label: 'Approved', className: 'bg-emerald-50 text-emerald-700', icon: <CheckCircle2 size={13} /> };
-    if (status === 'pending') return { label: 'Pending', className: 'bg-amber-50 text-amber-700', icon: <Clock3 size={13} /> };
-    if (status === 'failed' || status === 'rejected') return { label: 'Rejected', className: 'bg-red-50 text-red-700', icon: <AlertCircle size={13} /> };
-    if (status === 'refunded') return { label: 'Refunded', className: 'bg-sky-50 text-sky-700', icon: <ArrowDownLeft size={13} /> };
+    if (status === 'completed') return { label: 'Approved', tone: 'success', icon: CheckCircle2 };
+    if (status === 'pending') return { label: 'Pending', tone: 'pending', icon: Clock3 };
+    if (status === 'failed' || status === 'rejected') return { label: 'Rejected', tone: 'error', icon: AlertCircle };
+    if (status === 'refunded') return { label: 'Refunded', tone: 'success', icon: ArrowDownLeft };
     return null;
   };
 
@@ -211,25 +218,17 @@ const WalletDetails = () => {
   const renderRechargePanel = () => {
     if (!showRechargePanel) return null;
     return (
-      <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 backdrop-blur-sm sm:items-center sm:p-4" onClick={resetRecharge}>
-        <div className="glass-panel max-h-[92vh] w-full max-w-md overflow-y-auto rounded-t-[2rem] p-5 sm:rounded-[2rem] sm:p-7" onClick={event => event.stopPropagation()}>
-          <div className="mb-6 flex items-start justify-between">
-            <div>
-              <p className="text-sm font-bold uppercase text-emerald-600">Wallet recharge</p>
-              <h2 className="mt-1 text-xl font-bold tracking-tight text-[var(--text-primary)]">Add money securely</h2>
-            </div>
-            <button onClick={resetRecharge} className="rounded-full p-2 text-[var(--text-muted)] transition hover:bg-[var(--glass-bg-hover)] hover:text-[var(--text-primary)]" aria-label="Close add money panel"><X size={18} /></button>
-          </div>
+      <Modal onClose={resetRecharge} eyebrow="Wallet recharge" title="Add money securely">
           {!showQR ? (
             <form onSubmit={handleProceedToPayment}>
               <label htmlFor="amount" className="text-base font-bold uppercase text-[var(--text-primary)]">Amount</label>
-              <div className="mt-2 flex items-center rounded-2xl border border-[var(--field-border)] bg-[var(--field-bg)] px-4 transition focus-within:border-emerald-500 focus-within:bg-white focus-within:ring-4 focus-within:ring-emerald-50">
+              <div className="mt-2 flex items-center rounded-2xl border border-[var(--field-border)] bg-[var(--field-bg)] px-4 transition focus-within:border-emerald-500 focus-within:ring-4 focus-within:ring-[var(--badge-success-bg)]">
                 <span className="text-lg font-bold text-[var(--text-primary)]">₹</span>
                 <input id="amount" type="number" value={amount} onChange={event => setAmount(event.target.value)} className="w-full bg-transparent px-3 py-4 text-lg font-bold text-[var(--text-primary)] outline-none" placeholder="0" min="1" />
               </div>
               <div className="mt-4 rounded-2xl bg-[var(--glass-bg-subtle)] p-4 text-base">
                 <div className="flex justify-between text-[var(--text-primary)]"><span>Recharge amount</span><span className="font-semibold text-[var(--text-primary)]">₹{amount || '0'}</span></div>
-                <div className="mt-2 flex justify-between text-[var(--text-primary)]"><span>Processing fee</span><span className="font-semibold text-emerald-600">₹0</span></div>
+                <div className="mt-2 flex justify-between text-[var(--text-primary)]"><span>Processing fee</span><span className="font-semibold text-[var(--badge-success-fg)]">₹0</span></div>
                 <div className="mt-3 flex justify-between border-t border-[var(--glass-border)] pt-3 font-bold text-[var(--text-primary)]"><span>Total</span><span>₹{amount || '0'}</span></div>
               </div>
               <button type="submit" className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-[rgb(var(--ink-rgb))] px-4 py-3.5 text-base font-bold text-[var(--page-bg)] transition hover:bg-emerald-700"><CreditCard size={17} /> Continue to payment</button>
@@ -239,28 +238,27 @@ const WalletDetails = () => {
               <div className="text-center">
                 <p className="text-base font-semibold text-[var(--text-primary)]">Scan to pay {displayINRCurrency(amount)}</p>
                 <p className="mt-1 text-sm text-[var(--text-primary)]">Transaction ID: {transactionId}</p>
-                <div className="mx-auto my-5 w-fit rounded-3xl border border-[var(--glass-border)] bg-white p-4 shadow-sm"><QRCodeSVG value={upiLink} size={184} /></div>
+                <div className="mx-auto my-5 w-fit rounded-3xl border border-[var(--glass-border)] bg-white p-4 shadow-sm">{/* Stays literally white in every theme: a QR code needs a light quiet zone to scan, so this is the one place a raw colour is correct. */}<QRCodeSVG value={upiLink} size={184} /></div>
                 <p className="text-sm leading-5 text-[var(--text-primary)]">Use Google Pay, PhonePe, Paytm or any UPI app.</p>
               </div>
               <form onSubmit={verifyTransaction} className="mt-6">
                 <label htmlFor="upiTransactionId" className="text-base font-bold uppercase text-[var(--text-primary)]">UPI transaction ID</label>
-                <input id="upiTransactionId" type="text" value={upiTransactionId} onChange={event => setUpiTransactionId(event.target.value.replace(/[^0-9]/g, '').slice(0, 12))} className="mt-2 w-full rounded-2xl border border-[var(--glass-border)] px-4 py-3.5 text-base outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-50" placeholder="Enter 10-12 digit ID" minLength={10} maxLength={12} required />
+                <input id="upiTransactionId" type="text" value={upiTransactionId} onChange={event => setUpiTransactionId(event.target.value.replace(/[^0-9]/g, '').slice(0, 12))} className="mt-2 w-full rounded-2xl border border-[var(--glass-border)] px-4 py-3.5 text-base outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-[var(--badge-success-bg)]" placeholder="Enter 10-12 digit ID" minLength={10} maxLength={12} required />
                 <p className="mt-2 text-sm text-[var(--text-primary)]">You can find this ID in your UPI payment receipt.</p>
-                <button type="submit" disabled={loading || !upiTransactionId} className="mt-5 w-full rounded-2xl bg-emerald-600 px-4 py-3.5 text-base font-bold text-[var(--text-primary)] transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-[var(--glass-bg-subtle)] disabled:text-[var(--text-muted)]">{loading ? 'Submitting...' : 'Submit for approval'}</button>
+                <button type="submit" disabled={loading || !upiTransactionId} className="mt-5 w-full rounded-2xl bg-[var(--nav-active-bg)] px-4 py-3.5 text-base font-bold text-[var(--nav-active-fg)] transition hover:opacity-90 disabled:cursor-not-allowed disabled:bg-[var(--glass-bg-subtle)] disabled:text-[var(--text-muted)]">{loading ? 'Submitting...' : 'Submit for approval'}</button>
                 {verificationStatus && <p className="mt-3 text-center text-sm text-[var(--text-primary)]">{verificationStatus}</p>}
               </form>
               <button onClick={() => { setShowQR(false); setUpiTransactionId(''); setVerificationStatus(''); }} className="mt-4 w-full text-center text-base font-semibold text-[var(--text-primary)] hover:text-[var(--text-secondary)]">Go back</button>
             </div>
           ) : (
             <div className="py-6 text-center">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-600"><CheckCircle2 size={28} /></div>
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full badge badge-success"><CheckCircle2 size={28} /></div>
               <h3 className="mt-4 text-lg font-semibold text-[var(--text-primary)]">Request submitted</h3>
               <p className="mx-auto mt-2 max-w-xs text-base leading-6 text-[var(--text-primary)]">Your recharge is waiting for admin approval. The balance will update after verification.</p>
               <button onClick={resetRecharge} className="mt-6 rounded-2xl bg-[rgb(var(--ink-rgb))] px-5 py-3 text-base font-bold text-[var(--page-bg)] hover:bg-[rgb(var(--ink-rgb)/0.85)]">Close</button>
             </div>
-          )}
-        </div>
-      </div>
+      )}
+      </Modal>
     );
   };
 
@@ -283,7 +281,7 @@ const WalletDetails = () => {
         </div>
         <div className="col-start-2 flex items-center justify-between gap-2 sm:contents">
           <div className="text-left sm:text-right"><p className="text-sm font-bold uppercase text-[var(--text-primary)] sm:hidden">Payment mode</p><p className="text-sm font-bold text-[var(--text-primary)]">{getPaymentModeLabel(transaction.paymentMethod)}</p></div>
-          {status ? <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-sm font-bold ${status.className}`}>{status.icon}{status.label}</span> : <span className="text-sm text-[var(--text-primary)]">-</span>}
+          {status ? <Badge tone={status.tone} size="sm" icon={status.icon}>{status.label}</Badge> : <span className="text-sm text-[var(--text-primary)]">-</span>}
         </div>
       </div>
     );
@@ -297,50 +295,76 @@ const WalletDetails = () => {
         className="min-h-full px-3 py-4 sm:px-5 lg:px-8 lg:py-7"
       >
         <div className="mx-auto max-w-7xl">
-          <section className="relative overflow-hidden rounded-[1.75rem] border border-[var(--glass-border)] bg-[var(--glass-bg-subtle)] p-3 text-[var(--text-primary)] shadow-xl shadow-slate-900/10 backdrop-blur-xl backdrop-saturate-150 sm:p-4">
-              <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-[var(--glass-sheen)] to-transparent" />
-              <div className="absolute -right-16 -top-20 h-56 w-56 rounded-full bg-emerald-400/20 blur-3xl" /><div className="absolute bottom-0 right-20 h-32 w-32 rounded-full bg-cyan-400/10 blur-3xl" />
+          <Surface as="section" tone="subtle" sheen className="p-3 text-[var(--text-primary)] sm:p-4">
+              <div className="absolute -right-16 -top-20 h-56 w-56 rounded-full bg-emerald-400/20 blur-3xl" />
             <div className="relative grid gap-3 lg:grid-cols-[1.2fr_0.8fr]">
-              <div className="rounded-[1.35rem] border border-[var(--glass-border)] bg-[var(--glass-bg-subtle)] p-5 sm:p-6"><p className="text-sm font-bold uppercase text-emerald-300">{getGreeting()}, {user?.name || 'User'}</p><h1 className="mt-2 text-2xl font-bold tracking-tight text-[var(--text-primary)]">Your wallet</h1><p className="mt-1 text-base text-[var(--text-primary)]">Keep your balance ready for your next project.</p><div className="mt-6 flex items-center justify-between"><span className="text-sm font-bold uppercase text-[var(--text-primary)]">Available balance</span><WalletIcon /></div><p className="mt-4 text-2xl font-bold tracking-tight text-[var(--text-primary)]">{displayINRCurrency(context?.walletBalance || 0)}</p><p className="mt-2 max-w-sm text-sm text-[var(--text-primary)]">Use your wallet balance for approved services and payments.</p><div className="mt-5 flex flex-wrap gap-2"><button onClick={() => setShowRechargePanel(true)} className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-base font-bold text-[var(--text-primary)] hover:bg-emerald-50"><Plus size={15} /> Recharge wallet</button><button onClick={refreshWallet} className="inline-flex items-center gap-2 rounded-xl border border-[var(--glass-border)] bg-[var(--glass-bg-subtle)] px-3 py-2.5 text-base font-bold text-[var(--text-primary)] hover:bg-[var(--glass-bg)]"><RefreshCw size={14} /> Refresh</button></div></div>
+              <Surface tone="subtle" className="p-5 sm:p-6"><p className="text-sm font-bold uppercase text-[var(--eyebrow-fg)]">{getGreeting()}, {user?.name || 'User'}</p><h1 className="mt-2 text-2xl font-bold tracking-tight text-[var(--text-primary)]">Your wallet</h1><p className="mt-1 text-base text-[var(--text-primary)]">Keep your balance ready for your next project.</p><div className="mt-6 flex items-center justify-between"><span className="text-sm font-bold uppercase text-[var(--text-primary)]">Available balance</span><WalletIcon /></div><p className="mt-4 text-2xl font-bold tracking-tight text-[var(--text-primary)]">{displayINRCurrency(context?.walletBalance || 0)}</p><p className="mt-2 max-w-sm text-sm text-[var(--text-primary)]">Use your wallet balance for approved services and payments.</p><div className="mt-5 flex flex-wrap gap-2"><button onClick={() => setShowRechargePanel(true)} className="inline-flex items-center gap-2 rounded-xl bg-[var(--nav-active-bg)] px-4 py-2.5 text-base font-bold text-[var(--nav-active-fg)] transition hover:opacity-90"><Plus size={15} /> Recharge wallet</button><button onClick={refreshWallet} className="inline-flex items-center gap-2 rounded-xl border border-[var(--glass-border)] bg-[var(--glass-bg-subtle)] px-3 py-2.5 text-base font-bold text-[var(--text-primary)] hover:bg-[var(--glass-bg)]"><RefreshCw size={14} /> Refresh</button></div></Surface>
               <div className="grid gap-2.5 sm:grid-cols-3 lg:grid-cols-1">
-                <DarkMetricCard label="Total added" value={displayINRCurrency(getTotalAdded())} tone="emerald" />
-                <DarkMetricCard label="Total spent" value={displayINRCurrency(getTotalSpending())} tone="slate" />
-                <DarkMetricCard label="Pending approval" value={pendingCount} tone="amber" helper={getPendingAmount() > 0 ? displayINRCurrency(getPendingAmount()) : 'No pending amount'} />
+                <StatTile label="Total added" value={displayINRCurrency(getTotalAdded())} tone="neutral" />
+                <StatTile label="Total spent" value={displayINRCurrency(getTotalSpending())} tone="neutral" />
+                <StatTile label="Pending approval" value={pendingCount} tone="pending" helper={getPendingAmount() > 0 ? displayINRCurrency(getPendingAmount()) : 'No pending amount'} />
               </div>
             </div>
-          </section>
+          </Surface>
 
           <div className="mt-5 grid items-start gap-5 lg:grid-cols-[1.35fr_0.65fr]">
-          <section className="overflow-hidden rounded-[1.75rem] border border-[var(--glass-border-strong)] bg-[var(--glass-bg-strong)] shadow-[var(--card-shadow)] backdrop-blur-xl backdrop-saturate-150 lg:order-2">
-            <div className="border-b border-[var(--glass-border-strong)] p-5 sm:px-6"><div className="flex items-center gap-2"><ShieldCheck size={17} className="text-emerald-600" /><h2 className="text-lg font-semibold text-[var(--text-primary)]">Payment approval</h2></div><p className="mt-1 text-sm text-[var(--text-primary)]">Recharge requests are credited after admin verification.</p><span className="mt-3 inline-flex w-fit rounded-full bg-emerald-50 px-3 py-1.5 text-sm font-bold text-emerald-700">{pendingCount ? `${pendingCount} pending` : 'All clear'}</span></div>
-            <div className="grid gap-3 p-4 sm:p-5"><ApprovalItem icon={<CheckCircle2 size={17} />} label="Approved" value={walletHistory.filter(transaction => transaction.status === 'completed').length} tone="emerald" /><ApprovalItem icon={<Clock3 size={17} />} label="Waiting" value={pendingCount} tone="amber" /><ApprovalItem icon={<AlertCircle size={17} />} label="Rejected" value={walletHistory.filter(transaction => transaction.status === 'failed').length} tone="red" /></div>
-          </section>
+          <Surface as="section" tone="strong" className="overflow-hidden lg:order-2">
+            <div className="border-b border-[var(--glass-border-strong)] p-5 sm:px-6"><div className="flex items-center gap-2"><ShieldCheck size={17} className="text-[var(--eyebrow-fg)]" /><h2 className="text-lg font-semibold text-[var(--text-primary)]">Payment approval</h2></div><p className="mt-1 text-sm text-[var(--text-primary)]">Recharge requests are credited after admin verification.</p><Badge tone={pendingCount ? 'pending' : 'success'} className="mt-3 w-fit">{pendingCount ? `${pendingCount} pending` : 'All clear'}</Badge></div>
+            <div className="grid gap-3 p-4 sm:p-5"><ApprovalItem icon={<CheckCircle2 size={17} />} label="Approved" value={walletHistory.filter(transaction => transaction.status === 'completed').length} tone="success" /><ApprovalItem icon={<Clock3 size={17} />} label="Waiting" value={pendingCount} tone="pending" /><ApprovalItem icon={<AlertCircle size={17} />} label="Rejected" value={walletHistory.filter(transaction => transaction.status === 'failed').length} tone="error" /></div>
+          </Surface>
 
-          <section className="overflow-hidden rounded-[1.75rem] border border-[var(--glass-border-strong)] bg-[var(--glass-bg-strong)] shadow-[var(--card-shadow)] backdrop-blur-xl backdrop-saturate-150 lg:order-1">
-            <div className="border-b border-[var(--glass-border-strong)] p-5 sm:p-6"><div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between"><div><h2 className="text-lg font-semibold text-[var(--text-primary)]">Transaction history</h2><p className="mt-1 text-sm text-[var(--text-primary)]">Your deposits, payments and refunds in one place.</p></div><div className="flex flex-col gap-2 sm:flex-row"><div className="relative"><Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" /><input type="search" value={historySearch} onChange={event => { setHistorySearch(event.target.value); setShowAllHistory(false); }} placeholder="Search history" className="w-full rounded-xl border border-[var(--glass-border-strong)] bg-[var(--glass-bg-strong)] py-2.5 pl-9 pr-3 text-base text-[var(--text-primary)] outline-none backdrop-blur-md focus:border-emerald-500 focus:ring-4 focus:ring-emerald-50 sm:w-52" /></div><div className="flex rounded-xl bg-[var(--glass-bg-strong)] p-1 backdrop-blur-md">{['all', 'credit', 'debit', 'pending'].map(filter => <button key={filter} onClick={() => { setHistoryFilter(filter); setShowAllHistory(false); }} className={`rounded-lg px-2.5 py-2 text-sm font-bold capitalize transition ${historyFilter === filter ? 'bg-[var(--glass-bg-strong)] text-[var(--text-primary)] shadow-sm' : 'text-[var(--text-primary)] hover:text-[var(--text-secondary)]'}`}>{filter}</button>)}</div></div></div></div>
+          <Surface as="section" tone="strong" className="overflow-hidden lg:order-1">
+            <div className="border-b border-[var(--glass-border-strong)] p-5 sm:p-6"><div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between"><div><h2 className="text-lg font-semibold text-[var(--text-primary)]">Transaction history</h2><p className="mt-1 text-sm text-[var(--text-primary)]">Your deposits, payments and refunds in one place.</p></div><div className="flex flex-col gap-2 sm:flex-row"><div className="relative"><Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" /><input type="search" value={historySearch} onChange={event => { setHistorySearch(event.target.value); setShowAllHistory(false); }} placeholder="Search history" className="w-full rounded-xl border border-[var(--glass-border-strong)] bg-[var(--glass-bg-strong)] py-2.5 pl-9 pr-3 text-base text-[var(--text-primary)] outline-none backdrop-blur-md focus:border-emerald-500 focus:ring-4 focus:ring-[var(--badge-success-bg)] sm:w-52" /></div><div className="flex rounded-xl bg-[var(--glass-bg-strong)] p-1 backdrop-blur-md">{['all', 'credit', 'debit', 'pending'].map(filter => <button key={filter} onClick={() => { setHistoryFilter(filter); setShowAllHistory(false); }} className={`rounded-lg px-2.5 py-2 text-sm font-bold capitalize transition ${historyFilter === filter ? 'bg-[var(--glass-bg-strong)] text-[var(--text-primary)] shadow-sm' : 'text-[var(--text-primary)] hover:text-[var(--text-secondary)]'}`}>{filter}</button>)}</div></div></div></div>
             <div className="divide-y divide-[var(--divider)]">{visibleHistory.map(transactionRow)}{filteredHistory.length === 0 && <div className="px-5 py-14 text-center"><div className="mx-auto flex h-11 w-11 items-center justify-center rounded-2xl bg-[var(--glass-bg-strong)] text-[var(--text-muted)] backdrop-blur-md"><Search size={18} /></div><p className="mt-3 text-base font-bold text-[var(--text-primary)]">No transactions found</p><p className="mt-1 text-sm text-[var(--text-primary)]">Try a different filter or search term.</p></div>}</div>
-            {filteredHistory.length > 5 && !showAllHistory && <button type="button" onClick={() => setShowAllHistory(true)} className="w-full border-t border-[var(--glass-border-strong)] px-5 py-4 text-base font-bold text-[var(--text-primary)] transition hover:bg-[var(--glass-bg-strong)] hover:text-emerald-700 sm:px-6">Show more transactions <span className="ml-1 text-[var(--text-primary)]">({filteredHistory.length - 5} more)</span></button>}
-            {filteredHistory.length > 5 && showAllHistory && <button type="button" onClick={() => setShowAllHistory(false)} className="w-full border-t border-[var(--glass-border-strong)] px-5 py-4 text-base font-bold text-[var(--text-primary)] transition hover:bg-[var(--glass-bg-strong)] hover:text-emerald-700 sm:px-6">Show less transactions</button>}
-          </section>
+            {filteredHistory.length > 5 && !showAllHistory && <button type="button" onClick={() => setShowAllHistory(true)} className="w-full border-t border-[var(--glass-border-strong)] px-5 py-4 text-base font-bold text-[var(--text-primary)] transition hover:bg-[var(--glass-bg-strong)] hover:text-[var(--badge-success-fg)] sm:px-6">Show more transactions <span className="ml-1 text-[var(--text-primary)]">({filteredHistory.length - 5} more)</span></button>}
+            {filteredHistory.length > 5 && showAllHistory && <button type="button" onClick={() => setShowAllHistory(false)} className="w-full border-t border-[var(--glass-border-strong)] px-5 py-4 text-base font-bold text-[var(--text-primary)] transition hover:bg-[var(--glass-bg-strong)] hover:text-[var(--badge-success-fg)] sm:px-6">Show less transactions</button>}
+          </Surface>
           </div>
         </div>
       </div>
       {renderRechargePanel()}
-      {loading && <div className="fixed inset-0 z-[60] flex items-center justify-center bg-[var(--scrim)]"><div className="rounded-2xl bg-[var(--glass-bg-strong)] p-6 shadow-lg"><TriangleMazeLoader /></div></div>}
+      {loading && <div className="modal-backdrop fixed inset-0 z-[60] flex items-center justify-center"><Surface tone="strong" size="compact"><TriangleMazeLoader /></Surface></div>}
     </DashboardLayout>
   );
 };
 
-const WalletIcon = () => <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--glass-border)] bg-[var(--glass-bg)]"><CreditCard size={17} className="text-emerald-300" /></div>;
+const WalletIcon = () => <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--glass-border)] bg-[var(--glass-bg)]"><CreditCard size={17} className="text-[var(--text-primary)]" /></div>;
 
-const DarkMetricCard = ({ label, value, tone, helper }) => {
-  const toneStyles = { emerald: 'text-emerald-200', amber: 'text-amber-200', slate: 'text-[var(--text-secondary)]' };
-  return <div className="rounded-[1.2rem] border border-[var(--glass-border)] bg-[var(--glass-bg-subtle)] p-3.5 text-[var(--text-primary)]"><p className={`text-sm font-bold uppercase ${toneStyles[tone]}`}>{label}</p><p className="mt-2 text-lg font-semibold tracking-tight text-[var(--text-primary)]">{value}</p>{helper && <p className="mt-1 text-sm font-semibold text-[var(--text-primary)]">{helper}</p>}</div>;
+// Kept as a local component — it is a small stat tile, not the dashboard's
+// MetricCard (no glow, no icon, no hover), so merging the two would invent an
+// abstraction neither page asked for. Only its container moves to Surface, and
+// its label colours move to tokens: `text-emerald-200` and `text-amber-200`
+// were picked for the dark ground and drop to roughly 1.5:1 on the light page.
+//
+// `tone` here labels three different measures, not three states — added, spent
+// and pending are not success/error. Only pending is genuinely a status, so it
+// is the only one that keeps a colour; the other two read as plain text. That
+// is the point of colour meaning something.
+const StatTile = ({ label, value, tone, helper }) => {
+  const toneStyles = {
+    pending: 'text-[var(--badge-pending-fg)]',
+    neutral: 'text-[var(--text-secondary)]',
+  };
+  return (
+    <Surface tone="metric" radius="sm" className="p-3.5 text-[var(--text-primary)]">
+      <p className={`text-sm font-bold uppercase ${toneStyles[tone] || toneStyles.neutral}`}>{label}</p>
+      <p className="mt-2 text-lg font-semibold tracking-tight text-[var(--text-primary)]">{value}</p>
+      {helper && <p className="mt-1 text-sm font-semibold text-[var(--text-primary)]">{helper}</p>}
+    </Surface>
+  );
 };
 
-const ApprovalItem = ({ icon, label, value, tone }) => {
-  const toneStyles = { emerald: 'bg-emerald-50 text-emerald-600', amber: 'bg-amber-50 text-amber-600', red: 'bg-red-50 text-red-600' };
-  return <div className="flex items-center gap-3 rounded-2xl border border-[var(--glass-border-strong)] bg-[var(--glass-bg-strong)] p-3 backdrop-blur-md"><div className={`flex h-9 w-9 items-center justify-center rounded-xl ${toneStyles[tone]}`}>{icon}</div><div><p className="text-sm font-semibold text-[var(--text-primary)]">{label}</p><p className="mt-0.5 text-lg font-semibold text-[var(--text-primary)]">{value}</p></div></div>;
-};
+// The icon chip carried `bg-emerald-50 text-emerald-600` — a -50 fill is a lit
+// patch on the dark themes. It is a status (approved / waiting / rejected), so
+// the badge tones apply directly.
+const ApprovalItem = ({ icon, label, value, tone }) => (
+  <Surface tone="strong" className="flex items-center gap-3 p-3">
+    <div className={`badge badge-${tone} flex h-9 w-9 shrink-0 items-center justify-center rounded-xl`}>{icon}</div>
+    <div>
+      <p className="text-sm font-semibold text-[var(--text-primary)]">{label}</p>
+      <p className="mt-0.5 text-lg font-semibold text-[var(--text-primary)]">{value}</p>
+    </div>
+  </Surface>
+);
 
 export default WalletDetails;

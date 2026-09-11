@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { ArrowLeft, FileText, Download } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
+import Badge from '../components/Badge';
 import SummaryApi from '../common';
 import { goToCustomerReturn } from '../helpers/customerReturnNavigation';
 
@@ -22,29 +23,17 @@ const formatDateTime = (value) => {
 
 // Every row is an admin-sent document: client-stage agreement/general documents,
 // or lead-stage proposals and follow-up attachments.
+// The badge says what KIND of document this is — proposal, follow-up,
+// agreement. That is a label, not a status, so it no longer takes a status
+// colour: amber for a proposal implied "needs attention", sky was a hue the
+// portal does not use at all, and each -200 text was picked against the dark
+// ground (roughly 1.5:1 on the light page). All four kinds now read neutral and
+// are told apart by their words.
 const getDocMeta = (doc) => {
-  if (doc?.kind === 'proposal') {
-    return {
-      label: `Proposal v${doc.version}`,
-      badge: 'border-amber-300/40 bg-amber-400/15 text-amber-200',
-    };
-  }
-  if (doc?.kind === 'follow-up') {
-    return {
-      label: 'Follow-up Document',
-      badge: 'border-sky-300/40 bg-sky-400/15 text-sky-200',
-    };
-  }
-  if (doc?.source === 'agreement') {
-    return {
-      label: 'Agreement',
-      badge: 'border-emerald-300/40 bg-emerald-400/15 text-emerald-200',
-    };
-  }
-  return {
-    label: 'Document',
-    badge: 'border-[var(--glass-border-strong)] bg-[var(--glass-bg)] text-[var(--text-secondary)]',
-  };
+  if (doc?.kind === 'proposal') return { label: `Proposal v${doc.version}` };
+  if (doc?.kind === 'follow-up') return { label: 'Follow-up Document' };
+  if (doc?.source === 'agreement') return { label: 'Agreement' };
+  return { label: 'Document' };
 };
 
 const CustomerDocuments = () => {
@@ -126,7 +115,7 @@ const CustomerDocuments = () => {
               {loading ? (
                 <p className="mt-6 text-sm text-[var(--text-secondary)]">Loading documents…</p>
               ) : error ? (
-                <p className="mt-6 text-sm text-rose-300">{error}</p>
+                <p className="mt-6 text-sm text-[var(--badge-error-fg)]">{error}</p>
               ) : documents.length === 0 ? (
                 <p className="mt-6 text-sm text-[var(--text-secondary)]">
                   No documents yet. Any document shared with you before or after becoming a client will appear here.
@@ -143,9 +132,9 @@ const CustomerDocuments = () => {
                       >
                         <div className="min-w-0">
                           <div className="flex flex-wrap items-center gap-2">
-                            <span className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold ${meta.badge}`}>
+                            <Badge tone="neutral" size="sm">
                               {meta.label}
-                            </span>
+                            </Badge>
                             <span className="truncate text-sm font-semibold text-[var(--text-primary)]">
                               {doc.name || 'Document'}
                             </span>

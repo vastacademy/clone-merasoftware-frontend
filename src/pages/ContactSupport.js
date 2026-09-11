@@ -5,6 +5,8 @@ import Context from '../context';
 import CreateTicket from '../components/CreateTicket';
 import TicketsList from '../components/TicketsList';
 import DashboardLayout from '../components/DashboardLayout';
+import Surface from '../components/Surface';
+import Badge from '../components/Badge';
 import { AnimatedSection, getStaggerDelay } from '../components/PageMotion';
 
 const ContactSupportPage = () => {
@@ -46,10 +48,10 @@ const ContactSupportPage = () => {
 
         <div className="relative mx-auto max-w-6xl">
           <div className="text-center">
-            <span className="inline-flex items-center rounded-full border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] px-4 py-1.5 text-sm font-medium text-[var(--text-primary)] shadow-[var(--card-shadow)] backdrop-blur-2xl">
+            <Badge tone="neutral">
               <Sparkles className="mr-2 h-3.5 w-3.5" />
               Support
-            </span>
+            </Badge>
             <h1 className="mt-5 text-2xl font-bold tracking-tight text-[var(--text-primary)] sm:text-3xl lg:text-4xl">
               How can we help you?
             </h1>
@@ -60,11 +62,10 @@ const ContactSupportPage = () => {
 
           {/* Contact Options */}
           <div className="mt-10 grid grid-cols-1 gap-6 sm:mt-12 md:grid-cols-3">
-            <AnimatedSection delay={getStaggerDelay(0)} className="group relative overflow-hidden rounded-3xl border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] p-6 text-center shadow-[var(--card-shadow)] backdrop-blur-2xl backdrop-saturate-150 transition-all duration-300 hover:-translate-y-1.5 hover:border-emerald-300/60 hover:bg-[var(--glass-bg-strong)] hover:shadow-[0_24px_48px_rgba(16,185,129,0.28)]">
-              <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-[var(--glass-sheen)] to-transparent" />
-              <div className="relative mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] backdrop-blur-md">
+            <Surface as={AnimatedSection} delay={getStaggerDelay(0)} radius="panel" className="group p-6 text-center">
+              <Surface radius="card" className="mx-auto flex h-14 w-14 items-center justify-center">
                 <MessageSquare className="h-7 w-7 text-[var(--text-primary)]" strokeWidth={1.75} />
-              </div>
+              </Surface>
               <h3 className="relative mt-5 text-xl font-semibold text-[var(--text-primary)]">Support Ticket</h3>
               <p className="relative mt-2 text-base leading-relaxed text-[var(--text-secondary)]">
                 Create a support ticket for any issues or questions you have.
@@ -75,33 +76,31 @@ const ContactSupportPage = () => {
               >
                 Create New Ticket
               </button>
-            </AnimatedSection>
+            </Surface>
 
-            <AnimatedSection delay={getStaggerDelay(1)} className="relative overflow-hidden rounded-3xl border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] p-6 text-center shadow-[var(--card-shadow)] backdrop-blur-2xl backdrop-saturate-150">
-              <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-[var(--glass-sheen)] to-transparent" />
-              <div className="relative mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] backdrop-blur-md">
+            <Surface as={AnimatedSection} delay={getStaggerDelay(1)} radius="panel" className="p-6 text-center">
+              <Surface radius="card" className="mx-auto flex h-14 w-14 items-center justify-center">
                 <Phone className="h-7 w-7 text-[var(--text-primary)]" strokeWidth={1.75} />
-              </div>
+              </Surface>
               <h3 className="relative mt-5 text-xl font-semibold text-[var(--text-primary)]">Call Us</h3>
               <p className="relative mt-2 text-base leading-relaxed text-[var(--text-secondary)]">
                 For urgent matters, feel free to call our support team directly.
               </p>
               <p className="relative mt-4 text-lg font-semibold text-emerald-400">+91 92565 37003</p>
               <p className="relative mt-1 text-sm text-[var(--text-muted)]">Monday-Friday: 9AM-6PM IST</p>
-            </AnimatedSection>
+            </Surface>
 
-            <AnimatedSection delay={getStaggerDelay(2)} className="relative overflow-hidden rounded-3xl border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] p-6 text-center shadow-[var(--card-shadow)] backdrop-blur-2xl backdrop-saturate-150">
-              <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-[var(--glass-sheen)] to-transparent" />
-              <div className="relative mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] backdrop-blur-md">
+            <Surface as={AnimatedSection} delay={getStaggerDelay(2)} radius="panel" className="p-6 text-center">
+              <Surface radius="card" className="mx-auto flex h-14 w-14 items-center justify-center">
                 <Mail className="h-7 w-7 text-[var(--text-primary)]" strokeWidth={1.75} />
-              </div>
+              </Surface>
               <h3 className="relative mt-5 text-xl font-semibold text-[var(--text-primary)]">Email Us</h3>
               <p className="relative mt-2 text-base leading-relaxed text-[var(--text-secondary)]">
                 You can also reach our support team via email for general inquiries.
               </p>
               <p className="relative mt-4 text-lg font-semibold text-emerald-400">info@vacomputers.com</p>
               <p className="relative mt-1 text-sm text-[var(--text-muted)]">We typically respond within 24 hours</p>
-            </AnimatedSection>
+            </Surface>
           </div>
 
           {/* Tickets List */}
@@ -116,7 +115,7 @@ const ContactSupportPage = () => {
               <h2 className="text-xl font-bold text-[var(--text-primary)]">Frequently Asked Questions</h2>
             </div>
 
-            <div className="divide-y divide-[var(--divider)] overflow-hidden rounded-3xl border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] backdrop-blur-2xl backdrop-saturate-150">
+            <Surface radius="panel" className="divide-y divide-[var(--divider)] overflow-hidden">
               {faqs.map((faq, index) => (
                 <div key={index} className="hover:bg-[var(--glass-bg-subtle)]">
                   <button
@@ -139,7 +138,7 @@ const ContactSupportPage = () => {
                   )}
                 </div>
               ))}
-            </div>
+            </Surface>
           </div>
         </div>
       </div>

@@ -9,6 +9,9 @@ import Context from '../context';
 import CreateTicket from './CreateTicket';
 import TriangleMazeLoader from '../components/TriangleMazeLoader';
 import { useSelector } from 'react-redux';
+import Surface from './Surface';
+import Badge from './Badge';
+import GlassButton from './GlassButton';
 
 const TicketsList = () => {
   const navigate = useNavigate();
@@ -64,34 +67,20 @@ const TicketsList = () => {
     }
   };
   
-  // Status badge styling helper
+  // Status pill. These were opaque `-100/-800` pairs — `bg-yellow-100
+  // text-yellow-800`, `bg-blue-100 text-blue-800` — which are light patches
+  // that ignore the theme entirely: on the dark page they read as lit slabs,
+  // and blue is not in the portal palette at all. Same tone map as
+  // TicketDetail.js, so one status cannot be two colours on two screens.
+  const STATUS_BADGE = {
+    pending: { label: 'Pending', tone: 'pending' },
+    open: { label: 'Open', tone: 'neutral' },
+    closed: { label: 'Closed', tone: 'success' },
+  };
+
   const getStatusBadge = (status) => {
-    switch (status) {
-      case 'pending':
-        return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-            Pending
-          </span>
-        );
-      case 'open':
-        return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-            Open
-          </span>
-        );
-      case 'closed':
-        return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[var(--glass-bg-strong)] text-[var(--text-secondary)]">
-            Closed
-          </span>
-        );
-      default:
-        return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[var(--glass-bg-strong)] text-[var(--text-secondary)]">
-            Unknown
-          </span>
-        );
-    }
+    const meta = STATUS_BADGE[status] || { label: 'Unknown', tone: 'neutral' };
+    return <Badge tone={meta.tone} size="sm">{meta.label}</Badge>;
   };
   
   // Pagination handler
@@ -146,7 +135,7 @@ const TicketsList = () => {
           onClick={() => handlePageChange(i)}
           className={`relative inline-flex items-center border px-4 py-2 backdrop-blur-md ${
             i === currentPage
-              ? 'z-10 border-emerald-400/50 bg-emerald-500/25 text-[var(--text-primary)]'
+              ? 'z-10 border-[var(--badge-success-border)] bg-[var(--badge-success-bg)] text-[var(--text-primary)]'
               : 'border-[var(--glass-border-strong)] bg-[var(--glass-bg)] text-[var(--text-secondary)] hover:bg-[var(--glass-bg-strong)]'
           }`}
         >
@@ -192,7 +181,7 @@ const TicketsList = () => {
   }, [currentPage, statusFilter, userDetails, isInitialized]);
   
   return (
-    <div className="relative overflow-hidden rounded-3xl border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] shadow-[var(--card-shadow)] backdrop-blur-2xl backdrop-saturate-150">
+    <Surface radius="panel" className="relative overflow-hidden">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-[var(--glass-sheen)] to-transparent" />
       <div className="relative flex items-center justify-between gap-3 border-b border-[var(--glass-border)] p-4 sm:px-6">
         <h2 className="flex items-center text-xl font-semibold text-[var(--text-primary)]">
@@ -207,7 +196,7 @@ const TicketsList = () => {
                 setStatusFilter(e.target.value);
                 setCurrentPage(1);
               }}
-              className="rounded-xl border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] py-1.5 pl-9 pr-3 text-sm text-[var(--text-primary)] backdrop-blur-md focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/40"
+              className="rounded-xl border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] py-1.5 pl-9 pr-3 text-sm text-[var(--text-primary)] backdrop-blur-md focus:border-[var(--badge-success-border)] focus:outline-none focus:ring-4 focus:ring-[var(--badge-success-bg)]"
             >
               <option className="bg-[var(--menu-bg)] text-[var(--text-primary)]" value="">All Tickets</option>
               <option className="bg-[var(--menu-bg)] text-[var(--text-primary)]" value="pending">Pending</option>
@@ -216,14 +205,11 @@ const TicketsList = () => {
             </select>
             <Filter className="absolute left-3 top-2 h-4 w-4 text-[var(--text-muted)]" />
           </div>
-          <button
-            onClick={() => setShowCreateForm(true)}
-            className="flex items-center rounded-xl border border-emerald-400/40 bg-emerald-500/20 px-3 py-1.5 text-sm font-medium text-[var(--text-primary)] backdrop-blur-md transition-colors hover:bg-emerald-500/35 sm:px-4"
-          >
-            <Plus className="mr-1 h-4 w-4" />
+          <GlassButton size="sm" onClick={() => setShowCreateForm(true)} className="sm:px-4">
+            <Plus className="h-4 w-4" />
             <span className="hidden sm:inline">Create Ticket</span>
             <span className="sm:hidden">New</span>
-          </button>
+          </GlassButton>
         </div>
       </div>
 
@@ -233,13 +219,10 @@ const TicketsList = () => {
         </div>
       ) : error ? (
         <div className="relative p-6 text-center">
-          <p className="text-rose-400">{error}</p>
-          <button
-            onClick={fetchTickets}
-            className="mt-4 rounded-xl border border-emerald-400/40 bg-emerald-500/20 px-4 py-2 text-sm text-[var(--text-primary)] backdrop-blur-md hover:bg-emerald-500/35"
-          >
+          <p className="text-[var(--badge-error-fg)]">{error}</p>
+          <GlassButton onClick={fetchTickets} className="mt-4">
             Try Again
-          </button>
+          </GlassButton>
         </div>
       ) : tickets.length === 0 ? (
         <div className="relative p-12 text-center">
@@ -248,13 +231,10 @@ const TicketsList = () => {
           </div>
           <h3 className="mb-2 text-lg font-medium text-[var(--text-primary)]">No tickets found</h3>
           <p className="mb-6 text-[var(--text-secondary)]">You haven't created any support tickets yet.</p>
-          <button
-            onClick={() => setShowCreateForm(true)}
-            className="mx-auto flex items-center rounded-xl border border-emerald-400/40 bg-emerald-500/20 px-4 py-2 text-[var(--text-primary)] backdrop-blur-md hover:bg-emerald-500/35"
-          >
-            <Plus className="mr-2 h-4 w-4" />
+          <GlassButton variant="primary" onClick={() => setShowCreateForm(true)} className="mx-auto">
+            <Plus className="h-4 w-4" />
             Create Your First Ticket
-          </button>
+          </GlassButton>
         </div>
       ) : (
         <>
@@ -313,7 +293,7 @@ const TicketsList = () => {
                       {formatDate(ticket.updatedAt)}
                     </td>
                     <td className="whitespace-nowrap px-6 py-4 text-right text-sm">
-                      <span className="flex items-center justify-end gap-1 font-medium text-emerald-400">
+                      <span className="flex items-center justify-end gap-1 font-medium text-[var(--badge-success-fg)]">
                         View <ArrowRight className="h-4 w-4" />
                       </span>
                     </td>
@@ -335,7 +315,7 @@ const TicketsList = () => {
           refreshTickets={fetchTickets}
         />
       )}
-    </div>
+    </Surface>
   );
 };
 

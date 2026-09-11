@@ -3,14 +3,14 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import {
   FileText,
-  Layers3,
   RefreshCw,
 } from 'lucide-react';
 import SummaryApi from '../common';
 import DashboardLayout from '../components/DashboardLayout';
 import { AnimatedSection } from '../components/PageMotion';
 import CustomerWorkspaceTabs from '../components/CustomerWorkspaceTabs';
-import OrderListRow, { OrderListHeader } from '../components/OrderListRow';
+import { OrderList } from '../components/OrderListRow';
+import GlassButton from '../components/GlassButton';
 import Context from '../context';
 import { isProjectItem, isPlanItem, sortItemsLatestFirst } from '../helpers/orderType';
 import { getRemainingDays, isActiveWorkItem } from '../helpers/orderPresentation';
@@ -113,14 +113,11 @@ const ProjectsAndPlans = () => {
             </p>
           </div>
 
-          <AnimatedSection className="relative mt-10 overflow-hidden rounded-3xl border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] shadow-[var(--card-shadow)] backdrop-blur-2xl backdrop-saturate-150">
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-[var(--glass-sheen)] to-transparent" />
-
-            <div className="relative flex flex-col gap-3 border-b border-[var(--glass-border)] p-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:px-6">
-              <h2 className="flex items-center text-xl font-semibold text-[var(--text-primary)]">
-                <Layers3 className="mr-2 h-5 w-5" />
-                Projects and Plans
-              </h2>
+          <OrderList
+            as={AnimatedSection}
+            className="mt-10"
+            title="Projects and Plans"
+            toolbar={(
               <CustomerWorkspaceTabs
                 tabs={[
                   { id: 'all', label: 'All' },
@@ -132,63 +129,39 @@ const ProjectsAndPlans = () => {
                 ariaLabel="Projects and plans filters"
                 variant="inline"
               />
-              <div className="flex flex-wrap items-center justify-center gap-2">
-                <div className="rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg)] px-4 py-2 text-sm font-semibold text-[var(--text-primary)] backdrop-blur-md">
-                  Total: {items.length}
-                </div>
-                <div className="rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg)] px-4 py-2 text-sm font-semibold text-[var(--text-primary)] backdrop-blur-md">
-                  Active: {activeWorkCount}
-                </div>
-                <button
-                  type="button"
-                  onClick={fetchData}
-                  className="inline-flex items-center gap-2 rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg)] px-4 py-3 text-sm font-semibold text-[var(--text-primary)] backdrop-blur-md transition hover:bg-[var(--glass-bg-strong)]"
-                >
+            )}
+            actions={(
+              <>
+                {/* Counters, not buttons — rendered as divs so they are not
+                    announced as interactive. */}
+                <GlassButton as="div">Total: {items.length}</GlassButton>
+                <GlassButton as="div">Active: {activeWorkCount}</GlassButton>
+                <GlassButton onClick={fetchData}>
                   <RefreshCw size={16} />
                   Refresh
-                </button>
-              </div>
-            </div>
-
-            <OrderListHeader />
-
-            {loading ? (
-              <div className="relative px-5 py-10 text-center text-base text-[var(--text-secondary)] sm:px-6">Loading projects and plans...</div>
-            ) : visibleItems.length > 0 ? (
-                  <div className="relative divide-y divide-[var(--divider)]">
-                    {visibleItems.map((order, index) => (
-                      <OrderListRow
-                        key={order._id}
-                        order={order}
-                        index={index}
-                        onClick={openDetails}
-                      />
-                    ))}
-              </div>
-            ) : (
-              <div className="relative px-5 py-12 text-center sm:px-6">
-                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] text-[var(--text-primary)] backdrop-blur-md">
-                  <FileText className="h-6 w-6" />
-                </div>
+                </GlassButton>
+              </>
+            )}
+            loading={loading}
+            loadingLabel="Loading projects and plans..."
+            items={visibleItems}
+            onOpen={openDetails}
+            emptyIcon={FileText}
+            empty={(
+              <>
                 <h3 className="mt-4 text-lg font-semibold text-[var(--text-primary)]">No items found</h3>
                 <p className="mt-2 text-base text-[var(--text-secondary)]">There are no projects or plans in this view.</p>
                 <div className="mt-5 flex flex-wrap justify-center gap-3">
-                  <Link
-                    to="/dashboard"
-                    className="inline-flex items-center gap-2 rounded-2xl bg-[rgb(var(--ink-rgb))] px-4 py-3 text-base font-semibold text-[var(--page-bg)] transition hover:bg-[rgb(var(--ink-rgb)/0.85)]"
-                  >
+                  <GlassButton as={Link} to="/dashboard" variant="primary" size="lg">
                     Back to Dashboard
-                  </Link>
-                  <Link
-                    to="/start-new-project"
-                    className="inline-flex items-center gap-2 rounded-2xl border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] px-4 py-3 text-base font-semibold text-[var(--text-primary)] backdrop-blur-md transition hover:bg-[var(--glass-bg-strong)]"
-                  >
+                  </GlassButton>
+                  <GlassButton as={Link} to="/start-new-project" size="lg" strong>
                     Explore Services
-                  </Link>
+                  </GlassButton>
                 </div>
-              </div>
+              </>
             )}
-          </AnimatedSection>
+          />
         </div>
       </div>
     </DashboardLayout>

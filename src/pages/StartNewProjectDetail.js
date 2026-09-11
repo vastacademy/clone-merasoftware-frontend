@@ -3,6 +3,8 @@ import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import DashboardLayout from '../components/DashboardLayout';
 import ProjectDetailView from '../components/ProjectDetailView';
+import Surface from '../components/Surface';
+import GlassButton from '../components/GlassButton';
 import SummaryApi from '../common';
 import { useDraftOrders } from '../context/DraftOrdersContext';
 import { goToCustomerReturn } from '../helpers/customerReturnNavigation';
@@ -71,16 +73,12 @@ const StartNewProjectDetail = () => {
       <div className="w-full px-4 py-4 pb-8 sm:px-6 lg:px-8 lg:pb-10">
         <div className="mx-auto flex w-full max-w-7xl flex-col gap-4">
           {!loaded ? null : !project ? (
-            <div className="glass-panel overflow-hidden rounded-[2rem] px-5 py-10 text-center">
+            <Surface radius="lg" className="overflow-hidden px-5 py-10 text-center">
               <p className="text-base text-[var(--text-primary)]">Project not found.</p>
-              <button
-                type="button"
-                onClick={handleBack}
-                className="mt-4 rounded-2xl bg-[rgb(var(--ink-rgb))] px-4 py-2 text-base font-semibold text-[var(--page-bg)] transition hover:bg-[rgb(var(--ink-rgb)/0.85)]"
-              >
+              <GlassButton variant="primary" onClick={handleBack} className="mt-4">
                 Back to Projects
-              </button>
-            </div>
+              </GlassButton>
+            </Surface>
           ) : (
             <ProjectDetailView
               project={project}

@@ -1,12 +1,15 @@
 import React, { useState, useEffect, useRef, useContext } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { format } from 'date-fns';
-import { ArrowLeft, Send, Clock, User, Check, X, AlertTriangle, Sparkles } from 'lucide-react';
+import { ArrowLeft, Send, User, Check, X, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import SummaryApi from '../common';
 import Context from '../context';
 import TriangleMazeLoader from '../components/TriangleMazeLoader';
 import DashboardLayout from '../components/DashboardLayout';
+import Surface from '../components/Surface';
+import Badge from '../components/Badge';
+import GlassButton from '../components/GlassButton';
 import { useSelector } from 'react-redux';
 import { customerReturnState, goToCustomerReturn } from '../helpers/customerReturnNavigation';
 
@@ -142,37 +145,19 @@ const TicketDetail = ({ isAdmin = false }) => {
     }
   };
 
-  // Get status badge with proper styling
+  // Status pill. Four hand-written spans became four tones — the amber and
+  // emerald ones were `text-amber-300` / `text-emerald-300` on a 20% fill, which
+  // measures about 1.2:1 on the light page. The icons are dropped so this badge
+  // has the same shape as every other status badge in the portal.
+  const STATUS_BADGE = {
+    pending: { label: 'Pending', tone: 'pending' },
+    open: { label: 'Open', tone: 'neutral' },
+    closed: { label: 'Closed', tone: 'success' },
+  };
+
   const getStatusBadge = (status) => {
-    switch (status) {
-      case 'pending':
-        return (
-          <span className="inline-flex items-center px-3 py-1 rounded-full border border-amber-400/40 bg-amber-500/20 text-sm font-medium text-amber-300 backdrop-blur-md">
-            <Clock className="h-4 w-4 mr-1" />
-            Pending
-          </span>
-        );
-      case 'open':
-        return (
-          <span className="inline-flex items-center px-3 py-1 rounded-full border border-[var(--glass-border-strong)] bg-[var(--glass-bg-strong)] text-sm font-medium text-[var(--text-primary)] backdrop-blur-md">
-            <User className="h-4 w-4 mr-1" />
-            Open
-          </span>
-        );
-      case 'closed':
-        return (
-          <span className="inline-flex items-center px-3 py-1 rounded-full border border-emerald-400/40 bg-emerald-500/20 text-sm font-medium text-emerald-300 backdrop-blur-md">
-            <Check className="h-4 w-4 mr-1" />
-            Closed
-          </span>
-        );
-      default:
-        return (
-          <span className="inline-flex items-center px-3 py-1 rounded-full border border-[var(--glass-border)] bg-[var(--glass-bg)] text-sm font-medium text-[var(--text-secondary)] backdrop-blur-md">
-            Unknown
-          </span>
-        );
-    }
+    const meta = STATUS_BADGE[status] || { label: 'Unknown', tone: 'neutral' };
+    return <Badge tone={meta.tone}>{meta.label}</Badge>;
   };
 
   // Scroll to bottom of messages when ticket updates
@@ -205,27 +190,17 @@ const TicketDetail = ({ isAdmin = false }) => {
       <DashboardLayout user={userDetails}>
         <div className="relative min-h-[calc(100vh-4rem)] overflow-hidden px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
           <div className="pointer-events-none absolute inset-0 bg-[var(--scrim)]" />
-          <div className="relative mx-auto max-w-3xl rounded-[1.75rem] border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] p-8 backdrop-blur-2xl backdrop-saturate-150 shadow-[var(--card-shadow)]">
-            <div className="flex items-center justify-center flex-col text-center">
-              <AlertTriangle className="h-12 w-12 text-red-400 mb-4" />
-              <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">Error Loading Ticket</h3>
-              <p className="text-base text-[var(--text-secondary)] mb-4">{error}</p>
+          <Surface radius="panel" className="relative mx-auto max-w-3xl p-8">
+            <div className="flex flex-col items-center justify-center text-center">
+              <AlertTriangle className="mb-4 h-12 w-12 text-[var(--badge-error-fg)]" />
+              <h3 className="mb-2 text-lg font-semibold text-[var(--text-primary)]">Error Loading Ticket</h3>
+              <p className="mb-4 text-base text-[var(--text-secondary)]">{error}</p>
               <div className="flex gap-4">
-                <button
-                  onClick={handleBack}
-                  className="px-4 py-2 rounded-xl border border-[var(--glass-border)] bg-[var(--glass-bg-subtle)] text-[var(--text-primary)] hover:bg-[var(--glass-bg-subtle)] transition-colors text-base font-medium"
-                >
-                  Go Back
-                </button>
-                <button
-                  onClick={fetchTicketDetails}
-                  className="px-4 py-2 bg-emerald-600 text-[var(--text-primary)] rounded-xl hover:bg-emerald-700 transition-colors text-base font-medium"
-                >
-                  Try Again
-                </button>
+                <GlassButton onClick={handleBack}>Go Back</GlassButton>
+                <GlassButton variant="primary" onClick={fetchTicketDetails}>Try Again</GlassButton>
               </div>
             </div>
-          </div>
+          </Surface>
         </div>
       </DashboardLayout>
     );
@@ -236,19 +211,14 @@ const TicketDetail = ({ isAdmin = false }) => {
       <DashboardLayout user={userDetails}>
         <div className="relative min-h-[calc(100vh-4rem)] overflow-hidden px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
           <div className="pointer-events-none absolute inset-0 bg-[var(--scrim)]" />
-          <div className="relative mx-auto max-w-3xl rounded-[1.75rem] border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] p-8 backdrop-blur-2xl backdrop-saturate-150 shadow-[var(--card-shadow)]">
-            <div className="flex items-center justify-center flex-col text-center">
-              <AlertTriangle className="h-12 w-12 text-amber-400 mb-4" />
-              <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">Ticket Not Found</h3>
-              <p className="text-base text-[var(--text-secondary)] mb-4">The ticket you're looking for doesn't exist or you don't have permission to view it.</p>
-              <button
-                onClick={handleBack}
-                className="px-4 py-2 bg-emerald-600 text-[var(--text-primary)] rounded-xl hover:bg-emerald-700 transition-colors text-base font-medium"
-              >
-                Go Back
-              </button>
+          <Surface radius="panel" className="relative mx-auto max-w-3xl p-8">
+            <div className="flex flex-col items-center justify-center text-center">
+              <AlertTriangle className="mb-4 h-12 w-12 text-[var(--badge-pending-fg)]" />
+              <h3 className="mb-2 text-lg font-semibold text-[var(--text-primary)]">Ticket Not Found</h3>
+              <p className="mb-4 text-base text-[var(--text-secondary)]">The ticket you're looking for doesn't exist or you don't have permission to view it.</p>
+              <GlassButton variant="primary" onClick={handleBack}>Go Back</GlassButton>
             </div>
-          </div>
+          </Surface>
         </div>
       </DashboardLayout>
     );
@@ -261,14 +231,10 @@ const TicketDetail = ({ isAdmin = false }) => {
     <div className="relative mx-auto flex w-full max-w-5xl flex-col gap-4">
       {/* Ticket Header */}
       <div className="relative flex items-center justify-center">
-        <button
-          type="button"
-          onClick={handleBack}
-          className="absolute left-0 inline-flex w-fit shrink-0 items-center gap-2 rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg)] px-5 py-3 text-lg font-semibold text-[var(--text-primary)] backdrop-blur-md transition hover:bg-[var(--glass-bg-strong)]"
-        >
+        <GlassButton size="lg" onClick={handleBack} className="absolute left-0 shrink-0">
           <ArrowLeft className="h-5 w-5" />
           Back
-        </button>
+        </GlassButton>
 
         <div className="text-center">
           <h1 className="flex flex-wrap items-center justify-center gap-3 text-2xl font-bold tracking-tight text-[var(--text-primary)] sm:text-3xl">
@@ -283,12 +249,11 @@ const TicketDetail = ({ isAdmin = false }) => {
 
       {isAdmin && ticket.status !== 'closed' && (
         <div className="flex justify-center">
-          <button
+          <GlassButton
             onClick={handleCloseTicket}
             disabled={closingTicket}
-            className={`px-4 py-2 bg-red-600 text-[var(--text-primary)] rounded-xl hover:bg-red-700 transition-colors flex items-center text-base font-medium ${
-              closingTicket ? 'opacity-70 cursor-not-allowed' : ''
-            }`}
+            variant="primary"
+            className={closingTicket ? 'cursor-not-allowed opacity-70' : ''}
           >
             {closingTicket ? (
               <>
@@ -301,13 +266,12 @@ const TicketDetail = ({ isAdmin = false }) => {
                 <span>Close Ticket</span>
               </>
             )}
-          </button>
+          </GlassButton>
         </div>
       )}
 
       {/* Ticket Details */}
-      <div className="relative overflow-hidden rounded-[1.75rem] border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] p-5 backdrop-blur-2xl backdrop-saturate-150 shadow-[var(--card-shadow)] sm:p-6">
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-[var(--glass-sheen)] to-transparent" />
+      <Surface radius="panel" sheen className="overflow-hidden p-5 sm:p-6">
 
         <div className="relative grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           <div>
@@ -339,11 +303,14 @@ const TicketDetail = ({ isAdmin = false }) => {
             <div className="space-y-6 relative">
               {ticket.statusHistory?.map((status, index) => (
                 <div key={index} className="flex items-start">
+                  {/* A timeline dot IS a status, so it keeps its colour — but
+                      amber-500/60 and emerald-500/60 were picked against the dark
+                      page. The badge tokens invert for light mode. */}
                   <div className={`
-                    w-5 h-5 rounded-full flex-shrink-0 z-10 border
-                    ${status.status === 'pending' ? 'border-amber-400/40 bg-amber-500/60' : ''}
+                    z-10 h-5 w-5 flex-shrink-0 rounded-full border
+                    ${status.status === 'pending' ? 'border-[var(--badge-pending-border)] bg-[var(--badge-pending-fg)]' : ''}
                     ${status.status === 'open' ? 'border-[var(--glass-border-strong)] bg-[var(--glass-bg-strong)]' : ''}
-                    ${status.status === 'closed' ? 'border-emerald-400/40 bg-emerald-500/60' : ''}
+                    ${status.status === 'closed' ? 'border-[var(--badge-success-border)] bg-[var(--badge-success-fg)]' : ''}
                   `}></div>
                   <div className="ml-4">
                     <p className="text-base font-medium text-[var(--text-primary)] capitalize">
@@ -363,7 +330,7 @@ const TicketDetail = ({ isAdmin = false }) => {
         <div className="relative mb-2">
           <h2 className="text-sm font-medium text-[var(--text-muted)] mb-4">Conversation</h2>
 
-          <div className="rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg-subtle)] overflow-hidden">
+          <Surface tone="subtle" className="overflow-hidden">
             <div className="p-4 bg-[var(--glass-bg-subtle)] border-b border-[var(--glass-border)]">
               <div className="flex items-start gap-3">
                 <div className="w-8 h-8 rounded-full border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] flex items-center justify-center flex-shrink-0">
@@ -393,11 +360,19 @@ const TicketDetail = ({ isAdmin = false }) => {
 
                 return (
                   <div key={index} className={`flex items-start gap-3 ${isAdmin ? 'flex-row-reverse' : ''}`}>
-                    <div className={`w-8 h-8 rounded-full border flex items-center justify-center flex-shrink-0 ${
-                      isAdmin ? 'border-amber-400/40 bg-amber-500/20' : 'border-[var(--glass-border-strong)] bg-[var(--glass-bg)]'
+                    {/* The support side used to be amber — avatar ring, icon and
+                        message bubble. Who sent a message is an identity, not a
+                        status, and amber already means "pending" two sections up
+                        on this same screen. The two sides are still told apart by
+                        the side they sit on, the icon, and the name above the
+                        bubble; the support bubble also sits one glass level
+                        heavier. `text-amber-300` on the light page measured about
+                        1.5:1 in any case. */}
+                    <div className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border ${
+                      isAdmin ? 'border-[var(--glass-border-strong)] bg-[var(--glass-bg-strong)]' : 'border-[var(--glass-border-strong)] bg-[var(--glass-bg)]'
                     }`}>
                       {isAdmin ? (
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-amber-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-[var(--text-primary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                         </svg>
                       ) : (
@@ -409,8 +384,8 @@ const TicketDetail = ({ isAdmin = false }) => {
                       <p className="text-base font-medium text-[var(--text-primary)]">
                         {isAdmin ? 'Support Team' : (ticket.userId?.name || 'Customer')}
                       </p>
-                      <div className={`mt-1 p-3 rounded-lg whitespace-pre-wrap text-base border ${
-                        isAdmin ? 'border-amber-400/30 bg-amber-500/10 text-[var(--text-primary)]' : 'border-[var(--glass-border)] bg-[var(--glass-bg-subtle)] text-[var(--text-primary)]'
+                      <div className={`mt-1 whitespace-pre-wrap rounded-xl border p-3 text-base text-[var(--text-primary)] ${
+                        isAdmin ? 'border-[var(--glass-border-strong)] bg-[var(--glass-bg-strong)]' : 'border-[var(--glass-border)] bg-[var(--glass-bg-subtle)]'
                       }`}>
                         {msg.message}
                       </div>
@@ -433,15 +408,14 @@ const TicketDetail = ({ isAdmin = false }) => {
                       value={replyMessage}
                       onChange={(e) => setReplyMessage(e.target.value)}
                       placeholder="Type your reply here..."
-                      className="flex-grow rounded-xl border border-[var(--glass-border)] bg-[var(--glass-bg-subtle)] p-2 text-base text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-emerald-400/50 focus:border-emerald-400/50"
+                      className="flex-grow rounded-xl border border-[var(--glass-border)] bg-[var(--glass-bg-subtle)] p-2 text-base text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-[var(--badge-success-border)] focus:outline-none focus:ring-4 focus:ring-[var(--badge-success-bg)]"
                       rows={3}
                     ></textarea>
-                    <button
+                    <GlassButton
                       type="submit"
+                      variant="primary"
                       disabled={sendingReply || !replyMessage.trim()}
-                      className={`px-4 py-2 bg-emerald-600 text-[var(--text-primary)] rounded-xl hover:bg-emerald-700 transition-colors text-base font-medium ${
-                        sendingReply || !replyMessage.trim() ? 'opacity-70 cursor-not-allowed' : ''
-                      }`}
+                      className={sendingReply || !replyMessage.trim() ? 'cursor-not-allowed opacity-70' : ''}
                     >
                       {sendingReply ? (
                         <div className="flex items-center">
@@ -454,21 +428,21 @@ const TicketDetail = ({ isAdmin = false }) => {
                           <span>Send</span>
                         </div>
                       )}
-                    </button>
+                    </GlassButton>
                   </div>
                 </form>
               </div>
             ) : (
               <div className="p-4 bg-[var(--glass-bg-subtle)] border-t border-[var(--glass-border)]">
                 <div className="flex items-center justify-center text-[var(--text-secondary)] text-base">
-                  <Check className="h-5 w-5 mr-2 text-emerald-400" />
+                  <Check className="mr-2 h-5 w-5 text-[var(--badge-success-fg)]" />
                   <span>This ticket is closed. If you have further questions, please create a new ticket.</span>
                 </div>
               </div>
             )}
-          </div>
+          </Surface>
         </div>
-      </div>
+      </Surface>
     </div>
     </div>
     </DashboardLayout>

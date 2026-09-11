@@ -1,11 +1,12 @@
 import React from 'react';
 import { ArrowRight, Layers3, LayoutGrid } from 'lucide-react';
+import Badge from './Badge';
+import Surface from './Surface';
 import { isProjectItem, isPlanItem } from '../helpers/orderType';
 import {
   getItemStatusMeta,
   getItemSummary,
   getItemTypeLabel,
-  getItemTypeAccent,
   getOrderCategory,
   getOrderDisplayName,
 } from '../helpers/orderPresentation';
@@ -23,21 +24,41 @@ const formatDate = (date) => {
 // CustomerDashboard.js (recent list) and ProjectsAndPlans.js (full list).
 // The ProjectsAndPlans layout is the canonical one.
 
-export const OrderListHeader = () => (
+// The projects/plans column set. Purchase history shows the same rows against a
+// different set (Order / Type / Status / Purchased / Price), which is the only
+// reason it had its own hand-written panel — so the columns are a prop now
+// rather than a reason to copy the frame.
+export const ORDER_LIST_COLUMNS = [
+  { label: 'Item', className: 'col-span-12 lg:col-span-5' },
+  { label: 'Type', className: 'col-span-6 lg:col-span-2' },
+  { label: 'Status', className: 'col-span-6 lg:col-span-2' },
+  { label: 'Updated', className: 'col-span-6 lg:col-span-2' },
+  { label: 'Open', className: 'col-span-6 lg:col-span-1 text-right' },
+];
+
+export const OrderListHeader = ({ columns = ORDER_LIST_COLUMNS }) => (
   <div className="relative grid grid-cols-12 gap-3 border-b border-[var(--glass-border)] bg-[var(--glass-bg-subtle)] px-5 py-3 text-sm font-semibold uppercase text-[var(--text-secondary)] sm:px-6">
-    <div className="col-span-12 lg:col-span-5">Item</div>
-    <div className="col-span-6 lg:col-span-2">Type</div>
-    <div className="col-span-6 lg:col-span-2">Status</div>
-    <div className="col-span-6 lg:col-span-2">Updated</div>
-    <div className="col-span-6 lg:col-span-1 text-right">Open</div>
+    {columns.map((column) => (
+      <div key={column.label} className={column.className}>{column.label}</div>
+    ))}
   </div>
 );
 
-const OrderListRow = ({ order, index = 0, onClick }) => {
+// A 4px coloured left bar used to encode the item TYPE — emerald for a project,
+// amber for a plan. It is gone, for three reasons that all point the same way:
+// the badge beside it was already made `neutral` on the grounds that a type is a
+// label and not a status; the row states its type twice in words anyway (the
+// badge and the TYPE column); and on a Completed row the green bar simply read
+// as "success". Dropping it also aligns the rows with their own column header —
+// OrderListHeader never had the matching border-l-4, so every row's content sat
+// 4px to the right of the header label above it.
+//
+// The `index` prop went with it: its only use was a zebra-stripe ternary whose
+// two branches were the same class.
+const OrderListRow = ({ order, onClick }) => {
   const status = getItemStatusMeta(order);
   const isProject = isProjectItem(order);
   const isPlan = isPlanItem(order);
-  const accent = getItemTypeAccent(order);
   const summary = getItemSummary(order);
   const category = getOrderCategory(order, 'Unknown type').split('_').join(' ');
   const currentValue = isPlan
@@ -51,9 +72,7 @@ const OrderListRow = ({ order, index = 0, onClick }) => {
       type="button"
       onClick={() => onClick?.(order)}
       className={[
-        'grid w-full grid-cols-12 gap-3 border-l-4 px-5 py-4 text-left transition hover:bg-[var(--glass-bg-hover)] sm:px-6',
-        accent.border,
-        index % 2 === 0 ? 'bg-[var(--glass-bg-subtle)]' : 'bg-[var(--glass-bg-subtle)]',
+        'grid w-full grid-cols-12 gap-3 bg-[var(--glass-bg-subtle)] px-5 py-4 text-left transition hover:bg-[var(--glass-bg-hover)] sm:px-6',
       ].join(' ')}
     >
       <div className="col-span-12 lg:col-span-5">
@@ -63,13 +82,13 @@ const OrderListRow = ({ order, index = 0, onClick }) => {
           </div>
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <span className={`rounded-full px-2.5 py-1 text-sm font-semibold uppercase ${accent.badge}`}>
+              <Badge tone="neutral" className="uppercase">
                 {getItemTypeLabel(order)}
-              </span>
+              </Badge>
               {summary && (
-                <span className="rounded-full border-[length:var(--glass-border-width)] border-[var(--glass-border-strong)] bg-[var(--glass-bg)] px-2.5 py-1 text-sm font-semibold uppercase text-[var(--text-secondary)]">
+                <Badge tone="neutral" className="uppercase">
                   {summary}
-                </span>
+                </Badge>
               )}
             </div>
             <h3 className="mt-2 truncate text-lg font-semibold text-[var(--text-primary)]">
@@ -95,9 +114,9 @@ const OrderListRow = ({ order, index = 0, onClick }) => {
       </div>
 
       <div className="col-span-6 lg:col-span-2 lg:flex lg:items-center">
-        <span className={`inline-flex w-fit rounded-full px-3 py-1 text-sm font-semibold ${status.tone}`}>
+        <Badge tone={status.tone} className="w-fit">
           {status.label}
-        </span>
+        </Badge>
       </div>
 
       <div className="col-span-6 lg:col-span-2 lg:flex lg:items-center">
@@ -120,5 +139,77 @@ const OrderListRow = ({ order, index = 0, onClick }) => {
     </button>
   );
 };
+
+// The whole list panel — frame, title bar, column header, rows, empty state.
+//
+// WHY THIS EXISTS
+// The rows were already shared, but everything around them was written twice.
+// CustomerDashboard and ProjectsAndPlans each had their own panel, their own
+// title bar, their own divide wrapper and their own empty state, so the two
+// drifted on the frame while agreeing on the rows: at one point the dashboard
+// list and the projects list had different corners, and the pages had to be
+// compared side by side to notice. A "recent projects" list is the projects
+// list with fewer rows; it should not be a second implementation of it.
+//
+// What stays per-page is what genuinely differs: the heading, the controls in
+// the title bar, and the empty state. Everything structural comes from here.
+export const OrderList = ({
+  title,
+  icon: Icon = Layers3,
+  actions,
+  toolbar,
+  items = [],
+  onOpen,
+  columns,
+  // Purchase history renders its own row (different columns, its own click
+  // target). Everything around the row still comes from here.
+  renderRow,
+  loading = false,
+  loadingLabel = 'Loading...',
+  emptyIcon: EmptyIcon,
+  empty,
+  // ProjectsAndPlans animates its panel in on mount and the dashboard does not,
+  // so the wrapper element stays the caller's choice rather than being baked in.
+  as,
+  className = '',
+  ...rest
+}) => (
+  <Surface as={as} radius="panel" sheen className={`overflow-hidden ${className}`} {...rest}>
+    <div className="relative flex flex-col gap-3 border-b border-[var(--glass-border)] p-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:px-6">
+      <h2 className="flex items-center text-xl font-semibold text-[var(--text-primary)]">
+        <Icon className="mr-2 h-5 w-5" />
+        {title}
+      </h2>
+      {toolbar}
+      {actions && <div className="flex flex-wrap items-center justify-center gap-2">{actions}</div>}
+    </div>
+
+    {loading ? (
+      <div className="relative px-5 py-10 text-center text-base text-[var(--text-secondary)] sm:px-6">{loadingLabel}</div>
+    ) : items.length > 0 ? (
+      <>
+        <OrderListHeader columns={columns} />
+        <div className="relative divide-y divide-[var(--divider)]">
+          {items.map((order) => (
+            <React.Fragment key={order._id}>
+              {renderRow ? renderRow(order) : <OrderListRow order={order} onClick={onOpen} />}
+            </React.Fragment>
+          ))}
+        </div>
+      </>
+    ) : (
+      <div className="relative px-5 py-12 text-center sm:px-6">
+        {/* The round glass tile above an empty state is written out 11 times
+            across the portal, always at h-14 w-14. Passing the icon is enough. */}
+        {EmptyIcon && (
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border-[length:var(--glass-border-width)] border-[var(--glass-border-strong)] bg-[var(--glass-bg)] text-[var(--text-primary)]">
+            <EmptyIcon className="h-6 w-6" />
+          </div>
+        )}
+        {empty}
+      </div>
+    )}
+  </Surface>
+);
 
 export default OrderListRow;

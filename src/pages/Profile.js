@@ -6,6 +6,8 @@ import SummaryApi from '../common';
 import { setUserDetails } from '../store/userSlice';
 import TriangleMazeLoader from '../components/TriangleMazeLoader';
 import DashboardLayout from '../components/DashboardLayout';
+import Surface from '../components/Surface';
+import Badge from '../components/Badge';
 import StorageService from '../utils/storageService';
 import CookieManager from '../utils/cookieManager';
 import uploadImage from '../helpers/uploadImage';
@@ -133,13 +135,13 @@ const Profile = () => {
         className="relative min-h-[calc(100vh-4rem)] overflow-hidden px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
       >
         <div className="pointer-events-none absolute inset-0 bg-[var(--scrim)]" />
-        {(loading || saving) && <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--scrim)] backdrop-blur-sm"><TriangleMazeLoader /></div>}
+        {(loading || saving) && <div className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center"><TriangleMazeLoader /></div>}
 
         <form onSubmit={handleSubmit} className="relative mx-auto max-w-3xl">
           <div className="text-center">
-            <span className="inline-flex items-center rounded-full border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] px-4 py-1.5 text-sm font-medium text-[var(--text-primary)] shadow-[var(--card-shadow)] backdrop-blur-2xl">
+            <Badge tone="neutral">
               Account
-            </span>
+            </Badge>
             <h1 className="mt-5 text-2xl font-bold tracking-tight text-[var(--text-primary)] sm:text-3xl lg:text-4xl">
               Profile settings
             </h1>
@@ -149,29 +151,27 @@ const Profile = () => {
           </div>
 
           <div className="mt-10 space-y-6">
-            <div className="relative overflow-hidden rounded-3xl border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] p-6 shadow-[var(--card-shadow)] backdrop-blur-2xl backdrop-saturate-150 sm:p-7">
-              <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-[var(--glass-sheen)] to-transparent" />
+            <Surface radius="panel" sheen className="p-6 sm:p-7">
               <div className="relative flex items-center gap-4">
                 <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] text-2xl font-bold text-[var(--text-primary)] backdrop-blur-md">
                   {formData.profilePic ? <img src={formData.profilePic} alt={formData.name || 'Profile'} className="h-full w-full object-cover" /> : (formData.name || 'U').trim().charAt(0).toUpperCase()}
                 </div>
                 <div>
-                  <label htmlFor="profile-picture" className="inline-flex cursor-pointer items-center gap-2 text-base font-semibold text-emerald-400 hover:text-emerald-300"><Camera size={16} /> Change profile picture</label>
+                  <label htmlFor="profile-picture" className="inline-flex cursor-pointer items-center gap-2 text-base font-semibold text-[var(--eyebrow-fg)] hover:opacity-80"><Camera size={16} /> Change profile picture</label>
                   <input id="profile-picture" type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
                   <p className="mt-1 text-sm text-[var(--text-secondary)]">JPG, PNG or WEBP</p>
                 </div>
               </div>
-            </div>
+            </Surface>
 
-            <div className="relative overflow-hidden rounded-3xl border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] p-6 shadow-[var(--card-shadow)] backdrop-blur-2xl backdrop-saturate-150 sm:p-7">
-              <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-[var(--glass-sheen)] to-transparent" />
+            <Surface radius="panel" sheen className="p-6 sm:p-7">
               <div className="relative grid gap-6 sm:grid-cols-2">
                 <label className="block"><span className="mb-2 flex items-center gap-2 text-base font-semibold text-[var(--text-primary)]"><User size={16} className="text-[var(--text-muted)]" /> Full name</span><input name="name" value={formData.name} onChange={handleChange} required className="w-full border-0 border-b border-[var(--glass-border-strong)] bg-transparent px-0 py-2 text-base text-[var(--text-primary)] outline-none transition focus:border-emerald-400 focus:ring-0" /></label>
                 <label className="block"><span className="mb-2 flex items-center gap-2 text-base font-semibold text-[var(--text-primary)]"><Mail size={16} className="text-[var(--text-muted)]" /> Email address</span><input name="email" value={formData.email} readOnly className="w-full border-0 border-b border-[var(--glass-border)] bg-transparent px-0 py-2 text-base text-[var(--text-primary)] outline-none" /></label>
                 <label className="block"><span className="mb-2 flex items-center gap-2 text-base font-semibold text-[var(--text-primary)]"><Phone size={16} className="text-[var(--text-muted)]" /> Phone number</span><input name="phone" type="tel" inputMode="numeric" pattern="[0-9]*" value={formData.phone} onChange={handleChange} className="w-full border-0 border-b border-[var(--glass-border-strong)] bg-transparent px-0 py-2 text-base text-[var(--text-primary)] outline-none transition focus:border-emerald-400 focus:ring-0" /></label>
                 <label className="block"><span className="mb-2 flex items-center gap-2 text-base font-semibold text-[var(--text-primary)]"><Calendar size={16} className="text-[var(--text-muted)]" /> Age</span><input name="age" type="text" inputMode="numeric" pattern="[0-9]*" maxLength="3" value={formData.age} onChange={handleChange} className="w-full border-0 border-b border-[var(--glass-border-strong)] bg-transparent px-0 py-2 text-base text-[var(--text-primary)] outline-none transition focus:border-emerald-400 focus:ring-0" /></label>
               </div>
-            </div>
+            </Surface>
 
             <div className="flex justify-end"><button type="submit" disabled={!isDirty || saving} className={`rounded-xl border px-6 py-3 text-base font-semibold backdrop-blur-md transition ${isDirty && !saving ? 'border-emerald-400/40 bg-emerald-500/20 text-[var(--text-primary)] hover:bg-emerald-500/35' : 'cursor-not-allowed border-[var(--glass-border)] bg-[var(--glass-bg-subtle)] text-[var(--text-muted)]'}`}>{saving ? 'Saving...' : 'Save changes'}</button></div>
           </div>

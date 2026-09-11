@@ -57,8 +57,11 @@ const PortalHeader = ({ user, portalLabel = "Portal", dashboardTo = "/dashboard"
             onMouseEnter={() => setDemoInfoOpen(true)}
             onMouseLeave={() => setDemoInfoOpen(false)}
           >
-            <span className="inline-flex items-center gap-2 rounded-full border border-purple-400/50 bg-purple-500/20 px-4 py-1.5 text-sm font-bold uppercase tracking-wide text-purple-100 shadow-[0_0_16px_rgba(168,85,247,0.35)]">
-              <span className="h-2 w-2 animate-pulse rounded-full bg-purple-300" />
+            <span className={`inline-flex items-center gap-2 px-4 py-1.5 text-sm font-bold uppercase tracking-wide ${c(
+              "rounded-full border border-purple-400/50 bg-purple-500/20 text-purple-100 shadow-[0_0_16px_rgba(168,85,247,0.35)]",
+              "badge badge-pending"
+            )}`}>
+              <span className={`h-2 w-2 animate-pulse rounded-full ${c("bg-purple-300", "bg-[var(--badge-pending-fg)]")}`} />
               Demo Mode
             </span>
 
@@ -66,15 +69,21 @@ const PortalHeader = ({ user, portalLabel = "Portal", dashboardTo = "/dashboard"
               type="button"
               onClick={() => setDemoInfoOpen((open) => !open)}
               aria-label="What is Demo Mode?"
-              className="absolute -right-2.5 -top-2.5 flex h-6 w-6 items-center justify-center rounded-full border-2 border-slate-950 bg-slate-900 text-yellow-300 transition hover:text-yellow-200"
+              className={`absolute -right-2.5 -top-2.5 flex h-6 w-6 items-center justify-center rounded-full border-2 transition ${c(
+                "border-slate-950 bg-slate-900 text-yellow-300 hover:text-yellow-200",
+                "border-[var(--menu-bg)] bg-[var(--menu-bg)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+              )}`}
             >
               <HelpCircle size={17} />
             </button>
 
             {demoInfoOpen ? (
-              <div className="absolute left-1/2 top-11 z-50 w-72 -translate-x-1/2 rounded-2xl border border-yellow-400/30 bg-slate-900 p-4 text-left shadow-xl">
-                <p className="text-sm font-semibold text-white">You're in a Guest Demo Account</p>
-                <p className="mt-1.5 text-xs leading-relaxed text-slate-300">
+              <div className={`absolute left-1/2 top-11 z-50 w-72 -translate-x-1/2 rounded-2xl border p-4 text-left shadow-xl ${c(
+                "border-yellow-400/30 bg-slate-900",
+                "border-[var(--glass-border)] bg-[var(--menu-bg)]"
+              )}`}>
+                <p className={`text-sm font-semibold ${c("text-white", "text-[var(--text-primary)]")}`}>You're in a Guest Demo Account</p>
+                <p className={`mt-1.5 text-xs leading-relaxed ${c("text-slate-300", "text-[var(--text-secondary)]")}`}>
                   This is a temporary account with ₹50,000 of demo wallet money so you can explore
                   the full portal — create a project, buy a service, pay invoices — with no real
                   money and no approval needed. It's automatically cleared after 24 hours of
@@ -152,7 +161,10 @@ const PortalHeader = ({ user, portalLabel = "Portal", dashboardTo = "/dashboard"
                 <div className="flex items-center gap-2">
                   <p className={`truncate text-sm font-semibold ${c("text-white", "text-[var(--text-primary)]")}`}>{user.name || "Account"}</p>
                   {user.isGuest ? (
-                    <span className="shrink-0 rounded-full bg-purple-500/20 px-2 py-0.5 text-[10px] font-semibold text-purple-200">
+                    <span className={`shrink-0 px-2 py-0.5 text-[10px] font-semibold ${c(
+                      "rounded-full bg-purple-500/20 text-purple-200",
+                      "badge badge-neutral"
+                    )}`}>
                       Guest
                     </span>
                   ) : null}
@@ -182,7 +194,10 @@ const PortalHeader = ({ user, portalLabel = "Portal", dashboardTo = "/dashboard"
                     setMenuOpen(false);
                     onLogout();
                   }}
-                  className="mt-1 w-full rounded-xl px-3 py-2 text-left text-sm font-semibold text-red-400 hover:bg-red-500/10"
+                  className={`mt-1 w-full rounded-xl px-3 py-2 text-left text-sm font-semibold ${c(
+                    "text-red-400 hover:bg-red-500/10",
+                    "text-[var(--badge-error-fg)] hover:bg-[var(--badge-error-bg)]"
+                  )}`}
                 >
                   Logout
                 </button>

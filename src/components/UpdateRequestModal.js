@@ -261,7 +261,7 @@ const getFileIcon = (fileType) => {
 
 
   return (
-    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+    <div className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Outer frame — the GREEN gradient scene the modal floats on (matches the mockup's .scene) */}
       <div className="w-full max-w-2xl max-h-[90vh] flex rounded-[1.5rem] p-6 shadow-[0_25px_70px_rgba(0,0,0,0.55)] ring-1 ring-inset ring-[var(--glass-border)] bg-[radial-gradient(120%_120%_at_15%_0%,#1f6d54_0%,#143b3a_45%,#0d1b26_100%)]">
       {/* Inner modal — dark neutral glass floating on the green frame (matches .modal.glass) */}
@@ -285,7 +285,7 @@ const getFileIcon = (fileType) => {
     {isUploading ? (
       <SpinningLoader totalFiles={files.length} />
     ) : (
-      <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+      <div className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center">
         <TriangleMazeLoader />
       </div>
     )}

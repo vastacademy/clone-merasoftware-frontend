@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, CheckCircle2, Clock3, XCircle, CalendarClock, ChevronRight, FileText } from 'lucide-react';
+import { ArrowLeft, ChevronRight, FileText } from 'lucide-react';
 import SummaryApi from '../common';
 import DashboardLayout from '../components/DashboardLayout';
 import TriangleMazeLoader from '../components/TriangleMazeLoader';
+import Surface from '../components/Surface';
+import Badge from '../components/Badge';
+import GlassButton from '../components/GlassButton';
 import { getOrderCategory, getOrderDisplayName } from '../helpers/orderPresentation';
 import { getInstallmentPaymentEligibility } from '../helpers/installmentPaymentEligibility';
 import {
@@ -22,26 +25,35 @@ const formatDate = (date) => {
 
 const INSTALLMENT_LABELS = { 1: 'First Installment', 2: 'Second Installment', 3: 'Final Installment' };
 
+// `tone` used to be a class string: `border-emerald-400/40 bg-emerald-500/20
+// text-emerald-300` and friends, chosen for the dark page. On the light page
+// that pairing measures 1.21:1 — the label is there but effectively unreadable,
+// which is why nobody reported it. It is a Badge tone now, and the tone triple
+// inverts the foreground for light mode.
+//
+// The per-status icons went with them. The portal's status badge — the one on
+// the projects list — has never carried an icon, and the same status should not
+// have two shapes on two screens.
 const getInstallmentStatus = (installment) => {
   if (installment.paid) {
-    return { label: 'Paid', tone: 'border-emerald-400/40 bg-emerald-500/20 text-emerald-300', Icon: CheckCircle2 };
+    return { label: 'Paid', tone: 'success' };
   }
   if (installment.paymentStatus === 'pending-approval') {
-    return { label: 'Verification Pending', tone: 'border-[var(--glass-border-strong)] bg-[var(--glass-bg-strong)] text-[var(--text-primary)]', Icon: Clock3 };
+    return { label: 'Verification Pending', tone: 'pending' };
   }
   if (installment.paymentStatus === 'rejected') {
-    return { label: 'Rejected', tone: 'border-red-400/40 bg-red-500/20 text-red-300', Icon: XCircle };
+    return { label: 'Rejected', tone: 'error' };
   }
-  return { label: 'Due', tone: 'border-amber-400/40 bg-amber-500/20 text-amber-300', Icon: CalendarClock };
+  return { label: 'Due', tone: 'pending' };
 };
 
 const INVOICE_STATUS_META = {
-  paid: { label: 'Paid', tone: 'border-emerald-400/40 bg-emerald-500/20 text-emerald-300', Icon: CheckCircle2 },
-  unpaid: { label: 'Due', tone: 'border-amber-400/40 bg-amber-500/20 text-amber-300', Icon: CalendarClock },
-  overdue: { label: 'Overdue', tone: 'border-red-400/40 bg-red-500/20 text-red-300', Icon: XCircle },
-  cancelled: { label: 'Cancelled', tone: 'border-[var(--glass-border)] bg-[var(--glass-bg)] text-[var(--text-secondary)]', Icon: XCircle },
+  paid: { label: 'Paid', tone: 'success' },
+  unpaid: { label: 'Due', tone: 'pending' },
+  overdue: { label: 'Overdue', tone: 'error' },
+  cancelled: { label: 'Cancelled', tone: 'neutral' },
   // Not a payable status — used for the project_final statement, which is never collected on.
-  statement: { label: 'Full Invoice', tone: 'border-[var(--glass-border-strong)] bg-[var(--glass-bg)] text-[var(--text-primary)]', Icon: FileText },
+  statement: { label: 'Full Invoice', tone: 'neutral' },
 };
 
 // TEMP UI-preview only — real invoice-generation backend doesn't exist for every order yet.
@@ -144,7 +156,7 @@ const OrderDetailPage = () => {
   if (loading) {
     return (
       <DashboardLayout user={user}>
-        <div className="fixed inset-0 bg-black bg-opacity-10 flex items-center justify-center z-50">
+        <div className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center">
           <TriangleMazeLoader />
         </div>
       </DashboardLayout>
@@ -158,16 +170,16 @@ const OrderDetailPage = () => {
           className="relative min-h-[calc(100vh-4rem)] overflow-hidden px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
         >
           <div className="pointer-events-none absolute inset-0 bg-[var(--scrim)]" />
-          <div className="relative mx-auto max-w-3xl rounded-[1.75rem] border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] p-8 text-center shadow-[var(--card-shadow)] backdrop-blur-2xl backdrop-saturate-150">
-            <h2 className="text-lg font-semibold text-red-400 mb-2">Order Not Found</h2>
-            <p className="text-base text-[var(--text-secondary)] mb-4">The order you're looking for doesn't exist or you don't have access to it.</p>
-            <button
-              onClick={handleBack}
-              className="px-4 py-2 bg-emerald-600 text-[var(--text-primary)] rounded-lg hover:bg-emerald-700 text-base font-semibold"
-            >
+          {/* `bg-emerald-600 text-[var(--text-primary)]` put dark slate text on a
+              dark green fill in light mode, and `text-red-400` on the light card
+              measures 2.8:1. Both are tokens now. */}
+          <Surface radius="panel" className="relative mx-auto max-w-3xl p-8 text-center">
+            <h2 className="mb-2 text-lg font-semibold text-[var(--badge-error-fg)]">Order Not Found</h2>
+            <p className="mb-4 text-base text-[var(--text-secondary)]">The order you're looking for doesn't exist or you don't have access to it.</p>
+            <GlassButton variant="primary" onClick={handleBack}>
               Back to Orders
-            </button>
-          </div>
+            </GlassButton>
+          </Surface>
         </div>
       </DashboardLayout>
     );
@@ -200,14 +212,10 @@ const OrderDetailPage = () => {
 
         <div className="relative mx-auto flex w-full max-w-7xl flex-col gap-4">
           <div className="relative flex items-center justify-center">
-            <button
-              type="button"
-              onClick={handleBack}
-              className="absolute left-0 inline-flex w-fit shrink-0 items-center gap-2 rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg)] px-5 py-3 text-lg font-semibold text-[var(--text-primary)] backdrop-blur-md transition hover:bg-[var(--glass-bg-strong)]"
-            >
+            <GlassButton size="lg" onClick={handleBack} className="absolute left-0 shrink-0">
               <ArrowLeft className="h-5 w-5" />
               Back
-            </button>
+            </GlassButton>
 
             <div className="text-center">
               <h1 className="text-2xl font-bold tracking-tight text-[var(--text-primary)] sm:text-3xl lg:text-4xl">
@@ -219,8 +227,7 @@ const OrderDetailPage = () => {
             </div>
           </div>
 
-          <div className="relative overflow-hidden rounded-[1.75rem] border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] p-5 shadow-[var(--card-shadow)] backdrop-blur-2xl backdrop-saturate-150 sm:p-6 lg:p-8">
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-[var(--glass-sheen)] to-transparent" />
+          <Surface radius="panel" sheen className="overflow-hidden p-5 sm:p-6 lg:p-8">
 
             {isInstallmentProject ? (
               /* Installment project — one section, no sub-cards. The order's own facts (started,
@@ -236,13 +243,14 @@ const OrderDetailPage = () => {
                     </p>
                   </div>
                   {projectStatement ? (
-                    <a
+                    <GlassButton
+                      as="a"
                       href={`${SummaryApi.invoices.downloadDocument.url}/${projectStatement._id}/download`}
-                      className="inline-flex w-fit shrink-0 items-center gap-2 rounded-2xl border border-emerald-300/60 px-4 py-2.5 text-sm font-semibold text-emerald-100 transition hover:bg-[var(--glass-bg)]"
+                      className="w-fit shrink-0"
                     >
                       <FileText className="h-4 w-4" />
                       Download Invoice
-                    </a>
+                    </GlassButton>
                   ) : null}
                 </div>
 
@@ -263,10 +271,7 @@ const OrderDetailPage = () => {
                         <div>
                           <div className="flex flex-wrap items-center gap-2">
                             <span className="text-base font-medium text-[var(--text-primary)]">{label}</span>
-                            <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-sm font-semibold backdrop-blur-md ${st.tone}`}>
-                              <st.Icon className="h-3.5 w-3.5" />
-                              {st.label}
-                            </span>
+                            <Badge tone={st.tone}>{st.label}</Badge>
                           </div>
                           <p className="mt-1 text-sm text-[var(--text-secondary)]">
                             {installment.paid
@@ -287,7 +292,7 @@ const OrderDetailPage = () => {
             <div className="relative grid w-full grid-cols-1 gap-5 lg:grid-cols-2">
 
               {/* Snapshot card */}
-              <div className="rounded-[1.5rem] border border-[var(--glass-border)] bg-[var(--glass-bg-subtle)] p-5">
+              <Surface tone="subtle" radius="panel" className="p-5">
                 <h3 className="mb-3 text-lg font-semibold text-[var(--text-primary)]">Plan Snapshot</h3>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between rounded-2xl bg-[var(--glass-bg-subtle)] px-4 py-2.5 text-base">
@@ -321,11 +326,11 @@ const OrderDetailPage = () => {
                     </div>
                   )}
                 </div>
-              </div>
+              </Surface>
 
               {/* Invoice history — shown whenever this order has any invoice records */}
               {invoices.length > 0 && (
-                <div className="rounded-[1.5rem] border border-[var(--glass-border)] bg-[var(--glass-bg-subtle)] p-5">
+                <Surface tone="subtle" radius="panel" className="p-5">
                   <h3 className="mb-3 text-lg font-semibold text-[var(--text-primary)]">Invoice History</h3>
                   <div className="space-y-3">
                     {invoices.map((invoice) => {
@@ -343,15 +348,12 @@ const OrderDetailPage = () => {
                           onClick={() => navigate(`/invoice-detail/${invoice._id}`, {
                             state: customerChildState(location),
                           })}
-                          className="flex cursor-pointer items-center justify-between gap-3 rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg-subtle)] px-4 py-3 hover:border-[var(--glass-border-strong)] hover:bg-[var(--glass-bg-subtle)]"
+                          className="flex cursor-pointer items-center justify-between gap-3 rounded-2xl border-[length:var(--glass-border-width)] border-[var(--glass-border)] bg-[var(--glass-bg-subtle)] px-4 py-3 transition hover:border-[var(--glass-border-strong)] hover:bg-[var(--glass-bg-hover)]"
                         >
                           <div>
                             <div className="flex items-center gap-2">
                               <span className="text-base font-medium text-[var(--text-primary)]">{invoice.invoiceNumber}</span>
-                              <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-sm font-semibold backdrop-blur-md ${meta.tone}`}>
-                                <meta.Icon className="h-3.5 w-3.5" />
-                                {meta.label}
-                              </span>
+                              <Badge tone={meta.tone}>{meta.label}</Badge>
                             </div>
                             <p className="mt-1 text-sm text-[var(--text-secondary)]">
                               {isStatement
@@ -369,22 +371,24 @@ const OrderDetailPage = () => {
                       );
                     })}
                   </div>
-                </div>
+                </Surface>
               )}
             </div>
             )}
 
             {order.orderVisibility === 'payment-rejected' && (
-              <div className="relative mt-5 rounded-[1.5rem] border border-[var(--glass-border)] bg-[var(--glass-bg-subtle)] p-5">
-                <button
+              <Surface tone="subtle" radius="panel" className="relative mt-5 p-5">
+                <GlassButton
+                  variant="primary"
+                  size="lg"
                   onClick={handleRetryPayment}
-                  className="w-full rounded-lg bg-red-600 py-3 text-base font-medium text-[var(--text-primary)] transition-colors hover:bg-red-700 sm:w-auto sm:px-8"
+                  className="w-full sm:w-auto sm:px-8"
                 >
                   Retry Payment
-                </button>
-              </div>
+                </GlassButton>
+              </Surface>
             )}
-          </div>
+          </Surface>
         </div>
       </div>
     </DashboardLayout>

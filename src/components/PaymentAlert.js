@@ -1,5 +1,8 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { AlertCircle, Clock } from 'lucide-react';
+import Surface from './Surface';
+import GlassButton from './GlassButton';
 
 const PaymentAlert = ({
   installmentNumber,
@@ -29,61 +32,47 @@ const PaymentAlert = ({
     }
   };
   
-  // If payment is pending approval, show different message
-  if (paymentStatus === 'pending-approval') {
-    return (
-      <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6 rounded-r-lg">
-        <div className="flex items-start">
-          <div className="flex-shrink-0 mt-0.5">
-            <svg className="h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
-            </svg>
-          </div>
-          <div className="ml-3 flex-1">
-            <h3 className="text-sm font-medium text-blue-800">
-              Payment Verification Pending
-            </h3>
-            <div className="mt-2 text-sm text-blue-700">
-              <p>
-                Your {getInstallmentName(installmentNumber)} payment is being verified. This process usually takes 1-4 hours.
-                Project development will continue once your payment is approved.
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
- 
+  // Both states are real statuses — a payment being verified, and a payment
+  // that is due — so colour belongs here. What did not belong was the SHAPE:
+  // opaque `bg-blue-50` / `bg-amber-50` fills, which ignore the theme entirely.
+  // Against the dark page that fill measures 18.5:1 — it opened as a lit slab.
+  // And blue is not in the portal palette at all.
+  //
+  // The button was `bg-amber-600` with `text-[var(--text-primary)]`: 5.60:1 in
+  // light but 3.04:1 in dark, because --text-primary goes near-white there.
+  const meta = paymentStatus === 'pending-approval'
+    ? {
+        tone: 'pending',
+        Icon: Clock,
+        title: 'Payment Verification Pending',
+        body: `Your ${getInstallmentName(installmentNumber)} payment is being verified. This process usually takes 1-4 hours. Project development will continue once your payment is approved.`,
+        action: false,
+      }
+    : {
+        tone: 'pending',
+        Icon: AlertCircle,
+        title: `${getInstallmentName(installmentNumber)} Payment Due`,
+        body: `Your project has reached ${Math.round(progress)}% completion. Further progress requires payment of \u20B9${amount.toLocaleString()}. Please make the payment to continue development.`,
+        action: true,
+      };
+
   return (
-    <div className="bg-amber-50 border-l-4 border-amber-500 p-4 mb-6 rounded-r-lg">
-      <div className="flex items-start">
-        <div className="flex-shrink-0 mt-0.5">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-amber-500" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2h-1V9z" clipRule="evenodd" />
-          </svg>
-        </div>
-        <div className="ml-3 flex-1">
-          <h3 className="text-sm font-medium text-amber-800">
-            {getInstallmentName(installmentNumber)} Payment Due
-          </h3>
-          <div className="mt-2 text-sm text-amber-700">
-            <p>
-              Your project has reached {Math.round(progress)}% completion. Further progress requires payment of ₹{amount.toLocaleString()}.
-              Please make the payment to continue development.
-            </p>
-          </div>
-          <div className="mt-4">
-            <button
-              onClick={handleMakePayment}
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-[var(--text-primary)] bg-amber-600 hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500"
-            >
+    <Surface tone="subtle" radius="panel" className="mb-6 p-4">
+      <div className="flex items-start gap-3">
+        <span className="badge badge-pending mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full">
+          <meta.Icon className="h-4 w-4" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <h3 className="text-sm font-semibold text-[var(--text-primary)]">{meta.title}</h3>
+          <p className="mt-2 text-sm text-[var(--text-secondary)]">{meta.body}</p>
+          {meta.action && (
+            <GlassButton variant="primary" onClick={handleMakePayment} className="mt-4">
               Make Payment Now
-            </button>
-          </div>
+            </GlassButton>
+          )}
         </div>
       </div>
-    </div>
+    </Surface>
   );
 };
 

@@ -15,7 +15,9 @@ import DashboardLayout from '../components/DashboardLayout';
 import { AnimatedSection, getStaggerDelay } from '../components/PageMotion';
 import SummaryApi from '../common';
 import Context from '../context';
-import OrderListRow, { OrderListHeader } from '../components/OrderListRow';
+import { OrderList } from '../components/OrderListRow';
+import GlassButton from '../components/GlassButton';
+import Surface from '../components/Surface';
 import displayINRCurrency from '../helpers/displayCurrency';
 import { isProjectItem, isPlanItem, sortItemsLatestFirst } from '../helpers/orderType';
 import { getRemainingDays, getOrderDisplayName, isActiveWorkItem, getOrderStateCode } from '../helpers/orderPresentation';
@@ -24,45 +26,62 @@ import { customerReturnState } from '../helpers/customerReturnNavigation';
 const getItemLink = (order) =>
   isPlanItem(order) ? `/plan-details/${order._id}` : `/project-details/${order._id}`;
 
-const MetricCard = ({ icon: Icon, label, value, helper, tone = 'slate', to, state, highlight = false }) => {
+const MetricCard = ({ icon: Icon, label, value, helper, tone = 'neutral', to, state }) => {
+  // The glow used to carry four colours — slate, blue, emerald, violet — and
+  // three of them appeared nowhere else in the portal. It is decoration behind
+  // a number, not a status, so it no longer tries to mean anything.
+  //
+  // A `highlight` prop used to paint one card green — but "you have no active
+  // work" is not a success, and a green tile beside three plain ones read as a
+  // status the others lacked. Emphasis now comes from the arrow affordance and
+  // the card being a link, so all four look alike and only badges carry colour.
+  // `neutral` used to read `bg-[rgb(var(--tint-rgb))]`, and --tint-rgb is
+  // defined nowhere in the stylesheet — the neutral glow has been painting
+  // nothing at all. --glow-neutral replaces it with a real value.
+  //
+  // The label is an eyebrow, not a heading. At text-base/semibold in
+  // --text-primary it sat at the same weight as the value under it, so the four
+  // tiles read as two competing lines each. It now matches the eyebrow shape
+  // already used by Modal and WalletDetails (text-sm, bold, uppercase) but keeps
+  // --text-secondary rather than --eyebrow-fg: four green labels would be colour
+  // on something that is not a status.
   const glowMap = {
-    slate: 'bg-[rgb(var(--tint-rgb))]',
-    blue: 'bg-blue-400',
-    emerald: 'bg-emerald-400',
-    violet: 'bg-violet-400',
+    neutral: 'bg-[var(--glow-neutral)]',
+    emerald: 'bg-[var(--glow-accent)]',
   };
 
   const Wrapper = to ? Link : 'div';
   const wrapperProps = to ? { to, state } : {};
 
   return (
-    <Wrapper
+    <Surface
+      as={Wrapper}
+      tone="metric"
+      sheen
       {...wrapperProps}
       className={[
-        'glass-panel group relative overflow-hidden rounded-[1.75rem] p-5 transition-all duration-300',
-        highlight
-          ? 'border-emerald-500/50 hover:-translate-y-1 hover:border-emerald-500/60 hover:bg-[var(--glass-bg-hover)]'
-          : 'hover:border-[var(--glass-border-strong)] hover:bg-[var(--glass-bg-hover)]',
+        'group h-full p-5 transition-all duration-300',
+        // A link lifts on hover; a plain measurement does not.
+        to ? 'hover:-translate-y-1' : '',
+        'hover:bg-[var(--glass-bg-hover)]',
         to ? 'block' : '',
       ].join(' ')}
     >
       <div
-        className={`pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full ${highlight ? 'bg-emerald-300' : glowMap[tone]} blur-3xl`}
+        className={`pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full ${glowMap[tone] || glowMap.neutral} blur-3xl`}
         style={{ opacity: 'var(--glow-opacity)' }}
       />
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-[var(--glass-sheen)] to-transparent" />
-
       <div className="relative flex items-start justify-between gap-4">
         <div>
-          <p className="text-base font-semibold uppercase text-[var(--text-primary)]">{label}</p>
+          <p className="text-sm font-bold uppercase tracking-wide text-[var(--text-secondary)]">{label}</p>
           <p className="mt-2 text-2xl font-bold text-[var(--text-primary)]">{value}</p>
           {helper ? <p className="mt-2 text-sm text-[var(--text-secondary)]">{helper}</p> : null}
         </div>
-        <div className={`rounded-2xl border p-3 backdrop-blur-md ${highlight ? 'border-emerald-500/40 bg-emerald-500/15' : 'border-[var(--glass-border-strong)] bg-[var(--glass-bg)]'}`}>
+        <div className={`rounded-2xl border p-3 backdrop-blur-md border-[var(--glass-border-strong)] bg-[var(--glass-bg)]`}>
           {to ? <ArrowRight className="h-5 w-5 text-[var(--text-primary)] transition-transform group-hover:translate-x-0.5" /> : <Icon className="h-5 w-5 text-[var(--text-primary)]" />}
         </div>
       </div>
-    </Wrapper>
+    </Surface>
   );
 };
 
@@ -194,9 +213,9 @@ const CustomerDashboard = () => {
 
         <div className="relative mx-auto max-w-7xl">
           {user?.isGuest ? (
-            <div className="mx-auto mb-6 flex max-w-2xl items-center justify-center gap-2 rounded-2xl border border-purple-400/40 bg-purple-500/10 px-4 py-2.5 text-center">
-              <span className="h-2 w-2 shrink-0 rounded-full bg-purple-300" />
-              <p className="text-sm font-medium text-purple-100">
+            <div className="badge mx-auto mb-6 flex max-w-2xl items-center justify-center gap-2 badge-pending rounded-2xl px-4 py-2.5 text-center">
+              <span className="h-2 w-2 shrink-0 rounded-full bg-[var(--badge-pending-fg)]" />
+              <p className="text-sm font-medium">
                 You're exploring a <span className="font-bold">Guest Demo Account</span> with ₹50,000 demo wallet money. Nothing here is real, and this account is cleared after 24 hours of inactivity.
               </p>
             </div>
@@ -212,81 +231,51 @@ const CustomerDashboard = () => {
           </div>
 
           <div className="mt-10 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <AnimatedSection delay={getStaggerDelay(0)}><MetricCard
+            <AnimatedSection delay={getStaggerDelay(0)} className="h-full"><MetricCard
               icon={LayoutDashboard}
               label={primaryWorkItem ? 'Live project' : 'Services'}
               value={primaryWorkItem ? getOrderDisplayName(primaryWorkItem, 'Active work') : primaryAction.label}
               helper={primaryWorkItem ? activeWorkItemsCount > 1 ? `${activeWorkItemsCount} active items` : primaryAction.label : 'No active work running'}
-              tone="emerald" to={primaryAction.to} state={customerReturnState('/dashboard')} highlight={!primaryWorkItem}
+              to={primaryAction.to} state={customerReturnState('/dashboard')}
             /></AnimatedSection>
-            <AnimatedSection delay={getStaggerDelay(1)}><MetricCard icon={Wallet} label="Wallet balance" value={displayINRCurrency(context?.walletBalance || 0)} helper="Available wallet amount" tone="emerald" /></AnimatedSection>
-            <AnimatedSection delay={getStaggerDelay(2)}><MetricCard icon={BadgeCheck} label="Completed items" value={String(completedCount)} helper="Finished projects and closed plans" tone="blue" /></AnimatedSection>
-            <AnimatedSection delay={getStaggerDelay(3)}><MetricCard icon={TriangleAlert} label="Open alerts" value={String(pendingApprovalCount + rejectedCount)} helper="Pending approvals and rejected payments" tone="violet" /></AnimatedSection>
+            <AnimatedSection delay={getStaggerDelay(1)} className="h-full"><MetricCard icon={Wallet} label="Wallet balance" value={displayINRCurrency(context?.walletBalance || 0)} helper="Available wallet amount" tone="neutral" /></AnimatedSection>
+            <AnimatedSection delay={getStaggerDelay(2)} className="h-full"><MetricCard icon={BadgeCheck} label="Completed items" value={String(completedCount)} helper="Finished projects and closed plans" tone="neutral" /></AnimatedSection>
+            <AnimatedSection delay={getStaggerDelay(3)} className="h-full"><MetricCard icon={TriangleAlert} label="Open alerts" value={String(pendingApprovalCount + rejectedCount)} helper="Pending approvals and rejected payments" tone="neutral" /></AnimatedSection>
           </div>
 
-          <div className="glass-panel relative mt-10 overflow-hidden rounded-3xl">
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-[var(--glass-sheen)] to-transparent" />
-
-            <div className="relative flex flex-col gap-3 border-b border-[var(--glass-border)] p-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:px-6">
-              <h2 className="flex items-center text-xl font-semibold text-[var(--text-primary)]">
-                <Layers3 className="mr-2 h-5 w-5" />
-                Recent projects & plans
-              </h2>
-              <div className="flex flex-wrap items-center justify-center gap-2">
-                <Link
-                  to="/order"
-                  className="inline-flex items-center gap-2 rounded-2xl border-[length:var(--glass-border-width)] border-[var(--glass-border)] bg-[var(--glass-bg)] px-4 py-2.5 text-sm font-semibold text-[var(--text-primary)] backdrop-blur-md transition hover:bg-[var(--glass-bg-hover)]"
-                >
+          <OrderList
+            className="mt-10"
+            title="Recent projects & plans"
+            actions={(
+              <>
+                <GlassButton as={Link} to="/order">
                   View all orders
                   <ArrowRight className="h-4 w-4" />
-                </Link>
-                <button
-                  type="button"
-                  onClick={fetchDashboardData}
-                  className="inline-flex items-center gap-2 rounded-2xl border-[length:var(--glass-border-width)] border-[var(--glass-border)] bg-[var(--glass-bg)] px-4 py-2.5 text-sm font-semibold text-[var(--text-primary)] backdrop-blur-md transition hover:bg-[var(--glass-bg-hover)]"
-                >
+                </GlassButton>
+                <GlassButton onClick={fetchDashboardData}>
                   <RefreshCw className="h-4 w-4" />
                   Refresh
-                </button>
-              </div>
-            </div>
-
-            {dashboardItems.length > 0 ? (
-              <>
-                <OrderListHeader />
-
-                <div className="relative divide-y divide-[var(--divider)]">
-                  {dashboardItems.map((order, index) => (
-                    <OrderListRow
-                      key={order._id}
-                      order={order}
-                      index={index}
-                      onClick={openItem}
-                    />
-                  ))}
-                </div>
+                </GlassButton>
               </>
-            ) : (
-              <div className="relative px-5 py-12 text-center sm:px-6">
-                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border-[length:var(--glass-border-width)] border-[var(--glass-border-strong)] bg-[var(--glass-bg)] text-[var(--text-primary)] backdrop-blur-md">
-                  <Layers3 className="h-6 w-6" />
-                </div>
+            )}
+            items={dashboardItems}
+            onOpen={openItem}
+            emptyIcon={Layers3}
+            empty={(
+              <>
                 <h3 className="mt-4 text-lg font-semibold text-[var(--text-primary)]">No projects or plans yet</h3>
                 <p className="mt-2 text-base text-[var(--text-secondary)]">
                   Your admin-created projects and purchased services will appear here.
                 </p>
                 <div className="mt-5">
-                  <Link
-                    to="/start-new-project"
-                    className="inline-flex items-center gap-2 rounded-2xl bg-[rgb(var(--ink-rgb))] px-4 py-3 text-base font-semibold text-[var(--page-bg)] transition hover:bg-[rgb(var(--ink-rgb)/0.85)]"
-                  >
+                  <GlassButton as={Link} to="/start-new-project" variant="primary" size="lg">
                     <PlusCircle className="h-4 w-4" />
                     Explore Services
-                  </Link>
+                  </GlassButton>
                 </div>
-              </div>
+              </>
             )}
-          </div>
+          />
         </div>
       </div>
     </DashboardLayout>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { ChevronLeft, Sparkles, CheckCircle2, CalendarClock, XCircle, Share2 } from 'lucide-react';
+import { ChevronLeft, Sparkles, Share2 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { toast } from 'react-toastify';
 import SummaryApi from '../common';
@@ -8,6 +8,10 @@ import Context from '../context';
 import displayINRCurrency from '../helpers/displayCurrency';
 import DashboardLayout from '../components/DashboardLayout';
 import TriangleMazeLoader from '../components/TriangleMazeLoader';
+import Surface from '../components/Surface';
+import Badge from '../components/Badge';
+import GlassButton from '../components/GlassButton';
+import Modal from '../components/Modal';
 import { getOrderDisplayName } from '../helpers/orderPresentation';
 import { isPlanItem } from '../helpers/orderType';
 import { goToCustomerReturn } from '../helpers/customerReturnNavigation';
@@ -24,12 +28,16 @@ const formatDate = (date) => {
   });
 };
 
+// Same five statuses as OrderDetailPage, same fix: these were class strings
+// tuned for the dark page (`text-emerald-300` on a 20% emerald fill measures
+// 1.21:1 on the light one) and each page kept its own copy. Badge tones now,
+// and the icons are dropped so the status pill has one shape portal-wide.
 const INVOICE_STATUS_META = {
-  paid: { label: 'Paid', tone: 'border-emerald-400/40 bg-emerald-500/20 text-emerald-300', Icon: CheckCircle2 },
-  partially_paid: { label: 'Partially Paid', tone: 'border-amber-400/40 bg-amber-500/20 text-amber-300', Icon: CalendarClock },
-  unpaid: { label: 'Due', tone: 'border-amber-400/40 bg-amber-500/20 text-amber-300', Icon: CalendarClock },
-  overdue: { label: 'Overdue', tone: 'border-red-400/40 bg-red-500/20 text-red-300', Icon: XCircle },
-  cancelled: { label: 'Cancelled', tone: 'border-[var(--glass-border)] bg-[var(--glass-bg)] text-[var(--text-secondary)]', Icon: XCircle },
+  paid: { label: 'Paid', tone: 'success' },
+  partially_paid: { label: 'Partially Paid', tone: 'pending' },
+  unpaid: { label: 'Due', tone: 'pending' },
+  overdue: { label: 'Overdue', tone: 'error' },
+  cancelled: { label: 'Cancelled', tone: 'neutral' },
 };
 
 // TEMP UI-preview only — matches OrderDetailPage.js's DUMMY_INVOICES. Remove both once
@@ -247,7 +255,7 @@ const InvoiceDetailPage = () => {
   if (loading) {
     return (
       <DashboardLayout user={user}>
-        <div className="fixed inset-0 bg-black bg-opacity-10 flex items-center justify-center z-50">
+        <div className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center">
           <TriangleMazeLoader />
         </div>
       </DashboardLayout>
@@ -261,16 +269,11 @@ const InvoiceDetailPage = () => {
           className="relative min-h-[calc(100vh-4rem)] overflow-hidden px-4 py-10 sm:px-6 lg:px-8 lg:py-14"
         >
           <div className="pointer-events-none absolute inset-0 bg-[var(--scrim)]" />
-          <div className="relative mx-auto max-w-3xl rounded-[1.75rem] border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] p-8 text-center shadow-[var(--card-shadow)] backdrop-blur-2xl backdrop-saturate-150">
-            <h2 className="text-lg font-semibold text-red-400 mb-2">Invoice Not Found</h2>
+          <Surface radius="panel" className="relative mx-auto max-w-3xl p-8 text-center">
+            <h2 className="mb-2 text-lg font-semibold text-[var(--badge-error-fg)]">Invoice Not Found</h2>
             <p className="text-base text-[var(--text-secondary)] mb-4">The invoice you're looking for doesn't exist or you don't have access to it.</p>
-            <button
-              onClick={handleBack}
-              className="px-4 py-2 bg-emerald-600 text-[var(--text-primary)] rounded-lg hover:bg-emerald-700 text-base font-semibold"
-            >
-              Back
-            </button>
-          </div>
+            <GlassButton variant="primary" onClick={handleBack}>Back</GlassButton>
+          </Surface>
         </div>
       </DashboardLayout>
     );
@@ -287,20 +290,18 @@ const InvoiceDetailPage = () => {
 
         <div className="relative mx-auto flex w-full max-w-7xl flex-col gap-4">
           <div className="relative flex items-center justify-center">
-            <button
-              type="button"
-              onClick={handleBack}
-              className="absolute left-0 inline-flex w-fit shrink-0 items-center gap-2 rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg)] px-5 py-3 text-lg font-semibold text-[var(--text-primary)] backdrop-blur-md transition hover:bg-[var(--glass-bg-strong)]"
-            >
+            <GlassButton size="lg" onClick={handleBack} className="absolute left-0 shrink-0">
               <ChevronLeft className="h-5 w-5" />
               Back
-            </button>
+            </GlassButton>
 
             <div className="text-center">
-              <div className="inline-flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-sm font-semibold uppercase text-emerald-300">
+              {/* "Invoice" is an eyebrow, not a status - it was wearing a green
+                  status pill. Same eyebrow treatment as Modal and WalletDetails. */}
+              <p className="inline-flex items-center gap-2 text-sm font-bold uppercase text-[var(--eyebrow-fg)]">
                 <Sparkles className="h-3.5 w-3.5" />
                 Invoice
-              </div>
+              </p>
               <h1 className="mt-3 text-2xl font-bold tracking-tight text-[var(--text-primary)] sm:text-3xl lg:text-4xl">
                 {invoice.invoiceNumber}
               </h1>
@@ -311,14 +312,10 @@ const InvoiceDetailPage = () => {
           </div>
 
           <div className="flex justify-center">
-            <span className={`inline-flex w-fit items-center gap-1 rounded-full border px-4 py-2 text-base font-semibold backdrop-blur-md ${meta.tone}`}>
-              <meta.Icon className="h-4 w-4" />
-              {meta.label}
-            </span>
+            <Badge tone={meta.tone} className="px-4 py-2 text-base">{meta.label}</Badge>
           </div>
 
-          <div className="relative mx-auto w-full max-w-xl overflow-hidden rounded-[1.75rem] border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] p-5 shadow-[var(--card-shadow)] backdrop-blur-2xl backdrop-saturate-150 sm:p-6">
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-[var(--glass-sheen)] to-transparent" />
+          <Surface radius="panel" sheen className="relative mx-auto w-full max-w-xl overflow-hidden p-5 sm:p-6">
             <div className="relative space-y-2">
               <div className="flex items-center justify-between rounded-2xl bg-[var(--glass-bg-subtle)] px-4 py-2.5 text-base">
                 <span className="text-[var(--text-secondary)]">Amount</span>
@@ -354,105 +351,106 @@ const InvoiceDetailPage = () => {
               {isStatement ? (
                 invoiceDocumentUrl && (
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                    <a href={`${invoiceDocumentUrl}/view`} target="_blank" rel="noopener noreferrer" className="rounded-lg border border-emerald-300/60 py-3 text-center text-base font-medium text-emerald-100 hover:bg-[var(--glass-bg)]">View Invoice</a>
-                    <a href={`${invoiceDocumentUrl}/download`} className="rounded-lg bg-emerald-600 py-3 text-center text-base font-medium text-[var(--text-primary)] hover:bg-emerald-700">Download Invoice</a>
-                    <button type="button" onClick={handleShareInvoice} disabled={sharingInvoice} className="inline-flex items-center justify-center gap-2 rounded-lg border border-emerald-300/60 py-3 text-base font-medium text-emerald-100 hover:bg-[var(--glass-bg)] disabled:opacity-60"><Share2 size={17} />{sharingInvoice ? 'Preparing…' : 'Share'}</button>
+                    {/* Three buttons, three hand-written styles - and the two
+                        ghost ones were `text-emerald-100`, very nearly white on
+                        the light page. */}
+                    <GlassButton as="a" size="lg" href={`${invoiceDocumentUrl}/view`} target="_blank" rel="noopener noreferrer">View Invoice</GlassButton>
+                    <GlassButton as="a" size="lg" variant="primary" href={`${invoiceDocumentUrl}/download`}>Download Invoice</GlassButton>
+                    <GlassButton size="lg" onClick={handleShareInvoice} disabled={sharingInvoice} className="disabled:opacity-60"><Share2 size={17} />{sharingInvoice ? 'Preparing…' : 'Share'}</GlassButton>
                   </div>
                 )
               ) : (
                 invoice.status !== 'cancelled' && !isStatement && amountDueNow > 0 && (
-                  <button
+                  <GlassButton
+                    variant="primary"
+                    size="lg"
                     onClick={() => { setShowPayment(true); setShowQR(false); }}
-                    className="w-full rounded-lg bg-emerald-600 py-3 text-base font-medium text-[var(--text-primary)] hover:bg-emerald-700"
+                    className="w-full"
                   >
                     Pay Now
-                  </button>
+                  </GlassButton>
                 )
               )}
             </div>
-          </div>
+          </Surface>
         </div>
       </div>
 
-      {showPayment && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-md rounded-[1.5rem] border border-[var(--glass-border)] bg-[var(--menu-bg)] p-6 text-[var(--text-primary)] shadow-2xl backdrop-blur-2xl">
-            {!showQR ? (
-              <>
-                <h3 className="text-lg font-bold">Pay Invoice {invoice.invoiceNumber}</h3>
-                <div className="mt-4 space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-[var(--text-secondary)]">Amount due</span>
-                    <span className="font-semibold text-[var(--text-primary)]">{displayINRCurrency(amountDueNow)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-[var(--text-secondary)]">Wallet balance</span>
-                    <span className="font-semibold text-emerald-300">{displayINRCurrency(context?.walletBalance || 0)}</span>
-                  </div>
-                </div>
-                <p className="mt-3 text-xs text-[var(--text-muted)]">
-                  {(context?.walletBalance || 0) >= amountDueNow
-                    ? 'Your wallet covers this amount. It will be deducted and sent for admin approval.'
-                    : 'Not enough wallet balance — you will pay via UPI QR next.'}
-                </p>
-                <div className="mt-5 flex gap-3">
-                  <button
-                    onClick={() => setShowPayment(false)}
-                    disabled={payProcessing}
-                    className="flex-1 rounded-lg border border-[var(--glass-border-strong)] py-2.5 text-sm font-semibold text-[var(--text-secondary)] hover:bg-[var(--glass-bg)] disabled:opacity-60"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleConfirmPayment}
-                    disabled={payProcessing}
-                    className="flex-1 rounded-lg bg-emerald-600 py-2.5 text-sm font-semibold text-[var(--text-primary)] hover:bg-emerald-700 disabled:opacity-60"
-                  >
-                    {payProcessing
-                      ? 'Processing...'
-                      : (context?.walletBalance || 0) >= amountDueNow
-                        ? 'Pay from Wallet'
-                        : 'Continue to UPI'}
-                  </button>
-                </div>
-              </>
-            ) : (
-              <>
-                <h3 className="text-lg font-bold">Scan &amp; Pay {displayINRCurrency(amountDueNow)}</h3>
-                <div className="mt-4 flex justify-center rounded-2xl bg-white p-4">
-                  <QRCodeSVG value={upiLink} size={190} />
-                </div>
-                <label className="mt-4 block text-sm font-medium text-[var(--text-secondary)]">
-                  UPI Transaction ID
-                </label>
-                <input
-                  type="text"
-                  value={upiRef}
-                  onChange={(event) => setUpiRef(event.target.value)}
-                  placeholder="Enter the UPI reference after paying"
-                  className="mt-1.5 w-full rounded-lg border border-[var(--glass-border-strong)] bg-[var(--glass-bg-subtle)] px-3 py-2.5 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-emerald-400 focus:outline-none"
-                />
-                <div className="mt-5 flex gap-3">
-                  <button
-                    onClick={() => setShowQR(false)}
-                    disabled={payProcessing}
-                    className="flex-1 rounded-lg border border-[var(--glass-border-strong)] py-2.5 text-sm font-semibold text-[var(--text-secondary)] hover:bg-[var(--glass-bg)] disabled:opacity-60"
-                  >
-                    Back
-                  </button>
-                  <button
-                    onClick={handleVerifyUpi}
-                    disabled={payProcessing}
-                    className="flex-1 rounded-lg bg-emerald-600 py-2.5 text-sm font-semibold text-[var(--text-primary)] hover:bg-emerald-700 disabled:opacity-60"
-                  >
-                    {payProcessing ? 'Submitting...' : 'Submit for Approval'}
-                  </button>
-                </div>
-              </>
-            )}
+      {/* The portal's first migrated dialog.
+          Before: a hand-written overlay with its own scrim (bg-black/60, while
+          the loader overlay on this same page used bg-black/10), its own panel,
+          no Escape key, no scroll lock, and four buttons in two hand-written
+          styles. Modal supplies the scrim, the panel, Escape and the scroll
+          lock; the two states just swap title, body and footer. */}
+      <Modal
+        open={showPayment}
+        onClose={payProcessing ? undefined : () => { setShowPayment(false); setShowQR(false); }}
+        eyebrow="Payment"
+        title={showQR ? `Scan & Pay ${displayINRCurrency(amountDueNow)}` : `Pay Invoice ${invoice.invoiceNumber}`}
+        footer={showQR ? (
+          <div className="flex gap-3">
+            <GlassButton onClick={() => setShowQR(false)} disabled={payProcessing} className="flex-1 disabled:opacity-60" strong>
+              Back
+            </GlassButton>
+            <GlassButton variant="primary" onClick={handleVerifyUpi} disabled={payProcessing} className="flex-1 disabled:opacity-60">
+              {payProcessing ? 'Submitting...' : 'Submit for Approval'}
+            </GlassButton>
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="flex gap-3">
+            <GlassButton onClick={() => setShowPayment(false)} disabled={payProcessing} className="flex-1 disabled:opacity-60" strong>
+              Cancel
+            </GlassButton>
+            <GlassButton variant="primary" onClick={handleConfirmPayment} disabled={payProcessing} className="flex-1 disabled:opacity-60">
+              {payProcessing
+                ? 'Processing...'
+                : (context?.walletBalance || 0) >= amountDueNow
+                  ? 'Pay from Wallet'
+                  : 'Continue to UPI'}
+            </GlassButton>
+          </div>
+        )}
+      >
+        {!showQR ? (
+          <>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-[var(--text-secondary)]">Amount due</span>
+                <span className="font-semibold text-[var(--text-primary)]">{displayINRCurrency(amountDueNow)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[var(--text-secondary)]">Wallet balance</span>
+                {/* A balance is a number, not a status - it was green. */}
+                <span className="font-semibold text-[var(--text-primary)]">{displayINRCurrency(context?.walletBalance || 0)}</span>
+              </div>
+            </div>
+            <p className="mt-3 text-xs text-[var(--text-muted)]">
+              {(context?.walletBalance || 0) >= amountDueNow
+                ? 'Your wallet covers this amount. It will be deducted and sent for admin approval.'
+                : 'Not enough wallet balance - you will pay via UPI QR next.'}
+            </p>
+          </>
+        ) : (
+          <>
+            {/* The QR keeps its white plate on purpose: scanners need the
+                quiet zone, so this one white block is functional. */}
+            <div className="flex justify-center rounded-2xl bg-white p-4">
+              <QRCodeSVG value={upiLink} size={190} />
+            </div>
+            <label className="mt-4 block text-sm font-medium text-[var(--text-secondary)]" htmlFor="upi-ref">
+              UPI Transaction ID
+            </label>
+            <input
+              id="upi-ref"
+              type="text"
+              value={upiRef}
+              onChange={(event) => setUpiRef(event.target.value)}
+              placeholder="Enter the UPI reference after paying"
+              className="mt-1.5 w-full rounded-xl border border-[var(--glass-border-strong)] bg-[var(--glass-bg-subtle)] px-3 py-2.5 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-[var(--badge-success-border)] focus:outline-none focus:ring-4 focus:ring-[var(--badge-success-bg)]"
+            />
+          </>
+        )}
+      </Modal>
     </DashboardLayout>
   );
 };

@@ -18,7 +18,7 @@ const MobileSidebarDrawer = ({ isOpen, onClose, themed = false, children }) => {
   return (
     <div className="fixed inset-0 z-50 lg:hidden">
       <div
-        className="absolute inset-0 bg-black/50"
+        className={`absolute inset-0 ${c("bg-black/50", "modal-backdrop")}`}
         onClick={onClose}
         aria-hidden="true"
       />

@@ -5,7 +5,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'sonner';
 import {
   Home, ShoppingBag, UserCircle, Wallet, MessageSquare, LogOut,
-  FileText, X, PlusCircle, Gamepad2, FileCheck
+  FileText, PlusCircle, Gamepad2, FileCheck
 } from 'lucide-react';
 import SummaryApi from '../common';
 import { logout } from '../store/userSlice';
@@ -17,6 +17,8 @@ import MobileBottomNav from './MobileBottomNav';
 import PortalHeader from './PortalHeader';
 import SidebarNavItem from './SidebarNavItem';
 import DraftOrderSavedDrawer from './DraftOrderSavedDrawer';
+import Modal from './Modal';
+import GlassButton from './GlassButton';
 import FloatingCartButton from './FloatingCartButton';
 import { ThemeProvider } from '../context/ThemeContext';
 import { PageTransition } from './PageMotion';
@@ -293,47 +295,43 @@ const DashboardLayout = ({ children, user, walletBalance, cartCount, isLoading, 
       <FloatingCartButton />
 
       {/* Logout Confirmation Popup */}
+      {/* The logout confirm was a hand-written overlay: its own bg-black/50
+          scrim, its own panel, its own close button, no Escape key. Modal has
+          all four. The red stays — "Yes, Logout" is a destructive confirm, and
+          white on red-600 measures 4.8:1, so here the colour both means
+          something and is readable. */}
       {showLogoutConfirmation && currentUser && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="glass-panel rounded-2xl p-6 max-w-md w-full mx-4">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold text-[var(--text-primary)]">Confirm Logout</h3>
-              <button
+        <Modal
+          open
+          onClose={isLoggingOut ? undefined : handleCancelLogout}
+          title="Confirm Logout"
+          footer={(
+            <div className="flex gap-3">
+              <GlassButton
                 onClick={handleCancelLogout}
-                className="text-[var(--text-secondary)] transition hover:text-[var(--text-primary)]"
                 disabled={isLoggingOut}
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            <div className="mb-6">
-              <p className="text-base text-[var(--text-secondary)] mb-2">
-                Hello <span className="font-medium text-[var(--text-primary)]">{currentUser?.name || 'User'}</span>,
-              </p>
-              <p className="text-base text-[var(--text-secondary)]">
-                Are you sure you want to logout from your account?
-              </p>
-            </div>
-
-            <div className="flex space-x-3">
-              <button
-                onClick={handleCancelLogout}
-                className="flex-1 px-4 py-2 border border-[var(--glass-border)] text-[var(--text-primary)] rounded-lg hover:bg-[var(--glass-bg-hover)] font-medium"
-                disabled={isLoggingOut}
+                strong
+                className="flex-1 disabled:opacity-50"
               >
                 No, Cancel
-              </button>
-              <button
+              </GlassButton>
+              <GlassButton
                 onClick={handleConfirmLogout}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={isLoggingOut}
+                className="flex-1 border-transparent bg-red-600 text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isLoggingOut ? 'Logging out...' : 'Yes, Logout'}
-              </button>
+              </GlassButton>
             </div>
-          </div>
-        </div>
+          )}
+        >
+          <p className="mb-2 text-base text-[var(--text-secondary)]">
+            Hello <span className="font-medium text-[var(--text-primary)]">{currentUser?.name || 'User'}</span>,
+          </p>
+          <p className="text-base text-[var(--text-secondary)]">
+            Are you sure you want to logout from your account?
+          </p>
+        </Modal>
       )}
     </ThemeProvider>
   );

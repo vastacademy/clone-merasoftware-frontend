@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import Surface from './Surface';
+import GlassButton from './GlassButton';
 import { ArrowLeft, HelpCircle, Minus, Plus } from 'lucide-react';
 
 const isAddNewPageFeature = (feature) => {
@@ -80,17 +82,13 @@ const ProjectDetailView = ({ project, onBack, onProceedWithPayment, onProceedWit
   };
 
   return (
-    <article className="glass-panel overflow-hidden rounded-[2rem]">
+    <Surface as="article" radius="lg" className="overflow-hidden">
       {/* Title + Type (no price) */}
       <div className="border-b border-[var(--divider)] bg-[var(--glass-bg-subtle)] px-5 py-5 text-[var(--text-primary)] sm:px-6 lg:px-8">
-        <button
-          type="button"
-          onClick={onBack}
-          className="inline-flex items-center gap-2 rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg)] px-3 py-2 text-base font-semibold text-[var(--text-primary)] transition hover:bg-[var(--glass-bg-strong)]"
-        >
+        <GlassButton onClick={onBack}>
           <ArrowLeft className="h-4 w-4" />
           Back
-        </button>
+        </GlassButton>
         <h1 className="mt-4 text-2xl font-bold tracking-tight text-[var(--text-primary)]">
           {project.serviceName}
           {totalPages > 0 && (
@@ -98,8 +96,11 @@ const ProjectDetailView = ({ project, onBack, onProceedWithPayment, onProceedWit
           )}
         </h1>
         <p className="mt-2 text-base font-medium text-[var(--text-primary)]">{categoryLabel}</p>
+        {/* text-emerald-300 measured 1.46:1 on the light panel (11.43:1 on the
+            dark one, which is why it read as fine). This is a package name, not
+            a status, so it takes no colour at all. */}
         {project.category === 'dynamic_websites' && packageIncludes[0] && (
-          <p className="mt-1 text-base font-semibold text-emerald-300">{packageIncludes[0]}</p>
+          <p className="mt-1 text-base font-semibold text-[var(--text-primary)]">{packageIncludes[0]}</p>
         )}
       </div>
 
@@ -145,7 +146,7 @@ const ProjectDetailView = ({ project, onBack, onProceedWithPayment, onProceedWit
             <ul className="mt-3 space-y-2">
               {packageIncludes.map((item) => (
                 <li key={item} className="flex items-start gap-2.5 text-base text-[var(--text-primary)]">
-                  <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" />
+                  <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--text-muted)]" />
                   {item}
                 </li>
               ))}
@@ -161,8 +162,12 @@ const ProjectDetailView = ({ project, onBack, onProceedWithPayment, onProceedWit
               <InfoTooltip text="Optional. Select any extra feature you want added — you can change this before you proceed." />
             </div>
 
+            {/* Selection used to be `border-emerald-500 bg-emerald-50/60` — an
+                opaque light fill, so on the dark card it was a lit patch (6.63:1)
+                and on the light card it was invisible (1.00:1). The state now
+                reads from the border + ring, which works on both grounds. */}
             {addPageFeature && (
-              <div className="mt-3 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-emerald-500 bg-emerald-50/60 px-4 py-3.5">
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[var(--badge-success-border)] bg-[var(--badge-success-bg)] px-4 py-3.5 ring-1 ring-[var(--badge-success-border)]">
                 <div>
                   <p className="text-base font-semibold text-[var(--text-primary)]">Add More Pages</p>
                   <p className="mt-0.5 text-sm text-[var(--text-primary)]">
@@ -212,7 +217,7 @@ const ProjectDetailView = ({ project, onBack, onProceedWithPayment, onProceedWit
                     key={featureId}
                     className={`flex cursor-pointer items-start justify-between gap-3 rounded-2xl border px-4 py-3.5 transition ${
                       isChecked
-                        ? 'border-emerald-500 bg-emerald-50/60 ring-1 ring-emerald-500'
+                        ? 'border-[var(--badge-success-border)] bg-[var(--badge-success-bg)] ring-1 ring-[var(--badge-success-border)]'
                         : 'border-[var(--glass-border)] bg-[var(--glass-bg)] hover:border-[var(--glass-border-strong)] hover:bg-[var(--glass-bg-hover)]'
                     }`}
                   >
@@ -226,7 +231,7 @@ const ProjectDetailView = ({ project, onBack, onProceedWithPayment, onProceedWit
                       type="checkbox"
                       checked={isChecked}
                       onChange={() => toggleFeature(featureId)}
-                      className="mt-1 h-5 w-5 shrink-0 rounded border-[var(--glass-border-strong)] text-emerald-600 focus:ring-emerald-500"
+                      className="mt-1 h-5 w-5 shrink-0 rounded border-[var(--glass-border-strong)] text-[var(--badge-success-fg)] focus:ring-[var(--badge-success-border)]"
                     />
                   </label>
                 );
@@ -239,26 +244,27 @@ const ProjectDetailView = ({ project, onBack, onProceedWithPayment, onProceedWit
       {/* 5. Proceed actions */}
       <div className="border-t border-[var(--glass-border)] px-5 py-6 sm:px-8 sm:py-8">
         <div className="flex flex-col gap-3 sm:flex-row">
-          <button
-            type="button"
+          <GlassButton
+            variant="primary"
+            size="lg"
             onClick={() => handleProceed(onProceedWithPayment)}
-            className="inline-flex w-full items-center justify-center rounded-2xl bg-[rgb(var(--ink-rgb))] px-4 py-3 text-base font-semibold text-[var(--page-bg)] transition hover:bg-[rgb(var(--ink-rgb)/0.85)] sm:flex-1"
+            className="w-full sm:flex-1"
           >
             Add to Cart
-          </button>
-          <button
-            type="button"
+          </GlassButton>
+          <GlassButton
+            size="lg"
             onClick={() => handleProceed(onProceedWithoutPayment)}
-            className="inline-flex w-full items-center justify-center rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg)] px-4 py-3 text-base font-semibold text-[var(--text-primary)] transition hover:bg-[var(--glass-bg-hover)] sm:flex-1"
+            className="w-full sm:flex-1"
           >
             Submit Project Request (Without Payment)
-          </button>
+          </GlassButton>
         </div>
         <p className="mt-3 text-sm text-[var(--text-primary)]">
           Without payment: your project request is submitted and our team will contact you shortly.
         </p>
       </div>
-    </article>
+    </Surface>
   );
 };
 

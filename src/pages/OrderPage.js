@@ -3,9 +3,6 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import {
   ArrowRight,
   Calendar,
-  CheckCircle,
-  AlertCircle,
-  Clock,
   FileText,
   LayoutGrid,
   Layers3,
@@ -17,8 +14,11 @@ import CustomerWorkspaceTabs from '../components/CustomerWorkspaceTabs';
 import displayINRCurrency from '../helpers/displayCurrency';
 import { isOrderApproved } from '../helpers/orderVisibility';
 import PaymentStatusChip from '../components/PaymentStatusChip';
+import Badge from '../components/Badge';
+import GlassButton from '../components/GlassButton';
+import { OrderList } from '../components/OrderListRow';
 import { isProjectItem, isPlanItem, PROJECT_CATEGORIES } from '../helpers/orderType';
-import { getOrderCategory, getOrderDisplayName } from '../helpers/orderPresentation';
+import { getOrderCategory, getOrderDisplayName, getItemStatusMeta } from '../helpers/orderPresentation';
 import { customerChildState } from '../helpers/customerReturnNavigation';
 
 // Display label for one order. Derived by backend/helpers/orderStatusEngine.js and delivered on
@@ -71,39 +71,23 @@ const matchesTab = (order, tab) => {
   return (TAB_CODES[tab] || []).includes(getOrderStatusCode(order));
 };
 
-const OrderStatusBadge = ({ status }) => {
-  const statusConfig = {
-    'In progress': {
-      color: 'bg-blue-500 text-[var(--text-primary)]',
-      icon: <RefreshCw size={14} className="mr-1" />,
-    },
-    'Pending approval': {
-      color: 'bg-amber-500 text-[var(--text-primary)]',
-      icon: <Clock size={14} className="mr-1" />,
-    },
-    Rejected: {
-      color: 'bg-red-500 text-[var(--text-primary)]',
-      icon: <AlertCircle size={14} className="mr-1" />,
-    },
-    Completed: {
-      color: 'border border-emerald-400/40 bg-emerald-500/20 text-emerald-300 backdrop-blur-md',
-      icon: <CheckCircle size={14} className="mr-1" />,
-    },
-    Processing: {
-      color: 'bg-[var(--glass-bg-strong)] text-[var(--text-secondary)]',
-      icon: <Clock size={14} className="mr-1" />,
-    },
-  };
-
-  const config = statusConfig[status] || statusConfig.Processing;
-
-  return (
-    <span className={`flex items-center px-3 py-1 rounded-full text-sm font-semibold ${config.color}`}>
-      {config.icon}
-      {status}
-    </span>
-  );
-};
+// The status pill.
+//
+// It used to carry its own five-entry colour map, and two of the five were
+// broken: `bg-blue-500 text-[var(--text-primary)]` puts dark slate text on a
+// blue fill in light mode (and blue is not in the portal palette at all), and
+// `bg-amber-500 text-[var(--text-primary)]` does the same on amber. The
+// remaining `text-emerald-300 on bg-emerald-500/20` measures 1.21:1 on the
+// light page.
+//
+// The tone now comes from getItemStatusMeta — the same helper the projects list
+// uses — so the same order can no longer be one colour here and another there.
+// The label is still this page's own getOrderStatus, so no wording changes.
+// The little per-status icons are gone: the portal's status badge (projects and
+// plans) has never had one, and two badges for the same thing should not differ.
+const OrderStatusBadge = ({ order, status }) => (
+  <Badge tone={getItemStatusMeta(order).tone}>{status}</Badge>
+);
 
 const getPurchaseTypeLabel = (order) => {
   if (isPlanItem(order)) {
@@ -119,7 +103,18 @@ const getPurchaseTypeLabel = (order) => {
   return 'Order';
 };
 
-const OrderRow = ({ order, navigate, location, formatDate, index }) => {
+// Purchase history shows the same orders as the projects list against its own
+// columns. That difference was the whole reason this page had a second copy of
+// the list panel; now it is five lines of data.
+const PURCHASE_COLUMNS = [
+  { label: 'Order', className: 'col-span-12 lg:col-span-5' },
+  { label: 'Type', className: 'col-span-6 lg:col-span-2' },
+  { label: 'Status', className: 'col-span-6 lg:col-span-2' },
+  { label: 'Purchased', className: 'col-span-6 lg:col-span-2' },
+  { label: 'Price', className: 'col-span-6 lg:col-span-1 text-right' },
+];
+
+const OrderRow = ({ order, navigate, location, formatDate }) => {
   const handleClick = () => {
     navigate(`/order-detail/${order._id}`, { state: customerChildState(location) });
   };
@@ -135,21 +130,18 @@ const OrderRow = ({ order, navigate, location, formatDate, index }) => {
     <button
       onClick={handleClick}
       type="button"
-      className={[
-        'grid w-full grid-cols-12 gap-3 px-5 py-4 text-left transition hover:bg-[var(--glass-bg-hover)] sm:px-6',
-        index % 2 === 0 ? 'bg-[var(--glass-bg-subtle)]' : 'bg-[var(--glass-bg-subtle)]',
-      ].join(' ')}
+      className="grid w-full grid-cols-12 gap-3 bg-[var(--glass-bg-subtle)] px-5 py-4 text-left transition hover:bg-[var(--glass-bg-hover)] sm:px-6"
     >
       <div className="col-span-12 lg:col-span-5">
         <div className="flex items-start gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] text-[var(--text-primary)] backdrop-blur-md">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border-[length:var(--glass-border-width)] border-[var(--glass-border-strong)] bg-[var(--glass-bg)] text-[var(--text-primary)] backdrop-blur-md">
             {isProject ? <LayoutGrid className="h-5 w-5" /> : isPlan ? <Layers3 className="h-5 w-5" /> : <FileText className="h-5 w-5" />}
           </div>
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="rounded-full bg-[rgb(var(--ink-rgb))] px-2.5 py-1 text-sm font-semibold uppercase text-[var(--page-bg)]">
+              <Badge tone="neutral" className="uppercase">
                 {purchaseType}
-              </span>
+              </Badge>
             </div>
             <h3 className="mt-2 truncate text-lg font-semibold text-[var(--text-primary)]">
               {getOrderDisplayName(order)}
@@ -172,7 +164,7 @@ const OrderRow = ({ order, navigate, location, formatDate, index }) => {
       </div>
 
       <div className="col-span-6 lg:col-span-2 lg:flex lg:items-center">
-        <OrderStatusBadge status={status} />
+        <OrderStatusBadge order={order} status={status} />
       </div>
 
       <div className="col-span-6 lg:col-span-2 lg:flex lg:items-center">
@@ -325,14 +317,12 @@ const OrdersPage = () => {
             </p>
           </div>
 
-          <div className="relative mt-10 overflow-hidden rounded-3xl border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] shadow-[var(--card-shadow)] backdrop-blur-2xl backdrop-saturate-150">
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-[var(--glass-sheen)] to-transparent" />
-
-            <div className="relative flex flex-col gap-3 border-b border-[var(--glass-border)] p-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:px-6">
-              <h2 className="flex items-center text-xl font-semibold text-[var(--text-primary)]">
-                <FileText className="mr-2 h-5 w-5" />
-                Orders
-              </h2>
+          <OrderList
+            className="mt-10"
+            title="Orders"
+            icon={FileText}
+            columns={PURCHASE_COLUMNS}
+            toolbar={(
               <CustomerWorkspaceTabs
                 tabs={filterTabs}
                 activeTab={activeTab}
@@ -340,70 +330,43 @@ const OrdersPage = () => {
                 ariaLabel="Order status filters"
                 variant="inline"
               />
-              <div className="flex flex-wrap items-center justify-center gap-2">
-                <div className="rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg)] px-4 py-2 text-sm font-semibold text-[var(--text-primary)] backdrop-blur-md">
-                  Total: {orders.length}
-                </div>
-                <button
-                  type="button"
-                  onClick={fetchOrders}
-                  className="inline-flex items-center gap-2 rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg)] px-4 py-3 text-sm font-semibold text-[var(--text-primary)] backdrop-blur-md transition hover:bg-[var(--glass-bg-strong)]"
-                >
+            )}
+            actions={(
+              <>
+                <Badge tone="neutral">Total: {orders.length}</Badge>
+                <GlassButton onClick={fetchOrders}>
                   <RefreshCw size={16} />
                   Refresh
-                </button>
-              </div>
-            </div>
-
-            <div className="relative grid grid-cols-12 gap-3 border-b border-[var(--glass-border)] bg-[var(--glass-bg-subtle)] px-5 py-3 text-sm font-semibold uppercase text-[var(--text-secondary)] sm:px-6">
-              <div className="col-span-12 lg:col-span-5">Order</div>
-              <div className="col-span-6 lg:col-span-2">Type</div>
-              <div className="col-span-6 lg:col-span-2">Status</div>
-              <div className="col-span-6 lg:col-span-2">Purchased</div>
-              <div className="col-span-6 lg:col-span-1 text-right">Price</div>
-            </div>
-
-            {loading ? (
-              <div className="relative px-5 py-10 text-center text-base text-[var(--text-secondary)] sm:px-6">Loading orders...</div>
-            ) : filteredOrders.length > 0 ? (
-              <div className="relative divide-y divide-[var(--divider)]">
-                {filteredOrders.map((order, index) => (
-                  <OrderRow
-                    key={order._id}
-                    order={order}
-                    index={index}
-                    navigate={navigate}
-                    location={location}
-                    formatDate={formatDate}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="relative px-5 py-12 text-center sm:px-6">
-                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] text-[var(--text-primary)] backdrop-blur-md">
-                  <FileText className="h-6 w-6" />
-                </div>
+                </GlassButton>
+              </>
+            )}
+            items={filteredOrders}
+            loading={loading}
+            loadingLabel="Loading orders..."
+            renderRow={(order) => (
+              <OrderRow
+                order={order}
+                navigate={navigate}
+                location={location}
+                formatDate={formatDate}
+              />
+            )}
+            emptyIcon={FileText}
+            empty={(
+              <>
                 <h3 className="mt-4 text-lg font-semibold text-[var(--text-primary)]">{emptyTitle}</h3>
                 <p className="mt-2 text-base text-[var(--text-secondary)]">{emptyMessage}</p>
                 <div className="mt-5 flex flex-wrap justify-center gap-3">
-                  <button
-                    type="button"
-                    onClick={() => navigate('/start-new-project')}
-                    className="inline-flex items-center gap-2 rounded-2xl bg-[rgb(var(--ink-rgb))] px-4 py-3 text-base font-semibold text-[var(--page-bg)] transition hover:bg-[rgb(var(--ink-rgb)/0.85)]"
-                  >
+                  <GlassButton variant="primary" size="lg" onClick={() => navigate('/start-new-project')}>
                     Browse Services
-                  </button>
-                  <button
-                    type="button"
-                    onClick={fetchOrders}
-                    className="inline-flex items-center gap-2 rounded-2xl border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] px-4 py-3 text-base font-semibold text-[var(--text-primary)] backdrop-blur-md transition hover:bg-[var(--glass-bg-strong)]"
-                  >
+                  </GlassButton>
+                  <GlassButton size="lg" strong onClick={fetchOrders}>
                     Refresh Orders
-                  </button>
+                  </GlassButton>
                 </div>
-              </div>
+              </>
             )}
-          </div>
+          />
         </div>
       </div>
     </DashboardLayout>

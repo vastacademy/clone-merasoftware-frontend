@@ -89,12 +89,20 @@ export const isActiveWorkItem = (order) => {
 // Maps the engine's semantic tone key onto this surface's Tailwind classes. The engine returns
 // a meaning ("this is a warning"), not a colour, so each surface keeps its own palette while the
 // decision about WHICH meaning applies is made in one place.
+// Maps the engine's meaning onto a Badge tone rather than onto classes. The
+// classes these replaced were opaque -100/-200 fills — `bg-emerald-100`,
+// `bg-blue-100` — which are light patches that ignore the theme entirely and
+// sit as lit slabs on the dark page. `active` was blue, a hue the portal does
+// not otherwise use.
+//
+// Four tones, not five: `active` and `positive` both meant "this is fine", and
+// splitting them bought a second green nobody could tell apart at badge size.
 const TONE_CLASS = {
-  neutral: 'bg-slate-200 text-slate-700',
-  positive: 'bg-emerald-100 text-emerald-700',
-  active: 'bg-blue-100 text-blue-700',
-  warning: 'bg-amber-100 text-amber-800',
-  danger: 'bg-rose-100 text-rose-700',
+  neutral: 'neutral',
+  positive: 'success',
+  active: 'success',
+  warning: 'pending',
+  danger: 'error',
 };
 
 // Status badge label + Tailwind tone for a project/plan/service order.
@@ -111,13 +119,13 @@ const TONE_CLASS = {
 // engine is the source of truth wherever it is present.
 export const getItemStatusMeta = (order) => {
   if (!order) {
-    return { label: 'Unknown', tone: 'bg-slate-100 text-slate-700' };
+    return { label: 'Unknown', tone: 'neutral' };
   }
 
   if (order.orderState?.label) {
     return {
       label: order.orderState.label,
-      tone: TONE_CLASS[order.orderState.tone] || 'bg-slate-100 text-slate-700',
+      tone: TONE_CLASS[order.orderState.tone] || 'neutral',
       code: order.orderState.code,
       phase: order.orderState.phase,
       phaseLabel: order.orderState.phaseLabel,
@@ -163,11 +171,11 @@ export const getItemStatusMeta = (order) => {
       return { label: 'Closed', tone: TONE_CLASS.neutral };
     }
     if (isOrderApproved(order) && getRemainingDays(order) > 0) {
-      return { label: 'Active plan', tone: 'bg-violet-100 text-violet-700' };
+      return { label: 'Active plan', tone: TONE_CLASS.positive };
     }
   }
 
-  return { label: 'Processing', tone: 'bg-slate-100 text-slate-700' };
+  return { label: 'Processing', tone: TONE_CLASS.neutral };
 };
 
 // Short summary text: plans show remaining days/updates, projects show progress %.
@@ -192,7 +200,10 @@ export const getItemSummary = (order) => {
     // Only a project genuinely underway has a meaningful progress figure: a cancelled, rejected,
     // pending or payment-due order shows nothing rather than a number the badge disagrees with.
     if (order.orderState?.code) {
-      if (order.orderState.code === 'completed') return '100% complete';
+      // A finished project already says so in the status column. Returning
+      // '100% complete' here put a second chip beside it saying the same thing
+      // in the same colour, so the row carried the word twice and neither
+      // instance registered. Progress is only worth a chip while it is moving.
       if (order.orderState.code !== 'in_progress') return '';
       return `${order.orderState.progress}% complete`;
     }
@@ -200,8 +211,10 @@ export const getItemSummary = (order) => {
     // ── fallback: payloads that predate the engine (see getItemStatusMeta) ──
     if (order.orderVisibility === 'cancelled') return '';
 
+    // Same reasoning as the engine path above: finished is the status badge's
+    // job, not a second chip's.
     if (order.projectProgress >= 100 || order.currentPhase === 'completed') {
-      return '100% complete';
+      return '';
     }
 
     const isPending =
@@ -220,9 +233,3 @@ export const getItemSummary = (order) => {
 };
 
 export const getItemTypeLabel = (order) => (isPlanItem(order) ? 'Plan' : 'Project');
-
-// Type-based accent colors: emerald = project, amber = plan.
-export const getItemTypeAccent = (order) =>
-  isPlanItem(order)
-    ? { border: 'border-l-amber-400/70', badge: 'bg-amber-500/25 text-amber-100 border border-amber-400/40' }
-    : { border: 'border-l-emerald-400/70', badge: 'bg-emerald-500/25 text-emerald-100 border border-emerald-400/40' };
