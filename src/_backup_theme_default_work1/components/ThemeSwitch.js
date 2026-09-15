@@ -13,17 +13,16 @@ import { useTheme } from '../context/ThemeContext';
  * follows the theme too — fixed dark text disappeared against the light header.
  */
 
-// Keyed by theme, not ordered — the list order comes from THEMES in ThemeContext.
 const ICONS = {
-  light: Sun,
-  dark: Moon,
   immersive: Image,
+  dark: Moon,
+  light: Sun,
 };
 
 const DESCRIPTIONS = {
-  light: 'Clean white background',
-  dark: 'Solid dark, no background image',
   immersive: 'Background image with glass panels',
+  dark: 'Solid dark, no background image',
+  light: 'Clean white background',
 };
 
 const ThemeSwitch = () => {
@@ -39,8 +38,7 @@ const ThemeSwitch = () => {
     return () => document.removeEventListener('mousedown', close);
   }, []);
 
-  // Fallback follows DEFAULT_THEME, which is light.
-  const ActiveIcon = ICONS[theme] || Sun;
+  const ActiveIcon = ICONS[theme] || Image;
 
   return (
     <div className="relative shrink-0" ref={boxRef}>

@@ -15,8 +15,6 @@ import {
 // How long a service may be bought for — shared with the standalone page so the
 // two surfaces can never offer different terms.
 import { BILLING_CYCLE_MONTHS, buildTenureOptions } from '../helpers/serviceTenure';
-import Modal from './Modal';
-import GlassButton from './GlassButton';
 
 // Add-on service picker, opened from a project's detail page.
 //
@@ -320,55 +318,60 @@ const AddServiceModal = ({
 
   if (!isOpen) return null;
 
-  // The dialog was hand-built: its backdrop was `bg-[var(--glass-bg-subtle)]`, a surface
-  // FILL rather than a backdrop, so the page behind it was never dimmed (the same defect
-  // CreateTicket.js had), and the panel carried a hardcoded `rounded-[1.75rem]` no other
-  // panel in the portal uses. Modal owns the backdrop, the panel, the 2rem corner, the
-  // mobile sheet, Escape-to-close and the scroll lock; its `title`/`onClose` replace the
-  // hand-built header row and close button, and the subtitle keeps its place under them.
-  const heading = purchasedSummary
-    ? purchaseApproved
-      ? 'Service added'
-      : 'Submitted for approval'
-    : showQR
-    ? 'Pay the remaining amount'
-    : isProjectFinished
-    ? 'Ongoing servicing'
-    : 'Add a service';
-
-  const subheading = purchasedSummary
-    ? purchaseApproved
-      ? 'Your service is active now.'
-      : 'Your service starts as soon as this payment is approved.'
-    : showQR
-    ? `Scan and pay ${formatPrice(upiPart)}`
-    : `For ${projectName}`;
-
   return (
-    <Modal open onClose={onClose} title={heading} size="lg">
-      <div>
-        <p className="-mt-4 mb-5 text-sm text-[var(--text-secondary)]">{subheading}</p>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--glass-bg-subtle)] px-4 py-6">
+      <div className="flex max-h-full w-full max-w-2xl flex-col overflow-hidden rounded-[1.75rem] border border-[var(--glass-border-strong)] bg-[var(--menu-bg)] shadow-2xl backdrop-blur-2xl">
+        {/* Header */}
+        <div className="flex items-start justify-between gap-4 border-b border-[var(--glass-border)] px-6 py-5">
+          <div>
+            <h2 className="text-xl font-bold text-[var(--text-primary)]">
+              {purchasedSummary
+                ? purchaseApproved
+                  ? 'Service added'
+                  : 'Submitted for approval'
+                : showQR
+                ? 'Pay the remaining amount'
+                : isProjectFinished
+                ? 'Ongoing servicing'
+                : 'Add a service'}
+            </h2>
+            <p className="mt-1 text-sm text-[var(--text-secondary)]">
+              {purchasedSummary
+                ? purchaseApproved
+                  ? 'Your service is active now.'
+                  : 'Your service starts as soon as this payment is approved.'
+                : showQR
+                ? `Scan and pay ${formatPrice(upiPart)}`
+                : `For ${projectName}`}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-xl border border-[var(--glass-border)] bg-[var(--glass-bg-subtle)] p-2 text-[var(--text-primary)] transition hover:bg-[var(--glass-bg)]"
+            aria-label="Close"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
 
         {/* Body */}
-        <div className="min-h-0 flex-1">
+        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
           {purchasedSummary ? (
             <>
-              {/* The tint and its icon are one status, so both come from the same badge
-                  tone tokens. They were fixed emerald/amber alphas with `-300` icons —
-                  dark-theme shades that washed out on the light panel. */}
               <div
                 className={[
                   'flex items-center justify-between gap-3 rounded-2xl border px-4 py-3',
                   purchaseApproved
-                    ? 'border-[var(--badge-success-border)] bg-[var(--badge-success-bg)]'
-                    : 'border-[var(--badge-pending-border)] bg-[var(--badge-pending-bg)]',
+                    ? 'border-emerald-400/30 bg-emerald-500/10'
+                    : 'border-amber-400/30 bg-amber-500/10',
                 ].join(' ')}
               >
                 <span className="flex items-center gap-2 text-base font-semibold text-[var(--text-primary)]">
                   {purchaseApproved ? (
-                    <Check className="h-4 w-4 text-[var(--badge-success-fg)]" />
+                    <Check className="h-4 w-4 text-emerald-300" />
                   ) : (
-                    <Clock className="h-4 w-4 text-[var(--badge-pending-fg)]" />
+                    <Clock className="h-4 w-4 text-amber-300" />
                   )}
                   {purchasedName}
                 </span>
@@ -376,8 +379,7 @@ const AddServiceModal = ({
               </div>
 
               {!purchaseApproved && (
-                // `text-amber-100` on an amber tint is amber-on-amber in light mode.
-                <p className="mt-4 rounded-xl border border-[var(--badge-pending-border)] bg-[var(--badge-pending-bg)] px-3 py-2 text-sm text-[var(--badge-pending-fg)]">
+                <p className="mt-4 rounded-xl border border-amber-400/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-100">
                   We've received your payment reference. This service activates once our team
                   confirms it — you don't need to pay again.
                 </p>
@@ -385,10 +387,6 @@ const AddServiceModal = ({
             </>
           ) : showQR ? (
             <div className="flex flex-col items-center gap-4 py-2">
-              {/* The one deliberate `bg-white` in this file: a QR code is read by a
-                  camera, not by a human, and scanners expect dark modules on a white
-                  quiet zone. Theming this plate would break scanning in dark mode, so
-                  it stays white in all three themes. */}
               <div className="rounded-2xl bg-white p-4">
                 <QRCodeSVG value={upiLink} size={190} />
               </div>
@@ -455,11 +453,7 @@ const AddServiceModal = ({
                         isSeparatePurchase
                           ? 'border-[var(--glass-border)] bg-[var(--glass-bg-subtle)] hover:bg-[var(--glass-bg-subtle)]'
                           : isSelected
-                          // Selection reads from border + ring, not a coloured fill —
-                          // the same fix 2A.2 applied to ProjectDetailView's feature
-                          // cards, where an opaque emerald fill measured 1.00:1 in light
-                          // mode and the customer could not see what they had picked.
-                          ? 'border-[var(--badge-success-border)] bg-[var(--badge-success-bg)] ring-1 ring-[var(--badge-success-fg)]'
+                          ? 'border-emerald-400/50 bg-emerald-500/15'
                           : 'border-[var(--glass-border)] bg-[var(--glass-bg-subtle)] hover:bg-[var(--glass-bg)]',
                       ].join(' ')}
                     >
@@ -469,9 +463,7 @@ const AddServiceModal = ({
                           isSeparatePurchase
                             ? 'border-[var(--glass-border-strong)] bg-transparent text-[var(--text-muted)]'
                             : isSelected
-                            // The tick box is a filled mark: ink fill, page-ground tick,
-                            // so the two invert together the way GlassButton's primary does.
-                            ? 'border-transparent bg-[rgb(var(--ink-rgb))] text-[var(--page-bg)]'
+                            ? 'border-emerald-400 bg-emerald-500 text-[var(--text-primary)]'
                             : 'border-[var(--glass-border-strong)] bg-transparent',
                         ].join(' ')}
                       >
@@ -503,7 +495,7 @@ const AddServiceModal = ({
                           </span>
                         )}
                         {startsLater && (
-                          <span className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-[var(--badge-pending-border)] bg-[var(--badge-pending-bg)] px-2 py-1 text-xs font-semibold text-[var(--badge-pending-fg)]">
+                          <span className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-amber-300/40 bg-amber-500/15 px-2 py-1 text-xs font-semibold text-amber-100">
                             <Clock className="h-3 w-3" />
                             Starts when this project is completed
                           </span>
@@ -526,9 +518,13 @@ const AddServiceModal = ({
         {/* Footer */}
         <div className="border-t border-[var(--glass-border)] px-6 py-5">
           {purchasedSummary ? (
-            <GlassButton variant="primary" size="lg" onClick={onClose} className="w-full">
+            <button
+              type="button"
+              onClick={onClose}
+              className="w-full rounded-2xl bg-emerald-500 px-4 py-3 text-base font-semibold text-[var(--text-primary)] transition hover:bg-emerald-400"
+            >
               Done
-            </GlassButton>
+            </button>
           ) : showQR ? (
             <div className="flex gap-3">
               <button
@@ -539,15 +535,14 @@ const AddServiceModal = ({
               >
                 Back
               </button>
-              <GlassButton
-                variant="primary"
-                size="lg"
+              <button
+                type="button"
                 onClick={handleVerifyUpi}
                 disabled={submitting || upiReference.trim().length < 12}
-                className="flex-1 disabled:cursor-not-allowed disabled:bg-[var(--glass-bg-strong)] disabled:text-[var(--text-muted)]"
+                className="flex-1 rounded-2xl bg-emerald-500 px-4 py-3 text-base font-semibold text-[var(--text-primary)] transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-[var(--glass-bg-strong)] disabled:text-[var(--text-muted)]"
               >
                 {submitting ? 'Submitting…' : 'Submit Payment'}
-              </GlassButton>
+              </button>
             </div>
           ) : (
             <>
@@ -560,7 +555,7 @@ const AddServiceModal = ({
                 Wallet balance: {formatPrice(walletBalance)}
               </p>
 
-              {selectedPlan && !hasCompleteSelection && <p className="mt-2 text-sm text-[var(--badge-pending-fg)]">Select a billing period and tenure for this service.</p>}
+              {selectedPlan && !hasCompleteSelection && <p className="mt-2 text-sm text-amber-200">Select a billing period and tenure for this service.</p>}
 
               {/* Split breakdown — shown only when the payment actually is a split. */}
               {selectedPlan && upiPart > 0 && (
@@ -576,19 +571,18 @@ const AddServiceModal = ({
                 </div>
               )}
 
-              <GlassButton
-                variant="primary"
-                size="lg"
+              <button
+                type="button"
                 onClick={handlePay}
                 disabled={!canPay || submitting}
-                className="mt-3 w-full disabled:cursor-not-allowed disabled:bg-[var(--glass-bg-strong)] disabled:text-[var(--text-muted)]"
+                className="mt-3 w-full rounded-2xl bg-emerald-500 px-4 py-3 text-base font-semibold text-[var(--text-primary)] transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-[var(--glass-bg-strong)] disabled:text-[var(--text-muted)]"
               >
                 {submitting
                   ? 'Processing…'
                   : upiPart > 0
                   ? `Pay ${formatPrice(total)}`
                   : `Pay ${formatPrice(total)} from Wallet`}
-              </GlassButton>
+              </button>
             </>
           )}
         </div>
@@ -596,40 +590,49 @@ const AddServiceModal = ({
 
       {/* Standalone-only service: explain where it is bought, then take them there.
           The purchase is redirected, never refused — the customer keeps the sale
-          and lands on the page that can actually complete it.
-
-          This was an `absolute inset-0` overlay nested INSIDE the old hand-built panel,
-          with the same surface-fill-as-backdrop defect. It is its own Modal now, which is
-          what it always was: a second dialog over the first. */}
+          and lands on the page that can actually complete it. */}
       {redirectPlan && (
-        <Modal
-          open
-          onClose={() => setRedirectPlan(null)}
-          eyebrow="Bought separately"
-          title={redirectPlan.serviceName}
-          size="sm"
-          footer={(
-            <div className="flex gap-3">
-              <GlassButton strong onClick={() => setRedirectPlan(null)} className="flex-1">
-                Stay here
-              </GlassButton>
-              <GlassButton variant="primary" onClick={handleRedirectConfirm} className="flex-1">
-                Continue
-              </GlassButton>
-            </div>
-          )}
+        <div
+          className="absolute inset-0 z-10 flex items-center justify-center bg-[var(--glass-bg-subtle)] p-4 backdrop-blur-sm"
+          onClick={() => setRedirectPlan(null)}
         >
-          <p className="text-sm text-[var(--text-secondary)]">
-            This service runs on its own and cannot be attached to
-            {projectName ? ` ${projectName}` : ' this project'}. It is bought separately, and
-            works the same either way.
-          </p>
-          <p className="mt-2 text-sm text-[var(--text-secondary)]">
-            Continue to buy it on its own page?
-          </p>
-        </Modal>
+          <div
+            className="w-full max-w-md rounded-3xl border border-[var(--glass-border-strong)] bg-[var(--menu-bg)] p-6 text-left"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <span className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] px-2 py-1 text-xs font-semibold text-[var(--text-secondary)]">
+              <ExternalLink className="h-3 w-3" />
+              Bought separately
+            </span>
+            <h3 className="mt-3 text-lg font-semibold text-[var(--text-primary)]">{redirectPlan.serviceName}</h3>
+            <p className="mt-2 text-sm text-[var(--text-secondary)]">
+              This service runs on its own and cannot be attached to
+              {projectName ? ` ${projectName}` : ' this project'}. It is bought separately, and
+              works the same either way.
+            </p>
+            <p className="mt-2 text-sm text-[var(--text-secondary)]">
+              Continue to buy it on its own page?
+            </p>
+            <div className="mt-5 flex gap-3">
+              <button
+                type="button"
+                onClick={() => setRedirectPlan(null)}
+                className="flex-1 rounded-2xl border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] px-4 py-2.5 text-sm font-semibold text-[var(--text-primary)] transition hover:bg-[var(--glass-bg-strong)]"
+              >
+                Stay here
+              </button>
+              <button
+                type="button"
+                onClick={handleRedirectConfirm}
+                className="flex-1 rounded-2xl bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-[var(--text-primary)] transition hover:bg-emerald-400"
+              >
+                Continue
+              </button>
+            </div>
+          </div>
+        </div>
       )}
-    </Modal>
+    </div>
   );
 };
 

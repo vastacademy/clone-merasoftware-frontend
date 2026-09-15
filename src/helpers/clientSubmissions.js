@@ -49,11 +49,16 @@ const REQUEST_STATUS_LABELS = {
 };
 
 const REQUEST_STATUS_TONES = {
+  // The customer portal's tones are the portal's badge recipes. They used to be
+  // written out here in dark-only shades (a -300 text on a -500/20 tint), which read
+  // as colour-on-colour once the light theme put the pill on a white card — the same
+  // defect PlanDetails.js and UserUpdateDashboard.js each had their own copy of.
+  // The `light` map below is the ADMIN panel's and is deliberately left alone.
   glass: {
-    pending: "border-amber-400/40 bg-amber-500/20 text-amber-300",
-    in_progress: "border-white/25 bg-white/15 text-white",
-    completed: "border-emerald-400/40 bg-emerald-500/20 text-emerald-300",
-    rejected: "border-rose-400/40 bg-rose-500/20 text-rose-300",
+    pending: "badge badge-pending",
+    in_progress: "badge badge-neutral",
+    completed: "badge badge-success",
+    rejected: "badge badge-error",
   },
   light: {
     pending: "border-amber-200 bg-amber-50 text-amber-700",

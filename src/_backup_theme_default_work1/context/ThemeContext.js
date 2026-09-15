@@ -7,19 +7,12 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useS
  * index.css keyed off that attribute, so this file owns the *choice* and the
  * CSS owns the *values*. Nothing here knows a single colour.
  *
- *   light     — solid white. The default.
+ *   immersive — BG.png over dark glass. The default, and today's look exactly.
  *   dark      — the same glass on a solid background, no image.
- *   immersive — BG.png over dark glass.
+ *   light     — solid white.
  *
- * THEMES is also the order the picker lists them in, so the array is the one
- * place that decides both.
- *
- * `light` is the default as of 15-09-2026, owner's decision. It was `immersive`
- * before, chosen so that an existing customer who had never touched the switch
- * saw no change when the theme system shipped. That protection has now been
- * deliberately given up: anyone who never picked a theme moves to light. A
- * customer who DID pick one is unaffected — their choice is in localStorage and
- * still wins.
+ * `immersive` is the default on purpose: an existing customer who has never
+ * touched the switch must see no change at all after this ships.
  *
  * Persisted under the 'theme' key, which DatabaseContext already preserves
  * across its cache clear (see keysToKeep there) — so the choice survives a
@@ -28,14 +21,14 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useS
  * Customer portal only. AdminLayout never mounts this provider.
  */
 
-export const THEMES = ['light', 'dark', 'immersive'];
-export const DEFAULT_THEME = 'light';
+export const THEMES = ['immersive', 'dark', 'light'];
+export const DEFAULT_THEME = 'immersive';
 const STORAGE_KEY = 'theme';
 
 export const THEME_LABELS = {
-  light: 'Light',
-  dark: 'Solid Dark',
   immersive: 'Immersive',
+  dark: 'Solid Dark',
+  light: 'Light',
 };
 
 const isValid = (value) => THEMES.includes(value);

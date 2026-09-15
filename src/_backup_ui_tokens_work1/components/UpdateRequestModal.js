@@ -5,8 +5,6 @@ import { toast } from 'sonner';
 import TriangleMazeLoader from '../components/TriangleMazeLoader';
 import imageCompression from 'browser-image-compression'; // You'll need to install this package
 import SpinningLoader from './SpinningLoader';
-import Modal from './Modal';
-import GlassButton from './GlassButton';
 
 const LEGACY_MAX_FILE_COUNT = 20;
 // A project's own per-request cap, matching backend/config/uploadLimits.js
@@ -275,16 +273,10 @@ const getFileIcon = (fileType) => {
   if (fileType.startsWith('image/')) {
     return <Image className={`${chip} text-[var(--text-secondary)]`} />;
   } else if (fileType === 'application/pdf') {
-    // Was `text-rose-300` — 5.42 on the dark chip but 1.84 on the light one, so the
-    // PDF icon vanished in light mode. --danger-fg is the portal's per-theme red and
-    // keeps the same "this one is a PDF" cue in all three (7.09 dark / 6.29 light).
-    return <FileText className={`${chip} text-[var(--danger-fg)]`} />;
+    return <FileText className={`${chip} text-rose-300`} />;
   } else if (fileType === 'application/msword' ||
              fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-    // `text-sky-300` measured 1.62 on the light chip. Blue is not in the portal's
-    // palette at all (see Modal.js's note on the bg-blue-600 header bar it replaced),
-    // so the Word icon takes the neutral text colour rather than inventing a token.
-    return <FileText className={`${chip} text-[var(--text-secondary)]`} />;
+    return <FileText className={`${chip} text-sky-300`} />;
   } else {
     return <FileText className={`${chip} text-[var(--text-secondary)]`} />;
   }
@@ -292,21 +284,25 @@ const getFileIcon = (fileType) => {
 
 
   return (
-    // The dialog used to be a hand-built pair of divs: an outer frame filled with a
-    // hardcoded radial green gradient ("the mockup's .scene") and, floating on it, an
-    // inner panel fixed at rgba(20,26,32,0.55). Neither followed the theme, but every
-    // piece of text inside them did — so on the light theme the scene stayed dark while
-    // --text-primary/--text-secondary turned dark slate on top of it, measuring 1.18:1
-    // and 1.47:1. The body was effectively invisible; only the header escaped, by the
-    // accident of sitting under the light sheen.
-    //
-    // Owner's decision (15-09-2026): the scene follows the theme. That makes it exactly
-    // what Modal already is — a Surface panel over the shared backdrop, measured at
-    // 14.0:1 dark and 16.1:1 light — so the gradient is dropped rather than re-expressed
-    // as a new token, and the dialog inherits Escape-to-close and the scroll lock it
-    // never had. Modal renders its own header from `title`/`onClose`, so the hand-built
-    // header row and close button go with it.
-    <Modal open onClose={loading ? undefined : onClose} title="Upload Data" size="lg">
+    <div className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* Outer frame — the GREEN gradient scene the modal floats on (matches the mockup's .scene) */}
+      <div className="w-full max-w-2xl max-h-[90vh] flex rounded-[1.5rem] p-6 shadow-[0_25px_70px_rgba(0,0,0,0.55)] ring-1 ring-inset ring-[var(--glass-border)] bg-[radial-gradient(120%_120%_at_15%_0%,#1f6d54_0%,#143b3a_45%,#0d1b26_100%)]">
+      {/* Inner modal — dark neutral glass floating on the green frame (matches .modal.glass) */}
+      <div className="relative w-full flex flex-col rounded-[1.4rem] border border-[var(--glass-border)] text-[var(--text-primary)] shadow-[0_20px_60px_rgba(0,0,0,0.45)] overflow-hidden bg-[rgba(20,26,32,0.55)] backdrop-blur-xl backdrop-saturate-150">
+        {/* Top sheen, matching the page's glass cards */}
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-1/3 bg-gradient-to-b from-[var(--glass-sheen)] to-transparent" />
+        {/* Header */}
+        <div className="relative border-b border-[var(--glass-border)] px-5 py-4 flex justify-between items-center">
+          <h3 className="font-bold text-lg text-[var(--text-primary)]">Upload Data</h3>
+          <button
+            onClick={onClose}
+            className="grid h-8 w-8 place-items-center rounded-lg border border-[var(--glass-border)] bg-[var(--glass-bg)] text-[var(--text-secondary)] transition hover:bg-[var(--glass-bg-strong)] hover:text-[var(--text-primary)] disabled:opacity-50"
+            disabled={loading}
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        
         {loading && (
   <>
     {isUploading ? (
@@ -348,22 +344,20 @@ const getFileIcon = (fileType) => {
             </div>
 
             <div className="flex gap-4 mt-auto">
-              <GlassButton
-                strong
+              <button
                 onClick={() => setShowConfirmation(false)}
-                className="disabled:opacity-50"
+                className="px-5 py-2.5 rounded-xl border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] font-semibold text-[var(--text-primary)] transition hover:bg-[var(--glass-bg-strong)] disabled:opacity-50"
                 disabled={loading}
               >
                 Back
-              </GlassButton>
-              <GlassButton
-                variant="primary"
+              </button>
+              <button
                 onClick={submitUpdateRequest}
-                className="disabled:opacity-50"
+                className="px-5 py-2.5 rounded-xl bg-emerald-600 font-semibold text-[var(--text-primary)] transition hover:bg-emerald-700 flex items-center disabled:opacity-50"
                 disabled={loading}
               >
                 Confirm and Submit
-              </GlassButton>
+              </button>
             </div>
           </div>
         ) : (
@@ -388,10 +382,7 @@ const getFileIcon = (fileType) => {
                         : 'border-[var(--glass-border-strong)] bg-[var(--glass-bg-subtle)] hover:bg-[var(--glass-bg)]'
                     }`}
                   >
-                    {/* `text-emerald-400` is a dark-theme shade — on the light panel the
-                        drop-zone icon washed out. The success badge foreground is the
-                        per-theme version of the same "ready / go ahead" colour. */}
-                    <Upload className={`w-10 h-10 mb-2 ${files.length >= maxFileCount ? 'text-[var(--text-muted)]' : 'text-[var(--badge-success-fg)]'}`} />
+                    <Upload className={`w-10 h-10 mb-2 ${files.length >= maxFileCount ? 'text-[var(--text-muted)]' : 'text-emerald-400'}`} />
                     <p className={`text-sm ${files.length >= maxFileCount ? 'text-[var(--text-muted)]' : 'text-[var(--text-secondary)]'}`}>
                       {files.length >= maxFileCount ? `Maximum files reached (${maxFileCount}/${maxFileCount})` : `Click to upload or drag and drop (${files.length}/${maxFileCount})`}
                     </p>
@@ -434,7 +425,7 @@ const getFileIcon = (fileType) => {
 
                         <button
                           onClick={() => removeFile(index)}
-                          className="ml-2 text-[var(--text-muted)] transition hover:text-[var(--danger-fg)]"
+                          className="ml-2 text-[var(--text-muted)] hover:text-rose-400 transition"
                         >
                           <X className="w-5 h-5" />
                         </button>
@@ -486,33 +477,30 @@ const getFileIcon = (fileType) => {
                         }
                       }}
                       placeholder="Type your instructions here... (Enter to add, Shift+Enter for new line)"
-                      className="w-full rounded-xl border border-[var(--glass-border)] bg-[var(--glass-bg-subtle)] p-3 min-h-[80px] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--badge-success-fg)] resize-none"
+                      className="w-full rounded-xl border border-[var(--glass-border)] bg-[var(--glass-bg-subtle)] p-3 min-h-[80px] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-emerald-400/60 resize-none"
                     ></textarea>
                     <div className="absolute bottom-2 right-2 text-xs text-[var(--text-muted)] tabular-nums">
                       {message.length} characters
                     </div>
                   </div>
-                  {/* Was `bg-emerald-600` with `--text-primary` on top: a fixed green fill
-                      under a label that follows the theme, so in light mode it became dark
-                      slate on green. GlassButton's primary inverts as a pair — ink fill,
-                      page-ground label — in every theme. */}
-                  <GlassButton
-                    variant="primary"
+                  <button
                     onClick={sendMessage}
                     disabled={!message.trim()}
-                    className="px-3 py-3 disabled:cursor-not-allowed disabled:bg-[var(--glass-bg)] disabled:text-[var(--text-muted)]"
+                    className={`px-3 py-3 rounded-xl transition ${
+                      !message.trim()
+                        ? 'bg-[var(--glass-bg)] text-[var(--text-muted)] cursor-not-allowed'
+                        : 'bg-emerald-600 text-[var(--text-primary)] hover:bg-emerald-700'
+                    }`}
                   >
                     <Send className="w-5 h-5" />
-                  </GlassButton>
+                  </button>
                 </div>
               </div>
             </div>
             
             {/* Footer */}
             <div className="p-4 border-t border-[var(--glass-border)]">
-              <GlassButton
-                variant="primary"
-                size="lg"
+              <button
                 onClick={() => {
                   // Agar message field mein kuch hai to pehle usse send kar do
                 if (message.trim()) {
@@ -526,23 +514,26 @@ const getFileIcon = (fileType) => {
                  setShowConfirmation(true);
                 }}
                 disabled={files.length === 0 && messages.length === 0}
-                className="w-full py-3 disabled:cursor-not-allowed disabled:bg-[var(--glass-bg)] disabled:text-[var(--text-muted)]"
+                className={`w-full py-3 rounded-xl font-semibold transition ${
+                  files.length === 0 && messages.length === 0
+                    ? 'bg-[var(--glass-bg)] text-[var(--text-muted)] cursor-not-allowed'
+                    : 'bg-emerald-600 text-[var(--text-primary)] hover:bg-emerald-700'
+                }`}
               >
                 Proceed to Confirmation
-              </GlassButton>
+              </button>
 
               {files.length === 0 && messages.length === 0 && (
-                // `text-amber-300` is a dark-theme shade; on the light panel it measured
-                // 1.46:1. The pending badge foreground is the per-theme version of the
-                // same "needs your attention" colour.
-                <p className="text-[var(--badge-pending-fg)] text-xs mt-2 text-center">
+                <p className="text-amber-300 text-xs mt-2 text-center">
                   Please upload files or add instructions to proceed
                 </p>
               )}
             </div>
           </div>
         )}
-    </Modal>
+      </div>
+      </div>
+    </div>
   );
 };
 

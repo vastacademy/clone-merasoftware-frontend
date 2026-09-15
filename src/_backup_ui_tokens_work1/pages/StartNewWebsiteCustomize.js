@@ -61,7 +61,7 @@ const MIN_QUANTITY = 1;
 const MAX_QUANTITY = 99;
 
 const SectionLabel = ({ children }) => (
-  <p className="text-sm font-semibold uppercase tracking-wide text-[var(--eyebrow-fg)]">{children}</p>
+  <p className="text-sm font-semibold uppercase tracking-wide text-emerald-300/90">{children}</p>
 );
 
 const Field = ({ label, children }) => (
@@ -91,7 +91,7 @@ const SelectDropdown = ({ value, options, placeholder = 'Select…', onChange })
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center justify-between gap-3 rounded-xl border border-[var(--glass-border-strong)] bg-[var(--glass-bg-subtle)] px-4 py-3 text-left text-base text-[var(--text-primary)] outline-none transition hover:border-[var(--glass-border-strong)] focus-visible:border-[var(--badge-success-fg)]"
+        className="flex w-full items-center justify-between gap-3 rounded-xl border border-[var(--glass-border-strong)] bg-[var(--glass-bg-subtle)] px-4 py-3 text-left text-base text-[var(--text-primary)] outline-none transition hover:border-[var(--glass-border-strong)] focus-visible:border-emerald-400"
       >
         <span className={selectedLabel ? 'text-[var(--text-primary)]' : 'text-[var(--text-muted)]'}>
           {selectedLabel || placeholder}
@@ -115,11 +115,11 @@ const SelectDropdown = ({ value, options, placeholder = 'Select…', onChange })
                   setOpen(false);
                 }}
                 className={`flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-base transition-colors ${
-                  isActive ? 'bg-[var(--badge-success-bg)] text-[var(--text-primary)]' : 'text-[var(--text-secondary)] hover:bg-[var(--glass-bg-subtle)]'
+                  isActive ? 'bg-emerald-500/15 text-[var(--text-primary)]' : 'text-[var(--text-secondary)] hover:bg-[var(--glass-bg-subtle)]'
                 }`}
               >
                 {option.label}
-                {isActive && <Check className="h-4 w-4 text-[var(--badge-success-fg)]" strokeWidth={3} />}
+                {isActive && <Check className="h-4 w-4 text-emerald-400" strokeWidth={3} />}
               </button>
             );
           })}
@@ -169,7 +169,7 @@ const MultiSelectDropdown = ({
         type="button"
         onClick={() => setOpen((o) => !o)}
         disabled={loading || options.length === 0}
-        className="flex w-full items-center justify-between gap-3 rounded-xl border border-[var(--glass-border-strong)] bg-[var(--glass-bg-subtle)] px-4 py-3 text-left text-base text-[var(--text-primary)] outline-none transition hover:border-[var(--glass-border-strong)] focus-visible:border-[var(--badge-success-fg)] disabled:cursor-not-allowed disabled:opacity-60"
+        className="flex w-full items-center justify-between gap-3 rounded-xl border border-[var(--glass-border-strong)] bg-[var(--glass-bg-subtle)] px-4 py-3 text-left text-base text-[var(--text-primary)] outline-none transition hover:border-[var(--glass-border-strong)] focus-visible:border-emerald-400 disabled:cursor-not-allowed disabled:opacity-60"
       >
         <span className={summaryCount ? 'text-[var(--text-primary)]' : 'text-[var(--text-muted)]'}>
           {loading
@@ -206,7 +206,7 @@ const MultiSelectDropdown = ({
                   <span
                     className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-colors ${
                       isSelected
-                        ? 'border-transparent bg-[rgb(var(--ink-rgb))] text-[var(--page-bg)]'
+                        ? 'border-emerald-400 bg-emerald-500 text-[var(--text-primary)]'
                         : 'border-[var(--glass-border-strong)] text-transparent'
                     }`}
                   >
@@ -254,14 +254,14 @@ const MultiSelectDropdown = ({
           {selectedOptions.map((option) => (
             <span
               key={option._id}
-              className="inline-flex items-center gap-1.5 rounded-full border border-[var(--badge-success-border)] bg-[var(--badge-success-bg)] py-1 pl-3 pr-1.5 text-sm text-[var(--text-primary)]"
+              className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/40 bg-emerald-500/15 py-1 pl-3 pr-1.5 text-sm text-[var(--text-primary)]"
             >
               {option.serviceName?.trim()}
               {option.isQuantityBased ? ` x${quantities[option._id] || MIN_QUANTITY}` : ''}
               <button
                 type="button"
                 onClick={() => onRemove(option._id)}
-                className="flex h-5 w-5 items-center justify-center rounded-full text-[var(--text-secondary)] transition hover:bg-[var(--glass-bg-strong)]"
+                className="flex h-5 w-5 items-center justify-center rounded-full text-emerald-100 transition hover:bg-[var(--glass-bg-strong)]"
               >
                 <X className="h-3.5 w-3.5" strokeWidth={2.5} />
               </button>
@@ -666,7 +666,7 @@ const StartNewWebsiteCustomize = () => {
                 {/* Partial payment — installment plan chooser + breakdown */}
                 {paymentOption === 'partial' && (
                   <div className="mt-6 rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg-subtle)] p-5">
-                    <p className="text-sm font-semibold uppercase tracking-wide text-[var(--eyebrow-fg)]">
+                    <p className="text-sm font-semibold uppercase tracking-wide text-emerald-300/90">
                       Installment plan
                     </p>
                     <p className="mt-1 text-sm text-[var(--text-secondary)]">
@@ -684,7 +684,7 @@ const StartNewWebsiteCustomize = () => {
                             onClick={() => setInstallmentCount(option.value)}
                             className={`rounded-xl border px-4 py-3 text-left text-base transition ${
                               isActive
-                                ? 'border-[var(--badge-success-border)] bg-[var(--badge-success-bg)] ring-1 ring-[var(--badge-success-fg)] text-[var(--text-primary)]'
+                                ? 'border-emerald-400/60 bg-emerald-500/15 text-[var(--text-primary)]'
                                 : 'border-[var(--glass-border)] bg-[var(--glass-bg-subtle)] text-[var(--text-secondary)] hover:border-[var(--glass-border-strong)]'
                             }`}
                           >
@@ -703,7 +703,7 @@ const StartNewWebsiteCustomize = () => {
                           <span className="text-[var(--text-secondary)]">
                             Installment {inst.installmentNumber} ({inst.percentage}%)
                             {inst.installmentNumber === 1 && (
-                              <span className="ml-2 rounded-full border border-[var(--badge-success-border)] bg-[var(--badge-success-bg)] px-2 py-0.5 text-xs text-[var(--badge-success-fg)]">
+                              <span className="ml-2 rounded-full border border-emerald-400/40 bg-emerald-500/15 px-2 py-0.5 text-xs text-emerald-200">
                                 Pay now
                               </span>
                             )}
@@ -714,7 +714,7 @@ const StartNewWebsiteCustomize = () => {
                         </div>
                       ))}
                     </div>
-                    <p className="mt-3 text-xs text-[var(--badge-pending-fg)]">
+                    <p className="mt-3 text-xs text-amber-200/90">
                       Amounts shown are estimates. Your final installment amounts are
                       confirmed after your project price is finalized.
                     </p>
@@ -755,8 +755,8 @@ const StartNewWebsiteCustomize = () => {
                       ₹{estimateTotal.toLocaleString('en-IN')}
                     </span>
                   </div>
-                  <p className="mt-4 flex items-start gap-2 text-sm leading-relaxed text-[var(--badge-pending-fg)]">
-                    <Info className="mt-0.5 h-4 w-4 shrink-0 text-[var(--badge-pending-fg)]" strokeWidth={2} />
+                  <p className="mt-4 flex items-start gap-2 text-sm leading-relaxed text-amber-200/90">
+                    <Info className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" strokeWidth={2} />
                     This is an estimate. Your final pricing may differ based on your requirements or
                     offers available to you — not the final price.
                   </p>
@@ -770,12 +770,12 @@ const StartNewWebsiteCustomize = () => {
                       value={couponCode}
                       onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
                       placeholder="Enter code"
-                      className="w-full border-0 border-b border-[var(--glass-border-strong)] bg-transparent px-0 py-2.5 text-base text-[var(--text-primary)] placeholder-[var(--text-muted)] outline-none transition focus:border-[var(--badge-success-fg)]"
+                      className="w-full border-0 border-b border-[var(--glass-border-strong)] bg-transparent px-0 py-2.5 text-base text-[var(--text-primary)] placeholder-[var(--text-muted)] outline-none transition focus:border-emerald-400"
                     />
                     <button
                       type="button"
                       onClick={() => {}}
-                      className="shrink-0 rounded-xl border border-[var(--badge-success-border)] bg-[var(--badge-success-bg)] px-5 py-2.5 text-base font-medium text-[var(--text-primary)] backdrop-blur-md transition-all duration-300 hover:border-[var(--badge-success-border)] hover:bg-[var(--glass-bg-strong)]"
+                      className="shrink-0 rounded-xl border border-emerald-400/40 bg-emerald-500/20 px-5 py-2.5 text-base font-medium text-[var(--text-primary)] backdrop-blur-md transition-all duration-300 hover:border-emerald-300/60 hover:bg-emerald-500/35"
                     >
                       Apply
                     </button>
@@ -787,7 +787,7 @@ const StartNewWebsiteCustomize = () => {
                     type="button"
                     onClick={handleSubmit}
                     disabled={submitting}
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-[var(--badge-success-border)] bg-[var(--badge-success-bg)] px-8 py-3 text-base font-semibold text-[var(--text-primary)] shadow-[inset_0_1px_0_rgba(255,255,255,0.25)] backdrop-blur-md transition-all duration-300 hover:border-[var(--badge-success-border)] hover:bg-[var(--glass-bg-strong)] disabled:cursor-not-allowed disabled:opacity-60"
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-emerald-400/40 bg-emerald-500/20 px-8 py-3 text-base font-semibold text-[var(--text-primary)] shadow-[inset_0_1px_0_rgba(255,255,255,0.25)] backdrop-blur-md transition-all duration-300 hover:border-emerald-300/60 hover:bg-emerald-500/35 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {submitting
                       ? 'Please wait…'
@@ -816,7 +816,7 @@ const StartNewWebsiteCustomize = () => {
             <button
               type="button"
               onClick={() => setShowPaymentModal(false)}
-              className="absolute right-4 top-4 rounded-lg border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] p-1.5 text-[var(--text-primary)] transition-colors duration-200 hover:border-[var(--badge-success-border)] hover:bg-[var(--glass-bg-strong)]"
+              className="absolute right-4 top-4 rounded-lg border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] p-1.5 text-[var(--text-primary)] transition-colors duration-200 hover:border-emerald-300/60 hover:bg-[var(--glass-bg-strong)]"
             >
               <X className="h-4 w-4" strokeWidth={2} />
             </button>
@@ -863,8 +863,8 @@ const StartNewWebsiteCustomize = () => {
                   </div>
                   {createdOrder && paymentOption === 'partial' && (
                     <div className="flex items-baseline justify-between gap-4 py-2.5">
-                      <span className="text-sm text-[var(--badge-success-fg)]">Amount due now (installment 1)</span>
-                      <span className="text-right text-lg font-bold text-[var(--badge-success-fg)]">
+                      <span className="text-sm text-emerald-300">Amount due now (installment 1)</span>
+                      <span className="text-right text-lg font-bold text-emerald-300">
                         ₹{amountDueNow.toLocaleString('en-IN')}
                       </span>
                     </div>
@@ -880,10 +880,10 @@ const StartNewWebsiteCustomize = () => {
 
                 {/* Wallet/UPI split — shown when the wallet is used and doesn't fully cover it */}
                 {walletPart > 0 && upiPart > 0 && (
-                  <div className="relative mt-3 divide-y divide-[var(--divider)] rounded-xl border border-[var(--badge-success-border)] bg-[var(--badge-success-bg)] px-4 py-2">
+                  <div className="relative mt-3 divide-y divide-[var(--divider)] rounded-xl border border-emerald-400/25 bg-emerald-500/[0.06] px-4 py-2">
                     <div className="flex items-baseline justify-between gap-4 py-2 text-sm">
                       <span className="text-[var(--text-secondary)]">Paid from wallet (instant)</span>
-                      <span className="font-medium text-[var(--badge-success-fg)]">
+                      <span className="font-medium text-emerald-300">
                         ₹{walletPart.toLocaleString('en-IN')}
                       </span>
                     </div>
@@ -900,7 +900,7 @@ const StartNewWebsiteCustomize = () => {
                   type="button"
                   onClick={handleConfirmPayment}
                   disabled={payProcessing}
-                  className="relative mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[var(--badge-success-border)] bg-[var(--badge-success-bg)] px-5 py-3 text-base font-medium text-[var(--text-primary)] shadow-[inset_0_1px_0_rgba(255,255,255,0.25)] backdrop-blur-md transition-all duration-300 hover:border-[var(--badge-success-border)] hover:bg-[var(--glass-bg-strong)] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="relative mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-400/40 bg-emerald-500/20 px-5 py-3 text-base font-medium text-[var(--text-primary)] shadow-[inset_0_1px_0_rgba(255,255,255,0.25)] backdrop-blur-md transition-all duration-300 hover:border-emerald-300/60 hover:bg-emerald-500/35 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {payProcessing
                     ? 'Processing…'
@@ -919,15 +919,13 @@ const StartNewWebsiteCustomize = () => {
                   Pay ₹{upiPart.toLocaleString('en-IN')} using any UPI app, then enter
                   the transaction ID below.
                   {walletPart > 0 && (
-                    <span className="mt-1 block text-[var(--badge-success-fg)]">
+                    <span className="mt-1 block text-emerald-300">
                       ₹{walletPart.toLocaleString('en-IN')} will be paid from your wallet instantly.
                     </span>
                   )}
                 </p>
 
                 <div className="relative mt-5 flex flex-col items-center">
-                  {/* White in every theme on purpose — a QR code is read by a camera,
-                      which expects dark modules on a white quiet zone. */}
                   <div className="rounded-2xl bg-white p-4">
                     <QRCodeSVG value={upiLink} size={190} />
                   </div>
@@ -946,7 +944,7 @@ const StartNewWebsiteCustomize = () => {
                       setUpiTransactionId(e.target.value.replace(/\D/g, ''))
                     }
                     placeholder="Enter the 12-digit ID from your UPI app"
-                    className="w-full rounded-xl border border-[var(--glass-border-strong)] bg-[var(--glass-bg-subtle)] px-4 py-3 text-base text-[var(--text-primary)] placeholder-[var(--text-muted)] outline-none transition focus:border-[var(--badge-success-fg)]"
+                    className="w-full rounded-xl border border-[var(--glass-border-strong)] bg-[var(--glass-bg-subtle)] px-4 py-3 text-base text-[var(--text-primary)] placeholder-[var(--text-muted)] outline-none transition focus:border-emerald-400"
                   />
                 </label>
 
@@ -954,7 +952,7 @@ const StartNewWebsiteCustomize = () => {
                   type="button"
                   onClick={handleVerifyUpi}
                   disabled={payProcessing || upiTransactionId.trim().length < 12}
-                  className="relative mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[var(--badge-success-border)] bg-[var(--badge-success-bg)] px-5 py-3 text-base font-medium text-[var(--text-primary)] shadow-[inset_0_1px_0_rgba(255,255,255,0.25)] backdrop-blur-md transition-all duration-300 hover:border-[var(--badge-success-border)] hover:bg-[var(--glass-bg-strong)] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="relative mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-400/40 bg-emerald-500/20 px-5 py-3 text-base font-medium text-[var(--text-primary)] shadow-[inset_0_1px_0_rgba(255,255,255,0.25)] backdrop-blur-md transition-all duration-300 hover:border-emerald-300/60 hover:bg-emerald-500/35 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {payProcessing ? 'Submitting…' : 'Submit for Verification'}
                 </button>
@@ -974,8 +972,8 @@ const StartNewWebsiteCustomize = () => {
           <div className="relative w-full max-w-sm animate-[fadeSlideUp_0.3s_ease-out_both] overflow-hidden rounded-3xl border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] p-7 text-center shadow-[0_24px_64px_rgba(0,0,0,0.5)] backdrop-blur-2xl backdrop-saturate-150">
             <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-[var(--glass-sheen)] to-transparent" />
 
-            <div className="relative mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-[var(--badge-success-border)] bg-[var(--badge-success-bg)] backdrop-blur-md">
-              <CheckCircle2 className="h-8 w-8 text-[var(--badge-success-fg)]" strokeWidth={1.75} />
+            <div className="relative mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-emerald-400/40 bg-emerald-500/15 backdrop-blur-md">
+              <CheckCircle2 className="h-8 w-8 text-emerald-400" strokeWidth={1.75} />
             </div>
 
             <h3 className="relative mt-5 text-xl font-semibold text-[var(--text-primary)]">
@@ -996,7 +994,7 @@ const StartNewWebsiteCustomize = () => {
             <button
               type="button"
               onClick={() => navigate('/dashboard')}
-              className="relative mt-6 inline-flex items-center justify-center gap-2 rounded-xl border border-[var(--badge-success-border)] bg-[var(--badge-success-bg)] px-6 py-2.5 text-base font-medium text-[var(--text-primary)] shadow-[inset_0_1px_0_rgba(255,255,255,0.25)] backdrop-blur-md transition-all duration-300 hover:border-[var(--badge-success-border)] hover:bg-[var(--glass-bg-strong)]"
+              className="relative mt-6 inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-400/40 bg-emerald-500/20 px-6 py-2.5 text-base font-medium text-[var(--text-primary)] shadow-[inset_0_1px_0_rgba(255,255,255,0.25)] backdrop-blur-md transition-all duration-300 hover:border-emerald-300/60 hover:bg-emerald-500/35"
             >
               Go to Dashboard
             </button>

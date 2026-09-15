@@ -1,8 +1,6 @@
 import React, { useMemo } from 'react';
 import { ArrowLeft, ArrowRight, Clock3, Layers3, ShieldCheck } from 'lucide-react';
 import { getOrderDisplayName } from '../helpers/orderPresentation';
-import Surface from './Surface';
-import Badge from './Badge';
 
 const formatDate = (date) => {
   if (!date) return 'Not started';
@@ -23,14 +21,10 @@ const getServicePresentation = (service) => {
   return { label: status.replace(/_/g, ' '), tone: 'slate', priority: 4 };
 };
 
-// The status pill's colours are Badge's job. This file used to restate them in
-// dark-only shades (`text-emerald-100` on `bg-emerald-400/15`), which read as
-// colour-on-colour once the light theme put the pill on a white card. The local
-// tone names are mapped to Badge's instead of renaming them at every call site.
-const BADGE_TONE = {
-  emerald: 'success',
-  amber: 'pending',
-  slate: 'neutral',
+const toneClasses = {
+  emerald: 'border-emerald-300/40 bg-emerald-400/15 text-emerald-100',
+  amber: 'border-amber-300/40 bg-amber-400/15 text-amber-100',
+  slate: 'border-[var(--glass-border-strong)] bg-[var(--glass-bg)] text-[var(--text-secondary)]',
 };
 
 const ProjectServiceWorkspace = ({ project, onAddService, onBack, onOpenService, onOpenProject }) => {
@@ -60,15 +54,15 @@ const ProjectServiceWorkspace = ({ project, onAddService, onBack, onOpenService,
           Back
         </button>
 
-        <Surface tone="strong" radius="panel">
+        <div className="rounded-[1.75rem] border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] shadow-[var(--card-shadow)] backdrop-blur-2xl">
           <div className="p-5 sm:p-7">
             <button
               type="button"
               onClick={onOpenProject}
-              className="group flex w-full items-center gap-4 rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg-subtle)] p-4 text-left transition hover:border-[var(--badge-success-border)] hover:bg-[var(--glass-bg)] sm:p-5"
+              className="group flex w-full items-center gap-4 rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg-subtle)] p-4 text-left transition hover:border-emerald-300/50 hover:bg-[var(--glass-bg)] sm:p-5"
             >
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold uppercase tracking-[0.16em] text-[var(--eyebrow-fg)]">Project workspace</p>
+                <p className="text-sm font-semibold uppercase tracking-[0.16em] text-emerald-200">Project workspace</p>
                 <h1 className="mt-2 text-2xl font-bold tracking-tight text-[var(--text-primary)] sm:text-3xl">{projectName}</h1>
                 <p className="mt-2 max-w-2xl text-sm text-[var(--text-secondary)] sm:text-base">{Math.round(Number(project.projectProgress || 0))}% complete · open project timeline</p>
               </div>
@@ -78,7 +72,7 @@ const ProjectServiceWorkspace = ({ project, onAddService, onBack, onOpenService,
 
           <div className="border-t border-[var(--glass-border)] p-5 sm:p-6">
             <div className="flex items-center gap-3">
-              <Layers3 className="h-5 w-5 text-[var(--badge-success-fg)]" />
+              <Layers3 className="h-5 w-5 text-emerald-300" />
               <div>
                 <h2 className="text-lg font-bold text-[var(--text-primary)]">Linked services</h2>
                 <p className="text-sm text-[var(--text-secondary)]">Active services appear first; their history remains attached to this project.</p>
@@ -93,13 +87,13 @@ const ProjectServiceWorkspace = ({ project, onAddService, onBack, onOpenService,
                     key={service._id}
                     type="button"
                     onClick={() => onOpenService(service._id)}
-                    className="flex w-full items-center gap-4 rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg-subtle)] p-4 text-left transition hover:border-[var(--badge-success-border)] hover:bg-[var(--glass-bg)]"
+                    className="flex w-full items-center gap-4 rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg-subtle)] p-4 text-left transition hover:border-emerald-300/50 hover:bg-[var(--glass-bg)]"
                   >
-                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[var(--badge-success-border)] bg-[var(--badge-success-bg)] text-[var(--badge-success-fg)]"><ShieldCheck className="h-5 w-5" /></span>
+                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-400/15 text-emerald-200"><ShieldCheck className="h-5 w-5" /></span>
                     <span className="min-w-0 flex-1">
                       <span className="flex flex-wrap items-center gap-2">
                         <span className="truncate text-base font-semibold text-[var(--text-primary)]">{name}</span>
-                        <Badge tone={BADGE_TONE[presentation.tone] || 'neutral'}>{presentation.label}</Badge>
+                        <span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${toneClasses[presentation.tone]}`}>{presentation.label}</span>
                       </span>
                       <span className="mt-1 flex items-center gap-1.5 text-sm text-[var(--text-secondary)]"><Clock3 className="h-4 w-4" />{service.servicePlanStartDate ? `Started ${formatDate(service.servicePlanStartDate)}` : 'Starts when the project is eligible'}</span>
                     </span>
@@ -109,7 +103,7 @@ const ProjectServiceWorkspace = ({ project, onAddService, onBack, onOpenService,
               })}
             </div>
           </div>
-        </Surface>
+        </div>
       </div>
     </div>
   );

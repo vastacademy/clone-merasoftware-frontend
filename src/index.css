@@ -29,7 +29,6 @@
    than composing rgb(var(--x)/N) inline, so a value is defined exactly once.
    ========================================================================== */
 
-:root,
 :root[data-theme="immersive"] {
   --page-bg: #020617;
   --page-decoration: url('./assets/BG.png');
@@ -258,6 +257,12 @@
   color-scheme: dark;
 }
 
+/* `:root` (no attribute) is paired with light because light is DEFAULT_THEME. This is
+   the fallback for a paint that happens before the pre-paint script in index.html runs,
+   and for a JS-less load. It must always name the same mode as DEFAULT_THEME in
+   ThemeContext.js — otherwise the page paints one theme and repaints into the other,
+   which is the flash that script exists to prevent. */
+:root,
 :root[data-theme="light"] {
   /* Not pure white. A white card on a white page separates at contrast 1.00 —
      nothing to see, and backdrop-blur has nothing behind it to frost. This

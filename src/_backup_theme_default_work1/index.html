@@ -32,10 +32,10 @@
       (function () {
         try {
           var t = localStorage.getItem('theme');
-          if (t !== 'light' && t !== 'dark' && t !== 'immersive') t = 'light';
+          if (t !== 'immersive' && t !== 'dark' && t !== 'light') t = 'immersive';
           document.documentElement.setAttribute('data-theme', t);
         } catch (e) {
-          document.documentElement.setAttribute('data-theme', 'light');
+          document.documentElement.setAttribute('data-theme', 'immersive');
         }
       })();
     </script>

@@ -87,7 +87,7 @@ const TimelineCheckpointItem = ({
       : 'border-[var(--glass-border)] bg-slate-100 text-[var(--text-muted)]'
     : isGlass
       ? isCompleted
-        ? 'border-[var(--badge-success-border)] bg-[var(--badge-success-bg)] text-[var(--badge-success-fg)]'
+        ? 'border-emerald-400/40 bg-emerald-500/20 text-emerald-300'
         : isInProgress
           ? 'border-[var(--glass-border-strong)] bg-[var(--glass-bg-strong)] text-[var(--text-primary)]'
           : 'border-[var(--glass-border)] bg-[var(--glass-bg)] text-[var(--text-secondary)]'
@@ -121,7 +121,7 @@ const TimelineCheckpointItem = ({
       ? isSelected
         ? 'border-[var(--glass-border-strong)] bg-[var(--glass-bg-strong)]'
         : isCompleted
-          ? 'border-[var(--badge-success-border)] bg-[var(--badge-success-bg)]'
+          ? 'border-emerald-400/60 bg-emerald-500/20'
           : isInProgress
             ? 'border-[var(--glass-border-strong)] bg-[var(--glass-bg-strong)]'
             : 'border-[var(--glass-border)] bg-[var(--glass-bg)]'
@@ -165,7 +165,7 @@ const TimelineCheckpointItem = ({
         {isDeleted ? (
           <X className={isGlass ? 'h-4 w-4 text-[var(--text-secondary)]' : 'h-4 w-4 text-[var(--text-secondary)]'} />
         ) : isCompleted ? (
-          <Check className={isGlass ? 'h-4 w-4 text-[var(--badge-success-fg)]' : 'h-4 w-4 text-emerald-500'} />
+          <Check className={isGlass ? 'h-4 w-4 text-emerald-400' : 'h-4 w-4 text-emerald-500'} />
         ) : isInProgress ? (
           <Clock className={isGlass ? 'h-4 w-4 text-[var(--text-primary)]' : 'h-4 w-4 text-[var(--text-secondary)]'} />
         ) : (
@@ -240,7 +240,7 @@ const TimelineCheckpointItem = ({
                     <span>{formatDateTimeValue(message.timestamp)}</span>
                   ) : null}
                   {(message.fileName || message.fileSize) ? (
-                    <span className={isGlass ? 'text-[var(--badge-success-fg)]' : 'text-emerald-700'}>
+                    <span className={isGlass ? 'text-emerald-300' : 'text-emerald-700'}>
                       {message.fileName || 'Attachment'}
                       {message.fileSize ? ` · ${message.fileSize}` : ''}
                     </span>
@@ -708,8 +708,6 @@ const ProjectDetails = ({ isAdminView = false }) => {
   if (loading) {
     return (
       <Shell {...shellProps}>
-        {/* Shared with the admin view (no isAdminView gate), so this backdrop is left
-            as-is: theming it would change admin markup. */}
         <div className="fixed inset-0 bg-black bg-opacity-10 flex items-center justify-center z-50">
           <div className="rounded-lg p-8">
             <TriangleMazeLoader />
@@ -724,23 +722,23 @@ const ProjectDetails = ({ isAdminView = false }) => {
     return (
       <Shell {...shellProps}>
         <div className="p-6">
-          <div className="rounded-r-lg border-l-4 border-[var(--badge-error-border)] bg-[var(--badge-error-bg)] p-4 shadow-sm">
+          <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg shadow-sm">
             <div className="flex">
               <div className="flex-shrink-0">
-                <svg className="h-5 w-5 text-[var(--badge-error-fg)]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <svg className="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                 </svg>
               </div>
               <div className="ml-3">
-                <h3 className="text-lg font-semibold text-[var(--badge-error-fg)]">Payment Rejected</h3>
-                <div className="mt-2 text-base text-[var(--text-secondary)]">
+                <h3 className="text-lg font-semibold text-red-800">Payment Rejected</h3>
+                <div className="mt-2 text-base text-red-700">
                   <p>Your payment for this project was rejected.</p>
                   <p className="mt-2 font-medium">Reason: {order.rejectionReason || "Payment verification failed"}</p>
                 </div>
                 <div className="mt-4 flex space-x-4">
                   <button
                     onClick={handleBack}
-                    className="rounded-lg border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] px-4 py-2 text-base font-semibold text-[var(--text-primary)] transition hover:bg-[var(--glass-bg-strong)]"
+                    className="px-4 py-2 bg-gray-600 text-[var(--text-primary)] rounded-lg hover:bg-gray-700 text-base font-semibold"
                   >
                     Back
                   </button>
@@ -758,7 +756,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
                         });
                       }
                     }}
-                    className="rounded-lg bg-[rgb(var(--ink-rgb))] px-4 py-2 text-base font-semibold text-[var(--page-bg)] transition hover:bg-[rgb(var(--ink-rgb)/0.85)]"
+                    className="px-4 py-2 bg-red-600 text-[var(--text-primary)] rounded-lg hover:bg-red-700 text-base font-semibold"
                   >
                     Retry Payment
                   </button>
@@ -962,11 +960,11 @@ const ProjectDetails = ({ isAdminView = false }) => {
 
           {!isAdminView && !isOrderCancelled && hasPendingPayment && (
             <div className={g(
-              'mb-6 rounded-2xl border border-emerald-300 bg-emerald-50 p-4', 'mb-6 rounded-2xl border border-[var(--badge-success-border)] bg-[var(--badge-success-bg)] p-4 backdrop-blur-md')}>
-              <p className={g('text-base font-semibold text-emerald-800', 'text-base font-semibold text-[var(--badge-success-fg)]')}>
+              'mb-6 rounded-2xl border border-emerald-300 bg-emerald-50 p-4', 'mb-6 rounded-2xl border border-emerald-400/40 bg-emerald-500/15 p-4 backdrop-blur-md')}>
+              <p className={g('text-base font-semibold text-emerald-800', 'text-base font-semibold text-emerald-200')}>
                 Payment Submitted — Awaiting Approval
               </p>
-              <p className={g('mt-1 text-sm text-emerald-700', 'mt-1 text-sm text-[var(--badge-success-fg)]')}>
+              <p className={g('mt-1 text-sm text-emerald-700', 'mt-1 text-sm text-emerald-100/90')}>
                 {order.pendingPayment?.amount
                   ? `Your payment of ₹${Number(order.pendingPayment.amount).toLocaleString('en-IN')} has been submitted and is awaiting admin approval (usually 1-4 hours). Some actions are unavailable until it is approved.`
                   : 'Your payment has been submitted and is awaiting admin approval (usually 1-4 hours). Some actions are unavailable until it is approved.'}
@@ -976,11 +974,11 @@ const ProjectDetails = ({ isAdminView = false }) => {
 
           {!isAdminView && !isOrderCancelled && !hasPendingPayment && order.hasUnpaidInvoice && (
             <div className={g(
-              'mb-6 rounded-2xl border border-amber-300 bg-amber-50 p-4', 'mb-6 rounded-2xl border border-[var(--badge-pending-border)] bg-[var(--badge-pending-bg)] p-4 backdrop-blur-md')}>
-              <p className={g('text-base font-semibold text-amber-800', 'text-base font-semibold text-[var(--badge-pending-fg)]')}>
+              'mb-6 rounded-2xl border border-amber-300 bg-amber-50 p-4', 'mb-6 rounded-2xl border border-amber-400/40 bg-amber-500/15 p-4 backdrop-blur-md')}>
+              <p className={g('text-base font-semibold text-amber-800', 'text-base font-semibold text-amber-200')}>
                 Payment Pending
               </p>
-              <p className={g('mt-1 text-sm text-amber-700', 'mt-1 text-sm text-[var(--badge-pending-fg)]')}>
+              <p className={g('mt-1 text-sm text-amber-700', 'mt-1 text-sm text-amber-100/90')}>
                 This project is active, but invoice {order.unpaidInvoice?.invoiceNumber} (₹{Number(order.unpaidInvoice?.amount || 0).toLocaleString('en-IN')}) is still unpaid.
                 Some actions are unavailable until payment is recorded.
               </p>
@@ -991,7 +989,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
                     state: customerChildState(location),
                   })}
                   className={g(
-                    'mt-2 text-sm font-semibold text-amber-800 underline underline-offset-2 transition hover:text-amber-900', 'mt-2 text-sm font-semibold text-[var(--badge-pending-fg)] underline underline-offset-2 transition hover:text-[var(--text-primary)]')}
+                    'mt-2 text-sm font-semibold text-amber-800 underline underline-offset-2 transition hover:text-amber-900', 'mt-2 text-sm font-semibold text-amber-200 underline underline-offset-2 transition hover:text-amber-100')}
                 >
                   Proceed for payment
                 </button>
@@ -1034,7 +1032,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
                       type="button"
                       onClick={handleAddService}
                       className={g(
-                        'inline-flex shrink-0 items-center justify-center rounded-xl bg-emerald-600 px-4 py-2.5 text-base font-semibold text-[var(--text-primary)] transition hover:bg-emerald-700', 'inline-flex shrink-0 items-center justify-center rounded-xl bg-[rgb(var(--ink-rgb))] px-4 py-2.5 text-base font-semibold text-[var(--page-bg)] transition hover:bg-[rgb(var(--ink-rgb)/0.85)]')}
+                        'inline-flex shrink-0 items-center justify-center rounded-xl bg-emerald-600 px-4 py-2.5 text-base font-semibold text-[var(--text-primary)] transition hover:bg-emerald-700', 'inline-flex shrink-0 items-center justify-center rounded-xl bg-emerald-500 px-4 py-2.5 text-base font-semibold text-[var(--text-primary)] transition hover:bg-emerald-400')}
                     >
                       Add a Service
                     </button>
@@ -1379,7 +1377,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
                           ? g('bg-slate-100 text-[var(--text-muted)]', 'border border-[var(--glass-border)] bg-[var(--glass-bg-subtle)] text-[var(--text-muted)]')
                           : selectedNode === inProgressNode
                             ? g('bg-slate-100 text-[var(--text-secondary)]', 'border border-[var(--glass-border-strong)] bg-[var(--glass-bg-strong)] text-[var(--text-primary)]')
-                            : g('bg-emerald-100 text-emerald-700', 'border border-[var(--badge-success-border)] bg-[var(--badge-success-bg)] text-[var(--badge-success-fg)]'),
+                            : g('bg-emerald-100 text-emerald-700', 'border border-emerald-400/40 bg-emerald-500/20 text-emerald-300'),
                       ].join(" ")}>
                         {selectedNode.status === 'deleted' ? 'Deleted' : selectedNode === inProgressNode ? 'Active' : 'Completed'}
                       </span>

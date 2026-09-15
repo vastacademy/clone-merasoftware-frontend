@@ -1,17 +1,16 @@
 # Portal UI Cleanup — Handoff
 
-**Aakhri update**: 15-09-2026 · **Halat**: Phase 0, 1 aur **2 — teeno poore.** 20/20 files migrate ho chuki.
+**Aakhri update**: 10-09-2026 · **Halat**: Phase 0 aur 1 poore. Phase 2 chal raha hai.
 
-**Bacha hua kaam — code ka kuch nahi.** §11 ke teen `CODEBASE_MAP.md` fixes bhi ho chuke.
-Sirf ek cheez khuli hai: **§6 #2 — metric tile**, jiske liye user se **dark mode ka SS** chahiye
-(light aur immersive approve ho chuke hain).
+**Abhi kahan hain**: 2A.1 aur 2A.2 poore · 2B.1 poora · **agla kaam = 2A.3 aur 2B.2** (§5).
+Bacha hua: **15 files, 8,116 lines**.
 
-> Verification ke baare mein: har file ka contrast **naapa gaya** hai (composite over
-> page/card/dialog-panel/chip, dono themes) — lekin naap markup ka hai, aankh ka nahi.
-> Asli screen par teeno themes mein dekhna abhi baaki hai.
+> Dhyan do: "page ho gaya" ka matlab poori screen ho gayi nahi hai. `ContactSupport` aur
+> `StartNewProjectDetail` dono "done/khaali" dikhte hain par unki UI un components mein hai jo abhi
+> pending hain. **Screen tab poori jab uska render path poora ho** — §5 ka pehla table dekho.
 
-Ye doc ab *record* hai, to-do list nahi. §5 ka batch plan itihaas ke liye rakha hai —
-usme jo "agla kaam" likha hai wo ho chuka; sach progress table hai.
+Ye doc *bacha hua kaam* karne ke liye hai. Jo ho chuka wo sirf itna likha hai jitna aage kaam
+karne ke liye zaroori hai.
 
 ---
 
@@ -251,26 +250,18 @@ Aaj kya bacha hai — upar wali progress table dekho, wahi SSOT hai.
 |---|---|---|
 | 2A.1 support screen | 2 | ✅ ho chuka |
 | 2A.2 start-new-project | 2 | ✅ ho chuka |
-| 2A.3 simple pages | 3 | ✅ ho chuka |
-| 2A.4 installment + updates + dialog | 3 | ✅ ho chuka |
-| 2A.5 website customize | 1 | ✅ ho chuka |
-| 2A.6 plan + service plan | 3 | ✅ ho chuka |
+| 2A.3 simple pages | 3 | ⬜ **agla** |
+| 2A.4 installment + updates + dialog | 3 | ⬜ |
+| 2A.5 website customize | 1 | ⬜ |
+| 2A.6 plan + service plan | 3 | ⬜ |
 | 2B.1 PaymentAlert | 1 | ✅ ho chuka |
-| 2B.2 ProjectServiceWorkspace | 1 | ✅ ho chuka |
-| 2B.3 AddServiceModal | 1 | ✅ ho chuka |
-| 2B.4 UploadedDataList | 1 | ✅ ho chuka (SSR diff pass) |
-| 2B.5 OrderLifecycleTimeline | 1 | ✅ ho chuka (SSR diff pass) |
-| 2B.6 ProjectDetails | 1 | ✅ ho chuka (SSR diff pass) |
+| 2B.2 ProjectServiceWorkspace | 1 | ⬜ **agla** |
+| 2B.3 AddServiceModal | 1 | ⬜ |
+| 2B.4 UploadedDataList | 1 | ⬜ SSR diff |
+| 2B.5 OrderLifecycleTimeline | 1 | ⬜ SSR diff |
+| 2B.6 ProjectDetails | 1 | ⬜ SSR diff, sabse aakhir |
 
-**Ho chuka**: 20 files, 9,088 lines · **Baaki**: 0 — PHASE 2 KHATAM (15-09-2026).
-
-*15-09-2026: poora Phase 2 ek session mein. Har file par contrast NAAPA gaya (composite over page/card/dialog-panel/chip, dono themes) — grep se nahi, kyunki grep batata hai token laga ya nahi, ye nahi ke wo token wahan kaam karta hai. Usi naap se 4 aise bug mile jo sirf padhne se nahi dikhte: `focus:border-emerald-400/60` = 1.42 light (focus ring gayab), `hover:text-rose-400` = 2.42, PDF icon `rose-300` = 1.84, Word icon `sky-300` = 1.62. Tool: scratchpad/contrast.js.
-
-**2B ka SSR diff — jo seekha:** harness ko `.css`/image imports stub karne padte hain, aur `ProjectDetails` ko teen provider chahiye (redux, `OnlineStatusContext`, `DraftOrdersContext`). Sabse zaroori: **agar dono taraf render FAIL ho to output barabar aata hai aur "identical: true" ek jhootha pass ban jaata hai** — harness ab error par pass nahi deta. `ProjectDetails` ka customer control bhi jhootha barabar deta hai, kyunki bina `orderId` ke wo region mount hi nahi hota; asli proof string-count se liya: har customer-arg value badli, har admin-arg value (`text-amber-800`, `bg-amber-50`, `text-emerald-700`, `bg-emerald-100`, `text-emerald-800`, `border-amber-300`) count ke saath waisi ki waisi.
-
-**SS-1 (Payment Pending banner) theek ho gaya** — `ProjectDetails.js:975-995`. **SS-2 (Upload Data dialog) 2A.4 mein theek hua.** §5a ke dono confirmed bug band.
-
-**`OrderLifecycleTimeline` ka `dark` prop hataya nahi gaya** — wo abhi bhi admin/customer switch hai, sirf uske chaar toote chip `badge-*` par aa gaye aur paanch dead ternary (dono branch same string) hat gaye.*
+**Ho chuka**: 5 files, 969 lines · **Baaki**: 15 files, 8,116 lines
 
 2A aur 2B ke beech koi dependency nahi — dono saath chal sakte hain.
 
@@ -458,101 +449,13 @@ Phase 2 khatam. §11 ke teen `CODEBASE_MAP.md` fixes karne hain.
 
 ---
 
-## 5a. SS SE MILE ISSUES — user verify kar raha hai (session 5, 11-09-2026)
-
-**Ye section abhi bhar raha hai.** User screenshots bhej raha hai, main naapkar yahan likh raha
-hoon. **Iss section par abhi koi code nahi likhna** — user ne kaha "pehle SS dekh lo, then working
-start karenge". Jab user bole tab batch plan (§5) ke saath merge karke tarteeb tay hogi.
-
-Har entry mein: kaunsi screen · kaunsa mode · exact file:line · naapa hua contrast · wajah.
-
----
-
-### SS-1 — Project Details: "Payment Pending" banner (light mode)
-
-**Screen**: `/project-details/:id` — customer view, Light theme
-**File**: `pages/ProjectDetails.js` lines **975–995** · batch **2B.6**
-
-| Line | Element | Class (customer branch) | Light | Dark |
-|---|---|---|---|---|
-| 977 | "Payment Pending" heading | `text-amber-200` | **1.04:1** | 13.29:1 |
-| 981 | Body text | `text-amber-100/90` | **1.15:1** | 12.25:1 |
-| 991 | "Proceed for payment" link | `text-amber-200` | **1.04:1** | 13.29:1 |
-
-Fill: `bg-amber-500/15` light page par `rgb(234 225 208)` banta hai. Uspar `amber-200` rakhna
-matlab peele par peela — SS mein teeno lines gayab dikhti hain.
-
-**Root cause — ye `g()` ka structural bug hai, sirf ek galat shade nahi:**
-
-```js
-g('...border-amber-300 bg-amber-50...',   '...border-amber-400/40 bg-amber-500/15...')
-//  ^ arg1 = ADMIN                          ^ arg2 = CUSTOMER
-```
-
-`g()` **admin vs customer** switch hai, **light vs dark nahi**. Admin ko `amber-800 on amber-50`
-milta hai = **6.84:1, theek hai**. Customer ko hamesha wo branch milti hai jo dark ke liye likhi
-gayi thi — chahe usne Light theme chuni ho. Isiliye ye banner **sirf customer ke light mode mein**
-tootta hai; admin panel mein wahi banner saaf padha jaata hai.
-
-**Yahi 93 `g()` call sites ka pattern hai.** Fix = arg2 ko token-based karo (`badge badge-pending` /
-`Surface tone="subtle"`), arg1 ko haath mat lagao.
-
----
-
-### SS-2 — Upload Data dialog: hardcoded green scene (light mode)
-
-**Screen**: `/project-details/:id` → "Upload Data" → `UpdateRequestModal`, Light theme
-**File**: `components/UpdateRequestModal.js` line **266** · batch **2A.4**
-**Note**: ye wahi cheez hai jo §6 ka faisla #1 hai. **Ab SS se confirm ho gaya ki ye sirf
-"design choice" nahi, readability bug hai.**
-
-Line 266 ka outer frame teeno themes mein ek hi hardcoded gradient hai:
-```
-bg-[radial-gradient(120%_120%_at_15%_0%, #1f6d54 0%, #143b3a 45%, #0d1b26 100%)]
-```
-Line 268 ka inner modal uspar `rgba(20,26,32,0.55)` — yaani inner fill banta hai `rgb(20 41 44)`,
-lagbhag kaala. Wo **theme ke saath nahi badalta**, par uske andar ka saara text tokens se aata hai —
-aur light theme mein wo tokens **dark slate** ho jaate hain.
-
-| Token | Kahan dikhta hai | LIGHT | DARK/IMM |
-|---|---|---|---|
-| `--text-primary` `rgb(15 23 42)` | "Click to upload…", file ka naam, body | **1.18:1** | 15.18:1 |
-| `--text-secondary` `rgb(51 65 85)` | "Only JPG images, PDF…", "Please provide clear instructions" | **1.47:1** | 10.23:1 |
-| `--text-muted` `rgb(100 116 139)` | "UPLOAD FILES" / "UPLOADED FILES" / "INSTRUCTIONS" eyebrows | **3.19:1** | 5.92:1 |
-
-**SS se match**: screenshot mein eyebrows (3.19) halke-se padhe ja rahe hain, par description lines
-aur "Click to upload or drag and drop (1/20)" aur file ka naam `3G Digital brochure-1.pdf`
-lagbhag gayab hain — wahi 1.18–1.47 wali lines hain.
-
-**Ulta case — header**: `h3 "Upload Data"` saaf dikh raha hai (8.11:1) **sirf ittefaq se**. Uske
-peeche line 270 ka sheen hai — `--glass-sheen` light mein `white/0.60` hai, jo inner fill ko
-`rgb(163 178 175)` tak halka kar deta hai. Yaani header sheen ki wajah se bach gaya, baaki modal
-nahi. **Isliye modal aadha padhne-layak aadha nahi dikhta.**
-
-Do cheezein iske alawa:
-- `Proceed to Confirmation` button (line ~500) apna solid green rakhta hai — wo dono modes mein
-  theek hai, use chhedne ki zaroorat nahi.
-- Close `X` button tokens par hai (`--glass-bg` + `--text-secondary`) — light mein wo bhi dark fill
-  par dark icon ban raha hai.
-
-**Faisla ho gaya (15-09-2026) — §6 #1**: scene **theme ke saath badlega**. Hardcoded gradient
-hatega aur dialog `Modal` par aayega; force-dark tokens ka raasta reject. Aaj wala teesra raasta
-(hardcoded scene + theme-following text) hi ye bug hai, aur `Modal` uska bana-banaya jawab hai.
-
----
-
 ## 6. Faisle jo user ke paas atke hain
 
-1. ~~**`UpdateRequestModal` ka green gradient scene.**~~ ✅ **FAISLA HO GAYA (15-09-2026)**
-   `bg-[radial-gradient(...#1f6d54, #143b3a, #0d1b26)]` — comment kehta tha "matches the mockup's
-   .scene", yaani deliberate design tha. Problem: teeno themes mein ek jaisa dark rehta tha, toh
-   **light mode mein safed page par dark slab khulta tha**, aur uske andar ka text tokens se aata
-   tha — 1.18:1 (§5a SS-2).
-   **User ka faisla: scene theme ke saath badlega.** Yaani hardcoded gradient hataya jayega, aur
-   dialog `Modal` par aayega — wahi primitive jo ye sawal pehle hi hal kar chuka hai (`Surface
-   tone="strong"`, glass panel, naapa hua: dark 14.0:1 / light 16.1:1). Force-dark tokens ka
-   raasta **reject** — koi naya scene token nahi banana, `Modal` hi jawab hai.
-   Kaam batch **2A.4** mein.
+1. **`UpdateRequestModal` ka green gradient scene.**
+   `bg-[radial-gradient(...#1f6d54, #143b3a, #0d1b26)]` — comment kehta hai "matches the mockup's
+   .scene", yaani deliberate design hai. Problem: teeno themes mein ek jaisa dark rehta hai, toh
+   **light mode mein safed page par dark slab khulta hai**. Theme ke saath badle ya waisa hi rahe?
+   Poochha gaya hai, jawab nahi aaya. **Bina poochhe mat badalna.**
 
 2. **Metric tile ke dark/immersive tokens.** `--metric-bg` / `--metric-border` ki light values user
    ne dekhkar approve keen. Immersive SS se confirm ho gaya. **Dark mode ka SS abhi nahi mila.**
@@ -647,14 +550,9 @@ Start time aapke edits se purana ho → `taskkill /PID <pid> /F`, `npm start`, p
 
 ## 11. Phase 2 khatam hone par
 
-✅ **Teeno ho chuke (15-09-2026).**
-
-- ~~`Conversion status: complete.`~~ → ab sach hai aur likha hai ki pehle kyun nahi tha (26 pages
-  done the, par das pages ki UI un components mein thi jo convert hue hi nahi the). Saath mein
-  ye bhi likha hai ki verification **naapkar** hui, grep se nahi — aur admin safety **render
-  karke** prove hui, padhkar nahi, dono jhoothe-pass ke jaal samet.
-- ~~`emerald is dark in both themes`~~ → theek kar diya. Wo daawa sirf `emerald-600` fill ke liye
-  sach tha; `emerald-300/400` light card par ~1.3–1.8:1 hain. Ab saaf likha hai ki status ka rang
-  `--badge-*` ka kaam hai aur filled action `rgb(var(--ink-rgb))` + `var(--page-bg)` ka.
-- §11a ka status update ho gaya, aur ek aur deliberate literal darj hua: `ProjectDetails` ka
-  loading backdrop (`bg-black/10`) — admin ke saath share hota hai, koi gate nahi, isliye chhoda.
+- `CODEBASE_MAP.md` **line 414** `**Conversion status: complete.**` — ye pages ke liye sach tha,
+  shell components ke liye nahi. Phase 2 poora hone par sach ho jayega, tab update karna.
+- `CODEBASE_MAP.md` **line 419** `emerald is dark in both themes` — ye sirf `emerald-600` buttons
+  ke liye sach hai, `emerald-300/400` ke liye nahi (`text-emerald-300` light page par ~1.5:1).
+  Ise theek karna hai.
+- `CODEBASE_MAP.md` §11a ka status bhi tab update karna.

@@ -263,7 +263,7 @@ const ServicePlanDetail = () => {
               <button
                 type="button"
                 onClick={handleBack}
-                className="mt-4 rounded-2xl bg-[rgb(var(--ink-rgb))] px-4 py-2 text-base font-semibold text-[var(--page-bg)] transition hover:bg-[rgb(var(--ink-rgb)/0.85)]"
+                className="mt-4 rounded-2xl bg-emerald-500 px-4 py-2 text-base font-semibold text-[var(--text-primary)] hover:bg-emerald-400"
               >
                 Back to Plans
               </button>
@@ -328,13 +328,13 @@ const ServicePlanDetail = () => {
                 <ul className="mt-3 space-y-2">
                   {portalAccessLine && (
                     <li className="flex items-start gap-2.5 text-base text-[var(--text-secondary)]">
-                      <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--badge-success-fg)]" />
+                      <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" />
                       {portalAccessLine}
                     </li>
                   )}
                   {servicePlan.filesLimit && (
                     <li className="flex items-start gap-2.5 text-base text-[var(--text-secondary)]">
-                      <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--badge-success-fg)]" />
+                      <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" />
                       Up to {servicePlan.filesLimit} file(s) per request
                     </li>
                   )}
@@ -348,13 +348,13 @@ const ServicePlanDetail = () => {
                 <ul className="mt-3 space-y-2">
                   {validityLine && (
                     <li className="flex items-start gap-2.5 text-base text-[var(--text-secondary)]">
-                      <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--badge-success-fg)]" />
+                      <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" />
                       Valid for {validityLine}
                     </li>
                   )}
                   {billingCycleLabel && (
                     <li className="flex items-start gap-2.5 text-base text-[var(--text-secondary)]">
-                      <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--badge-success-fg)]" />
+                      <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" />
                       {billingCycleLabel}
                     </li>
                   )}
@@ -380,7 +380,7 @@ const ServicePlanDetail = () => {
               <button
                 type="button"
                 onClick={handleOpenPayment}
-                className="inline-flex w-full items-center justify-center rounded-2xl bg-[rgb(var(--ink-rgb))] px-4 py-3 text-base font-semibold text-[var(--page-bg)] transition hover:bg-[rgb(var(--ink-rgb)/0.85)] sm:w-auto"
+                className="inline-flex w-full items-center justify-center rounded-2xl bg-emerald-500 px-4 py-3 text-base font-semibold text-[var(--text-primary)] transition hover:bg-emerald-400 sm:w-auto"
               >
                 Proceed to Payment
               </button>
@@ -435,7 +435,7 @@ const ServicePlanDetail = () => {
                     type="button"
                     onClick={handleConfirmPayment}
                     disabled={payProcessing}
-                    className="inline-flex flex-1 items-center justify-center rounded-2xl bg-[rgb(var(--ink-rgb))] px-4 py-3 text-base font-semibold text-[var(--page-bg)] transition hover:bg-[rgb(var(--ink-rgb)/0.85)] disabled:cursor-not-allowed disabled:bg-[var(--glass-bg-strong)] disabled:text-[var(--text-muted)]"
+                    className="inline-flex flex-1 items-center justify-center rounded-2xl bg-emerald-500 px-4 py-3 text-base font-semibold text-[var(--text-primary)] transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-[var(--glass-bg-strong)]"
                   >
                     {payProcessing ? 'Processing…' : currentUpiPart === 0 ? 'Pay from Wallet' : 'Continue to UPI'}
                   </button>
@@ -456,8 +456,6 @@ const ServicePlanDetail = () => {
                   Scan the QR, then enter your UPI transaction ID below.
                 </p>
 
-                {/* Stays white in every theme on purpose: a QR code is read by a camera,
-                    which expects dark modules on a white quiet zone. */}
                 <div className="mt-4 flex justify-center rounded-2xl border border-[var(--glass-border)] bg-white p-4">
                   <QRCodeSVG value={upiLink} size={190} />
                 </div>
@@ -467,7 +465,7 @@ const ServicePlanDetail = () => {
                     UPI Transaction ID
                   </span>
                   <input
-                    className="w-full rounded-xl border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] px-4 py-3 text-base text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)] focus:border-[var(--badge-success-fg)] focus:ring-4 focus:ring-[var(--badge-success-bg)]"
+                    className="w-full rounded-xl border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] px-4 py-3 text-base text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)] focus:border-emerald-400 focus:ring-4 focus:ring-emerald-400/20"
                     type="text"
                     inputMode="numeric"
                     placeholder="12-digit reference number"
@@ -481,7 +479,7 @@ const ServicePlanDetail = () => {
                     type="button"
                     onClick={handleVerifyUpi}
                     disabled={payProcessing || upiTransactionId.trim().length < 12}
-                    className="inline-flex flex-1 items-center justify-center rounded-2xl bg-[rgb(var(--ink-rgb))] px-4 py-3 text-base font-semibold text-[var(--page-bg)] transition hover:bg-[rgb(var(--ink-rgb)/0.85)] disabled:cursor-not-allowed disabled:bg-[var(--glass-bg-strong)] disabled:text-[var(--text-muted)]"
+                    className="inline-flex flex-1 items-center justify-center rounded-2xl bg-emerald-500 px-4 py-3 text-base font-semibold text-[var(--text-primary)] transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:bg-[var(--glass-bg-strong)]"
                   >
                     {payProcessing ? 'Submitting…' : 'Submit for Approval'}
                   </button>
@@ -504,7 +502,7 @@ const ServicePlanDetail = () => {
       {showSuccess && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--glass-bg-subtle)] px-4 py-6">
           <div className="w-full max-w-md rounded-[1.75rem] border border-[var(--glass-border-strong)] bg-[var(--menu-bg)] p-6 text-center text-[var(--text-primary)] shadow-2xl backdrop-blur-2xl">
-            <CheckCircle2 className="mx-auto h-12 w-12 text-[var(--badge-success-fg)]" />
+            <CheckCircle2 className="mx-auto h-12 w-12 text-emerald-300" />
             <h2 className="mt-4 text-xl font-bold text-[var(--text-primary)]">
               {currentUpiPart === 0 ? 'Your service is active' : 'Payment submitted'}
             </h2>
@@ -516,7 +514,7 @@ const ServicePlanDetail = () => {
             <button
               type="button"
               onClick={() => navigate('/projects-and-plans')}
-              className="mt-5 inline-flex w-full items-center justify-center rounded-2xl bg-[rgb(var(--ink-rgb))] px-4 py-3 text-base font-semibold text-[var(--page-bg)] transition hover:bg-[rgb(var(--ink-rgb)/0.85)]"
+              className="mt-5 inline-flex w-full items-center justify-center rounded-2xl bg-emerald-500 px-4 py-3 text-base font-semibold text-[var(--text-primary)] transition hover:bg-emerald-400"
             >
               View My Plans
             </button>

@@ -20,44 +20,44 @@ const EVENT_META = {
   created: {
     label: 'Order created',
     Icon: Sparkles,
-    tone: { light: 'text-[var(--text-secondary)] bg-[var(--glass-bg-strong)]', dark: 'badge-neutral' },
+    tone: { light: 'text-[var(--text-secondary)] bg-[var(--glass-bg-strong)]', dark: 'text-[var(--text-secondary)] bg-[var(--glass-bg)]' },
   },
   approved: {
     label: 'Payment approved',
     Icon: CheckCircle2,
-    tone: { light: 'text-emerald-700 bg-emerald-100', dark: 'badge-success' },
+    tone: { light: 'text-emerald-700 bg-emerald-100', dark: 'text-emerald-300 bg-emerald-500/15' },
   },
   work_started: {
     label: 'Work started',
     Icon: Play,
-    tone: { light: 'text-blue-700 bg-blue-100', dark: 'badge-neutral' },
+    tone: { light: 'text-blue-700 bg-blue-100', dark: 'text-blue-300 bg-blue-500/15' },
   },
   completed: {
     label: 'Project completed',
     Icon: Flag,
-    tone: { light: 'text-emerald-700 bg-emerald-100', dark: 'badge-success' },
+    tone: { light: 'text-emerald-700 bg-emerald-100', dark: 'text-emerald-300 bg-emerald-500/15' },
   },
   reopened: {
     label: 'Reopened',
     Icon: RotateCcw,
-    tone: { light: 'text-amber-700 bg-amber-100', dark: 'badge-pending' },
+    tone: { light: 'text-amber-700 bg-amber-100', dark: 'text-amber-300 bg-amber-500/15' },
   },
   rejected: {
     label: 'Payment rejected',
     Icon: XCircle,
-    tone: { light: 'text-rose-700 bg-rose-100', dark: 'badge-error' },
+    tone: { light: 'text-rose-700 bg-rose-100', dark: 'text-rose-300 bg-rose-500/15' },
   },
   cancelled: {
     label: 'Project cancelled',
     Icon: XCircle,
-    tone: { light: 'text-[var(--text-secondary)] bg-[var(--glass-bg-strong)]', dark: 'badge-neutral' },
+    tone: { light: 'text-[var(--text-secondary)] bg-[var(--glass-bg-strong)]', dark: 'text-[var(--text-secondary)] bg-[var(--glass-bg)]' },
   },
 };
 
 const FALLBACK_META = {
   label: 'Update',
   Icon: CircleDot,
-  tone: { light: 'text-[var(--text-secondary)] bg-[var(--glass-bg-strong)]', dark: 'badge-neutral' },
+  tone: { light: 'text-[var(--text-secondary)] bg-[var(--glass-bg-strong)]', dark: 'text-[var(--text-secondary)] bg-[var(--glass-bg)]' },
 };
 
 const formatWhen = (value) => {
@@ -77,7 +77,7 @@ const OrderLifecycleTimeline = ({ timeline = [], dark = false, className = '' })
 
   if (!entries.length) {
     return (
-      <p className="text-sm text-[var(--text-muted)]">
+      <p className={dark ? 'text-sm text-[var(--text-muted)]' : 'text-sm text-[var(--text-muted)]'}>
         No lifecycle history recorded for this order yet.
       </p>
     );
@@ -109,11 +109,11 @@ const OrderLifecycleTimeline = ({ timeline = [], dark = false, className = '' })
 
             <div className="min-w-0 flex-1 pt-0.5">
               <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                <span className="text-sm font-semibold text-[var(--text-primary)]">
+                <span className={dark ? 'text-sm font-semibold text-[var(--text-primary)]' : 'text-sm font-semibold text-[var(--text-primary)]'}>
                   {meta.label}
                 </span>
                 {typeof entry.progressAtEvent === 'number' && entry.eventType === 'work_started' ? (
-                  <span className="text-xs text-[var(--text-muted)]">
+                  <span className={dark ? 'text-xs text-[var(--text-muted)]' : 'text-xs text-[var(--text-muted)]'}>
                     at {entry.progressAtEvent}%
                   </span>
                 ) : null}
@@ -131,12 +131,12 @@ const OrderLifecycleTimeline = ({ timeline = [], dark = false, className = '' })
                 ) : null}
               </div>
 
-              <p className="mt-0.5 text-xs text-[var(--text-muted)]">
+              <p className={dark ? 'mt-0.5 text-xs text-[var(--text-muted)]' : 'mt-0.5 text-xs text-[var(--text-muted)]'}>
                 {formatWhen(entry.occurredAt)}
               </p>
 
               {entry.reason ? (
-                <p className="mt-1 text-xs text-[var(--text-secondary)]">
+                <p className={dark ? 'mt-1 text-xs text-[var(--text-secondary)]' : 'mt-1 text-xs text-[var(--text-secondary)]'}>
                   {entry.reason}
                 </p>
               ) : null}

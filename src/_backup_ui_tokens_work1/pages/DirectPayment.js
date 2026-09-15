@@ -546,14 +546,14 @@ if (paymentData.selectedFeatures && paymentData.selectedFeatures.length > 0) {
       <div className="border-b pb-4 mb-4">
         <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">Installment Information</h3>
 
-        <div className="mb-4 rounded-lg border border-[var(--glass-border)] bg-[var(--glass-bg-subtle)] p-4">
+        <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 mb-4">
           <div className="flex justify-between items-center mb-2">
             <span className="text-base font-medium text-[var(--text-primary)]">Current Installment:</span>
             <span className="text-base font-semibold text-[var(--text-primary)]">#{installmentNumber} (30%)</span>
           </div>
           <div className="flex justify-between items-center">
             <span className="text-base text-[var(--text-primary)]">Amount Due Now:</span>
-            <span className="text-lg font-bold text-[var(--text-primary)]">
+            <span className="text-lg font-bold text-blue-600">
               ₹{paymentData.currentPaymentAmount.toLocaleString()}
             </span>
           </div>
@@ -597,7 +597,7 @@ if (paymentData.selectedFeatures && paymentData.selectedFeatures.length > 0) {
       >
       <div className="mx-auto max-w-3xl">
        {(loading || isSubmittingVerification) && (
-      <div className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center">
+      <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
         <TriangleMazeLoader />
       </div>
     )}
@@ -714,7 +714,7 @@ if (paymentData.selectedFeatures && paymentData.selectedFeatures.length > 0) {
 
             {/* Coupon Discount - optional to show here since we're showing per-item */}
   {paymentData.couponData && (
-    <div className="mb-2 flex items-center justify-between text-base text-[var(--badge-success-fg)]">
+    <div className="flex justify-between items-center mb-2 text-base text-green-600">
       <span>Coupon Discount ({paymentData.couponData.data.couponCode})</span>
       <span>-₹{paymentData.couponData.data.discountAmount.toLocaleString()}</span>
     </div>
@@ -723,7 +723,7 @@ if (paymentData.selectedFeatures && paymentData.selectedFeatures.length > 0) {
   {/* Total */}
   <div className="flex justify-between items-center mt-4 pt-4 border-t border-[var(--field-border)]">
     <span className="text-lg font-semibold text-[var(--text-primary)]">Total Amount</span>
-    <span className="text-xl font-bold text-[var(--text-primary)]">
+    <span className="text-xl font-bold text-blue-600">
       ₹{paymentData.totalPrice.toLocaleString()}
     </span>
   </div>
@@ -777,7 +777,7 @@ if (paymentData.selectedFeatures && paymentData.selectedFeatures.length > 0) {
                   <button
                     onClick={handleWalletPayment}
                     disabled={loading}
-                    className="rounded-lg bg-[rgb(var(--ink-rgb))] px-6 py-3 text-base font-medium text-[var(--page-bg)] transition-colors hover:bg-[rgb(var(--ink-rgb)/0.85)]"
+                    className="bg-blue-600 text-[var(--text-primary)] px-6 py-3 rounded-lg text-base font-medium hover:bg-blue-700 transition-colors"
                   >
                     {remainingAmount > 0
                       ? 'Pay with QR & Continue'
@@ -792,8 +792,6 @@ if (paymentData.selectedFeatures && paymentData.selectedFeatures.length > 0) {
                 Scan QR Code to Pay Remaining Amount
               </h3>
 
-              {/* White in every theme on purpose — a QR code is read by a camera,
-                  which expects dark modules on a white quiet zone. */}
               <div className="bg-white p-4 rounded-lg shadow-inner mb-4 inline-block">
                 <QRCodeSVG value={upiLink} size={200} />
               </div>
@@ -822,7 +820,7 @@ if (paymentData.selectedFeatures && paymentData.selectedFeatures.length > 0) {
                <button
       onClick={verifyPayment}
       disabled={loading || !upiTransactionId.trim() || isSubmittingVerification}
-      className="w-full rounded-lg bg-[rgb(var(--ink-rgb))] px-6 py-2 text-base font-medium text-[var(--page-bg)] transition-colors hover:bg-[rgb(var(--ink-rgb)/0.85)] disabled:bg-[var(--glass-bg-strong)] disabled:text-[var(--text-muted)]"
+      className="bg-green-600 text-[var(--text-primary)] px-6 py-2 rounded-lg text-base font-medium hover:bg-green-700 transition-colors w-full disabled:bg-[var(--glass-bg-strong)]"
     >
       {isSubmittingVerification ? 'Processing...' : (loading ? 'Verifying...' : 'Submit for Verification')}
     </button>

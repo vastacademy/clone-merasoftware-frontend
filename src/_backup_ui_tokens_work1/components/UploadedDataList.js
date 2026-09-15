@@ -35,7 +35,7 @@ const UploadedDataList = ({
   }
 
   if (error) {
-    return <p className={t('py-4 text-sm text-rose-600', 'py-4 text-sm text-[var(--badge-error-fg)]')}>{error}</p>;
+    return <p className={t('py-4 text-sm text-rose-600', 'py-4 text-sm text-rose-300')}>{error}</p>;
   }
 
   if (!uploads || uploads.length === 0) {
@@ -67,7 +67,7 @@ const UploadedDataList = ({
             {notes.length > 0 ? (
               <p className={t(
                 'mt-1.5 whitespace-pre-line text-sm leading-6 text-slate-700',
-                'mt-1.5 whitespace-pre-line text-sm leading-6 text-[var(--text-secondary)]'
+                'mt-1.5 whitespace-pre-line text-sm leading-6 text-slate-200'
               )}>
                 {notes.map((note) => note?.text).filter(Boolean).join('\n')}
               </p>
@@ -102,7 +102,7 @@ const UploadedDataList = ({
                     disabled={isDownloading}
                     className={t(
                       'mt-2 inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60',
-                      'mt-2 inline-flex items-center gap-1.5 rounded-lg border border-[var(--glass-border)] bg-[var(--glass-bg)] px-2.5 py-1.5 text-xs font-semibold text-[var(--text-primary)] transition hover:bg-[var(--glass-bg-hover)] disabled:cursor-not-allowed disabled:opacity-60'
+                      'mt-2 inline-flex items-center gap-1.5 rounded-lg border border-white/15 bg-white/10 px-2.5 py-1.5 text-xs font-semibold text-white transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-60'
                     )}
                   >
                     <Download className="h-3.5 w-3.5" />

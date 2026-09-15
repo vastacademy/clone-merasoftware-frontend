@@ -116,16 +116,12 @@ const getPlanVisualStatus = (plan) => {
   return { badge: 'Active', tone: 'active', isRecurring, daysLeft, updatesLeft, canRequest: true };
 };
 
-// The status pill's colours belong to Badge. This map used to restate them in
-// dark-only shades — `text-emerald-300` on `bg-emerald-500/20` measured 1.46 on a
-// light card, so the label vanished into its own tint. Mapping the local tone names
-// onto Badge's four keeps every call site unchanged.
 const BADGE_TONE_CLASSES = {
-  active: 'badge badge-success',
-  used_up: 'badge badge-pending',
-  expired: 'badge badge-neutral',
-  paused: 'badge badge-error',
-  closed: 'badge badge-neutral',
+  active: 'border border-emerald-400/40 bg-emerald-500/20 text-emerald-300',
+  used_up: 'border border-amber-400/40 bg-amber-500/20 text-amber-300',
+  expired: 'border border-[var(--glass-border-strong)] bg-[var(--glass-bg-strong)] text-[var(--text-primary)]',
+  paused: 'border border-rose-400/40 bg-rose-500/20 text-rose-300',
+  closed: 'border border-[var(--glass-border-strong)] bg-[var(--glass-bg-strong)] text-[var(--text-primary)]',
 };
 
 const PlanDetails = ({ isProjectServiceView = false }) => {
@@ -234,7 +230,7 @@ const PlanDetails = ({ isProjectServiceView = false }) => {
   if (loading) {
     return (
       <DashboardLayout user={user}>
-        <div className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center">
+        <div className="fixed inset-0 bg-black bg-opacity-10 flex items-center justify-center z-50">
           <div className="rounded-lg p-8">
             <TriangleMazeLoader />
           </div>
@@ -248,11 +244,11 @@ const PlanDetails = ({ isProjectServiceView = false }) => {
       <DashboardLayout user={user}>
         <div className="p-6">
           <div className="glass-panel rounded-lg p-6 text-center">
-            <h2 className="mb-2 text-lg font-semibold text-[var(--danger-fg)]">Plan Not Found</h2>
+            <h2 className="text-lg font-semibold text-red-600 mb-2">Plan Not Found</h2>
             <p className="text-base text-[var(--text-primary)] mb-4">The plan you're looking for doesn't exist or you don't have access to it.</p>
             <button
               onClick={handleBack}
-              className="rounded-lg bg-[rgb(var(--ink-rgb))] px-4 py-2 text-base font-semibold text-[var(--page-bg)] transition hover:bg-[rgb(var(--ink-rgb)/0.85)]"
+              className="px-4 py-2 bg-emerald-600 text-[var(--text-primary)] rounded-lg hover:bg-emerald-700 text-base font-semibold"
             >
               Back to Projects and Plans
             </button>
@@ -329,9 +325,9 @@ const PlanDetails = ({ isProjectServiceView = false }) => {
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div><p className="font-semibold">{status.isReminderOnly ? 'Service information' : 'Service controls'}</p><p className="mt-1 text-sm text-[var(--text-secondary)]">{product.formattedDescriptions?.[0]?.content?.replace(/<[^>]*>/g, '') || 'No additional service information.'}</p></div>
                 </div>
-                {serviceActionMessage && <p className="mt-2 text-sm text-[var(--badge-success-fg)]">{serviceActionMessage}</p>}
+                {serviceActionMessage && <p className="mt-2 text-sm text-emerald-200">{serviceActionMessage}</p>}
                 {status.isReminderOnly && <p className="mt-3 text-sm text-[var(--text-secondary)]">Upload Data is not available for this reminder service.</p>}
-                <div className="mt-3"><p className="text-sm font-semibold">Billing</p>{plan.serviceInvoices?.length ? <ul className="mt-1 space-y-2 text-sm text-[var(--text-secondary)]">{plan.serviceInvoices.map((invoice) => <li key={invoice._id} className="flex flex-wrap items-center justify-between gap-2"><span>{invoice.invoiceType === 'service_statement' ? 'Live Billing Statement' : `Cycle ${invoice.serviceCycleNumber || 1} invoice`} · {invoice.invoiceNumber} · ₹{invoice.amount} · {invoice.status}</span>{invoice.invoiceType === 'service_statement' ? <button type="button" onClick={() => navigate(`/invoice-detail/${invoice._id}`, { state: location.state })} className="rounded-lg border border-[var(--glass-border-strong)] px-2.5 py-1 text-xs font-semibold text-[var(--text-primary)]">View statement</button> : ['unpaid', 'partially_paid', 'overdue'].includes(invoice.status) ? <button type="button" onClick={() => navigate(`/invoice-detail/${invoice._id}`, { state: location.state })} className="rounded-lg border border-[var(--badge-success-border)] px-2.5 py-1 text-xs font-semibold text-[var(--badge-success-fg)]">Pay now</button> : <button type="button" onClick={() => navigate(`/invoice-detail/${invoice._id}`, { state: location.state })} className="rounded-lg border border-[var(--glass-border-strong)] px-2.5 py-1 text-xs font-semibold text-[var(--text-primary)]">View invoice</button>}</li>)}</ul> : <p className="mt-1 text-sm text-[var(--text-muted)]">No invoices yet.</p>}</div>
+                <div className="mt-3"><p className="text-sm font-semibold">Billing</p>{plan.serviceInvoices?.length ? <ul className="mt-1 space-y-2 text-sm text-[var(--text-secondary)]">{plan.serviceInvoices.map((invoice) => <li key={invoice._id} className="flex flex-wrap items-center justify-between gap-2"><span>{invoice.invoiceType === 'service_statement' ? 'Live Billing Statement' : `Cycle ${invoice.serviceCycleNumber || 1} invoice`} · {invoice.invoiceNumber} · ₹{invoice.amount} · {invoice.status}</span>{invoice.invoiceType === 'service_statement' ? <button type="button" onClick={() => navigate(`/invoice-detail/${invoice._id}`, { state: location.state })} className="rounded-lg border border-[var(--glass-border-strong)] px-2.5 py-1 text-xs font-semibold text-[var(--text-primary)]">View statement</button> : ['unpaid', 'partially_paid', 'overdue'].includes(invoice.status) ? <button type="button" onClick={() => navigate(`/invoice-detail/${invoice._id}`, { state: location.state })} className="rounded-lg border border-emerald-300/60 px-2.5 py-1 text-xs font-semibold text-emerald-100">Pay now</button> : <button type="button" onClick={() => navigate(`/invoice-detail/${invoice._id}`, { state: location.state })} className="rounded-lg border border-[var(--glass-border-strong)] px-2.5 py-1 text-xs font-semibold text-[var(--text-primary)]">View invoice</button>}</li>)}</ul> : <p className="mt-1 text-sm text-[var(--text-muted)]">No invoices yet.</p>}</div>
               </section>
             )}
 
@@ -368,7 +364,7 @@ const PlanDetails = ({ isProjectServiceView = false }) => {
                       disabled={!status.canRequest}
                       className={`mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-2.5 text-base font-semibold transition ${
                         status.canRequest
-                          ? 'bg-[rgb(var(--ink-rgb))] text-[var(--page-bg)] hover:bg-[rgb(var(--ink-rgb)/0.85)]'
+                          ? 'bg-emerald-600 text-[var(--text-primary)] hover:bg-emerald-700'
                           : 'bg-[var(--glass-bg)] text-[var(--text-muted)] cursor-not-allowed'
                       }`}
                     >
@@ -377,7 +373,7 @@ const PlanDetails = ({ isProjectServiceView = false }) => {
                     </button>
 
                     {status.tone === 'used_up' && (
-                      <p className="mt-2 text-center text-sm text-[var(--badge-pending-fg)]">
+                      <p className="mt-2 text-center text-sm text-amber-300">
                         {status.isRecurring
                           ? `Resets on ${formatDate(plan.monthlyLimitResetDate || plan.currentMonthExpiryDate)}.`
                           : "All updates used. Purchase a new plan."}
@@ -389,7 +385,7 @@ const PlanDetails = ({ isProjectServiceView = false }) => {
                       </p>
                     )}
                     {status.tone === 'paused' && (
-                      <p className="mt-2 flex items-start gap-1.5 text-center text-sm text-[var(--badge-error-fg)]">
+                      <p className="mt-2 flex items-start gap-1.5 text-center text-sm text-rose-300">
                         <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                         Payment overdue — clear invoice to continue.
                       </p>
@@ -514,7 +510,7 @@ const PlanDetails = ({ isProjectServiceView = false }) => {
                       disabled={!status.canRequest}
                       className={`inline-flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-base font-semibold transition ${
                         status.canRequest
-                          ? 'bg-[rgb(var(--ink-rgb))] text-[var(--page-bg)] hover:bg-[rgb(var(--ink-rgb)/0.85)]'
+                          ? 'bg-emerald-600 text-[var(--text-primary)] hover:bg-emerald-700'
                           : 'bg-[var(--glass-bg)] text-[var(--text-muted)] cursor-not-allowed'
                       }`}
                     >

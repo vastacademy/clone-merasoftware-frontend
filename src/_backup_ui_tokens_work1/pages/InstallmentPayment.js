@@ -321,11 +321,11 @@ const InstallmentPayment = () => {
         >
           <div className="pointer-events-none absolute inset-0 bg-[var(--scrim)]" />
           <div className="relative mx-auto max-w-3xl rounded-[1.75rem] border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] p-8 text-center shadow-[var(--card-shadow)] backdrop-blur-2xl backdrop-saturate-150">
-            <h2 className="mb-2 text-lg font-semibold text-[var(--danger-fg)]">Payment Error</h2>
+            <h2 className="mb-2 text-lg font-semibold text-red-400">Payment Error</h2>
             <p className="mb-4 text-base text-[var(--text-secondary)]">This installment is not available or has already been paid.</p>
             <button
               onClick={returnToParent}
-              className="rounded-lg bg-[rgb(var(--ink-rgb))] px-4 py-2 text-base font-semibold text-[var(--page-bg)] transition hover:bg-[rgb(var(--ink-rgb)/0.85)]"
+              className="rounded-lg bg-emerald-600 px-4 py-2 text-base font-semibold text-[var(--text-primary)] hover:bg-emerald-700"
             >
               Back to Project
             </button>
@@ -377,7 +377,7 @@ const InstallmentPayment = () => {
                   <p className="text-sm text-[var(--text-secondary)]">Amount due</p>
                   <p className="mt-1 text-3xl font-bold text-[var(--text-primary)]">{displayINRCurrency(installment.amount)}</p>
                 </div>
-                <span className="badge badge-pending inline-flex items-center gap-1">
+                <span className="inline-flex items-center gap-1 rounded-full border border-amber-400/40 bg-amber-500/20 px-3 py-1 text-sm font-semibold text-amber-300">
                   <CalendarClock className="h-3.5 w-3.5" />
                   Due
                 </span>
@@ -390,15 +390,15 @@ const InstallmentPayment = () => {
               <div className="mt-5 border-t border-[var(--glass-border)] pt-5">
                 <div className="flex items-baseline justify-between gap-4">
                   <span className="text-sm text-[var(--text-secondary)]">Wallet balance</span>
-                  <span className="text-sm font-semibold text-[var(--badge-success-fg)]">{displayINRCurrency(context.walletBalance)}</span>
+                  <span className="text-sm font-semibold text-emerald-300">{displayINRCurrency(context.walletBalance)}</span>
                 </div>
 
                 {/* The split only means something when the wallet cannot cover the whole amount. */}
                 {!walletCoversAll && (
-                  <div className="mt-3 divide-y divide-[var(--divider)] rounded-xl border border-[var(--badge-success-border)] bg-[var(--badge-success-bg)] px-4 py-2">
+                  <div className="mt-3 divide-y divide-[var(--divider)] rounded-xl border border-emerald-400/25 bg-emerald-500/[0.06] px-4 py-2">
                     <div className="flex items-baseline justify-between gap-4 py-2 text-sm">
                       <span className="text-[var(--text-secondary)]">Paid from wallet (instant)</span>
-                      <span className="font-medium text-[var(--badge-success-fg)]">{displayINRCurrency(walletPart)}</span>
+                      <span className="font-medium text-emerald-300">{displayINRCurrency(walletPart)}</span>
                     </div>
                     <div className="flex items-baseline justify-between gap-4 py-2 text-sm">
                       <span className="text-[var(--text-secondary)]">To pay via UPI</span>
@@ -413,7 +413,7 @@ const InstallmentPayment = () => {
                   type="button"
                   onClick={() => { setShowPayment(true); setShowQR(false); }}
                   disabled={loading || paymentProcessed}
-                  className="w-full rounded-lg bg-[rgb(var(--ink-rgb))] py-3 text-base font-medium text-[var(--page-bg)] transition-colors hover:bg-[rgb(var(--ink-rgb)/0.85)] disabled:opacity-60"
+                  className="w-full rounded-lg bg-emerald-600 py-3 text-base font-medium text-[var(--text-primary)] transition-colors hover:bg-emerald-700 disabled:opacity-60"
                 >
                   Pay Now
                 </button>
@@ -433,7 +433,7 @@ const InstallmentPayment = () => {
       {/* Payment popup — the same two-step wallet then UPI-QR flow InvoiceDetailPage uses, so
           paying an installment looks and behaves identically wherever it is started from. */}
       {showPayment && (
-        <div className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
           <div className="w-full max-w-md rounded-[1.5rem] border border-[var(--glass-border)] bg-[var(--menu-bg)] p-6 text-[var(--text-primary)] shadow-2xl backdrop-blur-2xl">
             {!showQR ? (
               <>
@@ -445,7 +445,7 @@ const InstallmentPayment = () => {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-[var(--text-secondary)]">Wallet balance</span>
-                    <span className="font-semibold text-[var(--badge-success-fg)]">{displayINRCurrency(context.walletBalance)}</span>
+                    <span className="font-semibold text-emerald-300">{displayINRCurrency(context.walletBalance)}</span>
                   </div>
                 </div>
                 <p className="mt-3 text-xs text-[var(--text-muted)]">
@@ -464,7 +464,7 @@ const InstallmentPayment = () => {
                   <button
                     onClick={handleWalletPayment}
                     disabled={loading}
-                    className="flex-1 rounded-lg bg-[rgb(var(--ink-rgb))] py-2.5 text-sm font-semibold text-[var(--page-bg)] transition hover:bg-[rgb(var(--ink-rgb)/0.85)] disabled:opacity-60"
+                    className="flex-1 rounded-lg bg-emerald-600 py-2.5 text-sm font-semibold text-[var(--text-primary)] hover:bg-emerald-700 disabled:opacity-60"
                   >
                     {loading ? 'Processing...' : walletCoversAll ? 'Pay from Wallet' : 'Continue to UPI'}
                   </button>
@@ -473,8 +473,6 @@ const InstallmentPayment = () => {
             ) : (
               <>
                 <h3 className="text-lg font-bold">Scan &amp; Pay {displayINRCurrency(remainingAmount)}</h3>
-                {/* White in every theme on purpose — a QR code is read by a camera,
-                    which expects dark modules on a white quiet zone. */}
                 <div className="mt-4 flex justify-center rounded-2xl bg-white p-4">
                   <QRCodeSVG value={upiLink} size={190} />
                 </div>
@@ -487,13 +485,13 @@ const InstallmentPayment = () => {
                   value={upiTransactionId}
                   onChange={(event) => setUpiTransactionId(event.target.value)}
                   placeholder="Enter the UPI reference after paying"
-                  className="mt-1.5 w-full rounded-lg border border-[var(--glass-border-strong)] bg-[var(--glass-bg-subtle)] px-3 py-2.5 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-[var(--badge-success-fg)] focus:outline-none"
+                  className="mt-1.5 w-full rounded-lg border border-[var(--glass-border-strong)] bg-[var(--glass-bg-subtle)] px-3 py-2.5 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-emerald-400 focus:outline-none"
                 />
                 <p className="mt-1.5 text-xs text-[var(--text-muted)]">
                   Find this in your UPI app payment history. It is required for verification.
                 </p>
                 {verificationStatus && (
-                  <p className="mt-3 text-sm text-[var(--badge-pending-fg)]">{verificationStatus}</p>
+                  <p className="mt-3 text-sm text-amber-300">{verificationStatus}</p>
                 )}
                 <div className="mt-5 flex gap-3">
                   <button
@@ -506,7 +504,7 @@ const InstallmentPayment = () => {
                   <button
                     onClick={verifyPayment}
                     disabled={loading || !upiTransactionId.trim()}
-                    className="flex-1 rounded-lg bg-[rgb(var(--ink-rgb))] py-2.5 text-sm font-semibold text-[var(--page-bg)] transition hover:bg-[rgb(var(--ink-rgb)/0.85)] disabled:opacity-60"
+                    className="flex-1 rounded-lg bg-emerald-600 py-2.5 text-sm font-semibold text-[var(--text-primary)] hover:bg-emerald-700 disabled:opacity-60"
                   >
                     {loading ? 'Verifying...' : 'Submit for Verification'}
                   </button>
@@ -518,7 +516,7 @@ const InstallmentPayment = () => {
       )}
 
       {loading && (
-        <div className="modal-backdrop fixed inset-0 z-[60] flex items-center justify-center">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/30">
           <TriangleMazeLoader />
         </div>
       )}

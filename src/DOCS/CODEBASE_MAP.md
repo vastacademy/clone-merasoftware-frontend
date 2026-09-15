@@ -214,7 +214,7 @@ Every consumer now reads those two fields:
 - Genuinely payment-less orders (customer "Pay Later" / admin-deferred): approved in **Projects tab** → open the pending project → approval bar (`POST /api/admin/projects/:orderId/approval`, `approveProjectOrder.js`) — Record Payment or Reject only.
 - An order with an already-submitted pending transaction is excluded from the Projects-tab approval bar (`isPendingApproval` excludes `hasPendingTransaction`) — shows a neutral info banner instead, to prevent double-recording the same payment.
 - **Progress-gate thresholds**: `installmentSchema.progressThreshold` (Number, nullable, 0-100) lets a later installment be gated by real `projectProgress` % instead of a hardcoded 40%/75%. Defaults: 2-split → `[null, 90]`; 3-split → `[null, 50, 90]`. Enforced in `projectNodeService.js`'s `appendProjectNode()` via `getBlockingInstallmentThreshold(order)` (admin can't push progress past a due, unpaid installment's threshold); `ProjectDetails.js`'s payment banner prefers `progressThreshold` over the legacy hardcoded values. No admin UI to edit thresholds after creation (creation-time default only).
-- `ProjectDetails.js` gates only the upload/request-update **action**, not the whole page: `isUploadLocked = hasUnpaidInvoice || isOrderPendingApproval` — the old full-page "Payment Processing" block screen was removed.
+- `ProjectDetails.js` gates only the upload/request-update **action**, not the whole page: `isUploadLocked = hasUnpaidInvoice || isOrderPendingApproval || isProjectComplete || isOrderCancelled` — the old full-page "Payment Processing" block screen was removed. The same four conditions are now enforced server-side too (`backend/helpers/projectUploadGate.js`, §7a) because `POST /api/user-request-update` is reachable directly.
 - **List/badge `hasUnpaidInvoice` now shares the exact same due-installment rule as the detail page.** Was: `getUserOrder.js` (the `ProjectsAndPlans.js`/`CustomerDashboard.js` list feed, via `OrderListRow.js`'s `getItemStatusMeta()`) computed `hasUnpaidInvoice` as "ANY unpaid/overdue invoice exists on this order" — so an admin-created project with installment #1 paid still showed a "Payment Pending" badge because installment #2's invoice legitimately stays `unpaid` until its own `progressThreshold` is reached (this is the exact bug `getOrderDetails.js` had already been fixed for, see §6 core rule above — the list feed just never got the same fix). Now: the due-installment + `progressThreshold` logic lives in `backend/helpers/projectDuePayment.js`'s `getDueUnpaidInvoiceFilter(order)`, used by both `getOrderDetails.js` (unchanged behavior, just extracted) and `getUserOrder.js` (new — scoped to `isWebsiteProject` orders only, batched via one `$or` query to avoid N+1). `getUserOrder.js` additionally `.select()`s `installments`/`currentInstallment` on top of the shared `ORDER_SUMMARY_FIELDS` (Mongoose `.select()` calls merge, not overwrite) rather than adding those fields to `ORDER_SUMMARY_FIELDS` itself, since that constant is also read by `getAdminUserWorkspace.js`/`getMyPaymentWorkspace.js`. Plan orders are untouched (they use `monthlyInvoiceModel`, not this path).
 
 ### Admin ledger
@@ -245,6 +245,32 @@ Every consumer now reads those two fields:
 - Shared row UI: `components/OrderListRow.js` (`OrderListRow` + `OrderListHeader`) — used by both `CustomerDashboard.js` and `ProjectsAndPlans.js` so list logic/markup never drifts apart. **`ProjectsAndPlans.js`'s layout/status version is canonical** if the two ever need to differ.
 - Safety net: `PlanDetails.js` and `ProjectDetails.js` each re-verify their fetched order's actual type after load and self-redirect (`{ replace: true }`) to the correct sibling page on mismatch.
 - Project row status derivation (current, real fields only — no static labels): `orderVisibility === 'cancelled'` → `Cancelled` (**checked first**, so a project cancelled at 100% progress does not still read as Completed — see §8a); `orderVisibility === 'payment-rejected'` → `Payment Rejected`; `'pending-approval'` → `Booked`; `projectProgress >= 100` or `currentPhase === 'completed'` → `Completed`; approved + `projectProgress === 0` → `Developer Assigned` (**static label — no real developer-assignment backend exists**); approved + `0 < progress < 100` → `{progress}% Complete`.
+
+---
+
+## 7a. Upload Data / Update Requests (SSOT — three kinds, never two)
+
+One route serves every "Upload Data" action: `POST /api/user-request-update` → `backend/controller/user/submitUpdateRequest.js` (`upload.any()`, files → Drive via `GoogleDriveService`, record → `updateRequestModel`). One modal serves it on the frontend: `components/UpdateRequestModal.js`, opened by `ProjectDetails.js`, `PlanDetails.js` and `UserUpdateDashboard.js`.
+
+**The kind of upload decides where its allowance is read from — `backend/helpers/uploadType.js` is the only place that decides which:**
+
+| Kind | Test | Allowance source | Counter spent |
+|---|---|---|---|
+| `service` | `order.isServicePlan === true` | `servicePlanSnapshot.portalAccessCount` / `.filesLimit` (frozen on the order, never the catalogue) | `serviceAccessUsedInCycle`, `serviceAccessUsedTotal` |
+| `project` | `order.isWebsiteProject === true` | **none — unlimited by design** (portal access during development; no catalogue row, one project per client) | **none** |
+| `legacy` | neither flag | `productId.updateCount` / `.validityPeriod` on the catalogue product | `updatesUsed` |
+
+- `getUploadKind(order)` reads only the order's own two flags, never `productId` — an order must always be able to describe itself. Live data: 26 orders = 18 project, 8 service, **0 legacy** (the legacy branch is currently dead code; `isWebsiteUpdate: true` products = 0).
+- **Project state gate**: `backend/helpers/projectUploadGate.js` → `assertProjectAcceptsUpload(order)` returns a refusal message or `null`. Each condition is answered by the module that already owns it — cancelled/complete from `orderStatusEngine.getOrderState`, payment-due from `projectDuePayment.getDueUnpaidInvoiceFilter`, pending-approval from `orderVisibility` — never re-derived here, so it cannot drift from `ProjectDetails.js`'s button (§6).
+- **Per-request file caps** (`backend/config/uploadLimits.js`): service 100, project 100, legacy 20. These are technical caps (Drive time/memory/timeout), not business allowances.
+- The upload is recorded against whichever order supplies the allowance (`updatePlanId`): the selected service when there is one, otherwise the order the modal was opened on. `UpdateRequestModal.js` never auto-selects a service for a **project** — only for a legacy plan.
+- Read-back is separate and kind-agnostic: `backend/helpers/orderUploadHistory.js` (`getOrderUploadHistory`, `resolveUploadOwnerIds`) serves both the customer and admin views, and a project also owns the records of every service linked to it. It never touches `productId`, so it was never affected by the bug below.
+
+### Fixed 2026-09-15 — project uploads crashed with a plan's allowance
+- **Before**: the controller knew only two kinds (`isServicePlan ? service : legacy`). A project, being `isServicePlan: false`, fell through to the **legacy** branch, which read `updatePlan.productId.updateCount` — but a project's `productId` is `null` by design (`orderProductModel.productId` is `default: null`, not required). Result: `500 Cannot read properties of null (reading 'updateCount')` at the old L128, reproduced on order `6aa3ae1ea8bbc513b29bedc7`. Three further legacy reads (`isMonthlyLimitedPlan`, `isMonthlyRenewablePlan`, `validityPeriod`) had the same exposure.
+- **Also before**: a successful project upload incremented `updatesUsed` — a legacy plan's counter on an order that has no plan (left `updatesUsed: 1` on order `6a8049eebfa39acf49716fc4`). And `UpdateRequestModal.js` auto-selected the customer's first active upload-service for a project, so a project upload could be recorded against an unrelated service order and spend **that** service's allowance; with no service to select it fell back to `LEGACY_MAX_FILE_COUNT`, advertising "Maximum 20 files" on something with no plan behind it.
+- **After**: `getUploadKind()` gives the third answer, the project branch checks state instead of allowance and spends no counter, and every legacy read is behind `isLegacyUpload`. Service-plan behaviour is byte-identical — verified across all 8 service orders (same allow/refuse result, counters unchanged).
+- **Still open (deliberate, out of that scope)**: a project upload's email/notification still fails silently — `emailService.js` reads `updateRequest.updatePlanId.productId.serviceName` unguarded, which throws for a project, and `submitUpdateRequest.js`'s notification block swallows it (`// Continue execution even if notification fails`). So the 2026-08-15 project upload stored its file but sent no admin email, no customer confirmation and no in-app notification. To be addressed by the planned **centralised notification system** (admin chooses which events notify), not by patching `emailService.js` here.
 
 ---
 
@@ -359,13 +385,22 @@ Behaviour is covered by throwaway tests written during the build (not committed)
 
 **Now**: colours come from CSS variables keyed off `data-theme` on `<html>`. Three modes:
 
+Listed here in the order the picker shows them, which is the order of `THEMES` in `ThemeContext.js` — that one array decides both the order and (via `DEFAULT_THEME`) the default.
+
 | Mode | Page | Decoration | Notes |
 |---|---|---|---|
-| `immersive` | `#020617` | `BG.png` + `--scrim` | **DEFAULT** — identical to the pre-theme look |
+| `light` | `#e8edf3` | none | frosted white cards — **DEFAULT** |
 | `dark` | `#020617` | none | same glass, no image |
-| `light` | `#e8edf3` | none | frosted white cards |
+| `immersive` | `#020617` | `BG.png` + `--scrim` | identical to the pre-theme look |
 
-**Default is `immersive` deliberately**: an existing customer who never touches the switch sees no change.
+**Default is `light` (owner's decision, 15-09-2026).** It was `immersive` until then, chosen so an existing customer who never touched the switch saw no change when the theme system shipped. That protection was deliberately given up: a customer who never picked a theme now lands on light. One who **did** pick is unaffected — their choice is in localStorage and still wins over the default.
+
+Changing the default means changing it in **three** places, not one:
+1. `DEFAULT_THEME` in `src/context/ThemeContext.js` (and `THEMES`, whose order is also the picker's order).
+2. The hardcoded fallback in the `public/index.html` pre-paint script.
+3. **The bare `:root` selector in `src/index.css`** — it is paired with whichever mode is the default (`:root, :root[data-theme="light"]`), because that block is what paints when no `data-theme` attribute exists yet: any paint before the pre-paint script runs, and a JS-less load. This one is easy to miss; it was originally paired with `immersive`.
+
+If any of the three disagree, the page paints one theme and repaints into the other — the exact flash the pre-paint script exists to prevent.
 
 **Where it lives**
 | Concern | File |
@@ -411,12 +446,17 @@ Glow blobs and card shadows are tuned for a dark ground, so both are tokens (`--
 | `UploadedDataList.js` | pre-existing `theme="glass"｜"light"` — only the `glass` branch was converted |
 | `ProjectDetails.js` | renders in **both** portals; two switches decide which side a class belongs to — `g(adminClass, customerClass)` and an `isGlass` prop passed as `{!isAdminView}`. Only the customer side was converted; the admin literals are deliberate, not missed work. |
 
-**Conversion status: complete.** All 26 customer pages and 15 customer-facing components are on tokens. Verified end state: `text-black` in client pages **0** (was 174), light-glass tier `bg-white/40…90` **0**, self-painted `BG.png` **0** (was 25), all 131 pages/components compile.
+**Conversion status: complete (15-09-2026) — pages AND the component render paths behind them.** The earlier "complete" was true of the 26 pages only; ten pages still drew their UI from components that had never been converted, so those screens were half-new. Phase 2 of `DOCS/PORTAL_UI_CLEANUP_HANDOFF.md` finished the remaining 20 files (9,088 lines), ending with the three admin-shared ones. Verified end state: `text-black` in client pages **0** (was 174), light-glass tier `bg-white/40…90` **0**, self-painted `BG.png` **0** (was 25), customer-side hardcoded colours **0** across all 20 migrated files, all pages/components compile.
+
+**How it was verified — measured, not grepped.** grep only says whether a token is present; it cannot say whether that token *works* where it sits. Each colour was composited over its real ground (page → backdrop → dialog panel → chip) in both themes and scored for WCAG contrast. That caught four defects invisible to reading: `focus:border-emerald-400/60` = **1.42** in light (a focus ring nobody can see), `hover:text-rose-400` = 2.42, the PDF icon `rose-300` = 1.84, the Word icon `sky-300` = 1.62. It also caught the mirror-image defect in `UserUpdateDashboard.js`, where light-only pairs (`bg-emerald-100 text-emerald-700`) measured **2.99 on a dark card** — a file that looks correct until you measure the other theme.
+
+**Admin safety was proven by rendering, not by reading.** The three admin-shared files were SSR-rendered before and after with admin props and their markup diffed with class tokens sorted. Two traps are worth knowing: if the render FAILS on both sides the outputs compare equal and you get a false "identical: true" (the harness must refuse to pass on an error), and `ProjectDetails` with no `orderId` never mounts the regions that changed, so its customer-side control also compares equal. For that file the real proof was a string census — every customer-argument value replaced, every admin-argument value (`text-amber-800`, `bg-amber-50`, `text-emerald-700`, `bg-emerald-100`, `text-emerald-800`, `border-amber-300`) unchanged, counts identical.
 
 **Deliberately left as literals** (correct in every mode, do not "fix"):
 - `bg-black/30…60` modal backdrops
 - `bg-white` QR-code tiles — scanners need real white
-- `text-white` on emerald buttons — emerald is dark in both themes
+- `text-white` on **`emerald-600`** buttons — that one shade is dark enough in both themes. This does NOT generalise: `emerald-300/400` are dark-theme shades and measure ~1.3–1.8:1 on a light card, so a literal emerald elsewhere is a bug, not a convention. Status colour belongs to the `--badge-*` tokens, and a filled primary action belongs to `rgb(var(--ink-rgb))` with a `var(--page-bg)` label, which invert as a pair.
+- One more shared-surface literal, deliberate: `ProjectDetails.js`'s loading backdrop (`bg-black/10`). It renders for the admin too and has no `isAdminView` gate, so theming it would move admin markup.
 
 **Build note (pre-existing, unrelated to theming)**: `package.json` declares `tailwindcss@4.0.14`, but `react-scripts` resolves its own nested **v3.4.17**, which is what actually compiles (verified by running PostCSS). `index.css` uses v3 syntax accordingly. Note also that v3 cannot apply an opacity modifier to a variable — `bg-[var(--x)]/10` fails to compile; `bg-[rgb(var(--x)/0.1)]` works. Any `npm install` that removes the nested v3 will break all CSS.
 
@@ -470,6 +510,7 @@ These are structural conventions and remain in force. Only their **colours** cha
 - Chess iOS Safari WebSocket cookie-auth failure (§10) — unresolved.
 - No admin capability exists to **activate** a customer's plan, or to pause/resume one. **Closing** one is now possible — cancelling it (§8a) sets `servicePlanStatus: 'cancelled'` and stops the renewal cron — but that always settles/refunds the money and is one-way, so it is not a general-purpose "close this plan" control.
 - Service system: no activation engine, no enforcement of upload/reminder allowances, no cycle/recurring billing beyond the first payment, no reminder delivery — see §5's three-axis design section for what's planned but not built.
+- **A project upload's notifications fail silently** (§7a). `emailService.js` reads `updatePlanId.productId.serviceName` unguarded; a project has no `productId`, so the admin email, the customer confirmation and the in-app notification all throw — and `submitUpdateRequest.js`'s notification block catches and continues, so the upload succeeds while nobody is told. Left as-is on purpose: the fix belongs to the planned **centralised notification system** (one place deciding which events notify, admin-configurable), not to a guard bolted onto `emailService.js`.
 - **No un-cancel.** Cancelling an order is deliberately one-way (§8a) — the refund has already been paid out, so reversing it would mean taking money back, which is a new payment rather than an undo. A mistaken cancellation is corrected by creating a new order.
 - **Deleting a project does not clear the services attached to it.** They are listed with a warning in the delete dialog (§13) but nothing enforces it, so a project deleted with services still attached leaves them holding a `linkedProjectOrderId` that resolves to nothing. Accepted: the admin deletes those services manually, and the cancel-before-delete gate means each one's money is settled first regardless.
 - `UserInvoices.js` (`/my-invoices`) calls `GET /api/my-invoices`, which **does not exist** as a registered backend route (confirmed by grep of `backend/routes/index.js`) — this page has been broken across many sessions and was never fixed.
@@ -586,6 +627,7 @@ see §14 (`RoleDirectoryPage` → `../pages/SignUp`).
 | Cancellation & refunds | `backend/helpers/orderRefundService.js` (refund SSOT), `backend/controller/order/cancelProjectOrder.js`, `backend/helpers/orderLifecycle.js` (terminal-state guard) |
 | Trash | `backend/controller/trash/*.js` |
 | Client documents | `backend/helpers/clientDocumentsTimeline.js`, `backend/controller/user/{uploadClientDocument,getClientDocuments,getAdminClientDocuments}.js` |
+| Upload Data / update requests (§7a) | `backend/helpers/uploadType.js` (which kind), `backend/helpers/projectUploadGate.js` (project state gate), `backend/controller/user/submitUpdateRequest.js` (submit), `backend/helpers/orderUploadHistory.js` (read-back), `backend/config/uploadLimits.js` (file caps), `frontend/src/components/UpdateRequestModal.js` (the one modal) |
 | Project/plan classification | `helpers/orderType.js`, `helpers/orderPresentation.js`, `components/OrderListRow.js` |
 | Chess | `frontend/src/chess/*`, `backend/chess/*` |
 | WhatsApp notifications (dormant, keep) | `backend/helpers/whatsappService.js`, `frontend/src/components/{socket,QRModal}.js`, commented block in `AppContent.js` — see §14a |

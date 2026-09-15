@@ -198,15 +198,12 @@ const getCardVisualStatus = (plan) => {
   return { badge: 'Active', tone: 'active', isRecurring, daysLeft };
 };
 
-// Light-only pairs before this: `bg-emerald-100 text-emerald-700` reads fine on a
-// white card but measures 2.99 on a dark one, and the opaque -100 fills sat on the
-// dark page as lit patches (14.4:1). Badge's recipes define both directions.
 const BADGE_TONE_CLASSES = {
-  active: 'badge badge-success',
-  used_up: 'badge badge-pending',
-  expired: 'badge badge-neutral',
-  paused: 'badge badge-error',
-  closed: 'badge badge-neutral',
+  active: 'bg-emerald-100 text-emerald-700',
+  used_up: 'bg-amber-100 text-amber-800',
+  expired: 'bg-[var(--glass-bg-strong)] text-[var(--text-secondary)]',
+  paused: 'bg-rose-100 text-rose-700',
+  closed: 'bg-[var(--glass-bg-strong)] text-[var(--text-primary)]',
 };
 
 const UserUpdateDashboard = () => {
@@ -274,7 +271,7 @@ const UserUpdateDashboard = () => {
       >
         <section className="glass-panel mx-auto max-w-7xl overflow-hidden rounded-[2rem]">
           <div className="rounded-t-[2rem] border-b border-[var(--divider)] bg-[var(--glass-bg-subtle)] px-5 py-5 text-[var(--text-primary)] sm:px-6 lg:px-8">
-            <div className="inline-flex items-center gap-2 rounded-full border border-[var(--badge-success-border)] bg-[var(--badge-success-bg)] px-3 py-1 text-sm font-semibold uppercase text-[var(--badge-success-fg)]">
+            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-sm font-semibold uppercase text-emerald-300">
               <Sparkles className="h-3.5 w-3.5" />
               My Updates
             </div>
@@ -289,7 +286,7 @@ const UserUpdateDashboard = () => {
                 <p className="text-base text-[var(--text-primary)] mb-4">You don't have any active update plans.</p>
                 <button
                   onClick={() => window.location.href = '/website-updates'}
-                  className="inline-flex items-center gap-2 rounded-2xl bg-[rgb(var(--ink-rgb))] px-4 py-2.5 text-base font-semibold text-[var(--page-bg)] transition hover:bg-[rgb(var(--ink-rgb)/0.85)]"
+                  className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-4 py-2.5 text-base font-semibold text-[var(--text-primary)] transition hover:bg-blue-700"
                 >
                   Browse Update Plans
                 </button>
@@ -322,7 +319,7 @@ const UserUpdateDashboard = () => {
                             </div>
                             <div className="w-full bg-[var(--glass-bg-strong)] rounded-full h-2">
                               <div
-                                className="h-2 rounded-full bg-[rgb(var(--ink-rgb))]"
+                                className="bg-blue-600 h-2 rounded-full"
                                 style={{
                                   width: `${Math.min(100, ((plan.currentMonthUpdatesUsed || 0) / (plan.currentMonthUpdatesLimit || product.monthlyUpdateLimit || 1)) * 100)}%`
                                 }}
@@ -346,7 +343,7 @@ const UserUpdateDashboard = () => {
                             </div>
                             <div className="w-full bg-[var(--glass-bg-strong)] rounded-full h-2">
                               <div
-                                className="h-2 rounded-full bg-[rgb(var(--ink-rgb))]"
+                                className="bg-violet-500 h-2 rounded-full"
                                 style={{
                                   width: `${Math.min(100, ((plan.totalYearlyDaysRemaining ?? 0) / (product.yearlyPlanDuration || 365)) * 100)}%`
                                 }}
@@ -366,7 +363,7 @@ const UserUpdateDashboard = () => {
                             </div>
                             <div className="w-full bg-[var(--glass-bg-strong)] rounded-full h-2">
                               <div
-                                className="h-2 rounded-full bg-[rgb(var(--ink-rgb))]"
+                                className="bg-blue-600 h-2 rounded-full"
                                 style={{
                                   width: `${Math.min(100, (((product.updateCount || 0) - (plan.updatesUsed || 0)) / (product.updateCount || 1)) * 100)}%`
                                 }}
@@ -385,7 +382,7 @@ const UserUpdateDashboard = () => {
                             </div>
                             <div className="w-full bg-[var(--glass-bg-strong)] rounded-full h-2">
                               <div
-                                className="h-2 rounded-full bg-[rgb(var(--ink-rgb))]"
+                                className="bg-green-600 h-2 rounded-full"
                                 style={{
                                   width: `${Math.min(100, ((status.daysLeft || 0) / (product.validityPeriod || 1)) * 100)}%`
                                 }}
@@ -401,7 +398,7 @@ const UserUpdateDashboard = () => {
                           disabled={!canRequest}
                           className={`w-full py-2 rounded-lg text-base font-medium flex items-center justify-center ${
                             canRequest
-                              ? 'bg-[rgb(var(--ink-rgb))] text-[var(--page-bg)] hover:bg-[rgb(var(--ink-rgb)/0.85)]'
+                              ? 'bg-blue-600 text-[var(--text-primary)] hover:bg-blue-700'
                               : 'bg-[var(--glass-bg-subtle)] text-[var(--text-muted)] cursor-not-allowed'
                           }`}
                         >
@@ -426,7 +423,7 @@ const UserUpdateDashboard = () => {
                         ) : null}
 
                         {status.tone === 'used_up' && (
-                          <p className="mt-2 text-center text-sm text-[var(--badge-pending-fg)]">
+                          <p className="text-amber-600 text-sm mt-2 text-center">
                             {status.isRecurring
                               ? `You've used this month's update. Resets on ${formatDate(plan.monthlyLimitResetDate || plan.currentMonthExpiryDate)}.`
                               : "You've used all your updates. Please purchase a new plan."}
@@ -446,11 +443,11 @@ const UserUpdateDashboard = () => {
                         )}
 
                         {status.tone === 'paused' && (
-                          <div className="mt-2 flex items-start gap-2 rounded-lg border border-[var(--badge-error-border)] bg-[var(--badge-error-bg)] px-3 py-2 text-sm text-[var(--badge-error-fg)]">
+                          <div className="mt-2 flex items-start gap-2 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">
                             <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
                             <span>
                               Payment overdue for this plan. Clear the pending invoice to continue requesting updates.{' '}
-                              <a href="/my-invoices" className="font-semibold underline underline-offset-2 hover:text-[var(--text-primary)]">
+                              <a href="/my-invoices" className="font-semibold underline underline-offset-2 hover:text-rose-800">
                                 View invoices
                               </a>
                             </span>
