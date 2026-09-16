@@ -74,7 +74,7 @@ const DashboardLayout = ({ children, user, walletBalance, cartCount, isLoading, 
     { to: '/documents', label: 'Documents', icon: FileCheck, active: currentPath.startsWith('/documents') },
     { to: '/wallet', label: 'Wallet', icon: Wallet, active: currentPath.startsWith('/wallet') },
     { to: '/games', label: 'Games', icon: Gamepad2, active: gamesActive },
-    { to: '/profile', label: 'Profile', icon: UserCircle, active: currentPath.startsWith('/profile') },
+    { to: '/profile', label: 'Settings', icon: UserCircle, active: currentPath.startsWith('/profile') },
     { to: '/support', label: 'Support', icon: MessageSquare, active: currentPath.startsWith('/support') },
   ];
 

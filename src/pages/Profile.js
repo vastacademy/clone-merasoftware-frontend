@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Camera, Mail, Phone, User, Calendar } from 'lucide-react';
+import { Camera, Mail, Phone, User, Calendar, Link2, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import SummaryApi from '../common';
 import { setUserDetails } from '../store/userSlice';
@@ -30,6 +30,8 @@ const Profile = () => {
   const [selectedImage, setSelectedImage] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [allowLoginFreeUploadLinks, setAllowLoginFreeUploadLinks] = useState(Boolean(user?.allowLoginFreeUploadLinks));
+  const [uploadLinkPreferenceSaving, setUploadLinkPreferenceSaving] = useState(false);
 
   const fetchUserDetails = useCallback(async () => {
     try {
@@ -63,6 +65,35 @@ const Profile = () => {
   useEffect(() => {
     fetchUserDetails();
   }, [fetchUserDetails]);
+
+  useEffect(() => {
+    setAllowLoginFreeUploadLinks(Boolean(user?.allowLoginFreeUploadLinks));
+  }, [user?.allowLoginFreeUploadLinks]);
+
+  const handleUploadLinkPreference = async () => {
+    if (uploadLinkPreferenceSaving || !isOnline) return;
+    const nextValue = !allowLoginFreeUploadLinks;
+    setUploadLinkPreferenceSaving(true);
+    try {
+      const response = await fetch(SummaryApi.myUploadLinkPreference.url, {
+        method: SummaryApi.myUploadLinkPreference.method,
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ allowLoginFreeUploadLinks: nextValue }),
+      });
+      const result = await response.json();
+      if (!result.success) throw new Error(result.message || 'Could not update secure upload-link access');
+      const updatedUser = { ...user, allowLoginFreeUploadLinks: result.data.allowLoginFreeUploadLinks };
+      setAllowLoginFreeUploadLinks(result.data.allowLoginFreeUploadLinks);
+      dispatch(setUserDetails(updatedUser));
+      StorageService.setUserDetails(updatedUser);
+      toast.success(result.data.allowLoginFreeUploadLinks ? 'Login-free upload links enabled' : 'Login-free upload links disabled');
+    } catch (error) {
+      toast.error(error.message || 'Could not update secure upload-link access');
+    } finally {
+      setUploadLinkPreferenceSaving(false);
+    }
+  };
 
   const isDirty = Boolean(selectedImage) || Object.keys(initialFormData).some((key) => formData[key] !== initialFormData[key]);
 
@@ -161,6 +192,39 @@ const Profile = () => {
                   <input id="profile-picture" type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
                   <p className="mt-1 text-sm text-[var(--text-secondary)]">JPG, PNG or WEBP</p>
                 </div>
+              </div>
+            </Surface>
+
+            <Surface radius="panel" sheen className="p-6 sm:p-7">
+              <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-start gap-3">
+                  <div className="mt-0.5 rounded-xl border border-[var(--glass-border)] bg-[var(--glass-bg)] p-2 text-[var(--text-primary)]"><Link2 size={19} /></div>
+                  <div>
+                    <div className="flex items-center gap-2"><h2 className="text-base font-bold text-[var(--text-primary)]">Login-free secure upload links</h2><ShieldCheck size={16} className="text-emerald-500" /></div>
+                    <p className="mt-1 max-w-xl text-sm text-[var(--text-secondary)]">When enabled, an admin-generated link can open only its selected project's or service's upload form without your portal login. Turn it off to require credential verification.</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-label="Allow login-free secure upload links"
+                  aria-checked={allowLoginFreeUploadLinks}
+                  aria-busy={uploadLinkPreferenceSaving}
+                  onClick={handleUploadLinkPreference}
+                  disabled={uploadLinkPreferenceSaving || !isOnline}
+                  className={`relative h-8 w-14 shrink-0 rounded-full border-[length:var(--glass-border-width)] transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 ${
+                    allowLoginFreeUploadLinks
+                      ? 'border-emerald-600 bg-emerald-500'
+                      : 'border-[var(--glass-border-strong)] bg-[var(--text-muted)]'
+                  }`}
+                >
+                  <span
+                    aria-hidden="true"
+                    className={`absolute left-0 top-1 h-6 w-6 rounded-full bg-white shadow-md ring-1 ring-black/10 transition-transform duration-200 ${
+                      allowLoginFreeUploadLinks ? 'translate-x-7' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
               </div>
             </Surface>
 

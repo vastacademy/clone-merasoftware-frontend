@@ -61,11 +61,12 @@ const PLANS_TAB = { id: "plans", label: "Plans", active: true };
 const PAYMENTS_TAB = { id: "payments", label: "Payments", active: true };
 const DELETED_PROJECTS_TAB = { id: "deleted-projects", label: "Deleted Projects", active: true };
 const DOCUMENTS_TAB = { id: "documents", label: "Documents", active: true };
+const UPLOAD_LINKS_TAB = { id: "upload-links", label: "Upload Links", active: true };
 const ACCESS_TAB = { id: "access", label: "Account & Access", active: true };
 
 // Fixed tab order (user-confirmed) — same for every client, no longer derived from whether the
 // client currently has an active project/plan.
-const WORKSPACE_TABS = [PROJECTS_TAB, PLANS_TAB, PAYMENTS_TAB, DELETED_PROJECTS_TAB, DOCUMENTS_TAB, ACCESS_TAB, OVERVIEW_TAB];
+const WORKSPACE_TABS = [PROJECTS_TAB, PLANS_TAB, PAYMENTS_TAB, DELETED_PROJECTS_TAB, DOCUMENTS_TAB, UPLOAD_LINKS_TAB, ACCESS_TAB, OVERVIEW_TAB];
 
 const safeDateTime = (value) => {
   if (!value) return null;
@@ -331,6 +332,16 @@ const AdminClientWorkspace = () => {
   const [documentsLoading, setDocumentsLoading] = useState(false);
   const [documentsError, setDocumentsError] = useState("");
   const [documentUploading, setDocumentUploading] = useState(false);
+  const [uploadLinks, setUploadLinks] = useState(null);
+  const [uploadLinksLoading, setUploadLinksLoading] = useState(false);
+  const [uploadLinksLoadingMore, setUploadLinksLoadingMore] = useState(false);
+  const [uploadLinksCursor, setUploadLinksCursor] = useState(null);
+  const [uploadLinksError, setUploadLinksError] = useState("");
+  const [selectedUploadLinkOrderId, setSelectedUploadLinkOrderId] = useState("");
+  const [uploadLinkMode, setUploadLinkMode] = useState("single");
+  const [generatedUploadLink, setGeneratedUploadLink] = useState("");
+  const [uploadLinkGenerating, setUploadLinkGenerating] = useState(false);
+  const [uploadLinkRevokingId, setUploadLinkRevokingId] = useState("");
   const [allData, setAllData] = useState({
     orders: [],
     renewals: [],
@@ -882,6 +893,93 @@ const AdminClientWorkspace = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, customerId]);
+
+  const loadUploadLinks = async ({ append = false, cursor = null } = {}) => {
+    if (!customerId) return;
+    if (append) setUploadLinksLoadingMore(true);
+    else setUploadLinksLoading(true);
+    setUploadLinksError("");
+    try {
+      const query = new URLSearchParams({ limit: "20" });
+      if (cursor) query.set("cursor", cursor);
+      const response = await fetch(`${SummaryApi.adminUploadLinks.url}/${customerId}/upload-links?${query.toString()}`, { credentials: "include" });
+      const result = await response.json();
+      if (!result.success) throw new Error(result.message || "Could not load upload links");
+      const items = result.data?.items || [];
+      setUploadLinks((current) => append ? [...(current || []), ...items] : items);
+      setUploadLinksCursor(result.data?.nextCursor || null);
+    } catch (error) {
+      setUploadLinksError(error.message || "Could not load upload links");
+      if (!append) setUploadLinks([]);
+    } finally {
+      if (append) setUploadLinksLoadingMore(false);
+      else setUploadLinksLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    setUploadLinks(null);
+    setUploadLinksCursor(null);
+    setGeneratedUploadLink("");
+  }, [customerId]);
+
+  useEffect(() => {
+    if (activeTab === "upload-links" && customerId && uploadLinks === null && !uploadLinksLoading) loadUploadLinks();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, customerId]);
+
+  const handleGenerateUploadLink = async () => {
+    if (!selectedUploadLinkOrderId || uploadLinkGenerating) return;
+    setUploadLinkGenerating(true);
+    setGeneratedUploadLink("");
+    try {
+      const response = await fetch(`${SummaryApi.generateAdminUploadLink.url}/${customerId}/upload-links`, {
+        method: SummaryApi.generateAdminUploadLink.method,
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId: selectedUploadLinkOrderId, mode: uploadLinkMode }),
+      });
+      const result = await response.json();
+      if (!result.success) throw new Error(result.message || "Could not generate upload link");
+      setGeneratedUploadLink(result.data.publicUrl);
+      await loadUploadLinks();
+      toast.success("Secure upload link generated");
+    } catch (error) {
+      toast.error(error.message || "Could not generate upload link");
+    } finally {
+      setUploadLinkGenerating(false);
+    }
+  };
+
+  const handleRevokeUploadLink = async (linkId) => {
+    if (!linkId || uploadLinkRevokingId) return;
+    setUploadLinkRevokingId(linkId);
+    try {
+      const response = await fetch(`${SummaryApi.revokeAdminUploadLink.url}/${customerId}/upload-links/${linkId}/revoke`, {
+        method: SummaryApi.revokeAdminUploadLink.method,
+        credentials: "include",
+      });
+      const result = await response.json();
+      if (!result.success) throw new Error(result.message || "Could not revoke upload link");
+      setGeneratedUploadLink("");
+      await loadUploadLinks();
+      toast.success("Upload link revoked");
+    } catch (error) {
+      toast.error(error.message || "Could not revoke upload link");
+    } finally {
+      setUploadLinkRevokingId("");
+    }
+  };
+
+  const handleCopyGeneratedUploadLink = async () => {
+    if (!generatedUploadLink) return;
+    try {
+      await navigator.clipboard.writeText(generatedUploadLink);
+      toast.success("Upload link copied");
+    } catch {
+      toast.error("Could not copy upload link");
+    }
+  };
 
   // Uploaded data follows whichever record is open. The endpoint authorises server-side
   // (admin reads any order) and resolves which records belong to it — including those made
@@ -1503,6 +1601,29 @@ const AdminClientWorkspace = () => {
             uploading={documentUploading}
             onUpload={handleUploadDocument}
             formatDateTime={formatDateTime}
+          />
+        )}
+
+        {activeTab === "upload-links" && (
+          <UploadLinksPanel
+            customer={customer}
+            orders={allData.orders}
+            links={uploadLinks}
+            loading={uploadLinksLoading}
+            loadingMore={uploadLinksLoadingMore}
+            hasMore={Boolean(uploadLinksCursor)}
+            error={uploadLinksError}
+            selectedOrderId={selectedUploadLinkOrderId}
+            setSelectedOrderId={setSelectedUploadLinkOrderId}
+            mode={uploadLinkMode}
+            setMode={setUploadLinkMode}
+            generatedLink={generatedUploadLink}
+            generating={uploadLinkGenerating}
+            revokingId={uploadLinkRevokingId}
+            onGenerate={handleGenerateUploadLink}
+            onCopy={handleCopyGeneratedUploadLink}
+            onRevoke={handleRevokeUploadLink}
+            onLoadMore={() => loadUploadLinks({ append: true, cursor: uploadLinksCursor })}
           />
         )}
 
@@ -2248,6 +2369,33 @@ const ClientDocumentsPanel = ({ documents, loading, error, uploading, onUpload, 
         )}
       </div>
     </div>
+  );
+};
+
+const UploadLinksPanel = ({
+  customer, orders, links, loading, loadingMore, hasMore, error, selectedOrderId, setSelectedOrderId,
+  mode, setMode, generatedLink, generating, revokingId, onGenerate, onCopy, onRevoke, onLoadMore,
+}) => {
+  const eligibleOrders = (orders || []).filter((order) => {
+    if (order?.isWebsiteProject === true) return true;
+    const snapshot = order?.servicePlanSnapshot || {};
+    return order?.isServicePlan === true && (snapshot.capability === "upload_data" || snapshot.serviceBehavior === "portal_access_control");
+  });
+  const labelFor = (order) => order?.projectSnapshot?.displayName || order?.servicePlanSnapshot?.serviceName || order?.orderItems?.[0]?.name || "Untitled record";
+  return (
+    <section className="space-y-5">
+      <div className="rounded-2xl border border-slate-200 bg-white p-5">
+        <div className="flex items-start gap-3"><Share2 size={19} className="mt-0.5 text-slate-600" /><div><h2 className="text-lg font-bold text-slate-900">Secure Upload Link</h2><p className="mt-1 text-sm text-slate-500">Generate an upload-only link for one project or service. Generating again replaces its previous active link.</p></div></div>
+        <div className="mt-5 grid gap-4 md:grid-cols-[1fr_12rem_auto] md:items-end">
+          <label className="block"><span className="mb-1.5 block text-sm font-semibold text-slate-700">Project or service</span><select value={selectedOrderId} onChange={(event) => setSelectedOrderId(event.target.value)} className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm text-slate-800"><option value="">Select a record</option>{eligibleOrders.map((order) => <option key={order._id} value={order._id}>{labelFor(order)}</option>)}</select></label>
+          <label className="block"><span className="mb-1.5 block text-sm font-semibold text-slate-700">Link usage</span><select value={mode} onChange={(event) => setMode(event.target.value)} className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm text-slate-800"><option value="single">Single use</option><option value="multiple">Multiple use</option></select></label>
+          <button type="button" disabled={!selectedOrderId || generating} onClick={onGenerate} className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50">{generating ? "Generating…" : "Generate / Regenerate"}</button>
+        </div>
+        <div className={`mt-4 rounded-xl border px-4 py-3 text-sm ${customer?.allowLoginFreeUploadLinks ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-amber-200 bg-amber-50 text-amber-800"}`}>{customer?.allowLoginFreeUploadLinks ? "Client allows login-free upload links." : "Client requires credential verification before upload."}</div>
+        {generatedLink ? <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4"><p className="text-sm font-semibold text-emerald-900">New link — copy it now</p><div className="mt-2 flex gap-2"><input readOnly value={generatedLink} className="min-w-0 flex-1 rounded-lg border border-emerald-200 bg-white px-3 py-2 text-sm text-slate-700" /><button type="button" onClick={onCopy} className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white"><Copy size={15} />Copy</button></div><p className="mt-2 text-xs text-emerald-700">For security, the full link is shown only when generated.</p></div> : null}
+      </div>
+      <div className="rounded-2xl border border-slate-200 bg-white p-5"><h3 className="text-base font-bold text-slate-900">Link history</h3>{loading ? <p className="mt-4 text-sm text-slate-500">Loading links…</p> : error && !(links || []).length ? <p className="mt-4 text-sm text-rose-600">{error}</p> : !(links || []).length ? <p className="mt-4 text-sm text-slate-500">No upload links generated.</p> : <div className="mt-4 space-y-3">{links.map((link) => <div key={link._id} className="flex flex-col gap-3 rounded-xl border border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-sm font-semibold text-slate-800">{labelFor(link.orderId)}</p><p className="mt-1 text-xs text-slate-500">{link.mode === "single" ? "Single use" : "Multiple use"} · {link.status} · Used {link.useCount || 0} time(s)</p></div>{link.status === "active" ? <button type="button" onClick={() => onRevoke(link._id)} disabled={revokingId === link._id} className="inline-flex items-center justify-center gap-2 rounded-lg border border-rose-200 px-3 py-2 text-sm font-semibold text-rose-700 disabled:opacity-50"><Ban size={15} />{revokingId === link._id ? "Revoking…" : "Revoke"}</button> : null}</div>)}{error ? <p className="text-sm text-rose-600">{error}</p> : null}{hasMore ? <button type="button" onClick={onLoadMore} disabled={loadingMore} className="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 disabled:opacity-50">{loadingMore ? "Loading…" : "Load more"}</button> : null}</div>}</div>
+    </section>
   );
 };
 

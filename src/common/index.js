@@ -688,6 +688,38 @@ const SummaryApi = {
         url: `${backendDomain}/api/admin/clients`,
         method: "post"
     },
+    adminUploadLinks: {
+        url: `${backendDomain}/api/admin/clients`,
+        method: "get"
+    },
+    generateAdminUploadLink: {
+        url: `${backendDomain}/api/admin/clients`,
+        method: "post"
+    },
+    revokeAdminUploadLink: {
+        url: `${backendDomain}/api/admin/clients`,
+        method: "post"
+    },
+    myUploadLinkPreference: {
+        url: `${backendDomain}/api/my-upload-link-preference`,
+        method: "post"
+    },
+    externalUploadExchange: {
+        url: `${backendDomain}/api/external-upload/exchange`,
+        method: "post"
+    },
+    externalUploadCredentials: {
+        url: `${backendDomain}/api/external-upload/credentials`,
+        method: "post"
+    },
+    externalUploadSession: {
+        url: `${backendDomain}/api/external-upload/session`,
+        method: "get"
+    },
+    externalUploadSubmit: {
+        url: `${backendDomain}/api/external-upload/submit`,
+        method: "post"
+    },
     approveProjectOrder: {
         url: `${backendDomain}/api/admin/projects`,
         method: "post"

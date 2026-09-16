@@ -1,5 +1,6 @@
 import Login from "../pages/Login";
 import RoleBasedHome from "../components/RoleBasedHome";
+import ExternalUploadPage from "../pages/ExternalUploadPage";
 
 // The public marketing site has been removed — the app is portal-only.
 // Only the entry routes survive here: the root landing (redirects to the
@@ -17,5 +18,9 @@ export const publicRoutes = [
   {
     path: "unauthorized",
     element: <div className="flex items-center justify-center min-h-screen text-2xl font-bold">Unauthorized Access</div>
+  },
+  {
+    path: "external-upload",
+    element: <ExternalUploadPage />
   }
 ];

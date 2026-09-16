@@ -96,10 +96,15 @@ export default function ChessPage() {
         >
           <div className="pointer-events-none absolute inset-0 bg-[var(--scrim)]" />
           <div className="relative mx-auto flex w-full max-w-6xl flex-col items-center gap-6">
-            {/* No Back button here — ChessLobby renders the single one for this
-                screen. Two of them used to show at once on the step screens,
-                one leaving the page and one stepping back, with nothing to tell
-                them apart. */}
+            <button
+              type="button"
+              onClick={() => navigate('/games', { replace: true })}
+              className="mr-auto inline-flex w-fit items-center gap-2 rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg)] px-5 py-3 text-lg font-semibold text-[var(--text-primary)] backdrop-blur-md transition hover:bg-[var(--glass-bg-strong)]"
+            >
+              <ArrowLeft className="h-5 w-5" />
+              Back
+            </button>
+
             {myGames.length > 0 && (
               <div className="w-full max-w-xl space-y-3 rounded-[1.5rem] border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] p-4 backdrop-blur-2xl backdrop-saturate-150">
                 <p className="font-semibold text-[var(--text-primary)]">Resume a game</p>
@@ -112,7 +117,7 @@ export default function ChessPage() {
                     <span className="text-[var(--text-primary)]">
                       vs {game.opponentName || 'Unknown player'} <span className="text-[var(--text-muted)]">— playing {game.color}</span>
                     </span>
-                    <span className="text-sm text-[var(--badge-success-fg)] underline">Resume</span>
+                    <span className="text-sm text-emerald-300 underline">Resume</span>
                   </button>
                 ))}
               </div>
@@ -122,7 +127,6 @@ export default function ChessPage() {
               onCreateRoom={createRoom}
               onJoinByCode={joinRoomByCode}
               onFindRandomMatch={findRandomMatch}
-              onExit={() => navigate('/games', { replace: true })}
               status={status}
             />
           </div>
