@@ -17,10 +17,9 @@ import { adminReturnState } from "../helpers/adminReturnNavigation";
 const STATUS_STYLES = {
   New: "bg-slate-100 text-slate-700",
   Contacted: "bg-blue-100 text-blue-800",
-  Qualified: "bg-amber-100 text-amber-800",
-  "Proposal Sent": "bg-indigo-100 text-indigo-800",
+  "Proposal Sent": "bg-amber-100 text-amber-800",
+  Negative: "bg-red-100 text-red-800",
   Won: "bg-emerald-100 text-emerald-800",
-  Lost: "bg-red-100 text-red-800",
 };
 
 // "Won" is the stored/backend status value (leadModel enum); "Matured" is the
@@ -235,10 +234,15 @@ const AdminLeadsPage = () => {
       result = result.filter((lead) => lead.source !== "guest");
     }
 
-    if (statusFilter === "matured") {
-      result = result.filter((lead) => lead.status === "Won");
-    } else if (statusFilter === "not-matured") {
-      result = result.filter((lead) => lead.status !== "Won");
+    if (statusFilter !== "all") {
+      const statusMap = {
+        new: "New",
+        contacted: "Contacted",
+        "proposal-sent": "Proposal Sent",
+        negative: "Negative",
+        matured: "Won",
+      };
+      result = result.filter((lead) => lead.status === statusMap[statusFilter]);
     }
 
     if (query) {
@@ -281,8 +285,11 @@ const AdminLeadsPage = () => {
 
   const statusFilterOptions = [
     { value: "all", label: "All" },
+    { value: "new", label: "New" },
+    { value: "contacted", label: "Contacted" },
+    { value: "proposal-sent", label: "Proposal Sent" },
+    { value: "negative", label: "Negative" },
     { value: "matured", label: "Matured" },
-    { value: "not-matured", label: "Not Matured" },
   ];
 
   return (

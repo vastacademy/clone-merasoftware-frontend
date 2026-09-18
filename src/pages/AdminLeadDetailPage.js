@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
-import { ArrowLeft, Download, Loader2, Mail, MessageSquarePlus, Phone, UserCheck, UserPlus } from "lucide-react";
+import { ArrowLeft, Download, Loader2, Mail, MessageSquarePlus, Pencil, Phone, UserCheck, UserPlus, X } from "lucide-react";
 import SummaryApi from "../common";
 import { logout } from "../store/userSlice";
 import CookieManager from "../utils/cookieManager";
@@ -13,15 +13,16 @@ import AdminWorkspaceShell, { AdminWorkspaceHeader } from "../components/admin/A
 import AdminInfoPill from "../components/admin/AdminInfoPill";
 import { goToAdminReturn } from "../helpers/adminReturnNavigation";
 
-const PIPELINE_STAGES = ["New", "Contacted", "Qualified", "Proposal Sent", "Won", "Lost"];
+// "Won" (Matured) is deliberately excluded — it is system-set only on convert,
+// never a manually selectable follow-up badge.
+const PIPELINE_STAGES = ["New", "Contacted", "Proposal Sent", "Negative"];
 
 const STATUS_STYLES = {
   New: "bg-slate-100 text-slate-700 border-slate-200",
   Contacted: "bg-blue-100 text-blue-800 border-blue-200",
-  Qualified: "bg-amber-100 text-amber-800 border-amber-200",
-  "Proposal Sent": "bg-indigo-100 text-indigo-800 border-indigo-200",
+  "Proposal Sent": "bg-amber-100 text-amber-800 border-amber-200",
+  Negative: "bg-red-100 text-red-800 border-red-200",
   Won: "bg-emerald-100 text-emerald-800 border-emerald-200",
-  Lost: "bg-red-100 text-red-800 border-red-200",
 };
 
 // "Won" is the stored/backend status value (leadModel enum); "Matured" is the
@@ -52,6 +53,10 @@ const AdminLeadDetailPage = () => {
   const [followUpSaving, setFollowUpSaving] = useState(false);
   const [converting, setConverting] = useState(false);
   const [showConvertConfirm, setShowConvertConfirm] = useState(false);
+  const [editingFollowUpId, setEditingFollowUpId] = useState(null);
+  const [editNote, setEditNote] = useState("");
+  const [editBadge, setEditBadge] = useState("");
+  const [editSaving, setEditSaving] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -148,6 +153,60 @@ const AdminLeadDetailPage = () => {
       toast.error("Error adding follow-up");
     } finally {
       setFollowUpSaving(false);
+    }
+  };
+
+  const startEditFollowUp = (item) => {
+    setEditingFollowUpId(item._id);
+    setEditNote(item.note || "");
+    setEditBadge(item.badge || "New");
+  };
+
+  const cancelEditFollowUp = () => {
+    if (editSaving) return;
+    setEditingFollowUpId(null);
+    setEditNote("");
+    setEditBadge("");
+  };
+
+  const handleSaveEditFollowUp = async (event) => {
+    event.preventDefault();
+    if (!editBadge) {
+      toast.error("Please select a stage badge");
+      return;
+    }
+    if (!editNote.trim()) {
+      toast.error("Please write a follow-up note");
+      return;
+    }
+    try {
+      setEditSaving(true);
+      const formData = new FormData();
+      formData.append("action", "editFollowUp");
+      formData.append("followUpId", editingFollowUpId);
+      formData.append("badge", editBadge);
+      formData.append("note", editNote);
+
+      const response = await fetch(`${SummaryApi.updateLead.url}/${leadId}`, {
+        method: SummaryApi.updateLead.method,
+        credentials: "include",
+        body: formData,
+      });
+      const result = await response.json();
+      if (!result.success) {
+        toast.error(result.message || "Failed to update follow-up");
+        return;
+      }
+      toast.success("Follow-up updated");
+      setEditingFollowUpId(null);
+      setEditNote("");
+      setEditBadge("");
+      await fetchLead();
+    } catch (error) {
+      console.error("Error updating follow-up:", error);
+      toast.error("Error updating follow-up");
+    } finally {
+      setEditSaving(false);
     }
   };
 
@@ -380,35 +439,94 @@ const AdminLeadDetailPage = () => {
                   </p>
                 ) : (
                   followUps.map((item, index) => (
-                    <div key={index} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                      <div className="flex flex-wrap items-center gap-2">
-                        {item.badge ? (
-                          <span
-                            className={[
-                              "inline-flex rounded-full border px-3 py-1 text-xs font-semibold",
-                              STATUS_STYLES[item.badge] || STATUS_STYLES.New,
-                            ].join(" ")}
-                          >
-                            {statusLabel(item.badge)}
-                          </span>
-                        ) : null}
-                      </div>
-                      <p className="mt-2 whitespace-pre-wrap text-sm text-slate-800">{item.note}</p>
-                      {item.attachment?.downloadLink ? (
-                        <a
-                          href={item.attachment.downloadLink}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="mt-3 inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
-                        >
-                          <Download size={14} />
-                          <span className="max-w-[200px] truncate">{item.attachment.name || "Attachment"}</span>
-                        </a>
-                      ) : null}
-                      <p className="mt-2 text-xs text-slate-500">
-                        {item.createdBy?.name ? `${item.createdBy.name} · ` : ""}
-                        {formatDateTime(item.createdAt)}
-                      </p>
+                    <div key={item._id || index} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                      {editingFollowUpId === item._id ? (
+                        <form onSubmit={handleSaveEditFollowUp} className="space-y-3">
+                          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                            <select
+                              value={editBadge}
+                              onChange={(e) => setEditBadge(e.target.value)}
+                              className={[
+                                "w-full rounded-2xl border px-4 py-3 text-sm font-semibold outline-none transition focus:ring-4 focus:ring-emerald-100",
+                                STATUS_STYLES[editBadge] || STATUS_STYLES.New,
+                              ].join(" ")}
+                            >
+                              {PIPELINE_STAGES.map((stage) => (
+                                <option key={stage} value={stage}>
+                                  {statusLabel(stage)}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <textarea
+                            value={editNote}
+                            onChange={(e) => setEditNote(e.target.value)}
+                            rows={3}
+                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
+                          />
+                          <div className="flex justify-end gap-2">
+                            <button
+                              type="button"
+                              onClick={cancelEditFollowUp}
+                              disabled={editSaving}
+                              className="inline-flex items-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 disabled:opacity-60"
+                            >
+                              <X size={14} />
+                              Cancel
+                            </button>
+                            <button
+                              type="submit"
+                              disabled={editSaving}
+                              className="inline-flex items-center gap-1.5 rounded-2xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-60"
+                            >
+                              {editSaving ? "Saving..." : "Save"}
+                            </button>
+                          </div>
+                        </form>
+                      ) : (
+                        <>
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <div className="flex flex-wrap items-center gap-2">
+                              {item.badge ? (
+                                <span
+                                  className={[
+                                    "inline-flex rounded-full border px-3 py-1 text-xs font-semibold",
+                                    STATUS_STYLES[item.badge] || STATUS_STYLES.New,
+                                  ].join(" ")}
+                                >
+                                  {statusLabel(item.badge)}
+                                </span>
+                              ) : null}
+                            </div>
+                            {!isConverted ? (
+                              <button
+                                type="button"
+                                onClick={() => startEditFollowUp(item)}
+                                className="inline-flex items-center gap-1 rounded-xl px-2 py-1 text-xs font-semibold text-slate-500 transition hover:bg-slate-200 hover:text-slate-700"
+                              >
+                                <Pencil size={13} />
+                                Edit
+                              </button>
+                            ) : null}
+                          </div>
+                          <p className="mt-2 whitespace-pre-wrap text-sm text-slate-800">{item.note}</p>
+                          {item.attachment?.downloadLink ? (
+                            <a
+                              href={item.attachment.downloadLink}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="mt-3 inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
+                            >
+                              <Download size={14} />
+                              <span className="max-w-[200px] truncate">{item.attachment.name || "Attachment"}</span>
+                            </a>
+                          ) : null}
+                          <p className="mt-2 text-xs text-slate-500">
+                            {item.createdBy?.name ? `${item.createdBy.name} · ` : ""}
+                            {formatDateTime(item.createdAt)}
+                          </p>
+                        </>
+                      )}
                     </div>
                   ))
                 )}
