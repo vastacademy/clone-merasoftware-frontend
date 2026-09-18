@@ -43,7 +43,9 @@ const sortOptions = [
 
 const getLeadLastUpdated = (lead) => lead?.updatedAt || lead?.createdAt || null;
 
-const emptyForm = { name: "", phone: "", email: "", source: "", notes: "" };
+const emptyForm = { name: "", phone: "", email: "", source: "", notes: "", referredByUserId: "" };
+
+const SOURCE_OPTIONS = ["Outbound Call", "Facebook", "Instagram", "Google", "WhatsApp", "Reference"];
 
 const AdminLeadsPage = () => {
   const user = useSelector((state) => state?.user?.user);
@@ -62,6 +64,10 @@ const AdminLeadsPage = () => {
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
   const [leadToDelete, setLeadToDelete] = useState(null);
+  const [referenceQuery, setReferenceQuery] = useState("");
+  const [referenceResults, setReferenceResults] = useState([]);
+  const [referenceSearching, setReferenceSearching] = useState(false);
+  const [selectedReference, setSelectedReference] = useState(null);
 
   const handleLogout = async () => {
     try {
@@ -139,11 +145,61 @@ const AdminLeadsPage = () => {
   const closeAddModal = () => {
     if (saving) return;
     setShowAddModal(false);
+    setReferenceQuery("");
+    setReferenceResults([]);
+    setSelectedReference(null);
   };
 
   const handleFormChange = (field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }));
+    if (field === "source" && value !== "Reference") {
+      setReferenceQuery("");
+      setReferenceResults([]);
+      setSelectedReference(null);
+      setForm((prev) => ({ ...prev, referredByUserId: "" }));
+    }
   };
+
+  const pickReference = (customer) => {
+    setSelectedReference(customer);
+    setForm((prev) => ({ ...prev, referredByUserId: customer._id }));
+    setReferenceResults([]);
+    setReferenceQuery("");
+  };
+
+  const clearReference = () => {
+    setSelectedReference(null);
+    setForm((prev) => ({ ...prev, referredByUserId: "" }));
+  };
+
+  useEffect(() => {
+    if (form.source !== "Reference" || selectedReference || !referenceQuery.trim()) {
+      setReferenceResults([]);
+      return;
+    }
+
+    const handle = setTimeout(async () => {
+      try {
+        setReferenceSearching(true);
+        const response = await fetch(
+          `${SummaryApi.searchCustomers.url}?q=${encodeURIComponent(referenceQuery.trim())}`,
+          {
+            method: SummaryApi.searchCustomers.method,
+            credentials: "include",
+          }
+        );
+        const result = await response.json();
+        setReferenceResults(result.success ? result.data : []);
+      } catch (error) {
+        console.error("Error searching customers:", error);
+        setReferenceResults([]);
+      } finally {
+        setReferenceSearching(false);
+      }
+    }, 350);
+
+    return () => clearTimeout(handle);
+  }, [referenceQuery, form.source, selectedReference]);
 
   const handleCreateLead = async (event) => {
     event.preventDefault();
@@ -174,6 +230,9 @@ const AdminLeadsPage = () => {
 
       toast.success("Lead created successfully");
       setShowAddModal(false);
+      setReferenceQuery("");
+      setReferenceResults([]);
+      setSelectedReference(null);
       await fetchLeads();
     } catch (error) {
       console.error("Error creating lead:", error);
@@ -531,14 +590,70 @@ const AdminLeadsPage = () => {
 
               <div>
                 <label className="mb-1 block text-sm font-semibold text-slate-700">Source</label>
-                <input
-                  type="text"
+                <select
                   value={form.source}
                   onChange={(e) => handleFormChange("source", e.target.value)}
-                  placeholder="e.g. Referral, Website, WhatsApp"
                   className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
-                />
+                >
+                  <option value="">Select source</option>
+                  {SOURCE_OPTIONS.map((option) => (
+                    <option key={option} value={option}>{option}</option>
+                  ))}
+                </select>
               </div>
+
+              {form.source === "Reference" && (
+                <div>
+                  <label className="mb-1 block text-sm font-semibold text-slate-700">Referred By</label>
+                  {selectedReference ? (
+                    <div className="flex items-center justify-between rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+                      <div>
+                        <p className="text-sm font-semibold text-emerald-800">{selectedReference.name}</p>
+                        <p className="text-xs text-emerald-700">{selectedReference.phone || selectedReference.email}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={clearReference}
+                        className="rounded-full p-1 text-emerald-700 transition hover:bg-emerald-100"
+                        aria-label="Remove reference"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={referenceQuery}
+                        onChange={(e) => setReferenceQuery(e.target.value)}
+                        placeholder="Search existing customer by name, phone or email"
+                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
+                      />
+                      {referenceSearching && (
+                        <p className="mt-1 text-xs text-slate-500">Searching...</p>
+                      )}
+                      {referenceResults.length > 0 && (
+                        <div className="absolute z-10 mt-1 w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg">
+                          {referenceResults.map((customer) => (
+                            <button
+                              key={customer._id}
+                              type="button"
+                              onClick={() => pickReference(customer)}
+                              className="flex w-full flex-col px-4 py-2 text-left text-sm hover:bg-slate-50"
+                            >
+                              <span className="font-medium text-slate-800">{customer.name}</span>
+                              <span className="text-xs text-slate-500">{customer.phone || customer.email}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      <p className="mt-1 text-xs text-slate-500">
+                        No match? The name you type in Notes will be saved as plain text instead.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div>
                 <label className="mb-1 block text-sm font-semibold text-slate-700">Notes</label>

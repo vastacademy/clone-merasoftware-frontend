@@ -11,6 +11,7 @@ import AdminCreateServicePage from "../pages/AdminCreateServicePage";
 import AdminCategoryBasePricePage from "../pages/AdminCategoryBasePricePage";
 import AdminFeatureProductsPage from "../pages/AdminFeatureProductsPage";
 import AdminTrashPage from "../pages/AdminTrashPage";
+import AdminMoneyManagementPage from "../pages/AdminMoneyManagementPage";
 
 export const adminRoutes = [
   {
@@ -98,6 +99,14 @@ export const adminRoutes = [
     element: (
       <ProtectedRoute requireRole={['admin']}>
         <AdminTrashPage/>
+      </ProtectedRoute>
+    )
+  },
+  {
+    path: "admin-panel/money-management",
+    element: (
+      <ProtectedRoute requireRole={['admin']}>
+        <AdminMoneyManagementPage/>
       </ProtectedRoute>
     )
   },

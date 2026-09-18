@@ -99,6 +99,7 @@ export const getPaymentMethodText = (method) => ({
   cash: 'Cash',
   bank_transfer: 'Bank transfer',
   combined: 'Wallet + UPI',
+  reward: 'Referral Reward',
 }[method] || 'UPI');
 
 /**

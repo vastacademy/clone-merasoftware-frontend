@@ -767,6 +767,22 @@ const SummaryApi = {
         url: `${backendDomain}/api/admin/leads`,
         method: "post"
     },
+    searchCustomers: {
+        url: `${backendDomain}/api/admin/customers/search`,
+        method: "get"
+    },
+    getAdminSettings: {
+        url: `${backendDomain}/api/admin/settings`,
+        method: "get"
+    },
+    updateAdminSettings: {
+        url: `${backendDomain}/api/admin/settings`,
+        method: "post"
+    },
+    myReferredLeads: {
+        url: `${backendDomain}/api/my-referred-leads`,
+        method: "get"
+    },
     leadDetail: {
         url: `${backendDomain}/api/admin/leads`,
         method: "get"

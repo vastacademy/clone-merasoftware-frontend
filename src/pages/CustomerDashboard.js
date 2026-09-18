@@ -9,7 +9,7 @@ import {
   Wallet,
   TriangleAlert,
   Layers3,
-  BadgeCheck,
+  Users2,
 } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
 import { AnimatedSection, getStaggerDelay } from '../components/PageMotion';
@@ -91,6 +91,7 @@ const CustomerDashboard = () => {
   const context = useContext(Context);
 
   const [orders, setOrders] = useState([]);
+  const [referredLeadsCount, setReferredLeadsCount] = useState(0);
 
   const fetchDashboardData = async () => {
     try {
@@ -109,9 +110,26 @@ const CustomerDashboard = () => {
     }
   };
 
+  const fetchReferredLeadsCount = async () => {
+    try {
+      const response = await fetch(SummaryApi.myReferredLeads.url, {
+        method: SummaryApi.myReferredLeads.method,
+        credentials: 'include',
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        setReferredLeadsCount(Array.isArray(data.data) ? data.data.length : 0);
+      }
+    } catch (error) {
+      console.error('Error fetching referred leads count:', error);
+    }
+  };
+
   useEffect(() => {
     if (user?._id) {
       fetchDashboardData();
+      fetchReferredLeadsCount();
     }
   }, [user?._id]);
 
@@ -163,11 +181,16 @@ const CustomerDashboard = () => {
     [orders]
   );
 
-  const completedCount = useMemo(
-    () => orders.filter((order) => ['completed', 'plan_closed'].includes(getOrderStateCode(order))).length,
-    [orders]
-  );
-
+  const openAlertsCount = pendingApprovalCount + rejectedCount;
+  // OrderPage.js has separate "Pending" and "Rejected" tabs, no combined one —
+  // when both kinds of alert exist, "All orders" is the closest single tab
+  // that still shows everything the tile counted.
+  const openAlertsTab =
+    pendingApprovalCount > 0 && rejectedCount === 0
+      ? 'pending'
+      : rejectedCount > 0 && pendingApprovalCount === 0
+        ? 'rejected'
+        : 'all';
 
   const primaryWorkItem = activeProjects[0] || activePlans[0] || activeProject || null;
   const primaryAction = (() => {
@@ -238,9 +261,17 @@ const CustomerDashboard = () => {
               helper={primaryWorkItem ? activeWorkItemsCount > 1 ? `${activeWorkItemsCount} active items` : primaryAction.label : 'No active work running'}
               to={primaryAction.to} state={customerReturnState('/dashboard')}
             /></AnimatedSection>
-            <AnimatedSection delay={getStaggerDelay(1)} className="h-full"><MetricCard icon={Wallet} label="Wallet balance" value={displayINRCurrency(context?.walletBalance || 0)} helper="Available wallet amount" tone="neutral" /></AnimatedSection>
-            <AnimatedSection delay={getStaggerDelay(2)} className="h-full"><MetricCard icon={BadgeCheck} label="Completed items" value={String(completedCount)} helper="Finished projects and closed plans" tone="neutral" /></AnimatedSection>
-            <AnimatedSection delay={getStaggerDelay(3)} className="h-full"><MetricCard icon={TriangleAlert} label="Open alerts" value={String(pendingApprovalCount + rejectedCount)} helper="Pending approvals and rejected payments" tone="neutral" /></AnimatedSection>
+            <AnimatedSection delay={getStaggerDelay(1)} className="h-full"><MetricCard icon={Wallet} label="Wallet balance" value={displayINRCurrency(context?.walletBalance || 0)} helper="Available wallet amount" tone="neutral" to="/wallet" state={customerReturnState('/dashboard')} /></AnimatedSection>
+            <AnimatedSection delay={getStaggerDelay(2)} className="h-full"><MetricCard
+              icon={TriangleAlert}
+              label="Open alerts"
+              value={String(pendingApprovalCount + rejectedCount)}
+              helper="Pending approvals and rejected payments"
+              tone="neutral"
+              to={openAlertsCount > 0 ? '/order' : undefined}
+              state={openAlertsCount > 0 ? { ...customerReturnState('/dashboard'), initialTab: openAlertsTab } : undefined}
+            /></AnimatedSection>
+            <AnimatedSection delay={getStaggerDelay(3)} className="h-full"><MetricCard icon={Users2} label="People connected" value={String(referredLeadsCount)} helper="Leads you referred" tone="neutral" to="/my-referred-leads" state={customerReturnState('/dashboard')} /></AnimatedSection>
           </div>
 
           <OrderList

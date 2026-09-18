@@ -41,6 +41,7 @@ export const adminSidebarModules = [
     ],
   },
   { id: "trash", label: "Trash", icon: Trash2, live: true, to: "/admin-panel/trash" },
+  { id: "money-management", label: "Money Management", icon: IndianRupee, live: true, to: "/admin-panel/money-management" },
   { id: "upcoming-orders", label: "Upcoming Orders", icon: Layers3, soon: true },
   { id: "upcoming-reports", label: "Upcoming Reports", icon: BarChart3, soon: true },
 ];

@@ -45,6 +45,7 @@ const getPaymentMethodLabel = (paymentMethod) => {
     cash: "Cash",
     bank_transfer: "Bank Transfer",
     combined: "Combined",
+    reward: "Referral Reward",
   };
   return labels[paymentMethod] || "Payment";
 };

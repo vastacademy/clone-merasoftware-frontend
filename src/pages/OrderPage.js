@@ -192,10 +192,12 @@ const OrdersPage = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
-  const [activeTab, setActiveTab] = useState('all');
-  const [activeProject, setActiveProject] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
+  // Lets a caller (e.g. the Dashboard "Open alerts" tile) deep-link straight
+  // into a specific tab instead of always landing on "All orders".
+  const [activeTab, setActiveTab] = useState(location.state?.initialTab || 'all');
+  const [activeProject, setActiveProject] = useState(null);
 
   useEffect(() => {
     fetchOrders();

@@ -25,6 +25,7 @@ import SetNewPassword from "../pages/SetNewPassword";
 import CustomerDocuments from "../pages/CustomerDocuments";
 import StartNewWebsiteBuild from "../pages/StartNewWebsiteBuild";
 import StartNewWebsiteCustomize from "../pages/StartNewWebsiteCustomize";
+import MyReferredLeadsPage from "../pages/MyReferredLeadsPage";
 
 const CustomerProtectedRoute = ({ children }) => (
   <ProtectedRoute requireRole={['customer']}>
@@ -150,6 +151,14 @@ export const customerRoutes = [
     element: (
       <CustomerProtectedRoute>
         <WalletDetails/>
+      </CustomerProtectedRoute>
+    )
+  },
+  {
+    path: "my-referred-leads",
+    element: (
+      <CustomerProtectedRoute>
+        <MyReferredLeadsPage/>
       </CustomerProtectedRoute>
     )
   },
