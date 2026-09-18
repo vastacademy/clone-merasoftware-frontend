@@ -6,7 +6,7 @@ import {
   ExternalLink, ChevronDown
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { getOrderCategory, getOrderDisplayName } from '../helpers/orderPresentation';
+import { getOrderCategoryLabel, getOrderDisplayName } from '../helpers/orderPresentation';
 import SummaryApi from '../common';
 import TriangleMazeLoader from '../components/TriangleMazeLoader';
 import DashboardLayout from '../components/DashboardLayout';
@@ -860,9 +860,9 @@ const ProjectDetails = ({ isAdminView = false }) => {
     : isProjectComplete
       ? { badge: null, title: 'This project is complete' }
       : order.hasUnpaidInvoice
-        ? { badge: 'Payment due', title: 'Available once the due payment is recorded' }
+        ? { badge: 'Payment due', title: 'You can upload data after payment is received' }
         : isOrderPendingApproval
-          ? { badge: 'Pending', title: 'Available after payment is approved' }
+          ? { badge: 'Pending', title: 'You can upload data after payment is confirmed' }
           : { badge: null, title: undefined };
 
   return (
@@ -893,7 +893,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
                 {getOrderDisplayName(order)}
               </h1>
               <p className={g('mt-1 text-base text-[var(--text-primary)]', 'mt-1 text-base text-[var(--text-secondary)] sm:text-lg')}>
-                {getOrderCategory(order, 'Project').split('_').join(' ')}
+                {getOrderCategoryLabel(order, 'Project')}
               </p>
             </div>
           </div>
@@ -949,9 +949,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
                         {Number(refund.amount || 0).toLocaleString('en-IN')}
                         {refund.method === 'wallet'
                           ? ' (added to your wallet)'
-                          : refund.referenceId
-                            ? ` (reference: ${refund.referenceId})`
-                            : ''}
+                          : ''}
                       </p>
                     ))}
                   </div>
@@ -964,12 +962,12 @@ const ProjectDetails = ({ isAdminView = false }) => {
             <div className={g(
               'mb-6 rounded-2xl border border-emerald-300 bg-emerald-50 p-4', 'mb-6 rounded-2xl border border-[var(--badge-success-border)] bg-[var(--badge-success-bg)] p-4 backdrop-blur-md')}>
               <p className={g('text-base font-semibold text-emerald-800', 'text-base font-semibold text-[var(--badge-success-fg)]')}>
-                Payment Submitted — Awaiting Approval
+                Payment received
               </p>
               <p className={g('mt-1 text-sm text-emerald-700', 'mt-1 text-sm text-[var(--badge-success-fg)]')}>
                 {order.pendingPayment?.amount
-                  ? `Your payment of ₹${Number(order.pendingPayment.amount).toLocaleString('en-IN')} has been submitted and is awaiting admin approval (usually 1-4 hours). Some actions are unavailable until it is approved.`
-                  : 'Your payment has been submitted and is awaiting admin approval (usually 1-4 hours). Some actions are unavailable until it is approved.'}
+                  ? `We have received your payment of ₹${Number(order.pendingPayment.amount).toLocaleString('en-IN')}. We’ll let you know when it is confirmed.`
+                  : 'We have received your payment. We’ll let you know when it is confirmed.'}
               </p>
             </div>
           )}
@@ -978,11 +976,10 @@ const ProjectDetails = ({ isAdminView = false }) => {
             <div className={g(
               'mb-6 rounded-2xl border border-amber-300 bg-amber-50 p-4', 'mb-6 rounded-2xl border border-[var(--badge-pending-border)] bg-[var(--badge-pending-bg)] p-4 backdrop-blur-md')}>
               <p className={g('text-base font-semibold text-amber-800', 'text-base font-semibold text-[var(--badge-pending-fg)]')}>
-                Payment Pending
+                Payment due
               </p>
               <p className={g('mt-1 text-sm text-amber-700', 'mt-1 text-sm text-[var(--badge-pending-fg)]')}>
-                This project is active, but invoice {order.unpaidInvoice?.invoiceNumber} (₹{Number(order.unpaidInvoice?.amount || 0).toLocaleString('en-IN')}) is still unpaid.
-                Some actions are unavailable until payment is recorded.
+                ₹{Number(order.unpaidInvoice?.amount || 0).toLocaleString('en-IN')} is due for this project. Pay now to continue.
               </p>
               {order.unpaidInvoice?._id && (
                 <button
@@ -993,7 +990,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
                   className={g(
                     'mt-2 text-sm font-semibold text-amber-800 underline underline-offset-2 transition hover:text-amber-900', 'mt-2 text-sm font-semibold text-[var(--badge-pending-fg)] underline underline-offset-2 transition hover:text-[var(--text-primary)]')}
                 >
-                  Proceed for payment
+                  Pay now
                 </button>
               )}
             </div>
@@ -1178,7 +1175,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
                     <div className={g('flex flex-col gap-2 border-b border-[var(--glass-border)] pb-4 sm:flex-row sm:items-center sm:justify-between', 'flex flex-col gap-2 border-b border-[var(--glass-border)] pb-4 sm:flex-row sm:items-center sm:justify-between')}>
                       <div>
                         <p className={g('text-sm font-medium text-[var(--text-primary)]', 'text-sm font-medium text-[var(--text-secondary)]')}>Progress Timeline</p>
-                        <h2 className={g('mt-1 text-xl font-bold text-[var(--text-primary)]', 'mt-1 text-xl font-bold text-[var(--text-primary)]')}>Click any checkpoint to open its record</h2>
+                        <h2 className={g('mt-1 text-xl font-bold text-[var(--text-primary)]', 'mt-1 text-xl font-bold text-[var(--text-primary)]')}>Select a checkpoint to see its updates</h2>
                       </div>
                       <span className={g('rounded-full bg-white px-3 py-1 text-sm font-semibold text-[var(--text-primary)]', 'rounded-full border border-[var(--glass-border)] bg-[var(--glass-bg)] px-3 py-1 text-sm font-semibold text-[var(--text-primary)] backdrop-blur-md')}>
                         {timelineNodes.length} stages
@@ -1358,7 +1355,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
                     </div>
                   ) : (
                     <div className={g('mt-4 rounded-2xl border border-dashed border-[var(--glass-border)] bg-slate-50 p-4 text-base text-[var(--text-primary)]', 'relative mt-4 rounded-2xl border border-dashed border-[var(--glass-border)] bg-[var(--glass-bg)] p-4 text-base text-[var(--text-secondary)]')}>
-                      Open the timeline to select a node.
+                      Open the timeline to select a checkpoint.
                     </div>
                   )}
                 </section>
@@ -1369,7 +1366,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
                     <div>
                       <p className={g('text-sm font-medium text-[var(--text-primary)]', 'text-sm font-medium text-[var(--text-secondary)]')}>Checkpoint Details</p>
                       <h2 className={g('mt-1 text-lg font-semibold text-[var(--text-primary)]', 'mt-1 text-lg font-semibold text-[var(--text-primary)]')}>
-                        {selectedNode ? selectedNode.title : 'No node selected'}
+                        {selectedNode ? selectedNode.title : 'Select a checkpoint'}
                       </h2>
                     </div>
                     {selectedNode ? (
@@ -1402,7 +1399,7 @@ const ProjectDetails = ({ isAdminView = false }) => {
                       </div>
 
                       <div className={g('rounded-[1.25rem] border border-[var(--glass-border)] bg-slate-50 p-4', 'rounded-[1.25rem] border border-[var(--glass-border)] bg-[var(--glass-bg)] p-4')}>
-                        <p className={g('text-base font-semibold text-[var(--text-primary)]', 'text-base font-semibold text-[var(--text-primary)]')}>Textual Record</p>
+                        <p className={g('text-base font-semibold text-[var(--text-primary)]', 'text-base font-semibold text-[var(--text-primary)]')}>Updates</p>
                         <div className="mt-3 space-y-3">
                           {selectedNodeMessages.length > 0 ? (
                             selectedNodeMessages.map((message, index) => (
@@ -1416,19 +1413,19 @@ const ProjectDetails = ({ isAdminView = false }) => {
                                   </p>
                                 </div>
                                 <p className={g('mt-2 whitespace-pre-line text-base text-[var(--text-primary)]', 'mt-2 whitespace-pre-line text-base text-[var(--text-secondary)]')}>
-                                  {message.message || message.remark || message.notes || 'No textual details available.'}
+                                  {message.message || message.remark || message.notes || 'No update details have been added.'}
                                 </p>
                               </div>
                             ))
                           ) : (
-                            <p className={g('text-base text-[var(--text-primary)]', 'text-base text-[var(--text-secondary)]')}>No textual record is linked to this node yet.</p>
+                            <p className={g('text-base text-[var(--text-primary)]', 'text-base text-[var(--text-secondary)]')}>No updates have been added for this checkpoint yet.</p>
                           )}
                         </div>
                       </div>
                     </div>
                   ) : (
                     <div className={g('mt-4 rounded-2xl border border-[var(--glass-border)] bg-slate-50 p-4 text-base text-[var(--text-primary)]', 'relative mt-4 rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg)] p-4 text-base text-[var(--text-secondary)]')}>
-                      Timeline data is not available yet.
+                      Project updates will appear here when they are added.
                     </div>
                   )}
                 </section>

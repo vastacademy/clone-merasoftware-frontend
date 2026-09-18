@@ -18,7 +18,7 @@ import Badge from '../components/Badge';
 import GlassButton from '../components/GlassButton';
 import { OrderList } from '../components/OrderListRow';
 import { isProjectItem, isPlanItem, PROJECT_CATEGORIES } from '../helpers/orderType';
-import { getOrderCategory, getOrderCategoryLabel, getOrderDisplayName, getItemStatusMeta } from '../helpers/orderPresentation';
+import { getOrderCategory, getOrderDisplayName, getItemStatusMeta } from '../helpers/orderPresentation';
 import { customerChildState } from '../helpers/customerReturnNavigation';
 
 // Display label for one order. Derived by backend/helpers/orderStatusEngine.js and delivered on
@@ -106,10 +106,6 @@ const getPurchaseTypeLabel = (order) => {
 // Purchase history shows the same orders as the projects list against its own
 // columns. That difference was the whole reason this page had a second copy of
 // the list panel; now it is five lines of data.
-//
-// These headers are what names each value in a row, which is why the rows themselves no
-// longer repeat the names underneath. The panel's old "Total: n" chip went for the same
-// reason — the All orders tab already carries that count in its label.
 const PURCHASE_COLUMNS = [
   { label: 'Order', className: 'col-span-12 lg:col-span-5' },
   { label: 'Type', className: 'col-span-6 lg:col-span-2' },
@@ -127,7 +123,7 @@ const OrderRow = ({ order, navigate, location, formatDate }) => {
   const purchaseType = getPurchaseTypeLabel(order);
   const isProject = isProjectItem(order);
   const isPlan = isPlanItem(order);
-  const category = getOrderCategoryLabel(order);
+  const category = getOrderCategory(order, 'Unknown type').split('_').join(' ');
   const price = displayINRCurrency(order.price || order.totalPrice || 0);
 
   return (
@@ -141,13 +137,16 @@ const OrderRow = ({ order, navigate, location, formatDate }) => {
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border-[length:var(--glass-border-width)] border-[var(--glass-border-strong)] bg-[var(--glass-bg)] text-[var(--text-primary)] backdrop-blur-md">
             {isProject ? <LayoutGrid className="h-5 w-5" /> : isPlan ? <Layers3 className="h-5 w-5" /> : <FileText className="h-5 w-5" />}
           </div>
-          {/* The type badge that sat above the name is gone: the row's own Type column,
-              four columns to the right, already carries that same word. */}
           <div className="min-w-0">
-            <h3 className="truncate text-lg font-semibold text-[var(--text-primary)]">
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge tone="neutral" className="uppercase">
+                {purchaseType}
+              </Badge>
+            </div>
+            <h3 className="mt-2 truncate text-lg font-semibold text-[var(--text-primary)]">
               {getOrderDisplayName(order)}
             </h3>
-            {category ? <p className="mt-1 truncate text-sm text-[var(--text-secondary)]">{category}</p> : null}
+            <p className="mt-1 truncate text-sm text-[var(--text-secondary)]">{category}</p>
             <p className="mt-2 text-sm text-[var(--text-secondary)] sm:hidden">
               Purchased {formatDate(order.createdAt)}
             </p>
@@ -155,13 +154,13 @@ const OrderRow = ({ order, navigate, location, formatDate }) => {
         </div>
       </div>
 
-      {/* Each column is already named by the header above it, so naming it again inside
-          every row said nothing twice: "Purchased" over a date with "Purchased on" beneath
-          it, "Price" over an amount with "Price" beneath it, and "Type" over the word
-          Project with "Project purchase" beneath that — a sentence explaining a word by
-          repeating it. The values stay exactly as they were; only the restated labels go. */}
       <div className="col-span-6 lg:col-span-2 lg:flex lg:items-center">
-        <p className="text-base font-semibold text-[var(--text-primary)]">{purchaseType}</p>
+        <div className="space-y-1">
+          <p className="text-base font-semibold text-[var(--text-primary)]">{purchaseType}</p>
+          <p className="text-sm text-[var(--text-secondary)]">
+            {isPlan ? 'Plan purchase' : isProject ? 'Project purchase' : 'Order purchase'}
+          </p>
+        </div>
       </div>
 
       <div className="col-span-6 lg:col-span-2 lg:flex lg:items-center">
@@ -169,15 +168,19 @@ const OrderRow = ({ order, navigate, location, formatDate }) => {
       </div>
 
       <div className="col-span-6 lg:col-span-2 lg:flex lg:items-center">
-        <div className="flex items-center gap-2 text-base font-semibold text-[var(--text-primary)]">
-          <Calendar size={14} />
-          <span>{formatDate(order.createdAt)}</span>
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 text-base font-semibold text-[var(--text-primary)]">
+            <Calendar size={14} />
+            <span>{formatDate(order.createdAt)}</span>
+          </div>
+          <p className="text-sm text-[var(--text-secondary)]">Purchased on</p>
         </div>
       </div>
 
       <div className="col-span-6 flex items-center justify-between lg:col-span-1 lg:justify-end">
         <div className="text-right">
           <p className="text-base font-semibold text-[var(--text-primary)]">{price}</p>
+          <p className="text-sm text-[var(--text-secondary)]">Price</p>
           <div className="mt-1 flex lg:justify-end">
             <PaymentStatusChip order={order} />
           </div>
@@ -309,11 +312,8 @@ const OrdersPage = () => {
             <h1 className="text-2xl font-bold tracking-tight text-[var(--text-primary)] sm:text-3xl lg:text-4xl">
               Purchase history
             </h1>
-            {/* Was a note written for whoever built the page — it listed the table's own
-                column names back to the reader and ended with "Detail pages stay unchanged",
-                which is a development status, not something a customer has any use for. */}
             <p className="mx-auto mt-3 max-w-2xl text-base text-[var(--text-secondary)] sm:text-lg">
-              Everything you have bought, and where each one stands.
+              Clean order records with price, purchase date, type, and current status. Detail pages stay unchanged.
             </p>
           </div>
 
@@ -332,10 +332,13 @@ const OrdersPage = () => {
               />
             )}
             actions={(
-              <GlassButton onClick={fetchOrders}>
-                <RefreshCw size={16} />
-                Refresh
-              </GlassButton>
+              <>
+                <Badge tone="neutral">Total: {orders.length}</Badge>
+                <GlassButton onClick={fetchOrders}>
+                  <RefreshCw size={16} />
+                  Refresh
+                </GlassButton>
+              </>
             )}
             items={filteredOrders}
             loading={loading}

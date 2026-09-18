@@ -15,7 +15,7 @@ import Modal from '../components/Modal';
 import { getOrderDisplayName } from '../helpers/orderPresentation';
 import { isPlanItem } from '../helpers/orderType';
 import { goToCustomerReturn } from '../helpers/customerReturnNavigation';
-import { getInvoiceStatusText, isStatementInvoice, getPaymentMethodText } from '../helpers/invoicePresentation';
+import { getInvoiceStatusText, isStatementInvoice } from '../helpers/invoicePresentation';
 
 const generateTransactionId = () =>
   `TXN${Date.now()}${Math.floor(Math.random() * 1000)}`;
@@ -33,6 +33,14 @@ const formatDate = (date) => {
 // almost-identical one, and PlanDetails kept none and printed the raw database value.
 // It now comes from helpers/invoicePresentation.js so one status reads the same on
 // every screen. The tones were already Badge tones and are unchanged.
+
+// TEMP UI-preview only — matches OrderDetailPage.js's DUMMY_INVOICES. Remove both once
+// the backend creates a real invoice per order.
+const DUMMY_INVOICES = {
+  'dummy-1': { _id: 'dummy-1', invoiceNumber: 'INV-202604-0001', amount: 3000, status: 'paid', invoiceDate: '2026-05-01', dueDate: '2026-05-01', paidDate: '2026-05-21', paymentMethod: 'upi' },
+  'dummy-2': { _id: 'dummy-2', invoiceNumber: 'INV-202605-0002', amount: 3000, status: 'unpaid', invoiceDate: '2026-05-25', dueDate: '2026-06-01' },
+  'dummy-3': { _id: 'dummy-3', invoiceNumber: 'INV-202606-0003', amount: 3000, status: 'overdue', invoiceDate: '2026-05-25', dueDate: '2026-06-01' },
+};
 
 const InvoiceDetailPage = () => {
   const { invoiceId } = useParams();
@@ -53,6 +61,11 @@ const InvoiceDetailPage = () => {
   const fetchInvoice = async () => {
     try {
       setLoading(true);
+
+      if (DUMMY_INVOICES[invoiceId]) {
+        setInvoice(DUMMY_INVOICES[invoiceId]);
+        return;
+      }
 
       const response = await fetch(SummaryApi.myPaymentWorkspace.url, {
         method: SummaryApi.myPaymentWorkspace.method,
@@ -90,7 +103,7 @@ const InvoiceDetailPage = () => {
   const orderIdForPay = invoice?.orderId?._id || invoice?.orderId;
   const isInstallmentInvoice = Boolean(invoice?.installmentNumber);
   const isStatement = isStatementInvoice(invoice);
-  const isServerInvoice = Boolean(invoice?._id);
+  const isServerInvoice = invoice?._id && !String(invoice._id).startsWith('dummy-');
   const invoiceDocumentUrl = isServerInvoice ? `${SummaryApi.invoices.viewDocument.url}/${invoice._id}` : null;
 
   const handleShareInvoice = async () => {
@@ -182,8 +195,9 @@ const InvoiceDetailPage = () => {
             orderId: orderIdForPay,
             amount: amountDueNow,
             installmentNumber: isInstallmentInvoice ? invoice.installmentNumber : null,
-            // Invoice Detail only receives server-backed invoices.
-            invoiceId: invoice._id,
+            // A real plan invoice → the backend also marks the invoice document paid (invoice mode).
+            // The temp DUMMY_INVOICES have string ids and no server record; skip invoiceId for those.
+            invoiceId: String(invoice._id).startsWith('dummy-') ? null : invoice._id,
           }),
         });
         const payData = await payRes.json();
@@ -280,11 +294,14 @@ const InvoiceDetailPage = () => {
                   status pill. Same eyebrow treatment as Modal and WalletDetails. */}
               <p className="inline-flex items-center gap-2 text-sm font-bold uppercase text-[var(--eyebrow-fg)]">
                 <Sparkles className="h-3.5 w-3.5" />
-                {isStatement ? 'Summary' : 'Bill'}
+                Invoice
               </p>
               <h1 className="mt-3 text-2xl font-bold tracking-tight text-[var(--text-primary)] sm:text-3xl lg:text-4xl">
-                {getOrderDisplayName(invoice.orderId, 'Your plan')}
+                {invoice.invoiceNumber}
               </h1>
+              <p className="mt-1 text-base text-[var(--text-secondary)] sm:text-lg">
+                {getOrderDisplayName(invoice.orderId, 'Plan')}
+              </p>
             </div>
           </div>
 
@@ -314,8 +331,8 @@ const InvoiceDetailPage = () => {
               )}
               {invoice.paymentMethod && (
                 <div className="flex items-center justify-between rounded-2xl bg-[var(--glass-bg-subtle)] px-4 py-2.5 text-base">
-                  <span className="text-[var(--text-secondary)]">How you paid</span>
-                  <span className="font-medium text-[var(--text-primary)]">{getPaymentMethodText(invoice.paymentMethod)}</span>
+                  <span className="text-[var(--text-secondary)]">Payment Method</span>
+                  <span className="font-medium capitalize text-[var(--text-primary)]">{invoice.paymentMethod}</span>
                 </div>
               )}
             </div>
@@ -363,7 +380,7 @@ const InvoiceDetailPage = () => {
         open={showPayment}
         onClose={payProcessing ? undefined : () => { setShowPayment(false); setShowQR(false); }}
         eyebrow="Payment"
-        title={showQR ? `Scan & Pay ${displayINRCurrency(amountDueNow)}` : `Pay ${displayINRCurrency(amountDueNow)}`}
+        title={showQR ? `Scan & Pay ${displayINRCurrency(amountDueNow)}` : `Pay Invoice ${invoice.invoiceNumber}`}
         footer={showQR ? (
           <div className="flex gap-3">
             <GlassButton onClick={() => setShowQR(false)} disabled={payProcessing} className="flex-1 disabled:opacity-60" strong>

@@ -7,7 +7,7 @@ import {
   getItemStatusMeta,
   getItemSummary,
   getItemTypeLabel,
-  getOrderCategoryLabel,
+  getOrderCategory,
   getOrderDisplayName,
 } from '../helpers/orderPresentation';
 
@@ -60,12 +60,12 @@ const OrderListRow = ({ order, onClick }) => {
   const isProject = isProjectItem(order);
   const isPlan = isPlanItem(order);
   const summary = getItemSummary(order);
-  const category = getOrderCategoryLabel(order);
-  // A plan's remaining allowance used to be computed here as well as in getItemSummary — the
-  // same legacy catalogue read (productId.updateCount), which is not where a service plan's
-  // allowance lives, so every service row said "0 update(s) left". It is gone: the chip beside
-  // the name already carries the helper's answer, and it said the same thing three times in
-  // one row.
+  const category = getOrderCategory(order, 'Unknown type').split('_').join(' ');
+  const currentValue = isPlan
+    ? (order.productId?.isMonthlyRenewablePlan || order.productId?.isMonthlyLimitedPlan
+      ? `${order.totalYearlyDaysRemaining || 0} day(s) left`
+      : `${Math.max(0, Number(order.productId?.updateCount || 0) - Number(order.updatesUsed || 0))} update(s) left`)
+    : null;
 
   return (
     <button
@@ -96,7 +96,7 @@ const OrderListRow = ({ order, onClick }) => {
                   itself, so a retired or deleted plan never blanks a purchase history row. */}
               {getOrderDisplayName(order)}
             </h3>
-            {category ? <p className="mt-1 truncate text-sm text-[var(--text-secondary)]">{category}</p> : null}
+            <p className="mt-1 truncate text-sm text-[var(--text-secondary)]">{category}</p>
             <p className="mt-2 text-sm text-[var(--text-secondary)] sm:hidden">
               Updated {formatDate(order.updatedAt || order.createdAt)}
             </p>
@@ -120,10 +120,20 @@ const OrderListRow = ({ order, onClick }) => {
       </div>
 
       <div className="col-span-6 lg:col-span-2 lg:flex lg:items-center">
-        <p className="text-base font-semibold text-[var(--text-primary)]">{formatDate(order.updatedAt || order.createdAt)}</p>
+        <div className="space-y-1">
+          <p className="text-base font-semibold text-[var(--text-primary)]">{formatDate(order.updatedAt || order.createdAt)}</p>
+          {isPlan && <p className="text-sm text-[var(--text-secondary)]">{currentValue}</p>}
+        </div>
       </div>
 
       <div className="col-span-6 flex items-center justify-end lg:col-span-1">
+        <div className="hidden text-right lg:block">
+          {isPlan && (
+            <p className="text-sm text-[var(--text-secondary)]">
+              {currentValue}
+            </p>
+          )}
+        </div>
         <ArrowRight className="h-5 w-5 text-[var(--text-muted)]" />
       </div>
     </button>

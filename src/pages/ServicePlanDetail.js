@@ -453,7 +453,7 @@ const ServicePlanDetail = () => {
               <>
                 <h2 className="text-xl font-bold text-[var(--text-primary)]">Pay {formatPrice(currentUpiPart)}</h2>
                 <p className="mt-1 text-sm text-[var(--text-secondary)]">
-                  Scan the QR, then enter your UPI transaction ID below.
+                  Scan the QR, then enter the UPI reference number from your payment app.
                 </p>
 
                 {/* Stays white in every theme on purpose: a QR code is read by a camera,
@@ -464,7 +464,7 @@ const ServicePlanDetail = () => {
 
                 <label className="mt-4 block">
                   <span className="mb-1.5 block text-base font-semibold text-[var(--text-secondary)]">
-                    UPI Transaction ID
+                    UPI Reference Number
                   </span>
                   <input
                     className="w-full rounded-xl border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] px-4 py-3 text-base text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)] focus:border-[var(--badge-success-fg)] focus:ring-4 focus:ring-[var(--badge-success-bg)]"
@@ -483,7 +483,7 @@ const ServicePlanDetail = () => {
                     disabled={payProcessing || upiTransactionId.trim().length < 12}
                     className="inline-flex flex-1 items-center justify-center rounded-2xl bg-[rgb(var(--ink-rgb))] px-4 py-3 text-base font-semibold text-[var(--page-bg)] transition hover:bg-[rgb(var(--ink-rgb)/0.85)] disabled:cursor-not-allowed disabled:bg-[var(--glass-bg-strong)] disabled:text-[var(--text-muted)]"
                   >
-                    {payProcessing ? 'Submitting…' : 'Submit for Approval'}
+                    {payProcessing ? 'Submitting…' : 'Send payment for checking'}
                   </button>
                   <button
                     type="button"
@@ -511,7 +511,7 @@ const ServicePlanDetail = () => {
             <p className="mt-2 text-base text-[var(--text-secondary)]">
               {currentUpiPart === 0
                 ? `${plan.serviceName} has been activated.`
-                : 'Your payment is awaiting admin approval, usually within a few hours.'}
+                : 'We’re checking your payment. We’ll let you know when it is confirmed.'}
             </p>
             <button
               type="button"

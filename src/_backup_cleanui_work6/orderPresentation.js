@@ -5,7 +5,6 @@
 
 import { isProjectItem, isPlanItem } from './orderType';
 import { isOrderApproved } from './orderVisibility';
-import projectCategoryOptions from './projectCategoryOptions';
 
 // The name to show for a purchased order, in order of trustworthiness.
 //
@@ -36,16 +35,6 @@ export const getOrderDisplayName = (order, fallback = 'Untitled') => {
 // product is detached. Service and legacy orders continue to read productId.
 export const getOrderCategory = (order, fallback = '') =>
   order?.projectSnapshot?.category || order?.productId?.category || fallback;
-
-// Category is a property of a custom project. A service plan has no project category, so a
-// missing catalogue product must not turn it into the customer-facing lie "Unknown type".
-// Type is already presented separately as Plan. The project labels come from the existing
-// project-category SSOT; an unrecognised/missing value is deliberately blank rather than raw.
-export const getOrderCategoryLabel = (order, fallback = '') => {
-  if (!isProjectItem(order)) return '';
-  const value = getOrderCategory(order);
-  return projectCategoryOptions.find((option) => option.value === value)?.label || fallback;
-};
 
 // Remaining validity days for a plan order. Monthly plans use currentMonthExpiryDate;
 // other plans derive from createdAt + validityPeriod.
@@ -197,31 +186,13 @@ export const getItemStatusMeta = (order) => {
 // getItemStatusMeta so the summary never contradicts the status badge.
 export const getItemSummary = (order) => {
   if (isPlanItem(order)) {
-    // A purchased service carries its own allowance, frozen on the order at purchase
-    // (servicePlanSnapshot) with the spend counted in serviceAccessUsedInCycle. This branch read
-    // productId.updateCount instead — the LEGACY plan's catalogue field, which no live order uses
-    // (0 legacy orders) and which a service plan does not have. So every service row reported
-    // "Plan details available", or nothing at all, while its real allowance sat unread on the
-    // order. Same misread that made the plan page show "0 / 0"; the figure is not recalculated
-    // here, only read from where it is kept.
-    if (order.isServicePlan) {
-      const snapshot = order.servicePlanSnapshot || {};
-      // A reminder service grants no portal access, and an unlimited one has nothing to count
-      // down — neither is "0 left", so neither gets a number.
-      if (snapshot.limitScope === 'unlimited' || snapshot.serviceBehavior === 'reminder_only') return '';
-      const allowed = Number(snapshot.portalAccessCount || 0);
-      if (!allowed) return '';
-      const used = Number(order.serviceAccessUsedInCycle || 0);
-      return `${Math.max(0, allowed - used)} of ${allowed} left`;
-    }
-
     if (order.productId?.isMonthlyRenewablePlan || order.productId?.isMonthlyLimitedPlan) {
       return `${order.totalYearlyDaysRemaining || 0} day(s) left`;
     }
 
     const totalUpdates = Number(order.productId?.updateCount || 0);
     const usedUpdates = Number(order.updatesUsed || 0);
-    return totalUpdates > 0 ? `${Math.max(0, totalUpdates - usedUpdates)} update(s) left` : '';
+    return totalUpdates > 0 ? `${Math.max(0, totalUpdates - usedUpdates)} update(s) left` : 'Plan details available';
   }
 
   if (isProjectItem(order)) {

@@ -11,8 +11,6 @@ import TriangleMazeLoader from '../components/TriangleMazeLoader';
 import UpdateRequestModal from '../components/UpdateRequestModal';
 import SummaryApi from '../common';
 import { isPlanItem } from '../helpers/orderType';
-import { getInvoiceStatusText, isStatementInvoice } from '../helpers/invoicePresentation';
-import { getNextCycleOutcome, getTimeUntilText, getTermRemainingText, CYCLE_OUTCOME } from '../helpers/servicePlanCycle';
 import { goToCustomerReturn } from '../helpers/customerReturnNavigation';
 import UploadedDataList from '../components/UploadedDataList';
 import { downloadAuthenticatedFile } from '../helpers/downloadFile';
@@ -279,67 +277,16 @@ const PlanDetails = ({ isProjectServiceView = false }) => {
     plan.orderItems?.[0]?.name ||
     'Plan';
 
-  // Where the allowance is read from is decided by WHAT KIND of order this is — the same
-  // three-way answer backend/helpers/uploadType.js gives, because an order's allowance and
-  // its display of that allowance must not come from different places.
-  //
-  // This was the page's central bug. getPlanVisualStatus() above already reads a service
-  // plan correctly (from servicePlanSnapshot, frozen on the order), but the counter below
-  // read `product.updateCount` — the LEGACY plan's field, which lives on the catalogue
-  // product. A service plan has no such field, so the donut showed "0 / 0" and "Total
-  // updates granted: 0" on a plan whose own description promises one update a month. The
-  // badge said "Cycle limit used" while the counter said nothing had been granted: one
-  // file, two sources, three contradicting answers on screen.
-  //
-  // Nothing about the allowance itself changes here — only which field is read.
-  const isServiceKind = Boolean(plan.isServicePlan && plan.servicePlanSnapshot);
+  const purchasedCategory =
+    product.category || (plan.isServicePlan ? plan.servicePlanSnapshot?.planType : null);
 
-  // Whether the allowance comes back, and when — the same question the renewal cron asks.
-  const nextCycle = getNextCycleOutcome(plan);
-
-  // A statement is the whole plan stated once; the rest are the bills it is made of. They are
-  // separated here rather than in the markup so the "is this a bill?" question is asked in one
-  // place, by the same helper the invoice pages use.
-  const serviceInvoices = plan.serviceInvoices || [];
-  const statementInvoice = serviceInvoices.find(isStatementInvoice) || null;
-  const billedInvoices = serviceInvoices.filter((invoice) => !isStatementInvoice(invoice));
-  // amountPaid is the running total the payment helpers maintain on the invoice, so what has
-  // arrived and what is still owed are read, never recomputed from the bills below.
-  const statementPaid = Number(statementInvoice?.amountPaid || 0);
-  const statementDue = Math.max(0, Number(statementInvoice?.amount || 0) - statementPaid);
-
-  // How much of the PLAN's term is left. Deliberately computed next to nextCycle, because the
-  // two answer different questions and the page used to blur them: the cycle line said when the
-  // customer could send again, while this tile showed the whole plan's day count under the label
-  // "Days left". A service plan with no end date has no term to count down, and says so instead.
-  const termRemaining = getTermRemainingText(plan.servicePlanEndDate);
-
-  // A service plan's allowance is per cycle, and so is its counter: status.accessLimit /
-  // accessUsed come from the snapshot and serviceAccessUsedInCycle. An unlimited or
-  // reminder-only service has no number to count, which is why totalUpdates can be null
-  // rather than 0 — "no limit" and "none granted" are different facts and must not render
-  // as the same zero.
-  const totalUpdates = isServiceKind
-    ? (status.isUnlimited || status.isReminderOnly ? null : status.accessLimit)
-    : status.isRecurring
-      ? (plan.currentMonthUpdatesLimit || product.monthlyUpdateLimit || 1)
-      : (product.updateCount || 0);
-  const usedUpdates = isServiceKind
-    ? status.accessUsed
-    : status.isRecurring
-      ? (plan.currentMonthUpdatesUsed || 0)
-      : (plan.updatesUsed || 0);
-  const hasUpdateAllowance = typeof totalUpdates === 'number' && totalUpdates > 0;
-  const donutPercentage = hasUpdateAllowance
-    ? Math.min(100, Math.round((usedUpdates / totalUpdates) * 100))
-    : 0;
-
-  // The file cap was hardcoded in this page as "Up to 20 files, 5MB each" — a sentence that
-  // stayed the same whatever the customer had bought. A service plan carries its own
-  // filesLimit in the snapshot it froze at purchase, so the plan states its own limit.
-  const filesPerRequest = isServiceKind
-    ? Number(plan.servicePlanSnapshot?.filesLimit || 0)
-    : 0;
+  const totalUpdates = status.isRecurring
+    ? (plan.currentMonthUpdatesLimit || product.monthlyUpdateLimit || 1)
+    : (product.updateCount || 0);
+  const usedUpdates = status.isRecurring
+    ? (plan.currentMonthUpdatesUsed || 0)
+    : (plan.updatesUsed || 0);
+  const donutPercentage = totalUpdates > 0 ? Math.min(100, Math.round((usedUpdates / totalUpdates) * 100)) : 0;
 
   return (
     <DashboardLayout user={user}>
@@ -368,106 +315,23 @@ const PlanDetails = ({ isProjectServiceView = false }) => {
                   {status.badge}
                 </span>
               </div>
-              {/* Was the raw category with its underscores swapped for spaces —
-                  `service_plan` became "service plan", which is the database's filing
-                  label, not a description of what the customer owns. A plan's own name is
-                  already the heading above; the only thing worth adding here is where this
-                  plan sits, and that is only true when it is attached to a project. */}
-              {isProjectServiceView && (
-                <p className="mt-1 text-base text-[var(--text-secondary)] sm:text-lg">
-                  Attached to your project
-                </p>
-              )}
+              <p className="mt-1 text-base text-[var(--text-secondary)] sm:text-lg">
+                {isProjectServiceView ? 'Service linked to this project' : (purchasedCategory?.split('_').join(' ') || 'Plan')}
+              </p>
             </div>
           </div>
 
           <div className="relative overflow-hidden rounded-[1.75rem] border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] shadow-[var(--card-shadow)] backdrop-blur-2xl backdrop-saturate-150">
             <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-[var(--glass-sheen)] to-transparent" />
 
-            {/* What this plan is, and what is owed on it.
-                Was one run-on line per invoice — "Live Billing Statement · INV-202609-0005 ·
-                ₹2980 · partially_paid" — four facts joined by dots, two of which mean nothing
-                to the customer: the invoice number is how the system finds the record, and
-                `partially_paid` is the database's own word. The heading above them said
-                "Service controls" while holding no control at all, only the plan's description.
-                Each bill is now a line the customer can read: what it is for, how much, and
-                where it stands — with its action where an action exists. */}
             {plan.isServicePlan && (
               <section className="relative border-b border-[var(--glass-border)] px-5 py-4 text-[var(--text-primary)] sm:px-6">
-                <p className="text-sm text-[var(--text-secondary)]">
-                  {product.formattedDescriptions?.[0]?.content?.replace(/<[^>]*>/g, '') || 'No additional information for this plan.'}
-                </p>
-
-                {serviceActionMessage && (
-                  <p className="mt-2 text-sm text-[var(--badge-success-fg)]">{serviceActionMessage}</p>
-                )}
-                {status.isReminderOnly && (
-                  <p className="mt-2 text-sm text-[var(--text-secondary)]">
-                    This is a reminder plan — you do not send files on it.
-                  </p>
-                )}
-
-                {/* What this plan costs, on one line.
-                    This was a heading, a total, a paid/due line, a "Your bill" heading and a row
-                    under it — five stacked lines on a full-width band, with the right half of the
-                    page empty and the same figure printed twice: the header said "₹1,490 paid"
-                    and the single row beneath it said "₹1,490 · Paid".
-                    Measured against live data before rebuilding: no plan has more than one bill
-                    (5 have exactly one, 3 have none), so the list and its heading were never
-                    earned — a heading over a single row is furniture. Where a statement exists,
-                    money is genuinely still owed on both, which makes the outstanding figure the
-                    one thing worth saying loudly.
-                    Three shapes exist in the data and each gets its own sentence. The money is
-                    read from invoice.amountPaid, which the payment helpers maintain — nothing is
-                    added up here.
-
-                    ON THE WORDING, which was wrong once already: the statement's remainder is NOT
-                    a debt. A plan bought for N cycles states its whole price up front, but only
-                    the cycle that has started is ever billed — the rest has no invoice yet.
-                    Measured across live data: every statement remainder equals exactly the cycles
-                    not yet billed, and no issued bill is unpaid on any plan. So "₹1,490 still to
-                    pay" told a customer who owes nothing that they were holding money back. It
-                    leads with what HAS been paid, and says the rest arrives with the plan. */}
-                {(statementInvoice || billedInvoices.length) ? (
-                  <div className="mt-4 flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-t border-[var(--glass-border)] pt-3">
-                    {statementInvoice ? (
-                      statementDue > 0 ? (
-                        <p className="text-base text-[var(--text-primary)]">
-                          <span className="font-semibold">₹{statementPaid.toLocaleString('en-IN')} paid</span>
-                          <span className="text-[var(--text-secondary)]">
-                            {' '}of ₹{Number(statementInvoice.amount || 0).toLocaleString('en-IN')} for this plan.
-                            {nextCycle.outcome === CYCLE_OUTCOME.RETURNS
-                              ? ` The rest is billed as the plan runs — next on ${formatDate(nextCycle.returnsOn)}.`
-                              : ' The rest is billed as the plan runs.'}
-                          </span>
-                        </p>
-                      ) : (
-                        <p className="text-base text-[var(--text-primary)]">
-                          <span className="font-semibold">₹{Number(statementInvoice.amount || 0).toLocaleString('en-IN')}</span>
-                          <span className="text-[var(--text-secondary)]"> for this plan — fully paid.</span>
-                        </p>
-                      )
-                    ) : (
-                      /* No statement: the plan was billed once and that bill is the whole story. */
-                      <p className="text-base text-[var(--text-primary)]">
-                        <span className="font-semibold">₹{Number(billedInvoices[0]?.amount || 0).toLocaleString('en-IN')}</span>
-                        <span className="text-[var(--text-secondary)]">
-                          {' '}for this plan — {getInvoiceStatusText(billedInvoices[0]).label.toLowerCase()}.
-                        </span>
-                      </p>
-                    )}
-
-                    {/* One link, to whichever record actually holds the detail. Two buttons that
-                        both opened an invoice page sat here before. */}
-                    <button
-                      type="button"
-                      onClick={() => navigate(`/invoice-detail/${(statementInvoice || billedInvoices[0])._id}`, { state: location.state })}
-                      className="shrink-0 rounded-lg border border-[var(--glass-border-strong)] px-3 py-1.5 text-xs font-semibold text-[var(--text-primary)] transition hover:bg-[var(--glass-bg-hover)]"
-                    >
-                      Payment details
-                    </button>
-                  </div>
-                ) : null}
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div><p className="font-semibold">{status.isReminderOnly ? 'Service information' : 'Service controls'}</p><p className="mt-1 text-sm text-[var(--text-secondary)]">{product.formattedDescriptions?.[0]?.content?.replace(/<[^>]*>/g, '') || 'No additional service information.'}</p></div>
+                </div>
+                {serviceActionMessage && <p className="mt-2 text-sm text-[var(--badge-success-fg)]">{serviceActionMessage}</p>}
+                {status.isReminderOnly && <p className="mt-3 text-sm text-[var(--text-secondary)]">Upload Data is not available for this reminder service.</p>}
+                <div className="mt-3"><p className="text-sm font-semibold">Billing</p>{plan.serviceInvoices?.length ? <ul className="mt-1 space-y-2 text-sm text-[var(--text-secondary)]">{plan.serviceInvoices.map((invoice) => <li key={invoice._id} className="flex flex-wrap items-center justify-between gap-2"><span>{invoice.invoiceType === 'service_statement' ? 'Live Billing Statement' : `Cycle ${invoice.serviceCycleNumber || 1} invoice`} · {invoice.invoiceNumber} · ₹{invoice.amount} · {invoice.status}</span>{invoice.invoiceType === 'service_statement' ? <button type="button" onClick={() => navigate(`/invoice-detail/${invoice._id}`, { state: location.state })} className="rounded-lg border border-[var(--glass-border-strong)] px-2.5 py-1 text-xs font-semibold text-[var(--text-primary)]">View statement</button> : ['unpaid', 'partially_paid', 'overdue'].includes(invoice.status) ? <button type="button" onClick={() => navigate(`/invoice-detail/${invoice._id}`, { state: location.state })} className="rounded-lg border border-[var(--badge-success-border)] px-2.5 py-1 text-xs font-semibold text-[var(--badge-success-fg)]">Pay now</button> : <button type="button" onClick={() => navigate(`/invoice-detail/${invoice._id}`, { state: location.state })} className="rounded-lg border border-[var(--glass-border-strong)] px-2.5 py-1 text-xs font-semibold text-[var(--text-primary)]">View invoice</button>}</li>)}</ul> : <p className="mt-1 text-sm text-[var(--text-muted)]">No invoices yet.</p>}</div>
               </section>
             )}
 
@@ -491,27 +355,9 @@ const PlanDetails = ({ isProjectServiceView = false }) => {
                             transform="rotate(-90 50 50)"
                           />
                         </svg>
-                        {/* The customer's question is "how many do I have left", not "what
-                            fraction of my quota is spent" — so the number left is the one
-                            that is large, and the total is the small print under it.
-                            A plan with no countable allowance (unlimited, or reminder-only)
-                            says so in words: it used to render as "0 / 0", which reads as
-                            nothing granted rather than no limit. */}
-                        <div className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center">
-                          {hasUpdateAllowance ? (
-                            <>
-                              <span className="text-3xl font-bold text-[var(--text-primary)]">
-                                {Math.max(0, totalUpdates - usedUpdates)}
-                              </span>
-                              <span className="mt-1 text-sm font-medium text-[var(--text-secondary)]">
-                                of {totalUpdates} left
-                              </span>
-                            </>
-                          ) : (
-                            <span className="text-base font-semibold text-[var(--text-primary)]">
-                              {status.isReminderOnly ? 'Reminders only' : 'No limit'}
-                            </span>
-                          )}
+                        <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+                          <span className="text-2xl font-bold text-[var(--text-primary)]">{usedUpdates} / {totalUpdates}</span>
+                          <span className="mt-1 text-sm font-medium text-[var(--text-secondary)]">Updates Used</span>
                         </div>
                       </div>
                     </div>
@@ -530,30 +376,11 @@ const PlanDetails = ({ isProjectServiceView = false }) => {
                       Request Update
                     </button>
 
-                    {/* When the allowance is spent, this line answers the only question the
-                        customer has: when can I send something again?
-                        It used to answer "More on <cycle end>" for every service, which is only
-                        true of a service that has another cycle coming. A one-off plan has an end
-                        date but nothing after it, so the sentence promised a renewal that would
-                        never arrive; a service with no cycle end recorded printed "Invalid Date".
-                        Whether a cycle is coming is decided by helpers/servicePlanCycle.js, which
-                        asks what the renewal cron asks.
-                        The wait is stated as a wait, not as a date: "11 Oct 2026" makes the reader
-                        count on a calendar, and on the final day it reads as though nothing is
-                        about to change. getTimeUntilText tightens from days to hours as it nears.
-                        It can only be reached on the RETURNS branch, which the helper only returns
-                        for a date it has already parsed — so it never renders an empty wait. */}
                     {status.tone === 'used_up' && (
                       <p className="mt-2 text-center text-sm text-[var(--badge-pending-fg)]">
-                        {isServiceKind
-                          ? nextCycle.outcome === CYCLE_OUTCOME.RETURNS
-                            ? `You can send again ${getTimeUntilText(nextCycle.returnsOn)}.`
-                            : nextCycle.outcome === CYCLE_OUTCOME.FINISHED
-                              ? 'This plan has delivered everything it was bought for. Buy a new plan to keep sending.'
-                              : 'You have used everything on this plan. Buy a new plan to keep sending.'
-                          : status.isRecurring
-                            ? `You can send again from ${formatDate(plan.monthlyLimitResetDate || plan.currentMonthExpiryDate)}.`
-                            : 'You have used everything on this plan. Buy a new plan to keep sending.'}
+                        {status.isRecurring
+                          ? `Resets on ${formatDate(plan.monthlyLimitResetDate || plan.currentMonthExpiryDate)}.`
+                          : "All updates used. Purchase a new plan."}
                       </p>
                     )}
                     {status.tone === 'expired' && (
@@ -574,45 +401,33 @@ const PlanDetails = ({ isProjectServiceView = false }) => {
                       </p>
                     )}
 
-                    {/* "Plan Snapshot" was a heading in the system's voice over three rows,
-                        one of which ("Total updates granted") simply restated the donut above
-                        it, and one of which ("Up to 20 files, 5MB each") was a sentence typed
-                        into this page rather than read from the plan. What is left is what the
-                        donut cannot say: how long the plan runs, and how much may be sent at
-                        once — the file cap coming from the plan the customer actually bought. */}
                     <div className="mt-4 border-t border-[var(--glass-border)] pt-4">
-                      <div className="space-y-2.5">
-                        {/* This is the PLAN's own term — when the whole thing runs out — which is
-                            a different question from when the allowance comes back (that answer
-                            sits under the upload button). It was labelled "Days left" over a bare
-                            day count: "164 days" is arithmetic, and read next to the cycle line it
-                            was easy to take for the same thing. It now names what is expiring and
-                            states the remainder in months and days.
-                            Label above value, not beside it: this column is 280px wide, and a
-                            label that says what is expiring plus a value in months AND days will
-                            not share one line — side by side, both halves wrapped. */}
-                        <div className="rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg)] px-4 py-2.5">
-                          <p className="text-sm text-[var(--text-secondary)]">{status.isRecurring ? 'Resets on' : termRemaining ? 'Plan expires in' : 'Plan runs for'}</p>
-                          <p className="mt-0.5 flex items-center gap-1.5 text-base font-semibold text-[var(--text-primary)]">
+                      <p className="text-lg font-semibold text-[var(--text-primary)]">Plan Snapshot</p>
+                      <div className="mt-3 space-y-2.5">
+                        <div className="flex items-center justify-between rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg)] px-4 py-2.5">
+                          <span className="text-sm text-[var(--text-secondary)]">{status.isRecurring ? 'Resets on' : status.daysLeft === null ? 'Duration' : 'Days left'}</span>
+                          <span className="flex items-center gap-1 text-base font-semibold text-[var(--text-primary)]">
                             {status.isRecurring ? (
                               <>
-                                <CalendarClock className="h-3.5 w-3.5 shrink-0" />
+                                <CalendarClock className="h-3.5 w-3.5" />
                                 {formatDate(plan.monthlyLimitResetDate || plan.currentMonthExpiryDate)}
                               </>
                             ) : (
                               <>
-                                <Clock className="h-3.5 w-3.5 shrink-0" />
-                                {termRemaining || 'As long as you need'}
+                                <Clock className="h-3.5 w-3.5" />
+                                {status.daysLeft === null ? 'No automatic expiry' : `${status.daysLeft} days`}
                               </>
                             )}
-                          </p>
+                          </span>
                         </div>
-                        {filesPerRequest > 0 && (
-                          <div className="rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg)] px-4 py-2.5">
-                            <p className="text-sm text-[var(--text-secondary)]">Files you can send at once</p>
-                            <p className="mt-0.5 text-base font-semibold text-[var(--text-primary)]">{filesPerRequest}</p>
-                          </div>
-                        )}
+                        <div className="flex items-center justify-between rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg)] px-4 py-2.5">
+                          <span className="text-sm text-[var(--text-secondary)]">Total updates granted</span>
+                          <span className="text-base font-semibold text-[var(--text-primary)]">{totalUpdates}</span>
+                        </div>
+                        <div className="flex items-center justify-between rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg)] px-4 py-2.5">
+                          <span className="text-sm text-[var(--text-secondary)]">File limit per request</span>
+                          <span className="text-base font-semibold text-[var(--text-primary)]">Up to 20 files, 5MB each</span>
+                        </div>
                       </div>
                     </div>
                 </div>
@@ -625,16 +440,14 @@ const PlanDetails = ({ isProjectServiceView = false }) => {
                   records and offers the same zip download. */}
               <section className="relative min-w-0 h-[620px]">
                 <div className="flex h-full min-h-0 flex-col p-4">
-                  {/* One heading, not three. This was an eyebrow ("Uploaded Data"), a heading
-                      ("Everything you have sent on this plan") and a counter chip ("1 request")
-                      all saying the same thing in the same box. */}
                   <div className="flex flex-col gap-2 border-b border-[var(--glass-border)] pb-4 sm:flex-row sm:items-center sm:justify-between">
-                    <h2 className="text-xl font-bold text-[var(--text-primary)]">What you have sent</h2>
-                    {requests.length > 0 && (
-                      <span className="rounded-full border border-[var(--glass-border)] bg-[var(--glass-bg)] px-3 py-1 text-sm font-semibold text-[var(--text-primary)] backdrop-blur-md">
-                        {requests.length}
-                      </span>
-                    )}
+                    <div>
+                      <p className="text-sm font-medium text-[var(--text-secondary)]">Uploaded Data</p>
+                      <h2 className="mt-1 text-xl font-bold text-[var(--text-primary)]">Everything you have sent on this plan</h2>
+                    </div>
+                    <span className="rounded-full border border-[var(--glass-border)] bg-[var(--glass-bg)] px-3 py-1 text-sm font-semibold text-[var(--text-primary)] backdrop-blur-md">
+                      {requests.length} request{requests.length === 1 ? '' : 's'}
+                    </span>
                   </div>
 
                   <div className="mt-3 flex-1 min-h-0 overflow-auto pr-1">
@@ -654,12 +467,10 @@ const PlanDetails = ({ isProjectServiceView = false }) => {
               <div className="relative space-y-4 p-5 lg:hidden">
                 <section className="relative overflow-hidden rounded-[1.75rem] border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] p-5 shadow-[var(--card-shadow)] backdrop-blur-2xl backdrop-saturate-150">
                   <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-[var(--glass-sheen)] to-transparent" />
-                  {/* The status badge already sits beside the plan's name at the top of the
-                      page, on mobile too. Labelling it again here — "Plan Status" over the same
-                      words — told the customer nothing they had not just read. */}
                   <div className="relative flex items-center justify-between gap-4">
                     <div>
-                      <h2 className="text-xl font-bold text-[var(--text-primary)]">{purchasedName}</h2>
+                      <p className="text-sm font-medium text-[var(--text-secondary)]">Plan Status</p>
+                      <h2 className="mt-1 text-xl font-bold text-[var(--text-primary)]">{status.badge}</h2>
                     </div>
                     <div className="relative flex h-24 w-24 items-center justify-center">
                       <div className="absolute inset-0 rounded-full border-8 border-[var(--glass-border)]"></div>
@@ -676,46 +487,24 @@ const PlanDetails = ({ isProjectServiceView = false }) => {
                           transform="rotate(-90 50 50)"
                         />
                       </svg>
-                      {/* Same count as the desktop donut, same wording — what is left, not
-                          what is spent. Two layouts of one screen must not phrase the same
-                          number two ways. */}
-                      <div className="absolute inset-0 flex flex-col items-center justify-center px-2 text-center">
-                        {hasUpdateAllowance ? (
-                          <>
-                            <span className="text-lg font-bold text-[var(--text-primary)]">
-                              {Math.max(0, totalUpdates - usedUpdates)}
-                            </span>
-                            <span className="text-sm font-medium text-[var(--text-secondary)]">left</span>
-                          </>
-                        ) : (
-                          <span className="text-sm font-semibold text-[var(--text-primary)]">
-                            {status.isReminderOnly ? 'Reminders' : 'No limit'}
-                          </span>
-                        )}
+                      <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+                        <span className="text-lg font-bold text-[var(--text-primary)]">{usedUpdates}/{totalUpdates}</span>
+                        <span className="text-sm font-medium text-[var(--text-secondary)]">Used</span>
                       </div>
                     </div>
                   </div>
 
-                  {/* The second tile counted requests, which the section directly below already
-                      counts. What replaces it is the one fact neither the donut nor the badge
-                      carries on mobile: how many files may go in one send.
-                      The first tile also printed "null days" for a plan with no expiry — the
-                      same hole the desktop panel had, phrased the same way now. */}
                   <div className="relative mt-4 grid grid-cols-2 gap-3">
                     <div className="rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg)] p-3">
-                      <p className="text-sm text-[var(--text-secondary)]">{status.isRecurring ? 'Resets on' : termRemaining ? 'Plan expires in' : 'Plan runs for'}</p>
+                      <p className="text-sm uppercase text-[var(--text-secondary)]">{status.isRecurring ? 'Resets' : 'Days left'}</p>
                       <p className="mt-1 text-base font-semibold text-[var(--text-primary)]">
-                        {status.isRecurring
-                          ? formatDate(plan.monthlyLimitResetDate || plan.currentMonthExpiryDate)
-                          : termRemaining || 'As long as you need'}
+                        {status.isRecurring ? formatDate(plan.monthlyLimitResetDate || plan.currentMonthExpiryDate) : `${status.daysLeft} days`}
                       </p>
                     </div>
-                    {filesPerRequest > 0 && (
-                      <div className="rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg)] p-3">
-                        <p className="text-sm text-[var(--text-secondary)]">Files at once</p>
-                        <p className="mt-1 text-base font-semibold text-[var(--text-primary)]">{filesPerRequest}</p>
-                      </div>
-                    )}
+                    <div className="rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg)] p-3">
+                      <p className="text-sm uppercase text-[var(--text-secondary)]">Requests</p>
+                      <p className="mt-1 text-base font-semibold text-[var(--text-primary)]">{requests.length}</p>
+                    </div>
                   </div>
 
                   <div className="relative mt-4">
@@ -737,12 +526,11 @@ const PlanDetails = ({ isProjectServiceView = false }) => {
 
                 <section className="relative overflow-hidden rounded-[1.75rem] border border-[var(--glass-border-strong)] bg-[var(--glass-bg)] p-5 shadow-[var(--card-shadow)] backdrop-blur-2xl backdrop-saturate-150">
                   <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-[var(--glass-sheen)] to-transparent" />
-                  {/* Same heading as the desktop column, for the same list. */}
                   <div className="relative flex items-center justify-between gap-3">
-                    <h2 className="text-lg font-semibold text-[var(--text-primary)]">What you have sent</h2>
-                    {requests.length > 0 && (
-                      <span className="text-base font-semibold text-[var(--text-primary)]">{requests.length}</span>
-                    )}
+                    <div>
+                      <p className="text-sm font-medium text-[var(--text-secondary)]">Uploaded Data</p>
+                      <h2 className="mt-1 text-lg font-semibold text-[var(--text-primary)]">{requests.length} request{requests.length === 1 ? '' : 's'}</h2>
+                    </div>
                   </div>
 
                   <div className="relative mt-3">

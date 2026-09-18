@@ -11,7 +11,7 @@ import TriangleMazeLoader from '../components/TriangleMazeLoader';
 import UpdateRequestModal from '../components/UpdateRequestModal';
 import SummaryApi from '../common';
 import { isPlanItem } from '../helpers/orderType';
-import { getInvoiceStatusText, isStatementInvoice } from '../helpers/invoicePresentation';
+import { getInvoiceStatusText, getInvoicePurposeText, isInvoicePayable } from '../helpers/invoicePresentation';
 import { getNextCycleOutcome, getTimeUntilText, getTermRemainingText, CYCLE_OUTCOME } from '../helpers/servicePlanCycle';
 import { goToCustomerReturn } from '../helpers/customerReturnNavigation';
 import UploadedDataList from '../components/UploadedDataList';
@@ -128,6 +128,15 @@ const BADGE_TONE_CLASSES = {
   expired: 'badge badge-neutral',
   paused: 'badge badge-error',
   closed: 'badge badge-neutral',
+};
+
+// The invoice helper returns Badge's own tone names, not this page's local ones, so its
+// badges are built from that vocabulary directly rather than being translated twice.
+const INVOICE_BADGE_CLASSES = {
+  success: 'badge badge-success',
+  pending: 'badge badge-pending',
+  error: 'badge badge-error',
+  neutral: 'badge badge-neutral',
 };
 
 const PlanDetails = ({ isProjectServiceView = false }) => {
@@ -297,17 +306,6 @@ const PlanDetails = ({ isProjectServiceView = false }) => {
   // Whether the allowance comes back, and when — the same question the renewal cron asks.
   const nextCycle = getNextCycleOutcome(plan);
 
-  // A statement is the whole plan stated once; the rest are the bills it is made of. They are
-  // separated here rather than in the markup so the "is this a bill?" question is asked in one
-  // place, by the same helper the invoice pages use.
-  const serviceInvoices = plan.serviceInvoices || [];
-  const statementInvoice = serviceInvoices.find(isStatementInvoice) || null;
-  const billedInvoices = serviceInvoices.filter((invoice) => !isStatementInvoice(invoice));
-  // amountPaid is the running total the payment helpers maintain on the invoice, so what has
-  // arrived and what is still owed are read, never recomputed from the bills below.
-  const statementPaid = Number(statementInvoice?.amountPaid || 0);
-  const statementDue = Math.max(0, Number(statementInvoice?.amount || 0) - statementPaid);
-
   // How much of the PLAN's term is left. Deliberately computed next to nextCycle, because the
   // two answer different questions and the page used to blur them: the cycle line said when the
   // customer could send again, while this tile showed the whole plan's day count under the label
@@ -407,65 +405,45 @@ const PlanDetails = ({ isProjectServiceView = false }) => {
                   </p>
                 )}
 
-                {/* What this plan costs, on one line.
-                    This was a heading, a total, a paid/due line, a "Your bill" heading and a row
-                    under it — five stacked lines on a full-width band, with the right half of the
-                    page empty and the same figure printed twice: the header said "₹1,490 paid"
-                    and the single row beneath it said "₹1,490 · Paid".
-                    Measured against live data before rebuilding: no plan has more than one bill
-                    (5 have exactly one, 3 have none), so the list and its heading were never
-                    earned — a heading over a single row is furniture. Where a statement exists,
-                    money is genuinely still owed on both, which makes the outstanding figure the
-                    one thing worth saying loudly.
-                    Three shapes exist in the data and each gets its own sentence. The money is
-                    read from invoice.amountPaid, which the payment helpers maintain — nothing is
-                    added up here.
+                {plan.serviceInvoices?.length ? (
+                  <div className="mt-4 border-t border-[var(--glass-border)] pt-3">
+                    <p className="text-sm font-semibold">Payments</p>
+                    <ul className="mt-2 divide-y divide-[var(--divider)]">
+                      {plan.serviceInvoices.map((invoice) => {
+                        const invoiceStatus = getInvoiceStatusText(invoice);
+                        const payable = isInvoicePayable(invoice);
 
-                    ON THE WORDING, which was wrong once already: the statement's remainder is NOT
-                    a debt. A plan bought for N cycles states its whole price up front, but only
-                    the cycle that has started is ever billed — the rest has no invoice yet.
-                    Measured across live data: every statement remainder equals exactly the cycles
-                    not yet billed, and no issued bill is unpaid on any plan. So "₹1,490 still to
-                    pay" told a customer who owes nothing that they were holding money back. It
-                    leads with what HAS been paid, and says the rest arrives with the plan. */}
-                {(statementInvoice || billedInvoices.length) ? (
-                  <div className="mt-4 flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-t border-[var(--glass-border)] pt-3">
-                    {statementInvoice ? (
-                      statementDue > 0 ? (
-                        <p className="text-base text-[var(--text-primary)]">
-                          <span className="font-semibold">₹{statementPaid.toLocaleString('en-IN')} paid</span>
-                          <span className="text-[var(--text-secondary)]">
-                            {' '}of ₹{Number(statementInvoice.amount || 0).toLocaleString('en-IN')} for this plan.
-                            {nextCycle.outcome === CYCLE_OUTCOME.RETURNS
-                              ? ` The rest is billed as the plan runs — next on ${formatDate(nextCycle.returnsOn)}.`
-                              : ' The rest is billed as the plan runs.'}
-                          </span>
-                        </p>
-                      ) : (
-                        <p className="text-base text-[var(--text-primary)]">
-                          <span className="font-semibold">₹{Number(statementInvoice.amount || 0).toLocaleString('en-IN')}</span>
-                          <span className="text-[var(--text-secondary)]"> for this plan — fully paid.</span>
-                        </p>
-                      )
-                    ) : (
-                      /* No statement: the plan was billed once and that bill is the whole story. */
-                      <p className="text-base text-[var(--text-primary)]">
-                        <span className="font-semibold">₹{Number(billedInvoices[0]?.amount || 0).toLocaleString('en-IN')}</span>
-                        <span className="text-[var(--text-secondary)]">
-                          {' '}for this plan — {getInvoiceStatusText(billedInvoices[0]).label.toLowerCase()}.
-                        </span>
-                      </p>
-                    )}
+                        return (
+                          <li key={invoice._id} className="flex flex-wrap items-center justify-between gap-3 py-2.5">
+                            <div className="min-w-0">
+                              <p className="text-base font-semibold text-[var(--text-primary)]">
+                                ₹{Number(invoice.amount || 0).toLocaleString('en-IN')}
+                              </p>
+                              <p className="text-sm text-[var(--text-secondary)]">
+                                {getInvoicePurposeText(invoice, purchasedName)}
+                              </p>
+                            </div>
 
-                    {/* One link, to whichever record actually holds the detail. Two buttons that
-                        both opened an invoice page sat here before. */}
-                    <button
-                      type="button"
-                      onClick={() => navigate(`/invoice-detail/${(statementInvoice || billedInvoices[0])._id}`, { state: location.state })}
-                      className="shrink-0 rounded-lg border border-[var(--glass-border-strong)] px-3 py-1.5 text-xs font-semibold text-[var(--text-primary)] transition hover:bg-[var(--glass-bg-hover)]"
-                    >
-                      Payment details
-                    </button>
+                            <div className="flex shrink-0 items-center gap-2.5">
+                              <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${INVOICE_BADGE_CLASSES[invoiceStatus.tone]}`}>
+                                {invoiceStatus.label}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => navigate(`/invoice-detail/${invoice._id}`, { state: location.state })}
+                                className={`rounded-lg border px-2.5 py-1 text-xs font-semibold ${
+                                  payable
+                                    ? 'border-[var(--badge-success-border)] text-[var(--badge-success-fg)]'
+                                    : 'border-[var(--glass-border-strong)] text-[var(--text-primary)]'
+                                }`}
+                              >
+                                {payable ? 'Pay now' : 'View'}
+                              </button>
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
                   </div>
                 ) : null}
               </section>

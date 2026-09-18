@@ -109,7 +109,7 @@ const ProjectsAndPlans = () => {
               Projects and Plans
             </h1>
             <p className="mx-auto mt-3 max-w-2xl text-base text-[var(--text-secondary)] sm:text-lg">
-              Compact list of all project and plan records with status, type, progress, and ownership in one view.
+              See the progress and details of your projects and plans.
             </p>
           </div>
 

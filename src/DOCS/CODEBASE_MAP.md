@@ -8,14 +8,14 @@ Project root: `e:\merasoftware-new` — `backend/` (Node/Express/Mongoose) + `fr
 
 ## 1. Architecture & Routing
 
-- Portal-only app. No public marketing/storefront site exists. `frontend/src/routes/publicRoutes.js` has exactly 3 routes: `""` (`RoleBasedHome`), `login`, `unauthorized`.
+- Portal-only app. No public marketing/storefront site exists. `frontend/src/routes/publicRoutes.js` has exactly 4 routes: `""` (`RoleBasedHome`), `login`, `unauthorized`, and the deliberately public upload-only route `external-upload` (`ExternalUploadPage`).
 - Boot chain: `src/index.js` → `src/App.js` (online-status context) → `src/AppContent.js` (session init, `Context.Provider`, `ScrollToTop`, renders `<Outlet/>`) → `src/routes/index.js` (assembles entry + `customerRoutes.js` + `adminRoutes.js`).
 - Root `/` → `RoleBasedHome`: logged-out → `/login`; logged-in → `getPortalHome(role)` (`src/helpers/portalHome.js`) → admin: `/admin-panel/dashboard`, customer: `/dashboard`.
 - Login: `src/pages/Login.js` only. **No signup page/route, no OTP-verification page, no forgot-password page** in the live UI. `POST /api/signup` + OTP backend (`backend/helpers/otpUtils.js`, `backend/models/otpModel.js`, `/verify-otp`, `/resend-otp`) exist but are unreachable from any UI. Customers are created only via lead conversion or admin client creation.
 - Post-login: `src/helpers/postLogin.js` stores user in Redux/cookies/localStorage, redirects via `getPortalHome(role)`.
 - Route guard: `src/components/ProtectedRoute.js` (`requireRole={['customer']}` / `['admin']`), redirects unauthorized to `/login` or `/unauthorized`.
 - **Portal header — corrects stale claims in old docs**: `src/components/PortalHeader.js` (sticky `top-16`... actually `h-16 sticky top-0`) IS rendered by both `DashboardLayout.js` and `AdminLayout.js`. There is no *global* header in `AppContent.js` (that still renders only `<Outlet/>`), but each portal shell renders its own `PortalHeader` instance (logo, profile dropdown, nav links). Sidebars use `sticky top-16 h-[calc(100vh-4rem)]` — correct because this header exists.
-- Mobile nav: `src/components/MobileSidebarDrawer.js` (shared, slides in from the **right**, used by both layouts) + `src/components/MobileBottomNav.js` (fixed bottom bar, `lg:hidden`). Customer tabs: Dashboard/Projects/Start/Games + More. Admin tabs: Dashboard/Leads/Clients/Projects + More.
+- Mobile nav: `src/components/MobileSidebarDrawer.js` (shared, slides in from the **right**, used by both layouts) + `src/components/MobileBottomNav.js` (fixed bottom bar, `lg:hidden`). Customer tabs: Dashboard/Projects/Start/Games + More. Admin tabs: Dashboard/Leads/Clients/Projects + More. The customer account destination is labelled **Settings** in the shared header/sidebar navigation but deliberately keeps its established `/profile` route.
 
 ### Project ownership model
 - No project catalogue exists. `backend/models/orderProductModel.js` is the project SSOT — owns client ref, frozen `projectSnapshot`, dynamic node timeline, pricing, payments, invoices.
@@ -269,10 +269,11 @@ One route serves every "Upload Data" action: `POST /api/user-request-update` →
 ### External upload links (Phase 3 complete)
 
 - Admin link lifecycle is stored in `externalUploadLinkModel`; there can be only one `active` link per client/order. Regenerate replaces the previous active link, revoke disables it, and only a high-entropy token is shown once. The database stores only its SHA-256 digest.
-- `externalUploadToken.js` is the token/URL SSOT. Production requires `CLIENT_PORTAL_URL`; generated links use `/external-upload#token=...`, so the bearer token is not placed in the request path. Generate responses are `no-store`.
+- `externalUploadToken.js` is the token/URL SSOT. Production uses the existing canonical `FORNTEND_URL`; generated links use `/external-upload#token=...`, so the bearer token is not placed in the request path. Generate responses are `no-store`.
 - `externalUploadSession.js` is isolated from the normal portal JWT: it requires `EXTERNAL_UPLOAD_TOKEN_SECRET`, uses an upload-only cookie path and distinguishes `challenge` from `access`, with access authenticated by either `link` consent or `credentials`.
 - `externalUploadAccessPolicy.js` re-resolves the live link, customer and order for every protected external request. Therefore revoke/regenerate, client disablement and switching login-free consent off take effect immediately; a credential-verified access session does not depend on login-free consent.
 - The client preference controls only whether credential verification may be skipped. It never prevents an admin from generating a link and never grants normal portal access.
+- The preference UI lives in `Profile.js` under the customer navigation label **Settings** (`/profile`). Its accessible `role="switch"` control uses a bordered neutral OFF track and emerald ON track so both states remain visible on the portal themes; it persists through `POST /api/my-upload-link-preference`.
 - Admin history uses stable cursor pagination (20 by default, capped at 50) backed by `{ customerId, createdAt, _id }`; the UI loads further pages explicitly instead of fetching an unbounded history.
 - Public flow: `/external-upload#token=...` immediately removes the fragment, exchanges it through `POST /api/external-upload/exchange`, and continues with the scoped HttpOnly cookie. Consent ON issues restricted link-auth access; consent OFF issues only a challenge, upgraded through `POST /api/external-upload/credentials` after bcrypt verification. `GET /api/external-upload/session` safely resumes either state.
 - State-changing public endpoints enforce the same CORS-origin SSOT as the app. Credential failures are counted on the link and temporarily blocked after repeated failures. The normal portal JWT is never accepted as an external-upload session.
@@ -280,7 +281,7 @@ One route serves every "Upload Data" action: `POST /api/user-request-update` →
 - A single-use link is consumed only after the existing upload controller has persisted a successful request; validation or upload failure releases its reservation. An in-progress single-use submission temporarily blocks revoke/regenerate so it cannot be replaced halfway through persistence.
 - Service allowance consumption is now a conditional atomic increment shared by normal portal and external submissions. A failed database save releases the reservation, and failed Drive/database work removes already-uploaded Drive files instead of returning a partial success. Google Drive uploads stream from memory without filename-derived temporary paths.
 - The public React page mounts its own `ThemeProvider`, exposes only the selected target, live refusal/limits, credentials form when required, and upload form. It has no `ProtectedRoute`, portal navigation, history, payment, profile or download access.
-- Required production configuration: `CLIENT_PORTAL_URL` (canonical public page origin) and an independent `EXTERNAL_UPLOAD_TOKEN_SECRET` of at least 32 characters.
+- Required production configuration: the canonical `FORNTEND_URL` and an independent `EXTERNAL_UPLOAD_TOKEN_SECRET` of at least 32 characters.
 
 ### Fixed 2026-09-15 — project uploads crashed with a plan's allowance
 - **Before**: the controller knew only two kinds (`isServicePlan ? service : legacy`). A project, being `isServicePlan: false`, fell through to the **legacy** branch, which read `updatePlan.productId.updateCount` — but a project's `productId` is `null` by design (`orderProductModel.productId` is `default: null`, not required). Result: `500 Cannot read properties of null (reading 'updateCount')` at the old L128, reproduced on order `6aa3ae1ea8bbc513b29bedc7`. Three further legacy reads (`isMonthlyLimitedPlan`, `isMonthlyRenewablePlan`, `validityPeriod`) had the same exposure.
@@ -644,6 +645,7 @@ see §14 (`RoleDirectoryPage` → `../pages/SignUp`).
 | Trash | `backend/controller/trash/*.js` |
 | Client documents | `backend/helpers/clientDocumentsTimeline.js`, `backend/controller/user/{uploadClientDocument,getClientDocuments,getAdminClientDocuments}.js` |
 | Upload Data / update requests (§7a) | `backend/helpers/uploadType.js` (which kind), `backend/helpers/projectUploadGate.js` (project state gate), `backend/controller/user/submitUpdateRequest.js` (submit), `backend/helpers/orderUploadHistory.js` (read-back), `backend/config/uploadLimits.js` (file caps), `frontend/src/components/UpdateRequestModal.js` (the one modal) |
+| External upload links | `backend/helpers/externalUploadToken.js` (token + public URL SSOT), `backend/helpers/externalUploadSession.js` (isolated scoped session), `backend/controller/user/{externalUploadLinkController,externalUploadController}.js` (admin lifecycle + public flow), `frontend/src/pages/ExternalUploadPage.js` (public upload-only UI), `frontend/src/pages/Profile.js` (client consent) |
 | Project/plan classification | `helpers/orderType.js`, `helpers/orderPresentation.js`, `components/OrderListRow.js` |
 | Chess | `frontend/src/chess/*`, `backend/chess/*` |
 | WhatsApp notifications (dormant, keep) | `backend/helpers/whatsappService.js`, `frontend/src/components/{socket,QRModal}.js`, commented block in `AppContent.js` — see §14a |

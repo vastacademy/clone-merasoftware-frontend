@@ -7,13 +7,13 @@ import TriangleMazeLoader from '../components/TriangleMazeLoader';
 import Surface from '../components/Surface';
 import Badge from '../components/Badge';
 import GlassButton from '../components/GlassButton';
-import { getOrderCategoryLabel, getOrderDisplayName } from '../helpers/orderPresentation';
+import { getOrderCategory, getOrderDisplayName } from '../helpers/orderPresentation';
 import { getInstallmentPaymentEligibility } from '../helpers/installmentPaymentEligibility';
 import {
   customerChildState,
   goToCustomerReturn,
 } from '../helpers/customerReturnNavigation';
-import { getInvoiceStatusText, isStatementInvoice, getInvoicePurposeText } from '../helpers/invoicePresentation';
+import { getInvoiceStatusText, isStatementInvoice } from '../helpers/invoicePresentation';
 
 const formatDate = (date) => {
   if (!date) return 'N/A';
@@ -35,16 +35,12 @@ const INSTALLMENT_LABELS = { 1: 'First Installment', 2: 'Second Installment', 3:
 // The per-status icons went with them. The portal's status badge — the one on
 // the projects list — has never carried an icon, and the same status should not
 // have two shapes on two screens.
-//
-// "Verification Pending" was the system describing its own queue. From the customer's
-// side the money has left their hands and someone is looking at it, which is what the
-// wording now says.
 const getInstallmentStatus = (installment) => {
   if (installment.paid) {
     return { label: 'Paid', tone: 'success' };
   }
   if (installment.paymentStatus === 'pending-approval') {
-    return { label: 'Checking your payment', tone: 'pending' };
+    return { label: 'Verification Pending', tone: 'pending' };
   }
   if (installment.paymentStatus === 'rejected') {
     return { label: 'Rejected', tone: 'error' };
@@ -56,6 +52,14 @@ const getInstallmentStatus = (installment) => {
 // InvoiceDetailPage each kept their own copy of it, and PlanDetails kept none and printed
 // the database's own word. The statement rule went with it, so "a statement never wears a
 // Due badge" is decided once rather than restated per page.
+
+// TEMP UI-preview only — real invoice-generation backend doesn't exist for every order yet.
+// Remove this once the backend creates a real invoice per order.
+const DUMMY_INVOICES = [
+  { _id: 'dummy-1', invoiceNumber: 'INV-202604-0001', amount: 3000, status: 'paid', paidDate: '2026-05-21', dueDate: '2026-05-01' },
+  { _id: 'dummy-2', invoiceNumber: 'INV-202605-0002', amount: 3000, status: 'unpaid', dueDate: '2026-06-01' },
+  { _id: 'dummy-3', invoiceNumber: 'INV-202606-0003', amount: 3000, status: 'overdue', dueDate: '2026-06-01' },
+];
 
 const OrderDetailPage = () => {
   const { orderId } = useParams();
@@ -104,8 +108,7 @@ const OrderDetailPage = () => {
         const orderInvoices = (data.data.invoices || []).filter(
           (inv) => String(inv.orderId?._id || inv.orderId) === String(orderId)
         );
-        // An order without an invoice must say nothing about billing, never show a made-up bill.
-        setInvoices(orderInvoices);
+        setInvoices(orderInvoices.length > 0 ? orderInvoices : DUMMY_INVOICES);
       }
     } catch (error) {
       console.error("Error fetching invoices:", error);
@@ -216,7 +219,7 @@ const OrderDetailPage = () => {
                 {getOrderDisplayName(order, 'Plan')}
               </h1>
               <p className="mt-1 text-base text-[var(--text-secondary)] sm:text-lg">
-                {getOrderCategoryLabel(order)}
+                {getOrderCategory(order, 'General').split('_').join(' ')}
               </p>
             </div>
           </div>
@@ -230,13 +233,10 @@ const OrderDetailPage = () => {
                  an invoice list that repeats every row of the schedule below it. */
               <div className="relative">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                  {/* Was three separate facts joined by dots — "Started 12 Jun 2026 ·
-                      Installments (3) · Total ₹45,000" — which reads as a log entry, and
-                      restated the count of a list that is printed directly below it. */}
                   <div>
-                    <h3 className="text-xl font-bold text-[var(--text-primary)]">Payments</h3>
+                    <h3 className="text-xl font-bold text-[var(--text-primary)]">Installments</h3>
                     <p className="mt-1 text-sm text-[var(--text-secondary)]">
-                      ₹{installmentsTotal.toLocaleString()} in total, paid in parts. Started {formatDate(startDate)}.
+                      Started {formatDate(startDate)} · Installments ({order.installments.length}) · Total ₹{installmentsTotal.toLocaleString()}
                     </p>
                   </div>
                   {projectStatement ? (
@@ -288,10 +288,9 @@ const OrderDetailPage = () => {
             ) : (
             <div className="relative grid w-full grid-cols-1 gap-5 lg:grid-cols-2">
 
-              {/* "Plan Snapshot" was the system naming its own data structure. The card
-                  holds dates and how the order is paid, so it says that instead. */}
+              {/* Snapshot card */}
               <Surface tone="subtle" radius="panel" className="p-5">
-                <h3 className="mb-3 text-lg font-semibold text-[var(--text-primary)]">Your plan</h3>
+                <h3 className="mb-3 text-lg font-semibold text-[var(--text-primary)]">Plan Snapshot</h3>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between rounded-2xl bg-[var(--glass-bg-subtle)] px-4 py-2.5 text-base">
                     <span className="text-[var(--text-secondary)]">Start Date</span>
@@ -316,12 +315,10 @@ const OrderDetailPage = () => {
                       </div>
                     </>
                   ) : (
-                    // "Installments (3)" counted the parts inside a field labelled Payment
-                    // Method, where the question is how it was paid, not how many rows exist.
                     <div className="flex items-center justify-between rounded-2xl bg-[var(--glass-bg-subtle)] px-4 py-2.5 text-base">
-                      <span className="text-[var(--text-secondary)]">How you paid</span>
+                      <span className="text-[var(--text-secondary)]">Payment Method</span>
                       <span className="font-medium text-[var(--text-primary)]">
-                        {order.isPartialPayment ? 'In parts' : 'In full'}
+                        {order.isPartialPayment ? 'Installments (3)' : 'Full Payment'}
                       </span>
                     </div>
                   )}
@@ -331,7 +328,7 @@ const OrderDetailPage = () => {
               {/* Invoice history — shown whenever this order has any invoice records */}
               {invoices.length > 0 && (
                 <Surface tone="subtle" radius="panel" className="p-5">
-                  <h3 className="mb-3 text-lg font-semibold text-[var(--text-primary)]">Your bills</h3>
+                  <h3 className="mb-3 text-lg font-semibold text-[var(--text-primary)]">Invoice History</h3>
                   <div className="space-y-3">
                     {invoices.map((invoice) => {
                       // A project_final invoice is a statement of the whole project, not an amount
@@ -348,21 +345,14 @@ const OrderDetailPage = () => {
                           })}
                           className="flex cursor-pointer items-center justify-between gap-3 rounded-2xl border-[length:var(--glass-border-width)] border-[var(--glass-border)] bg-[var(--glass-bg-subtle)] px-4 py-3 transition hover:border-[var(--glass-border-strong)] hover:bg-[var(--glass-bg-hover)]"
                         >
-                          {/* The row used to lead with the invoice number — the string the
-                              system finds the record by, which tells the customer nothing about
-                              what the bill is for. It leads with the purpose now, worded by the
-                              same helper the plan page uses. The statement line also announced
-                              "download available" while the row itself opens the document. */}
                           <div>
                             <div className="flex items-center gap-2">
-                              <span className="text-base font-medium text-[var(--text-primary)]">
-                                {getInvoicePurposeText(invoice, getOrderDisplayName(order, ''))}
-                              </span>
+                              <span className="text-base font-medium text-[var(--text-primary)]">{invoice.invoiceNumber}</span>
                               <Badge tone={meta.tone}>{meta.label}</Badge>
                             </div>
                             <p className="mt-1 text-sm text-[var(--text-secondary)]">
                               {isStatement
-                                ? 'Everything charged on this order'
+                                ? 'Complete project invoice · download available'
                                 : invoice.status === 'paid'
                                   ? `Paid on ${formatDate(invoice.paidDate)}`
                                   : `Due on ${formatDate(invoice.dueDate)}`}

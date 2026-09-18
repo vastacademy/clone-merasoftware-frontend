@@ -478,12 +478,9 @@ const InstallmentPayment = () => {
                 <div className="mt-4 flex justify-center rounded-2xl bg-white p-4">
                   <QRCodeSVG value={upiLink} size={190} />
                 </div>
-                {/* The internal transaction id was printed under the QR. It is generated here
-                    to tie this payment to this installment and still travels inside the UPI
-                    link; the customer never reads it back to anyone. Same removal as the
-                    wallet page. */}
+                <p className="mt-3 text-center text-xs text-[var(--text-muted)]">Transaction ID: {transactionId}</p>
                 <label className="mt-4 block text-sm font-medium text-[var(--text-secondary)]">
-                  Payment reference from your UPI app
+                  UPI Transaction ID
                 </label>
                 <input
                   type="text"

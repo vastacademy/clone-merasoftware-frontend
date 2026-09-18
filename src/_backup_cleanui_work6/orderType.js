@@ -9,30 +9,11 @@ export const PROJECT_CATEGORIES = new Set([
 
 export const PLAN_CATEGORIES = new Set(['website_updates', 'service_plan']);
 
-// WHAT KIND OF THING IS THIS ORDER — one rule, asked the same way by both questions:
-//
-//   the order's OWN flag decides, and the catalogue category is only a fallback.
-//
-// The order is the contract. Its flags are written when it is created and never change; the
-// catalogue product behind it is a template that an admin can retire or delete, and five live
-// service orders have already had theirs removed. So an order must always be able to describe
-// itself — the same principle backend/helpers/uploadType.js applies, and the same reason
-// getOrderDisplayName reads the order's frozen name before the catalogue's.
-//
-// isProjectItem already worked this way. isPlanItem did not: it asked ONLY the catalogue. So
-// when a service plan's product was deleted, the order stopped being a plan without becoming a
-// project — it answered "no" to both questions. Five live orders were in exactly that state:
-// they vanished from the Plans filter, showed no plan summary, and PlanDetails.js's own guard
-// bounced them to the project page because they were "not a plan".
-//
-// Both questions now begin with the order's own flag, so neither can be undone by a catalogue
-// change. Verified against live data before changing: no order answers yes to both, and none is
-// left answering no to both.
 export const isProjectItem = (order) =>
   Boolean(order?.isWebsiteProject) || PROJECT_CATEGORIES.has(order?.projectSnapshot?.category?.toLowerCase()) || PROJECT_CATEGORIES.has(order?.productId?.category?.toLowerCase());
 
 export const isPlanItem = (order) =>
-  Boolean(order?.isServicePlan) || PLAN_CATEGORIES.has(order?.productId?.category?.toLowerCase());
+  PLAN_CATEGORIES.has(order?.productId?.category?.toLowerCase());
 
 // A finished item is a completed project or a closed plan. Same conditions used
 // by ProjectsAndPlans.js's getStatusMeta, kept here so every list ranks it the

@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import SummaryApi from '../common';
-import { Clock, RefreshCw, Sparkles, CalendarClock, AlertTriangle, Lock } from 'lucide-react';
+import { RefreshCw, Sparkles, CalendarClock, AlertTriangle, Lock } from 'lucide-react';
 import TriangleMazeLoader from '../components/TriangleMazeLoader';
 import DashboardLayout from '../components/DashboardLayout';
 import UpdateRequestModal from '../components/UpdateRequestModal'
+import { getNextCycleOutcome, getTimeUntilText, CYCLE_OUTCOME } from '../helpers/servicePlanCycle';
 
 // ---------------------------------------------------------------------------
 // UI-ONLY MOCK DATA
@@ -154,48 +155,17 @@ const formatDate = (date) => {
   });
 };
 
-// -- Visual-only status derivation. Reads the mock plan shape today; this is
-// the same shape real orders already have, so no rewrite is needed when this
-// gets wired to fetchUserUpdatePlans() in a later phase. --
 const getCardVisualStatus = (plan) => {
-  const product = plan.productId || {};
-  const isRecurring = Boolean(product.isMonthlyLimitedPlan || product.isMonthlyRenewablePlan);
+  const snapshot = plan.servicePlanSnapshot || {};
+  const limit = Number(snapshot.portalAccessCount || 0);
+  const used = Number(plan.serviceAccessUsedInCycle || 0);
+  const remaining = Math.max(0, limit - used);
+  const nextCycle = getNextCycleOutcome(plan);
 
-  if (plan.planStatus === 'closed') {
-    return { badge: 'Closed', tone: 'closed', isRecurring };
-  }
-
-  if (isRecurring && plan.autoRenewalStatus === 'paused') {
-    return { badge: 'Payment overdue', tone: 'paused', isRecurring };
-  }
-
-  if (isRecurring && (plan.totalYearlyDaysRemaining ?? 0) <= 0) {
-    return { badge: 'Yearly plan ended', tone: 'expired', isRecurring };
-  }
-
-  if (isRecurring) {
-    const used = plan.currentMonthUpdatesUsed || 0;
-    const limit = plan.currentMonthUpdatesLimit || product.monthlyUpdateLimit || 1;
-    if (used >= limit) {
-      return { badge: "This month's updates used", tone: 'used_up', isRecurring };
-    }
-    return { badge: 'Active', tone: 'active', isRecurring };
-  }
-
-  // simple plan
-  const validityInDays = product.validityPeriod;
-  const startDate = new Date(plan.createdAt);
-  const endDate = new Date(startDate);
-  endDate.setDate(endDate.getDate() + (validityInDays || 0));
-  const daysLeft = Math.max(0, Math.ceil((endDate - new Date()) / (1000 * 60 * 60 * 24)));
-
-  if (daysLeft <= 0) {
-    return { badge: 'Expired', tone: 'expired', isRecurring, daysLeft };
-  }
-  if ((plan.updatesUsed || 0) >= (product.updateCount || 0)) {
-    return { badge: 'Updates used', tone: 'used_up', isRecurring, daysLeft };
-  }
-  return { badge: 'Active', tone: 'active', isRecurring, daysLeft };
+  if (plan.servicePlanStatus === 'paused') return { badge: 'Payment overdue', tone: 'paused', remaining, limit, nextCycle };
+  if (['expired', 'inactive', 'cancelled'].includes(plan.servicePlanStatus)) return { badge: 'Plan ended', tone: 'expired', remaining, limit, nextCycle };
+  if (remaining <= 0) return { badge: 'Updates used', tone: 'used_up', remaining, limit, nextCycle };
+  return { badge: 'Active', tone: 'active', remaining, limit, nextCycle };
 };
 
 // Light-only pairs before this: `bg-emerald-100 text-emerald-700` reads fine on a
@@ -228,9 +198,13 @@ const UserUpdateDashboard = () => {
 
       const data = await response.json();
       if (data.success) {
-        // Filter for website update plans by category
+        // Service plans own their upload allowance on the frozen order snapshot. Reminder-only
+        // services have no customer upload action, so they do not belong on this screen.
         const userUpdatePlans = data.data.filter(order =>
-          order.productId?.category === 'website_updates' && order.isActive
+          order.isServicePlan &&
+          order.isActive &&
+          order.servicePlanSnapshot?.serviceBehavior !== 'reminder_only' &&
+          Number(order.servicePlanSnapshot?.portalAccessCount || 0) > 0
         );
         setUpdatePlans(userUpdatePlans || []);
       } else {
@@ -262,10 +236,7 @@ const UserUpdateDashboard = () => {
     );
   }
 
-  // -- UI-only: rendering MOCK_PLANS to design/review every card state.
-  // Real fetched updatePlans are still loaded above (fetchUserUpdatePlans is
-  // untouched) but not rendered yet — that swap happens in the data-wiring phase.
-  const plansToRender = MOCK_PLANS;
+  const plansToRender = updatePlans;
 
   return (
     <DashboardLayout user={user}>
@@ -359,37 +330,30 @@ const UserUpdateDashboard = () => {
                           {/* Updates Remaining */}
                           <div>
                             <div className="flex justify-between text-sm text-[var(--text-primary)] mb-1">
-                              <span>Updates Remaining</span>
+                              <span>{plan.servicePlanSnapshot?.limitScope === 'per_month' ? 'Updates this cycle' : 'Updates remaining'}</span>
                               <span className="text-base font-medium text-[var(--text-primary)]">
-                                {Math.max(0, (product.updateCount || 0) - (plan.updatesUsed || 0))} of {product.updateCount || 0}
+                                {status.remaining} of {status.limit}
                               </span>
                             </div>
                             <div className="w-full bg-[var(--glass-bg-strong)] rounded-full h-2">
                               <div
                                 className="h-2 rounded-full bg-[rgb(var(--ink-rgb))]"
                                 style={{
-                                  width: `${Math.min(100, (((product.updateCount || 0) - (plan.updatesUsed || 0)) / (product.updateCount || 1)) * 100)}%`
+                                  width: `${Math.min(100, ((status.remaining || 0) / (status.limit || 1)) * 100)}%`
                                 }}
                               ></div>
                             </div>
                           </div>
 
-                          {/* Validity Period */}
+                          {/* A cycle is only promised when the server's own renewal facts say it is. */}
                           <div>
                             <div className="flex justify-between text-sm text-[var(--text-primary)] mb-1">
-                              <span>Validity Period</span>
-                              <span className="text-base font-medium text-[var(--text-primary)] flex items-center">
-                                <Clock className="w-3 h-3 mr-1" />
-                                {status.daysLeft} days left
+                              <span>{status.nextCycle.outcome === CYCLE_OUTCOME.RETURNS ? 'Resets on' : 'Plan status'}</span>
+                              <span className="text-base font-medium text-[var(--text-primary)]">
+                                {status.nextCycle.outcome === CYCLE_OUTCOME.RETURNS
+                                  ? formatDate(status.nextCycle.returnsOn)
+                                  : status.nextCycle.outcome === CYCLE_OUTCOME.FINISHED ? 'Complete' : 'One-time plan'}
                               </span>
-                            </div>
-                            <div className="w-full bg-[var(--glass-bg-strong)] rounded-full h-2">
-                              <div
-                                className="h-2 rounded-full bg-[rgb(var(--ink-rgb))]"
-                                style={{
-                                  width: `${Math.min(100, ((status.daysLeft || 0) / (product.validityPeriod || 1)) * 100)}%`
-                                }}
-                              ></div>
                             </div>
                           </div>
                         </div>
@@ -415,33 +379,27 @@ const UserUpdateDashboard = () => {
                             download, so it links there rather than repeating the list.
                             Hidden for the MOCK_PLANS rows this page still renders, whose
                             ids resolve to no real order. */}
-                        {!String(plan._id).startsWith('mock-') ? (
-                          <button
-                            type="button"
-                            onClick={() => navigate(`/plan-details/${plan._id}`)}
-                            className="mt-2 w-full rounded-lg border border-[var(--glass-border)] py-2 text-base font-medium text-[var(--text-secondary)] transition hover:bg-[var(--glass-bg-subtle)]"
-                          >
-                            View uploaded data
-                          </button>
-                        ) : null}
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/plan-details/${plan._id}`)}
+                          className="mt-2 w-full rounded-lg border border-[var(--glass-border)] py-2 text-base font-medium text-[var(--text-secondary)] transition hover:bg-[var(--glass-bg-subtle)]"
+                        >
+                          View uploaded data
+                        </button>
 
                         {status.tone === 'used_up' && (
                           <p className="mt-2 text-center text-sm text-[var(--badge-pending-fg)]">
-                            {status.isRecurring
-                              ? `You've used this month's update. Resets on ${formatDate(plan.monthlyLimitResetDate || plan.currentMonthExpiryDate)}.`
-                              : "You've used all your updates. Please purchase a new plan."}
+                            {status.nextCycle.outcome === CYCLE_OUTCOME.RETURNS
+                              ? `You can send again ${getTimeUntilText(status.nextCycle.returnsOn)}.`
+                              : status.nextCycle.outcome === CYCLE_OUTCOME.FINISHED
+                                ? 'This plan has delivered everything it was bought for. Buy a new plan to keep sending.'
+                                : 'You have used everything on this plan. Buy a new plan to keep sending.'}
                           </p>
                         )}
 
-                        {status.tone === 'expired' && !status.isRecurring && (
+                        {status.tone === 'expired' && (
                           <p className="text-[var(--text-secondary)] text-sm mt-2 text-center">
                             Your update plan has expired. Please purchase a new plan.
-                          </p>
-                        )}
-
-                        {status.tone === 'expired' && status.isRecurring && (
-                          <p className="text-[var(--text-secondary)] text-sm mt-2 text-center">
-                            Your yearly plan has ended. Please purchase a new plan.
                           </p>
                         )}
 

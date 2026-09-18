@@ -1,31 +1,28 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { FileText } from 'lucide-react';
 import SummaryApi from '../common';
 import { toast } from 'sonner';
 import CustomerWorkspaceTabs from '../components/CustomerWorkspaceTabs';
 import Badge from '../components/Badge';
-import { getInvoiceStatusText, getInvoicePurposeText } from '../helpers/invoicePresentation';
-import { getOrderDisplayName } from '../helpers/orderPresentation';
 
 const UserInvoices = () => {
     const [invoices, setInvoices] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('all');
-    const navigate = useNavigate();
 
     useEffect(() => {
         fetchInvoices();
-    }, []);
+    }, [filter]);
 
     const fetchInvoices = async () => {
         try {
             setLoading(true);
-            // The old /api/my-invoices endpoint is not mounted. Invoice Detail and Order Detail
-            // already use this authenticated customer workspace, which returns both invoice
-            // models with their owned order display data; this page now reads that same truth.
-            const response = await fetch(SummaryApi.myPaymentWorkspace.url, {
-                method: SummaryApi.myPaymentWorkspace.method,
+            const url = filter === 'all'
+                ? SummaryApi.invoices.getUserInvoices.url
+                : `${SummaryApi.invoices.getUserInvoices.url}?status=${filter}`;
+
+            const response = await fetch(url, {
+                method: SummaryApi.invoices.getUserInvoices.method,
                 credentials: 'include',
                 headers: {
                     'Content-Type': 'application/json'
@@ -35,7 +32,7 @@ const UserInvoices = () => {
             const data = await response.json();
 
             if (data.success) {
-                setInvoices(Array.isArray(data.data?.invoices) ? data.data.invoices : []);
+                setInvoices(data.data);
             } else {
                 toast.error(data.message || 'Failed to fetch invoices');
             }
@@ -47,8 +44,18 @@ const UserInvoices = () => {
         }
     };
 
+    // Tones, not classes. The -300 text these returned was chosen against the
+    // dark ground and drops to roughly 1.5:1 on the light page.
+    const getStatusTone = (status) => {
+        switch (status) {
+            case 'paid': return 'success';
+            case 'unpaid': return 'pending';
+            case 'overdue': return 'error';
+            default: return 'neutral';
+        }
+    };
+
     const formatDate = (dateString) => {
-        if (!dateString) return '';
         const date = new Date(dateString);
         return date.toLocaleDateString('en-IN', {
             day: '2-digit',
@@ -89,8 +96,8 @@ const UserInvoices = () => {
             <div className="relative mx-auto max-w-7xl">
                 {/* Header */}
                 <div className="text-center mb-6">
-                    <h1 className="text-2xl font-bold tracking-tight text-[var(--text-primary)] sm:text-3xl">Your bills</h1>
-                    <p className="mt-1 text-base text-[var(--text-secondary)]">See payments for your projects and plans.</p>
+                    <h1 className="text-2xl font-bold tracking-tight text-[var(--text-primary)] sm:text-3xl">My Invoices</h1>
+                    <p className="mt-1 text-base text-[var(--text-secondary)]">View and manage your monthly plan invoices</p>
                 </div>
 
                 {/* Card: filter row + invoice list */}
@@ -100,14 +107,14 @@ const UserInvoices = () => {
                     <div className="relative flex flex-wrap items-center justify-between gap-3 border-b border-[var(--glass-border)] px-5 py-4 sm:px-6">
                         <div className="flex items-center gap-2">
                             <FileText className="h-5 w-5 text-[var(--text-primary)]" />
-                            <h2 className="text-lg font-semibold text-[var(--text-primary)]">Bills</h2>
+                            <h2 className="text-lg font-semibold text-[var(--text-primary)]">Invoices</h2>
                         </div>
                         <CustomerWorkspaceTabs
-                            tabs={['all', 'unpaid', 'partially_paid', 'paid', 'overdue', 'cancelled'].map((status) => ({
+                            tabs={['all', 'unpaid', 'paid', 'overdue', 'cancelled'].map((status) => ({
                                 id: status,
                                 label: status === 'all'
                                     ? 'All'
-                                    : `${getInvoiceStatusText({ status }).label} (${invoices.filter((inv) => inv.status === status).length})`,
+                                    : `${status.charAt(0).toUpperCase()}${status.slice(1)} (${invoices.filter((inv) => inv.status === status).length})`,
                             }))}
                             activeTab={filter}
                             onChange={setFilter}
@@ -138,37 +145,36 @@ const UserInvoices = () => {
                                             {/* Left Section */}
                                             <div className="flex-1">
                                                 <div className="flex items-center gap-3 mb-2 flex-wrap">
-                                                    {/* Was the invoice number as the heading and the raw
-                                                        status value beside it — "INV-202609-0005" and
-                                                        "partially_paid". The row now leads with what the
-                                                        bill is for, and the status is worded by the same
-                                                        helper every other invoice surface uses. */}
                                                     <h3 className="text-lg font-semibold text-[var(--text-primary)]">
-                                                        {getInvoicePurposeText(invoice, getOrderDisplayName(invoice.orderId, ''))}
+                                                        {invoice.invoiceNumber}
                                                     </h3>
-                                                    <Badge tone={getInvoiceStatusText(invoice).tone}>
-                                                        {getInvoiceStatusText(invoice).label}
+                                                    <Badge tone={getStatusTone(invoice.status)} className="uppercase">
+                                                        {invoice.status}
                                                     </Badge>
                                                     {isOverdue(invoice.dueDate, invoice.status) && (
                                                         <Badge tone="error" size="sm">
-                                                            Past due
+                                                            ⚠️ OVERDUE
                                                         </Badge>
                                                     )}
                                                 </div>
 
                                                 <div className="text-sm text-[var(--text-secondary)] space-y-1">
-                                                    {invoice.renewalPeriodStart && invoice.renewalPeriodEnd ? (
-                                                        <p><span className="font-medium text-[var(--text-muted)]">Covers:</span>{' '}{formatDate(invoice.renewalPeriodStart)} - {formatDate(invoice.renewalPeriodEnd)}</p>
-                                                    ) : null}
                                                     <p>
-                                                        <span className="font-medium text-[var(--text-muted)]">Sent:</span> {formatDate(invoice.invoiceDate)}
+                                                        <span className="font-medium text-[var(--text-muted)]">Plan:</span> {invoice.orderId?.productId?.serviceName || 'N/A'}
                                                     </p>
                                                     <p>
-                                                        <span className="font-medium text-[var(--text-muted)]">Pay by:</span> {formatDate(invoice.dueDate)}
+                                                        <span className="font-medium text-[var(--text-muted)]">Billing Period:</span>{' '}
+                                                        {formatDate(invoice.renewalPeriodStart)} - {formatDate(invoice.renewalPeriodEnd)}
+                                                    </p>
+                                                    <p>
+                                                        <span className="font-medium text-[var(--text-muted)]">Invoice Date:</span> {formatDate(invoice.invoiceDate)}
+                                                    </p>
+                                                    <p>
+                                                        <span className="font-medium text-[var(--text-muted)]">Due Date:</span> {formatDate(invoice.dueDate)}
                                                     </p>
                                                     {invoice.paidDate && (
                                                         <p className="text-[var(--badge-success-fg)]">
-                                                            <span className="font-medium">Paid:</span> {formatDate(invoice.paidDate)}
+                                                            <span className="font-medium">Paid On:</span> {formatDate(invoice.paidDate)}
                                                         </p>
                                                     )}
                                                 </div>
@@ -183,16 +189,18 @@ const UserInvoices = () => {
                                                     </p>
                                                 </div>
 
-                                                {['unpaid', 'partially_paid', 'overdue'].includes(invoice.status) ? (
+                                                {invoice.status === 'unpaid' || invoice.status === 'overdue' ? (
                                                     <button
-                                                        onClick={() => navigate(`/invoice-detail/${invoice._id}`)}
+                                                        onClick={() => {
+                                                            toast.info('Payment feature will be available soon!');
+                                                        }}
                                                         className={`px-6 py-2 rounded-lg font-medium transition-colors text-[var(--text-primary)] ${
                                                             invoice.status === 'overdue'
                                                                 ? 'bg-red-600 hover:bg-red-700'
                                                                 : 'bg-emerald-600 hover:bg-emerald-700'
                                                         }`}
                                                     >
-                                                        View bill
+                                                        Pay Now
                                                     </button>
                                                 ) : invoice.status === 'paid' ? (
                                                     <div className="flex items-center gap-2 text-[var(--badge-success-fg)]">

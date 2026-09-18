@@ -9,7 +9,6 @@ import displayINRCurrency from '../helpers/displayCurrency';
 import { toast } from 'sonner';
 import { QRCodeSVG } from 'qrcode.react';
 import { goToCustomerReturn } from '../helpers/customerReturnNavigation';
-import { getInstallmentPartText } from '../helpers/invoicePresentation';
 
 const DirectPayment = () => {
   const navigate = useNavigate();
@@ -152,7 +151,7 @@ const handleWalletPayment = async () => {
         navigate('/dashboard', { 
           state: { 
             pendingApproval: true,
-            message: "We have your payment and are checking it. Your project opens once it clears." 
+            message: "Your payment is being processed. Project details will be available after admin approval." 
           }
         });
       } else {
@@ -432,13 +431,13 @@ if (paymentData.selectedFeatures && paymentData.selectedFeatures.length > 0) {
   // Update the verifyPayment function
   const verifyPayment = async () => {
     if (!transactionId || !upiTransactionId.trim()) {
-      setVerificationStatus('Please enter the payment reference from your UPI app');
+      setVerificationStatus('Please enter your UPI transaction ID');
       return;
     }
     
     try {
       setIsSubmittingVerification(true);
-      setVerificationStatus('Sending your payment...');
+      setVerificationStatus('Submitting verification request...');
   
       // Debug logs
       console.log("Payment data:", paymentData);
@@ -470,7 +469,7 @@ if (paymentData.selectedFeatures && paymentData.selectedFeatures.length > 0) {
         }
       } catch (error) {
         console.error('Error creating order:', error);
-        setVerificationStatus('We could not start your order. Please try again, or contact support.');
+        setVerificationStatus('Error creating order. Please try again or contact support.');
         setLoading(false);
         return;
       }
@@ -514,7 +513,7 @@ if (paymentData.selectedFeatures && paymentData.selectedFeatures.length > 0) {
       
       if (data.success) {
         // Show appropriate success message
-        setVerificationStatus('We have your payment. Your project starts once it clears, usually within 1-4 hours.');
+        setVerificationStatus('Your payment verification has been submitted. Your project will proceed after admin approval (1-4 hours).');
         toast.success('Payment submitted successfully! We\'ll notify you once it\'s approved.');
         
         // Redirect to dashboard with pending flag
@@ -530,12 +529,12 @@ if (paymentData.selectedFeatures && paymentData.selectedFeatures.length > 0) {
         // Set payment processed flag
         setPaymentProcessed(true);
       } else {
-        setVerificationStatus(data.message || 'We could not accept this payment. Please contact support.');
+        setVerificationStatus(data.message || 'Verification submission failed. Please contact support.');
         setIsSubmittingVerification(false);
       }
     } catch (error) {
       console.error('Error verifying payment:', error);
-      setVerificationStatus('Something went wrong. Please try again, or contact support.');
+      setVerificationStatus('Error submitting verification. Please contact support with error: ' + (error.message || 'Unknown error'));
    setIsSubmittingVerification(false); // Stop loader on error
   }
   };
@@ -545,29 +544,25 @@ if (paymentData.selectedFeatures && paymentData.selectedFeatures.length > 0) {
     
     return (
       <div className="border-b pb-4 mb-4">
-        {/* "Installment Information" named the data, not the thing. And the percentage
-            beside the current installment was typed in as "(30%)" — live orders carry 30,
-            40 and 50, so it was simply wrong for most of them. The share is already
-            implied by the amount, which is right underneath. */}
-        <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">Paying in parts</h3>
+        <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">Installment Information</h3>
 
         <div className="mb-4 rounded-lg border border-[var(--glass-border)] bg-[var(--glass-bg-subtle)] p-4">
           <div className="flex justify-between items-center mb-2">
-            <span className="text-base font-medium text-[var(--text-primary)]">This payment</span>
-            <span className="text-base font-semibold text-[var(--text-primary)]">{getInstallmentPartText(installmentNumber)}</span>
+            <span className="text-base font-medium text-[var(--text-primary)]">Current Installment:</span>
+            <span className="text-base font-semibold text-[var(--text-primary)]">#{installmentNumber} (30%)</span>
           </div>
           <div className="flex justify-between items-center">
-            <span className="text-base text-[var(--text-primary)]">You pay now</span>
+            <span className="text-base text-[var(--text-primary)]">Amount Due Now:</span>
             <span className="text-lg font-bold text-[var(--text-primary)]">
               ₹{paymentData.currentPaymentAmount.toLocaleString()}
             </span>
           </div>
         </div>
 
-        <h4 className="text-base font-medium text-[var(--text-primary)] mb-2">Still to pay</h4>
+        <h4 className="text-base font-medium text-[var(--text-primary)] mb-2">Remaining Installments</h4>
         {remainingPayments.map((payment, index) => (
           <div key={index} className="flex justify-between items-center mb-2 text-sm text-[var(--text-primary)]">
-            <span>{getInstallmentPartText(payment.installmentNumber)}</span>
+            <span>Installment #{payment.installmentNumber} ({payment.percentage}%)</span>
             <span>₹{payment.amount.toLocaleString()}</span>
           </div>
         ))}
@@ -804,6 +799,7 @@ if (paymentData.selectedFeatures && paymentData.selectedFeatures.length > 0) {
               </div>
 
               {/* <p className="text-center mb-2">Scan with any UPI app to pay {displayINRCurrency(remainingAmount)}</p> */}
+              <p className="text-sm text-[var(--text-primary)] mb-4 text-center">Transaction ID: {transactionId}</p>
 
               <div className="w-full mb-4">
                 <label htmlFor="upiTransactionId" className="block text-base font-medium text-[var(--text-primary)] mb-2">
@@ -819,7 +815,7 @@ if (paymentData.selectedFeatures && paymentData.selectedFeatures.length > 0) {
                   required
                 />
                 <p className="text-sm text-[var(--text-primary)] mt-1">
-                  You will find this in your UPI app, under payment history.
+                  This is required for payment verification. You'll find it in your UPI app payment history.
                 </p>
               </div>
 
@@ -828,7 +824,7 @@ if (paymentData.selectedFeatures && paymentData.selectedFeatures.length > 0) {
       disabled={loading || !upiTransactionId.trim() || isSubmittingVerification}
       className="w-full rounded-lg bg-[rgb(var(--ink-rgb))] px-6 py-2 text-base font-medium text-[var(--page-bg)] transition-colors hover:bg-[rgb(var(--ink-rgb)/0.85)] disabled:bg-[var(--glass-bg-strong)] disabled:text-[var(--text-muted)]"
     >
-      {isSubmittingVerification ? 'Sending...' : (loading ? 'Checking...' : 'Send for checking')}
+      {isSubmittingVerification ? 'Processing...' : (loading ? 'Verifying...' : 'Submit for Verification')}
     </button>
 
               {verificationStatus && (

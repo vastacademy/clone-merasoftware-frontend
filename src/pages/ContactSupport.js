@@ -19,7 +19,7 @@ const ContactSupportPage = () => {
   const faqs = [
     {
       question: 'How do I create a new support ticket?',
-      answer: 'Click on the "Create New Ticket" button, select a category related to your issue, provide a clear subject, and describe your problem in detail. Our support team will review your ticket as soon as possible.'
+      answer: 'Click on the "Create New Ticket" button, select a category related to your issue, provide a clear subject, and describe your problem in detail. We’ll update your ticket when there is progress.'
     },
     {
       question: 'How long will it take to get a response?',

@@ -1,6 +1,6 @@
 # Portal UI Cleanup — Handoff
 
-**Aakhri update**: 15-09-2026 · **Halat**: Phase 0, 1 aur **2 — teeno poore.** 20/20 files migrate ho chuki.
+**Aakhri update**: 16-09-2026 · **Halat**: Phase 0, 1 aur **2 — teeno poore.** 20/20 files migrate ho chuki.
 
 **Bacha hua kaam — code ka kuch nahi.** §11 ke teen `CODEBASE_MAP.md` fixes bhi ho chuke.
 Sirf ek cheez khuli hai: **§6 #2 — metric tile**, jiske liye user se **dark mode ka SS** chahiye
@@ -12,6 +12,13 @@ Sirf ek cheez khuli hai: **§6 #2 — metric tile**, jiske liye user se **dark m
 
 Ye doc ab *record* hai, to-do list nahi. §5 ka batch plan itihaas ke liye rakha hai —
 usme jo "agla kaam" likha hai wo ho chuka; sach progress table hai.
+
+**Post-cleanup consistency update (16-09-2026):** customer navigation ka `Profile` label ab
+**Settings** hai, lekin established route `/profile` hi hai. Usi page ka login-free secure-upload
+switch ab light page par bhi saaf dikhta hai: OFF state neutral opaque track + strong theme border,
+ON state emerald, white thumb, keyboard focus ring, `role="switch"`, `aria-checked`, `aria-label`
+aur saving ke waqt `aria-busy`. Shared `DashboardLayout` navigation source ke kaaran header aur
+sidebar dono ek hi label render karte hain; koi parallel navigation/configuration nahi banayi gayi.
 
 ---
 

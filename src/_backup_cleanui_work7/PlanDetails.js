@@ -11,8 +11,7 @@ import TriangleMazeLoader from '../components/TriangleMazeLoader';
 import UpdateRequestModal from '../components/UpdateRequestModal';
 import SummaryApi from '../common';
 import { isPlanItem } from '../helpers/orderType';
-import { getInvoiceStatusText, isStatementInvoice } from '../helpers/invoicePresentation';
-import { getNextCycleOutcome, getTimeUntilText, getTermRemainingText, CYCLE_OUTCOME } from '../helpers/servicePlanCycle';
+import { getInvoiceStatusText, getInvoicePurposeText, isInvoicePayable } from '../helpers/invoicePresentation';
 import { goToCustomerReturn } from '../helpers/customerReturnNavigation';
 import UploadedDataList from '../components/UploadedDataList';
 import { downloadAuthenticatedFile } from '../helpers/downloadFile';
@@ -128,6 +127,15 @@ const BADGE_TONE_CLASSES = {
   expired: 'badge badge-neutral',
   paused: 'badge badge-error',
   closed: 'badge badge-neutral',
+};
+
+// The invoice helper returns Badge's own tone names, not this page's local ones, so its
+// badges are built from that vocabulary directly rather than being translated twice.
+const INVOICE_BADGE_CLASSES = {
+  success: 'badge badge-success',
+  pending: 'badge badge-pending',
+  error: 'badge badge-error',
+  neutral: 'badge badge-neutral',
 };
 
 const PlanDetails = ({ isProjectServiceView = false }) => {
@@ -294,26 +302,6 @@ const PlanDetails = ({ isProjectServiceView = false }) => {
   // Nothing about the allowance itself changes here — only which field is read.
   const isServiceKind = Boolean(plan.isServicePlan && plan.servicePlanSnapshot);
 
-  // Whether the allowance comes back, and when — the same question the renewal cron asks.
-  const nextCycle = getNextCycleOutcome(plan);
-
-  // A statement is the whole plan stated once; the rest are the bills it is made of. They are
-  // separated here rather than in the markup so the "is this a bill?" question is asked in one
-  // place, by the same helper the invoice pages use.
-  const serviceInvoices = plan.serviceInvoices || [];
-  const statementInvoice = serviceInvoices.find(isStatementInvoice) || null;
-  const billedInvoices = serviceInvoices.filter((invoice) => !isStatementInvoice(invoice));
-  // amountPaid is the running total the payment helpers maintain on the invoice, so what has
-  // arrived and what is still owed are read, never recomputed from the bills below.
-  const statementPaid = Number(statementInvoice?.amountPaid || 0);
-  const statementDue = Math.max(0, Number(statementInvoice?.amount || 0) - statementPaid);
-
-  // How much of the PLAN's term is left. Deliberately computed next to nextCycle, because the
-  // two answer different questions and the page used to blur them: the cycle line said when the
-  // customer could send again, while this tile showed the whole plan's day count under the label
-  // "Days left". A service plan with no end date has no term to count down, and says so instead.
-  const termRemaining = getTermRemainingText(plan.servicePlanEndDate);
-
   // A service plan's allowance is per cycle, and so is its counter: status.accessLimit /
   // accessUsed come from the snapshot and serviceAccessUsedInCycle. An unlimited or
   // reminder-only service has no number to count, which is why totalUpdates can be null
@@ -407,65 +395,45 @@ const PlanDetails = ({ isProjectServiceView = false }) => {
                   </p>
                 )}
 
-                {/* What this plan costs, on one line.
-                    This was a heading, a total, a paid/due line, a "Your bill" heading and a row
-                    under it — five stacked lines on a full-width band, with the right half of the
-                    page empty and the same figure printed twice: the header said "₹1,490 paid"
-                    and the single row beneath it said "₹1,490 · Paid".
-                    Measured against live data before rebuilding: no plan has more than one bill
-                    (5 have exactly one, 3 have none), so the list and its heading were never
-                    earned — a heading over a single row is furniture. Where a statement exists,
-                    money is genuinely still owed on both, which makes the outstanding figure the
-                    one thing worth saying loudly.
-                    Three shapes exist in the data and each gets its own sentence. The money is
-                    read from invoice.amountPaid, which the payment helpers maintain — nothing is
-                    added up here.
+                {plan.serviceInvoices?.length ? (
+                  <div className="mt-4 border-t border-[var(--glass-border)] pt-3">
+                    <p className="text-sm font-semibold">Payments</p>
+                    <ul className="mt-2 divide-y divide-[var(--divider)]">
+                      {plan.serviceInvoices.map((invoice) => {
+                        const invoiceStatus = getInvoiceStatusText(invoice);
+                        const payable = isInvoicePayable(invoice);
 
-                    ON THE WORDING, which was wrong once already: the statement's remainder is NOT
-                    a debt. A plan bought for N cycles states its whole price up front, but only
-                    the cycle that has started is ever billed — the rest has no invoice yet.
-                    Measured across live data: every statement remainder equals exactly the cycles
-                    not yet billed, and no issued bill is unpaid on any plan. So "₹1,490 still to
-                    pay" told a customer who owes nothing that they were holding money back. It
-                    leads with what HAS been paid, and says the rest arrives with the plan. */}
-                {(statementInvoice || billedInvoices.length) ? (
-                  <div className="mt-4 flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-t border-[var(--glass-border)] pt-3">
-                    {statementInvoice ? (
-                      statementDue > 0 ? (
-                        <p className="text-base text-[var(--text-primary)]">
-                          <span className="font-semibold">₹{statementPaid.toLocaleString('en-IN')} paid</span>
-                          <span className="text-[var(--text-secondary)]">
-                            {' '}of ₹{Number(statementInvoice.amount || 0).toLocaleString('en-IN')} for this plan.
-                            {nextCycle.outcome === CYCLE_OUTCOME.RETURNS
-                              ? ` The rest is billed as the plan runs — next on ${formatDate(nextCycle.returnsOn)}.`
-                              : ' The rest is billed as the plan runs.'}
-                          </span>
-                        </p>
-                      ) : (
-                        <p className="text-base text-[var(--text-primary)]">
-                          <span className="font-semibold">₹{Number(statementInvoice.amount || 0).toLocaleString('en-IN')}</span>
-                          <span className="text-[var(--text-secondary)]"> for this plan — fully paid.</span>
-                        </p>
-                      )
-                    ) : (
-                      /* No statement: the plan was billed once and that bill is the whole story. */
-                      <p className="text-base text-[var(--text-primary)]">
-                        <span className="font-semibold">₹{Number(billedInvoices[0]?.amount || 0).toLocaleString('en-IN')}</span>
-                        <span className="text-[var(--text-secondary)]">
-                          {' '}for this plan — {getInvoiceStatusText(billedInvoices[0]).label.toLowerCase()}.
-                        </span>
-                      </p>
-                    )}
+                        return (
+                          <li key={invoice._id} className="flex flex-wrap items-center justify-between gap-3 py-2.5">
+                            <div className="min-w-0">
+                              <p className="text-base font-semibold text-[var(--text-primary)]">
+                                ₹{Number(invoice.amount || 0).toLocaleString('en-IN')}
+                              </p>
+                              <p className="text-sm text-[var(--text-secondary)]">
+                                {getInvoicePurposeText(invoice, purchasedName)}
+                              </p>
+                            </div>
 
-                    {/* One link, to whichever record actually holds the detail. Two buttons that
-                        both opened an invoice page sat here before. */}
-                    <button
-                      type="button"
-                      onClick={() => navigate(`/invoice-detail/${(statementInvoice || billedInvoices[0])._id}`, { state: location.state })}
-                      className="shrink-0 rounded-lg border border-[var(--glass-border-strong)] px-3 py-1.5 text-xs font-semibold text-[var(--text-primary)] transition hover:bg-[var(--glass-bg-hover)]"
-                    >
-                      Payment details
-                    </button>
+                            <div className="flex shrink-0 items-center gap-2.5">
+                              <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${INVOICE_BADGE_CLASSES[invoiceStatus.tone]}`}>
+                                {invoiceStatus.label}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => navigate(`/invoice-detail/${invoice._id}`, { state: location.state })}
+                                className={`rounded-lg border px-2.5 py-1 text-xs font-semibold ${
+                                  payable
+                                    ? 'border-[var(--badge-success-border)] text-[var(--badge-success-fg)]'
+                                    : 'border-[var(--glass-border-strong)] text-[var(--text-primary)]'
+                                }`}
+                              >
+                                {payable ? 'Pay now' : 'View'}
+                              </button>
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
                   </div>
                 ) : null}
               </section>
@@ -530,30 +498,16 @@ const PlanDetails = ({ isProjectServiceView = false }) => {
                       Request Update
                     </button>
 
-                    {/* When the allowance is spent, this line answers the only question the
-                        customer has: when can I send something again?
-                        It used to answer "More on <cycle end>" for every service, which is only
-                        true of a service that has another cycle coming. A one-off plan has an end
-                        date but nothing after it, so the sentence promised a renewal that would
-                        never arrive; a service with no cycle end recorded printed "Invalid Date".
-                        Whether a cycle is coming is decided by helpers/servicePlanCycle.js, which
-                        asks what the renewal cron asks.
-                        The wait is stated as a wait, not as a date: "11 Oct 2026" makes the reader
-                        count on a calendar, and on the final day it reads as though nothing is
-                        about to change. getTimeUntilText tightens from days to hours as it nears.
-                        It can only be reached on the RETURNS branch, which the helper only returns
-                        for a date it has already parsed — so it never renders an empty wait. */}
+                    {/* A service plan's allowance comes back every cycle, so telling its
+                        customer to "purchase a new plan" was wrong as well as blunt — that
+                        sentence belongs to a one-off plan that is genuinely finished. */}
                     {status.tone === 'used_up' && (
                       <p className="mt-2 text-center text-sm text-[var(--badge-pending-fg)]">
                         {isServiceKind
-                          ? nextCycle.outcome === CYCLE_OUTCOME.RETURNS
-                            ? `You can send again ${getTimeUntilText(nextCycle.returnsOn)}.`
-                            : nextCycle.outcome === CYCLE_OUTCOME.FINISHED
-                              ? 'This plan has delivered everything it was bought for. Buy a new plan to keep sending.'
-                              : 'You have used everything on this plan. Buy a new plan to keep sending.'
+                          ? `You have used this cycle's updates. More on ${formatDate(plan.serviceCurrentCycleEnd)}.`
                           : status.isRecurring
-                            ? `You can send again from ${formatDate(plan.monthlyLimitResetDate || plan.currentMonthExpiryDate)}.`
-                            : 'You have used everything on this plan. Buy a new plan to keep sending.'}
+                            ? `Resets on ${formatDate(plan.monthlyLimitResetDate || plan.currentMonthExpiryDate)}.`
+                            : 'All updates used on this plan.'}
                       </p>
                     )}
                     {status.tone === 'expired' && (
@@ -582,35 +536,26 @@ const PlanDetails = ({ isProjectServiceView = false }) => {
                         once — the file cap coming from the plan the customer actually bought. */}
                     <div className="mt-4 border-t border-[var(--glass-border)] pt-4">
                       <div className="space-y-2.5">
-                        {/* This is the PLAN's own term — when the whole thing runs out — which is
-                            a different question from when the allowance comes back (that answer
-                            sits under the upload button). It was labelled "Days left" over a bare
-                            day count: "164 days" is arithmetic, and read next to the cycle line it
-                            was easy to take for the same thing. It now names what is expiring and
-                            states the remainder in months and days.
-                            Label above value, not beside it: this column is 280px wide, and a
-                            label that says what is expiring plus a value in months AND days will
-                            not share one line — side by side, both halves wrapped. */}
-                        <div className="rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg)] px-4 py-2.5">
-                          <p className="text-sm text-[var(--text-secondary)]">{status.isRecurring ? 'Resets on' : termRemaining ? 'Plan expires in' : 'Plan runs for'}</p>
-                          <p className="mt-0.5 flex items-center gap-1.5 text-base font-semibold text-[var(--text-primary)]">
+                        <div className="flex items-center justify-between rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg)] px-4 py-2.5">
+                          <span className="text-sm text-[var(--text-secondary)]">{status.isRecurring ? 'Resets on' : status.daysLeft === null ? 'Runs for' : 'Days left'}</span>
+                          <span className="flex items-center gap-1 text-base font-semibold text-[var(--text-primary)]">
                             {status.isRecurring ? (
                               <>
-                                <CalendarClock className="h-3.5 w-3.5 shrink-0" />
+                                <CalendarClock className="h-3.5 w-3.5" />
                                 {formatDate(plan.monthlyLimitResetDate || plan.currentMonthExpiryDate)}
                               </>
                             ) : (
                               <>
-                                <Clock className="h-3.5 w-3.5 shrink-0" />
-                                {termRemaining || 'As long as you need'}
+                                <Clock className="h-3.5 w-3.5" />
+                                {status.daysLeft === null ? 'As long as you need' : `${status.daysLeft} days`}
                               </>
                             )}
-                          </p>
+                          </span>
                         </div>
                         {filesPerRequest > 0 && (
-                          <div className="rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg)] px-4 py-2.5">
-                            <p className="text-sm text-[var(--text-secondary)]">Files you can send at once</p>
-                            <p className="mt-0.5 text-base font-semibold text-[var(--text-primary)]">{filesPerRequest}</p>
+                          <div className="flex items-center justify-between rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg)] px-4 py-2.5">
+                            <span className="text-sm text-[var(--text-secondary)]">Files you can send at once</span>
+                            <span className="text-base font-semibold text-[var(--text-primary)]">{filesPerRequest}</span>
                           </div>
                         )}
                       </div>
@@ -703,11 +648,11 @@ const PlanDetails = ({ isProjectServiceView = false }) => {
                       same hole the desktop panel had, phrased the same way now. */}
                   <div className="relative mt-4 grid grid-cols-2 gap-3">
                     <div className="rounded-2xl border border-[var(--glass-border)] bg-[var(--glass-bg)] p-3">
-                      <p className="text-sm text-[var(--text-secondary)]">{status.isRecurring ? 'Resets on' : termRemaining ? 'Plan expires in' : 'Plan runs for'}</p>
+                      <p className="text-sm text-[var(--text-secondary)]">{status.isRecurring ? 'Resets' : status.daysLeft === null ? 'Runs for' : 'Days left'}</p>
                       <p className="mt-1 text-base font-semibold text-[var(--text-primary)]">
                         {status.isRecurring
                           ? formatDate(plan.monthlyLimitResetDate || plan.currentMonthExpiryDate)
-                          : termRemaining || 'As long as you need'}
+                          : status.daysLeft === null ? 'As long as you need' : `${status.daysLeft} days`}
                       </p>
                     </div>
                     {filesPerRequest > 0 && (

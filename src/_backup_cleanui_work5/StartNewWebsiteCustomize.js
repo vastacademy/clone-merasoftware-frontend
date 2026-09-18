@@ -917,7 +917,7 @@ const StartNewWebsiteCustomize = () => {
                 <h3 className="relative text-xl font-semibold text-[var(--text-primary)]">Scan to pay</h3>
                 <p className="relative mt-1 text-sm text-[var(--text-secondary)]">
                   Pay ₹{upiPart.toLocaleString('en-IN')} using any UPI app, then enter
-                  the UPI reference number from your payment app.
+                  the transaction ID below.
                   {walletPart > 0 && (
                     <span className="mt-1 block text-[var(--badge-success-fg)]">
                       ₹{walletPart.toLocaleString('en-IN')} will be paid from your wallet instantly.
@@ -931,11 +931,12 @@ const StartNewWebsiteCustomize = () => {
                   <div className="rounded-2xl bg-white p-4">
                     <QRCodeSVG value={upiLink} size={190} />
                   </div>
+                  <p className="mt-3 text-xs text-[var(--text-muted)]">Transaction ID: {payTxnId}</p>
                 </div>
 
                 <label className="relative mt-5 block">
                   <span className="mb-2 block text-sm font-medium text-[var(--text-primary)]">
-                    UPI Reference Number
+                    UPI Transaction ID
                   </span>
                   <input
                     type="text"
@@ -944,7 +945,7 @@ const StartNewWebsiteCustomize = () => {
                     onChange={(e) =>
                       setUpiTransactionId(e.target.value.replace(/\D/g, ''))
                     }
-                    placeholder="Enter the 12-digit reference number from your UPI app"
+                    placeholder="Enter the 12-digit ID from your UPI app"
                     className="w-full rounded-xl border border-[var(--glass-border-strong)] bg-[var(--glass-bg-subtle)] px-4 py-3 text-base text-[var(--text-primary)] placeholder-[var(--text-muted)] outline-none transition focus:border-[var(--badge-success-fg)]"
                   />
                 </label>
@@ -955,7 +956,7 @@ const StartNewWebsiteCustomize = () => {
                   disabled={payProcessing || upiTransactionId.trim().length < 12}
                   className="relative mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[var(--badge-success-border)] bg-[var(--badge-success-bg)] px-5 py-3 text-base font-medium text-[var(--text-primary)] shadow-[inset_0_1px_0_rgba(255,255,255,0.25)] backdrop-blur-md transition-all duration-300 hover:border-[var(--badge-success-border)] hover:bg-[var(--glass-bg-strong)] disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {payProcessing ? 'Submitting…' : 'Send payment for checking'}
+                  {payProcessing ? 'Submitting…' : 'Submit for Verification'}
                 </button>
               </>
             )}
