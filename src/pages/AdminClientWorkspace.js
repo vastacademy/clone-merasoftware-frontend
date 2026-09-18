@@ -54,6 +54,7 @@ import {
 } from "../helpers/paymentLedger";
 import { adminReturnState, getAdminReturnTarget, goToAdminReturn } from "../helpers/adminReturnNavigation";
 import { getOrderDisplayName } from "../helpers/orderPresentation";
+import { getPaymentMethodText } from "../helpers/invoicePresentation";
 
 const OVERVIEW_TAB = { id: "overview", label: "Overview", active: true };
 const PROJECTS_TAB = { id: "projects", label: "Projects", active: true };
@@ -81,7 +82,14 @@ const formatDate = (value) => {
 
 const formatDateTime = (value) => {
   const parsed = safeDateTime(value);
-  return parsed ? parsed.toLocaleString("en-IN") : "N/A";
+  if (!parsed) return "N/A";
+  return parsed.toLocaleString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
 };
 
 const isWebsiteUpdateOrder = (order) =>
@@ -1368,7 +1376,6 @@ const AdminClientWorkspace = () => {
           }
           meta={
             <>
-              <AdminInfoPill label="Client ID" value={customerId || client?._id || "N/A"} variant="dark" />
               <AdminInfoPill label="Status" value={clientStatus} variant="dark" />
               <AdminInfoPill label="Joined" value={createdAt} variant="dark" />
             </>
@@ -1388,9 +1395,6 @@ const AdminClientWorkspace = () => {
           <section>
             <div className="mb-4">
               <h2 className="text-xl font-bold text-slate-900">Overview</h2>
-              <p className="mt-1 text-sm text-slate-500">
-                SSOT customer data loaded from the existing backend APIs.
-              </p>
             </div>
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -1419,14 +1423,14 @@ const AdminClientWorkspace = () => {
             <div className="mt-6 rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <h3 className="text-base font-semibold text-slate-900">Data Snapshot</h3>
-                  <p className="mt-1 text-sm text-slate-500">
-                    Orders: {allData.orders.length} | Invoices: {allData.invoices.length} | Update Requests: {allData.summary?.updateCount ?? 0}
-                  </p>
+                  <h3 className="text-base font-semibold text-slate-900">Summary</h3>
+                  <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-sm text-slate-500">
+                    <span>{allData.orders.length} orders</span>
+                    <span>{allData.invoices.length} invoices</span>
+                    <span>{allData.summary?.updateCount ?? 0} update requests</span>
+                  </div>
                 </div>
-                <div className="text-sm text-slate-600">
-                  {dataLoading ? "Loading latest workspace data..." : "Latest customer data loaded"}
-                </div>
+                {dataLoading ? <div className="text-sm text-slate-600">Loading...</div> : null}
               </div>
             </div>
           </section>
@@ -1449,7 +1453,6 @@ const AdminClientWorkspace = () => {
                 formatDateTime={formatDateTime}
                 backLabel="Back to Projects"
                 detailLabel="Project"
-                notesText="This is the workspace subpage version for projects. It stays inside the same client workspace, and the back button returns to the projects list without leaving the page."
                 summaryTitle="Project progress snapshot"
                 selectedCheckpointId={selectedProjectCheckpointId}
                 onSelectCheckpoint={setSelectedProjectCheckpointId}
@@ -1463,7 +1466,7 @@ const AdminClientWorkspace = () => {
             ) : (
               <CompactWorkspaceCard
                 title="Projects"
-                subtitle={`Auto-sorted by activity. Latest active records stay on top and completed records stay at the end. Last updated: ${lastUpdatedAt}`}
+                subtitle={`Active projects first. Last updated ${lastUpdatedAt}.`}
                 items={projectOrders}
                 emptyText="No projects found for this client."
                 onRowClick={handleOpenProject}
@@ -1520,7 +1523,6 @@ const AdminClientWorkspace = () => {
                 formatDateTime={formatDateTime}
                 backLabel="Back to Plans"
                 detailLabel="Plan"
-                notesText="This is the workspace subpage version for plans. It stays inside the same client workspace, and the back button returns to the plans list without leaving the page."
                 summaryTitle="Plan activity snapshot"
                 submissions={submissions}
                 submissionsLoading={submissionsLoading}
@@ -1529,7 +1531,7 @@ const AdminClientWorkspace = () => {
             ) : (
               <CompactWorkspaceCard
                 title="Plans"
-                subtitle={`Auto-sorted by activity. Latest active records stay on top and completed records stay at the end. Total plan records: ${planOrders.length}`}
+                subtitle={`Active plans first. ${planOrders.length} total.`}
                 items={planOrders}
                 emptyText="No plans found for this client."
                 onRowClick={handleOpenPlan}
@@ -1769,8 +1771,8 @@ const AdminClientWorkspace = () => {
                         {cancelPayoutLegs.map((leg) => (
                           <div key={leg.method} className="border-t border-slate-200 pt-3 first:border-t-0 first:pt-0">
                             <div className="flex items-center justify-between">
-                              <span className="text-base font-semibold capitalize text-slate-900">
-                                {leg.method.replace("_", " ")}
+                              <span className="text-base font-semibold text-slate-900">
+                                {getPaymentMethodText(leg.method)}
                               </span>
                               <span className="text-base font-bold text-slate-900">
                                 {displayINRCurrency(leg.amount)}
@@ -1805,8 +1807,8 @@ const AdminClientWorkspace = () => {
                           <div className="space-y-2 border-t border-slate-200 pt-3">
                             {(cancelPreview.legs || []).map((leg) => (
                               <div key={`manual-${leg.method}`} className="flex items-center justify-between gap-3">
-                                <span className="text-sm font-semibold capitalize text-slate-700">
-                                  {leg.method.replace("_", " ")}
+                                <span className="text-sm font-semibold text-slate-700">
+                                  {getPaymentMethodText(leg.method)}
                                   <span className="ml-2 font-normal text-slate-400">
                                     max {displayINRCurrency(leg.amount)}
                                   </span>
@@ -1917,7 +1919,7 @@ const AdminClientWorkspace = () => {
                                   {externalLegs.map((leg) => (
                                     <div key={`${svc.orderId}-${leg.method}`}>
                                       <p className="text-sm text-slate-500">
-                                        Send the <span className="capitalize">{leg.method.replace("_", " ")}</span>{" "}
+                                        Send the {getPaymentMethodText(leg.method)}{" "}
                                         share yourself, then enter the reference id.
                                       </p>
                                       <input
@@ -2684,9 +2686,6 @@ const PaymentInvoicesPanel = ({
             <h2 className="text-xl font-bold text-slate-900">Payments</h2>
             <p className="mt-1 text-sm text-slate-500">Open a project or plan to see its complete payment history.</p>
           </div>
-          <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
-            {ledgerGroups.reduce((sum, group) => sum + group.items.length, 0)} records
-          </span>
         </div>
 
         <div className="mt-5 space-y-5">
@@ -2712,11 +2711,11 @@ const PaymentInvoicesPanel = ({
                 <div className="min-w-0">
                   <p className="truncate text-base font-bold text-slate-900">{group.serviceName}</p>
                   <p className="mt-1 text-sm text-slate-500">
-                    {group.items.length} payment or invoice record{group.items.length === 1 ? "" : "s"} · Latest activity {formatDateTime(group.items[0]?.date)}
+                    {group.items.length} {group.items.length === 1 ? "payment" : "payments"} · Last activity {formatDateTime(group.items[0]?.date)}
                   </p>
                   {finalInvoice ? (
                     <p className={`mt-2 text-xs font-bold ${finalInvoiceBalance === 0 ? "text-emerald-700" : "text-amber-700"}`}>
-                      Final Invoice · {finalInvoiceBalance === 0 ? "Fully Paid" : `Pending ${formatCurrency(finalInvoiceBalance)}`}
+                      {finalInvoiceBalance === 0 ? "Fully paid" : `Pending ${formatCurrency(finalInvoiceBalance)}`}
                     </p>
                   ) : null}
                 </div>
@@ -2852,7 +2851,13 @@ const DeletedProjectsPanel = ({ transactions, invoices, formatDateTime, onOpenGr
               group.startDate ? `Purchased ${formatDate(group.startDate)}` : null,
               group.deletedProjectDeletedAt ? `Deleted ${formatDate(group.deletedProjectDeletedAt)}` : null,
               // Falls back to the last payment record's own method for pre-snapshot deletions.
-              `Paid by ${group.deletedProjectPaymentMethod || latestItem?.method || "N/A"}`,
+              // latestItem.method is already human text (paymentLedger.js); the raw snapshot
+              // field needs its own translation.
+              group.deletedProjectPaymentMethod
+                ? `Paid by ${getPaymentMethodText(group.deletedProjectPaymentMethod)}`
+                : latestItem?.method
+                ? `Paid by ${latestItem.method}`
+                : null,
             ].filter(Boolean);
             return (
               <button
@@ -2864,9 +2869,6 @@ const DeletedProjectsPanel = ({ transactions, invoices, formatDateTime, onOpenGr
                 <div className="min-w-0">
                   <p className="truncate text-base font-bold text-slate-900">{group.serviceName}</p>
                   <p className="mt-1 text-sm text-slate-500">{facts.join(" · ")}</p>
-                  <p className="mt-1 text-xs text-slate-400">
-                    {group.items.length} payment or invoice record{group.items.length === 1 ? "" : "s"}
-                  </p>
                 </div>
                 <span className="shrink-0 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
                   Open payments
@@ -2882,7 +2884,6 @@ const DeletedProjectsPanel = ({ transactions, invoices, formatDateTime, onOpenGr
 
 const ORDINALS = ["1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th", "10th"];
 const getOrdinal = (n) => ORDINALS[n - 1] || `${n}th`;
-const shortId = (value) => (value ? String(value).slice(-5) : "");
 const getOrderReference = (value) => String(value?._id || value || "");
 
 const getInvoiceLabel = (invoice) => {
@@ -2949,7 +2950,7 @@ const PaymentOrderHistorySubpage = ({ customerId, orderId, onBack }) => {
     };
   }, [customerId, orderId, reloadKey]);
 
-  const { order, invoices, finalInvoice, transactions, combinedRecords, serviceName, invoiceValue, recordedPayments, pendingRecords, initialProjectInvoiceId } = useMemo(() => {
+  const { order, invoices, finalInvoice, transactions, combinedRecords, paymentGroups, serviceName, invoiceValue, recordedPayments, pendingRecords, initialProjectInvoiceId } = useMemo(() => {
     const allOrders = workspace?.orders || [];
     const allInvoices = workspace?.invoices || [];
     const allTransactions = workspace?.transactions || [];
@@ -3037,12 +3038,34 @@ const PaymentOrderHistorySubpage = ({ customerId, orderId, onBack }) => {
       (left, right) => right.sortDate - left.sortDate
     );
 
+    // One installment invoice can be settled by several payments (e.g. part wallet, part UPI —
+    // see the comment above transactionsByInvoiceId). combinedRecords already gives each leg its
+    // own row so nothing about approvals/downloads changes; this only decides how those rows are
+    // grouped on screen, so two "3rd Installment" cards don't sit side by side with no way to
+    // tell they are the same bill split across two payments.
+    const paymentGroups = [];
+    const groupByInvoiceId = new Map();
+    combinedRecords.forEach((record) => {
+      const invoiceId = record.invoice ? String(record.invoice._id) : null;
+      if (invoiceId && groupByInvoiceId.has(invoiceId)) {
+        const group = groupByInvoiceId.get(invoiceId);
+        group.records.push(record);
+        group.sortDate = Math.max(group.sortDate, record.sortDate);
+        return;
+      }
+      const group = { key: invoiceId ? `group-${invoiceId}` : record.key, invoice: record.invoice, records: [record], sortDate: record.sortDate };
+      if (invoiceId) groupByInvoiceId.set(invoiceId, group);
+      paymentGroups.push(group);
+    });
+    paymentGroups.sort((left, right) => right.sortDate - left.sortDate);
+
     return {
       order: matchingOrder,
       invoices: paymentInvoices,
       finalInvoice: projectFinalInvoice || serviceStatement,
       transactions: matchingTransactions,
       combinedRecords,
+      paymentGroups,
       serviceName: resolvedServiceName,
       invoiceValue: totalInvoiceValue,
       recordedPayments: totalRecordedPayments,
@@ -3050,6 +3073,10 @@ const PaymentOrderHistorySubpage = ({ customerId, orderId, onBack }) => {
       initialProjectInvoiceId: firstPendingProjectInvoice?._id || null,
     };
   }, [isGeneralPayments, orderId, workspace]);
+
+  // File names are built from the project/plan name, never the invoice number — a number
+  // means nothing to a person browsing their downloads folder.
+  const invoiceFileName = (label) => `${(serviceName || "Invoice").replace(/[^\w\s-]/g, "").trim()} - ${label}.pdf`;
 
   const handleFinalInvoiceDownload = async () => {
     if (!finalInvoice || finalInvoiceAction) return;
@@ -3059,7 +3086,7 @@ const PaymentOrderHistorySubpage = ({ customerId, orderId, onBack }) => {
       // invoice's own type, so the admin and the customer download the identical PDF.
       await downloadAuthenticatedFile(
         `${SummaryApi.invoices.downloadDocument.url}/${finalInvoice._id}/download`,
-        `${finalInvoice.invoiceNumber || "final-project-invoice"}.pdf`,
+        invoiceFileName("Summary"),
       );
       toast.success("Final invoice download started");
     } catch (error) {
@@ -3084,9 +3111,9 @@ const PaymentOrderHistorySubpage = ({ customerId, orderId, onBack }) => {
       setFinalInvoiceAction("nativeShare");
       const response = await fetch(`${SummaryApi.invoices.downloadDocument.url}/${finalInvoice._id}/download`, { credentials: "include" });
       if (!response.ok) throw new Error((await response.json().catch(() => ({}))).message || "Failed to prepare final invoice");
-      const file = new File([await response.blob()], `${finalInvoice.invoiceNumber || "final-project-invoice"}.pdf`, { type: "application/pdf" });
+      const file = new File([await response.blob()], invoiceFileName("Summary"), { type: "application/pdf" });
       if (!navigator.canShare({ files: [file] })) throw new Error("Native PDF sharing is not supported on this device");
-      await navigator.share({ title: "Final Project Invoice", files: [file] });
+      await navigator.share({ title: serviceName || "Invoice", files: [file] });
     } catch (error) {
       if (error.name !== "AbortError") toast.error(error.message || "Failed to share final invoice");
     } finally {
@@ -3105,7 +3132,7 @@ const PaymentOrderHistorySubpage = ({ customerId, orderId, onBack }) => {
       setInvoiceRowAction(`download-${invoice._id}`);
       await downloadAuthenticatedFile(
         `${SummaryApi.adminPaymentRecord.url}/${customerId}/payment-records/invoice/${invoice._id}/download-invoice`,
-        `Invoice-${invoice.invoiceNumber || invoice._id}.pdf`,
+        invoiceFileName(getInvoiceLabel(invoice)),
       );
       toast.success("Invoice download started");
     } catch (error) {
@@ -3263,17 +3290,17 @@ const PaymentOrderHistorySubpage = ({ customerId, orderId, onBack }) => {
                     <td className="px-5 py-3 text-slate-600 sm:px-6">{formatCurrency(remainingAmount)}</td>
                   </tr>
                   <tr>
-                    <td className="px-5 py-3 font-semibold text-slate-900 sm:px-6">Payment type</td>
-                    <td className="px-5 py-3 text-slate-600 sm:px-6">{order?.isPartialPayment ? "Partial (Installments)" : "One-time (Full)"}</td>
+                    <td className="px-5 py-3 font-semibold text-slate-900 sm:px-6">How they pay</td>
+                    <td className="px-5 py-3 text-slate-600 sm:px-6">{order?.isPartialPayment ? "In parts" : "In full"}</td>
                   </tr>
                   {installmentProgress ? (
                     <tr>
-                      <td className="px-5 py-3 font-semibold text-slate-900 sm:px-6">Installment progress</td>
+                      <td className="px-5 py-3 font-semibold text-slate-900 sm:px-6">Parts paid so far</td>
                       <td className="px-5 py-3 text-slate-600 sm:px-6">{installmentProgress}</td>
                     </tr>
                   ) : null}
                   <tr>
-                    <td className="px-5 py-3 font-semibold text-slate-900 sm:px-6">Pending records</td>
+                    <td className="px-5 py-3 font-semibold text-slate-900 sm:px-6">Still pending</td>
                     <td className="px-5 py-3 text-slate-600 sm:px-6">{pendingRecords}</td>
                   </tr>
                 </tbody>
@@ -3285,20 +3312,17 @@ const PaymentOrderHistorySubpage = ({ customerId, orderId, onBack }) => {
                   covering the total amount and every completed payment against it. */}
               {finalInvoice ? (
                 <>
-                  <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500">Combined Invoice</h2>
+                  <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500">Summary</h2>
                   <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50/40 p-4">
-                    <p className="text-xs font-bold uppercase tracking-[0.16em] text-emerald-700">{finalInvoice.invoiceType === "service_statement" ? "Live Service Billing Statement" : "Combined Project Invoice"}</p>
-                    <p className="mt-1 font-semibold text-slate-900">
-                      {finalInvoice.invoiceNumber ? `Invoice ${finalInvoice.invoiceNumber}` : finalInvoice.invoiceType === "service_statement" ? "Service Billing Statement" : "Full Project Statement"}
-                    </p>
+                    <p className="text-xs font-bold uppercase tracking-[0.16em] text-emerald-700">{finalInvoice.invoiceType === "service_statement" ? "Total for this plan" : "Total for this project"}</p>
                     <div className="mt-2 flex flex-wrap items-center gap-2">
                       <p className="text-base font-bold text-slate-900">{formatCurrency(finalInvoice.amount)}</p>
                       <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getBadgeClassName(getLedgerStatusLabel(finalInvoice.status))}`}>{getLedgerStatusLabel(finalInvoice.status)}</span>
                     </div>
                     <p className="mt-2 text-xs font-semibold text-emerald-700">
                       {Number(finalInvoice.amount || 0) - Number(finalInvoice.amountPaid || 0) > 0
-                        ? `Pending ${formatCurrency(Number(finalInvoice.amount || 0) - Number(finalInvoice.amountPaid || 0))} of full statement`
-                        : "Full statement fully paid"}
+                        ? `${formatCurrency(Number(finalInvoice.amount || 0) - Number(finalInvoice.amountPaid || 0))} still to come`
+                        : "Fully paid"}
                     </p>
                     <div className="mt-3 flex flex-wrap gap-2">
                       <button type="button" onClick={handleFinalInvoiceView} disabled={Boolean(finalInvoiceAction)} className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-800 disabled:opacity-60"><Eye size={13} />View</button>
@@ -3310,65 +3334,99 @@ const PaymentOrderHistorySubpage = ({ customerId, orderId, onBack }) => {
               ) : null}
 
               {/* Payment records — one card per real payment event (invoice + its linked
-                  transaction combined). */}
+                  transaction combined), grouped by invoice so a bill split across several
+                  payments (e.g. part wallet, part UPI) reads as one thing with a total, not
+                  as two identically-named cards with no visible link between them. */}
               <div className={`flex items-center justify-between gap-3 ${finalInvoice ? "mt-6" : ""}`}>
-                <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500">Payment Records</h2>
-                <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{combinedRecords.length} records</span>
+                <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500">Payments</h2>
               </div>
 
-              {combinedRecords.length === 0 ? (
+              {paymentGroups.length === 0 ? (
                 <p className="mt-4 rounded-2xl bg-slate-50 p-4 text-sm text-slate-500">No payment records found.</p>
               ) : (
                 <div className="mt-4 space-y-3">
-                  {combinedRecords.map(({ key, invoice, transaction }) => {
-                    const isRecurringPlanInvoice = invoice && invoice.invoiceType !== "project";
-                    const canRecordPlanInvoice = invoice && isRecurringPlanInvoice && ["unpaid", "overdue"].includes(invoice.status);
-                    const canResolvePendingProject = invoice
-                      && invoice.invoiceType === "project"
-                      && order?.orderVisibility === "pending-approval"
-                      && transactions.length === 0
-                      && String(invoice._id) === String(initialProjectInvoiceId);
-                    const canReviewTransaction = transaction && transaction.status === "pending";
+                  {paymentGroups.map((group) => {
+                    const renderLeg = ({ key, invoice, transaction }, { compact } = {}) => {
+                      const isRecurringPlanInvoice = invoice && invoice.invoiceType !== "project";
+                      const canRecordPlanInvoice = invoice && isRecurringPlanInvoice && ["unpaid", "overdue"].includes(invoice.status);
+                      const canResolvePendingProject = invoice
+                        && invoice.invoiceType === "project"
+                        && order?.orderVisibility === "pending-approval"
+                        && transactions.length === 0
+                        && String(invoice._id) === String(initialProjectInvoiceId);
+                      const canReviewTransaction = transaction && transaction.status === "pending";
 
-                    // Transaction is the actual payment attempt, so its status/method/reference
-                    // take priority when both exist; invoice-only rows fall back to invoice status.
-                    const displayLabel = invoice ? getInvoiceLabel(invoice) : getPaymentLabel(transaction);
-                    const displayStatus = getLedgerStatusLabel(transaction?.status || invoice?.status);
-                    const displayAmount = transaction?.amount ?? invoice?.amount ?? 0;
-                    const isBusyDownload = invoiceRowAction === `download-${invoice?._id}`;
+                      // Transaction is the actual payment attempt, so its status/method/reference
+                      // take priority when both exist; invoice-only rows fall back to invoice status.
+                      const displayLabel = invoice ? getInvoiceLabel(invoice) : getPaymentLabel(transaction);
+                      const displayStatus = getLedgerStatusLabel(transaction?.status || invoice?.status);
+                      const displayAmount = transaction?.amount ?? invoice?.amount ?? 0;
+                      const isBusyDownload = invoiceRowAction === `download-${invoice?._id}`;
 
+                      return (
+                        <div key={key} className={compact ? "border-t border-slate-100 pt-3" : "rounded-2xl border border-slate-200 p-4"}>
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="font-semibold text-slate-900">{compact ? getPaymentMethodText(transaction?.paymentMethod) : displayLabel}</p>
+                            <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getBadgeClassName(displayStatus)}`}>{displayStatus}</span>
+                          </div>
+                          <p className="mt-1 text-xs text-slate-500">
+                            {!compact && invoice ? `Due ${formatDateTime(invoice.dueDate)} · Issued ${formatDateTime(invoice.invoiceDate)}` : null}
+                            {!compact && invoice && transaction ? " · " : null}
+                            {transaction ? `${compact ? "" : `${getPaymentMethodText(transaction.paymentMethod)} · `}${formatDateTime(transaction.date || transaction.createdAt)}` : null}
+                          </p>
+                          {transaction?.rejectionReason ? <p className="mt-1 text-xs text-rose-700">Reason: {transaction.rejectionReason}</p> : null}
+
+                          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-3">
+                            <p className="text-base font-bold text-slate-900">{formatCurrency(displayAmount)}</p>
+                            <div className="flex flex-wrap justify-end gap-2">
+                              {canReviewTransaction ? (
+                                <button type="button" onClick={() => openAction("transaction", transaction)} className="rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white transition hover:bg-slate-800">Review Payment</button>
+                              ) : canRecordPlanInvoice ? (
+                                <button type="button" onClick={() => openAction("planInvoice", invoice)} className="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-emerald-700">Review & Record Payment</button>
+                              ) : canResolvePendingProject ? (
+                                <button type="button" onClick={() => openAction("projectApproval", invoice)} className="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-emerald-700">Review Initial Payment</button>
+                              ) : null}
+
+                              {/* A project installment invoice is a payment target, not a document:
+                                  the whole project is stated once in the Combined Invoice card above,
+                                  which already carries the total, every installment and what is paid.
+                                  Plan/service cycle invoices keep their own download. */}
+                              {!compact && invoice?.invoiceNumber && invoice.invoiceType !== "project" ? (
+                                <button type="button" onClick={() => handleInvoiceDownload(invoice)} disabled={Boolean(invoiceRowAction)} className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-800 disabled:opacity-60"><Download size={13} />{isBusyDownload ? "Preparing..." : "Download"}</button>
+                              ) : null}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    };
+
+                    if (group.records.length === 1) return renderLeg(group.records[0]);
+
+                    // Multiple payments settling the same invoice: one wrapper card with the
+                    // combined total up top, each payment as its own compact row underneath —
+                    // same label, same amount fields, same per-leg buttons as a solo card, just
+                    // grouped so the split reads as one bill instead of two unrelated ones.
+                    const groupTotal = group.records.reduce((sum, record) => sum + Number(record.transaction?.amount ?? record.invoice?.amount ?? 0), 0);
+                    const groupLabel = getInvoiceLabel(group.invoice);
+                    const groupIsBusyDownload = invoiceRowAction === `download-${group.invoice._id}`;
                     return (
-                      <div key={key} className="rounded-2xl border border-slate-200 p-4">
+                      <div key={group.key} className="rounded-2xl border border-slate-200 p-4">
                         <div className="flex items-center justify-between gap-2">
-                          <p className="font-semibold text-slate-900">{displayLabel}</p>
-                          <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getBadgeClassName(displayStatus)}`}>{displayStatus}</span>
+                          <p className="font-semibold text-slate-900">{groupLabel}</p>
+                          <p className="text-base font-bold text-slate-900">{formatCurrency(groupTotal)}</p>
                         </div>
                         <p className="mt-1 text-xs text-slate-500">
-                          {invoice ? `${invoice.invoiceNumber ? `Invoice ${invoice.invoiceNumber} · ` : ""}Due ${formatDateTime(invoice.dueDate)} · Issued ${formatDateTime(invoice.invoiceDate)}` : null}
-                          {invoice && transaction ? " · " : null}
-                          {transaction ? `${transaction.paymentMethod || "N/A"} · Ref: ${transaction.upiTransactionId || shortId(transaction.transactionId)} · ${formatDateTime(transaction.date || transaction.createdAt)}` : null}
+                          Due {formatDateTime(group.invoice.dueDate)} · Issued {formatDateTime(group.invoice.invoiceDate)} · paid in {group.records.length} parts
                         </p>
-                        {transaction?.rejectionReason ? <p className="mt-1 text-xs text-rose-700">Reason: {transaction.rejectionReason}</p> : null}
-
-                        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-3">
-                          <p className="text-base font-bold text-slate-900">{formatCurrency(displayAmount)}</p>
-                          <div className="flex flex-wrap justify-end gap-2">
-                            {canReviewTransaction ? (
-                              <button type="button" onClick={() => openAction("transaction", transaction)} className="rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white transition hover:bg-slate-800">Review Payment</button>
-                            ) : canRecordPlanInvoice ? (
-                              <button type="button" onClick={() => openAction("planInvoice", invoice)} className="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-emerald-700">Review & Record Payment</button>
-                            ) : canResolvePendingProject ? (
-                              <button type="button" onClick={() => openAction("projectApproval", invoice)} className="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-emerald-700">Review Initial Payment</button>
-                            ) : null}
-
-                            {/* A project installment invoice is a payment target, not a document:
-                                the whole project is stated once in the Combined Invoice card above,
-                                which already carries the total, every installment and what is paid.
-                                Plan/service cycle invoices keep their own download. */}
-                            {invoice?.invoiceNumber && invoice.invoiceType !== "project" ? (
-                              <button type="button" onClick={() => handleInvoiceDownload(invoice)} disabled={Boolean(invoiceRowAction)} className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-800 disabled:opacity-60"><Download size={13} />{isBusyDownload ? "Preparing..." : "Download"}</button>
-                            ) : null}
+                        {/* One invoice behind every leg here, so one Download for the whole group —
+                            same button/handler a solo card would show, not repeated per leg. */}
+                        {group.invoice.invoiceNumber && group.invoice.invoiceType !== "project" ? (
+                          <div className="mt-3 flex justify-end">
+                            <button type="button" onClick={() => handleInvoiceDownload(group.invoice)} disabled={Boolean(invoiceRowAction)} className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-800 disabled:opacity-60"><Download size={13} />{groupIsBusyDownload ? "Preparing..." : "Download"}</button>
                           </div>
+                        ) : null}
+                        <div className="mt-3 space-y-3">
+                          {group.records.map((record) => renderLeg(record, { compact: true }))}
                         </div>
                       </div>
                     );
@@ -3393,8 +3451,8 @@ const PaymentOrderHistorySubpage = ({ customerId, orderId, onBack }) => {
                 </h2>
                 <p className="mt-2 text-sm text-slate-500">
                   {actionTarget.type === "transaction"
-                    ? `${formatCurrency(actionTarget.record.amount)} submitted via ${actionTarget.record.paymentMethod || "N/A"}. Verify the reference before accepting.`
-                    : `${formatCurrency(actionTarget.record.amount)} · ${getInvoiceLabel(actionTarget.record)}${actionTarget.record.invoiceNumber ? ` · ${actionTarget.record.invoiceNumber}` : ""}`}
+                    ? `${formatCurrency(actionTarget.record.amount)} submitted via ${getPaymentMethodText(actionTarget.record.paymentMethod)}. Verify the reference before accepting.`
+                    : `${formatCurrency(actionTarget.record.amount)} · ${getInvoiceLabel(actionTarget.record)}`}
                 </p>
 
                 {actionTarget.type !== "transaction" ? (
@@ -4183,7 +4241,6 @@ const WorkspaceDetailSubpage = ({
   formatDateTime,
   backLabel,
   detailLabel,
-  notesText,
   summaryTitle,
   selectedCheckpointId,
   onSelectCheckpoint,
@@ -4786,9 +4843,6 @@ const WorkspaceDetailSubpage = ({
                   <h3 className="text-lg font-bold text-slate-900">Payments</h3>
                   <p className="mt-1 text-sm text-slate-500">This project's own payment and invoice history.</p>
                 </div>
-                <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
-                  {orderLedgerItems.length} records
-                </span>
               </div>
 
               {orderLedgerItems.length === 0 ? (
@@ -4813,9 +4867,8 @@ const WorkspaceDetailSubpage = ({
                               </span>
                             </div>
                             <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
-                              <span>Method: {led.method}</span>
-                              <span>Reference: {led.reference}</span>
-                              <span>Date: {formatDateTime(led.date)}</span>
+                              <span>{led.method}</span>
+                              <span>{formatDateTime(led.date)}</span>
                             </div>
                             {isTxn && led.raw?.rejectionReason ? (
                               <div className="mt-2 rounded-xl border border-rose-100 bg-rose-50 px-3 py-1.5 text-xs text-rose-700">
@@ -5133,14 +5186,6 @@ const WorkspaceDetailSubpage = ({
             </div>
           </div>
 
-          {!isProjectDetail && (
-            <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
-              <p className="text-sm font-medium text-slate-500">Notes</p>
-              <p className="mt-2 text-sm text-slate-600">
-                {notesText}
-              </p>
-            </div>
-          )}
         </div>
       )}
     </div>

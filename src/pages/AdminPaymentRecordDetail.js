@@ -7,6 +7,7 @@ import { downloadAuthenticatedFile } from "../helpers/downloadFile";
 import AdminLayout from "../components/AdminLayout";
 import { getTransactionPaymentLabel } from "../helpers/paymentLedger";
 import { getOrderDisplayName } from "../helpers/orderPresentation";
+import { getPaymentMethodText } from "../helpers/invoicePresentation";
 import { adminReturnState, getAdminReturnTarget } from "../helpers/adminReturnNavigation";
 
 const safeDateTime = (value) => {
@@ -34,8 +35,6 @@ const getLedgerStatusLabel = (status) => {
   if (["rejected", "failed", "cancelled", "canceled"].includes(normalizedStatus)) return "Rejected";
   return status ? String(status).replace(/_/g, " ") : "N/A";
 };
-
-const shortId = (value) => (value ? String(value).slice(-5) : "");
 
 const ORDINALS = ["1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th", "10th"];
 const getOrdinal = (n) => ORDINALS[n - 1] || `${n}th`;
@@ -158,7 +157,7 @@ const SinglePaymentRecordDetail = () => {
       setActionLoading("download");
       await downloadAuthenticatedFile(
         `${baseActionUrl}/download-invoice`,
-        `Invoice-${invoice.invoiceNumber || invoice._id}.pdf`,
+        `${(serviceName || "Invoice").replace(/[^\w\s-]/g, "").trim()}.pdf`,
       );
       toast.success("Invoice download started");
     } catch (downloadError) {
@@ -384,9 +383,6 @@ const SinglePaymentRecordDetail = () => {
                       {recordType === "transaction" ? "Transaction Detail" : "Invoice Detail"}
                     </div>
                     <h1 className="mt-4 break-words text-2xl font-bold text-slate-900">{title}</h1>
-                    <p className="mt-2 text-sm text-slate-500">
-                      Single ledger record from the customer backend source.
-                    </p>
                   </div>
                   <div className="text-left lg:text-right">
                     <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getBadgeClassName(primaryStatus)}`}>
@@ -404,11 +400,7 @@ const SinglePaymentRecordDetail = () => {
                     {transaction ? (
                       <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <InfoLine label="Status" value={getLedgerStatusLabel(transaction.status)} />
-                        <InfoLine label="Payment Method" value={transaction.paymentMethod} />
-                        <InfoLine
-                          label="Reference"
-                          value={transaction.upiTransactionId || shortId(transaction.transactionId)}
-                        />
+                        <InfoLine label="Payment Method" value={getPaymentMethodText(transaction.paymentMethod)} />
                         <InfoLine label="Date" value={formatDateTime(transaction.date || transaction.createdAt)} />
                         <InfoLine label="Verified By" value={transaction.verifiedBy?.name || transaction.verifiedBy?.email} />
                         <InfoLine label="Rejection Reason" value={transaction.rejectionReason} />
@@ -424,7 +416,6 @@ const SinglePaymentRecordDetail = () => {
                     <h2 className="text-lg font-bold text-slate-900">Invoice</h2>
                     {invoice ? (
                       <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                        <InfoLine label="Invoice Number" value={invoice.invoiceNumber} />
                         <InfoLine label="Status" value={getLedgerStatusLabel(invoice.status)} />
                         <InfoLine label="Plan" value={getOrderDisplayName(invoice.orderId, "N/A")} />
                         <InfoLine label="Due Date" value={formatDateTime(invoice.dueDate)} />
@@ -774,7 +765,7 @@ const PaymentOrderHistory = ({ customerId, orderId }) => {
       // invoice's own type, so the admin and the customer download the identical PDF.
       await downloadAuthenticatedFile(
         `${SummaryApi.invoices.downloadDocument.url}/${finalInvoice._id}/download`,
-        `${finalInvoice.invoiceNumber || "final-project-invoice"}.pdf`,
+        `${(serviceName || "Invoice").replace(/[^\w\s-]/g, "").trim()} - Summary.pdf`,
       );
       toast.success("Final invoice download started");
     } catch (error) {
@@ -799,9 +790,9 @@ const PaymentOrderHistory = ({ customerId, orderId }) => {
       setFinalInvoiceAction("nativeShare");
       const response = await fetch(`${SummaryApi.invoices.downloadDocument.url}/${finalInvoice._id}/download`, { credentials: "include" });
       if (!response.ok) throw new Error((await response.json().catch(() => ({}))).message || "Failed to prepare final invoice");
-      const file = new File([await response.blob()], `${finalInvoice.invoiceNumber || "final-project-invoice"}.pdf`, { type: "application/pdf" });
+      const file = new File([await response.blob()], `${(serviceName || "Invoice").replace(/[^\w\s-]/g, "").trim()} - Summary.pdf`, { type: "application/pdf" });
       if (!navigator.canShare({ files: [file] })) throw new Error("Native PDF sharing is not supported on this device");
-      await navigator.share({ title: "Final Project Invoice", files: [file] });
+      await navigator.share({ title: serviceName || "Invoice", files: [file] });
     } catch (error) {
       if (error.name !== "AbortError") toast.error(error.message || "Failed to share final invoice");
     } finally {
@@ -954,10 +945,10 @@ const PaymentOrderHistory = ({ customerId, orderId }) => {
                 <section className="rounded-[2rem] border border-emerald-200 bg-emerald-50 p-5 shadow-sm sm:p-6">
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                      <p className="text-xs font-bold uppercase tracking-[0.16em] text-emerald-700">Live cumulative statement</p>
-                      <h2 className="mt-2 text-lg font-bold text-slate-900">{finalInvoice.invoiceType === "service_statement" ? "Service Billing Statement" : "Final Project Invoice"}</h2>
-                      <p className="mt-1 text-sm text-slate-600">{finalInvoice.invoiceNumber} · Paid {formatCurrency(finalInvoice.amountPaid)} of {formatCurrency(finalInvoice.amount)}</p>
-                      <p className="mt-1 text-sm font-semibold text-emerald-800">{Number(finalInvoice.amount || 0) - Number(finalInvoice.amountPaid || 0) > 0 ? `Pending ${formatCurrency(Number(finalInvoice.amount || 0) - Number(finalInvoice.amountPaid || 0))}` : "Fully paid"}</p>
+                      <p className="text-xs font-bold uppercase tracking-[0.16em] text-emerald-700">Summary</p>
+                      <h2 className="mt-2 text-lg font-bold text-slate-900">{finalInvoice.invoiceType === "service_statement" ? "Total for this plan" : "Total for this project"}</h2>
+                      <p className="mt-1 text-sm text-slate-600">Paid {formatCurrency(finalInvoice.amountPaid)} of {formatCurrency(finalInvoice.amount)}</p>
+                      <p className="mt-1 text-sm font-semibold text-emerald-800">{Number(finalInvoice.amount || 0) - Number(finalInvoice.amountPaid || 0) > 0 ? `${formatCurrency(Number(finalInvoice.amount || 0) - Number(finalInvoice.amountPaid || 0))} still to come` : "Fully paid"}</p>
                     </div>
                     <div className="flex flex-wrap gap-2">
                       <button type="button" onClick={handleFinalInvoiceView} disabled={Boolean(finalInvoiceAction)} className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-800 disabled:opacity-60"><Eye size={15} />View</button>
@@ -975,7 +966,6 @@ const PaymentOrderHistory = ({ customerId, orderId }) => {
                     <h2 className="text-lg font-bold text-slate-900">Invoices</h2>
                     <p className="mt-1 text-sm text-slate-500">Every invoice for this project or plan.</p>
                   </div>
-                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{invoices.length} records</span>
                 </div>
                 {invoices.length === 0 ? (
                   <p className="mt-4 rounded-2xl bg-slate-50 p-4 text-sm text-slate-500">No invoices found.</p>
@@ -996,7 +986,7 @@ const PaymentOrderHistory = ({ customerId, orderId }) => {
                             <p className="font-semibold text-slate-900">{getInvoiceLabel(current)}</p>
                             <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getBadgeClassName(getLedgerStatusLabel(current.status))}`}>{getLedgerStatusLabel(current.status)}</span>
                           </div>
-                          <p className="mt-1 text-xs text-slate-500">{current.invoiceNumber ? `Invoice ${current.invoiceNumber} · ` : ""}Due {formatDateTime(current.dueDate)} · Issued {formatDateTime(current.invoiceDate)}</p>
+                          <p className="mt-1 text-xs text-slate-500">Due {formatDateTime(current.dueDate)} · Issued {formatDateTime(current.invoiceDate)}</p>
                         </div>
                         <div className="text-left sm:text-right">
                           <p className="text-base font-bold text-slate-900">{formatCurrency(current.amount)}</p>
@@ -1021,7 +1011,6 @@ const PaymentOrderHistory = ({ customerId, orderId }) => {
                     <h2 className="text-lg font-bold text-slate-900">Payment Requests & History</h2>
                     <p className="mt-1 text-sm text-slate-500">Every submitted, completed, rejected, or wallet payment record.</p>
                   </div>
-                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{transactions.length} records</span>
                 </div>
                 {transactions.length === 0 ? (
                   <p className="mt-4 rounded-2xl bg-slate-50 p-4 text-sm text-slate-500">No payment requests found.</p>
@@ -1034,7 +1023,7 @@ const PaymentOrderHistory = ({ customerId, orderId }) => {
                             <p className="font-semibold text-slate-900">{getPaymentLabel(current)}</p>
                             <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getBadgeClassName(getLedgerStatusLabel(current.status))}`}>{getLedgerStatusLabel(current.status)}</span>
                           </div>
-                          <p className="mt-1 text-xs text-slate-500">{current.paymentMethod || "N/A"} · Ref: {current.upiTransactionId || shortId(current.transactionId)} · {formatDateTime(current.date || current.createdAt)}</p>
+                          <p className="mt-1 text-xs text-slate-500">{getPaymentMethodText(current.paymentMethod)} · {formatDateTime(current.date || current.createdAt)}</p>
                           {current.rejectionReason ? <p className="mt-1 text-xs text-rose-700">Reason: {current.rejectionReason}</p> : null}
                         </div>
                         <div className="text-left sm:text-right">
@@ -1064,8 +1053,8 @@ const PaymentOrderHistory = ({ customerId, orderId }) => {
                     </h2>
                     <p className="mt-2 text-sm text-slate-500">
                       {actionTarget.type === "transaction"
-                        ? `${formatCurrency(actionTarget.record.amount)} submitted via ${actionTarget.record.paymentMethod || "N/A"}. Verify the reference before accepting.`
-                        : `${formatCurrency(actionTarget.record.amount)} · ${getInvoiceLabel(actionTarget.record)}${actionTarget.record.invoiceNumber ? ` · ${actionTarget.record.invoiceNumber}` : ""}`}
+                        ? `${formatCurrency(actionTarget.record.amount)} submitted via ${getPaymentMethodText(actionTarget.record.paymentMethod)}. Verify the reference before accepting.`
+                        : `${formatCurrency(actionTarget.record.amount)} · ${getInvoiceLabel(actionTarget.record)}`}
                     </p>
 
                     {actionTarget.type !== "transaction" ? (

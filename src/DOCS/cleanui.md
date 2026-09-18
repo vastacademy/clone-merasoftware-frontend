@@ -12,7 +12,8 @@
 **Client panel par customer ko sirf wahi dikhe jo wo samajh sakta hai.** System ke IDs, internal
 status, raw references aur duplicate/filler text screen par nahi aane chahiye.
 
-**Scope:** sirf customer panel. Admin panel is kaam ka hissa nahi hai.
+**Scope:** sirf customer panel. Admin panel is kaam ka hissa nahi hai — wo alag phase hai,
+[cleanui-admin.md](cleanui-admin.md) mein (shuru: 18-09-2026).
 
 ---
 

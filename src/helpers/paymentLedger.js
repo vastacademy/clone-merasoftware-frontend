@@ -1,6 +1,5 @@
 import { getOrderDisplayName } from "./orderPresentation";
-
-const shortId = (value) => (value ? String(value).slice(-5) : "");
+import { getPaymentMethodText } from "./invoicePresentation";
 
 const safeDateTime = (value) => {
   if (!value) return null;
@@ -95,8 +94,7 @@ export const buildLedgerItems = (transactions = [], invoices = []) => {
         label: paymentLabel,
         status: transaction.status,
         amount: transaction.amount,
-        method: transaction.paymentMethod || "N/A",
-        reference: transaction.upiTransactionId || shortId(transaction.transactionId) || "N/A",
+        method: getPaymentMethodText(transaction.paymentMethod),
         date: transaction.date || transaction.createdAt,
         raw: transaction,
         sortDate: safeDateTime(transaction.date || transaction.createdAt)?.getTime() || 0,
@@ -120,8 +118,7 @@ export const buildLedgerItems = (transactions = [], invoices = []) => {
           label: invoiceLabel,
           status: invoice.status,
           amount: invoice.amount,
-          method: invoice.paymentMethod || "N/A",
-          reference: invoice.transactionReference || "N/A",
+          method: getPaymentMethodText(invoice.paymentMethod),
           date: invoice.paidDate || invoice.invoiceDate || invoice.createdAt,
           raw: invoice,
           sortDate: safeDateTime(invoice.paidDate || invoice.invoiceDate || invoice.createdAt)?.getTime() || 0,
