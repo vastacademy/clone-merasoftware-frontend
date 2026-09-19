@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -11,6 +11,7 @@ import { useOnlineStatus } from "../App";
 import AdminLayout from "../components/AdminLayout";
 import AdminWorkspaceShell, { AdminWorkspaceHeader } from "../components/admin/AdminWorkspaceShell";
 import AdminInfoPill from "../components/admin/AdminInfoPill";
+import KeyboardSelect from "../components/KeyboardSelect";
 import { goToAdminReturn } from "../helpers/adminReturnNavigation";
 
 // "Won" (Matured) is deliberately excluded — it is system-set only on convert,
@@ -57,6 +58,23 @@ const AdminLeadDetailPage = () => {
   const [editNote, setEditNote] = useState("");
   const [editBadge, setEditBadge] = useState("");
   const [editSaving, setEditSaving] = useState(false);
+
+  const followUpBadgeRef = useRef(null);
+  const followUpFileRef = useRef(null);
+  const followUpNoteRef = useRef(null);
+  const followUpSubmitRef = useRef(null);
+  const editBadgeRef = useRef(null);
+  const editNoteRef = useRef(null);
+  const editSubmitRef = useRef(null);
+
+  // Enter on a text field moves to the next field; a textarea keeps Shift+Enter
+  // for a real newline. Shared with AdminLeadsPage's Add Lead form pattern —
+  // see DOCS/context-keyboard.md.
+  const focusNextOnEnter = (nextRef) => (event) => {
+    if (event.key !== "Enter" || event.shiftKey) return;
+    event.preventDefault();
+    nextRef.current?.focus();
+  };
 
   const handleLogout = async () => {
     try {
@@ -161,6 +179,21 @@ const AdminLeadDetailPage = () => {
     setEditNote(item.note || "");
     setEditBadge(item.badge || "New");
   };
+
+  useEffect(() => {
+    if (editingFollowUpId) {
+      editBadgeRef.current?.focus();
+    }
+  }, [editingFollowUpId]);
+
+  // Follow-up entry is this page's main keyboard task, so focus lands there as
+  // soon as the lead (and its default Stage selection) has loaded.
+  useEffect(() => {
+    if (!loading && lead && !isConverted) {
+      followUpBadgeRef.current?.focus();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, lead]);
 
   const cancelEditFollowUp = () => {
     if (editSaving) return;
@@ -381,20 +414,14 @@ const AdminLeadDetailPage = () => {
                       <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">
                         Stage
                       </label>
-                      <select
+                      <KeyboardSelect
+                        ref={followUpBadgeRef}
                         value={followUpBadge}
-                        onChange={(e) => setFollowUpBadge(e.target.value)}
-                        className={[
-                          "w-full rounded-2xl border px-4 py-3 text-sm font-semibold outline-none transition focus:ring-4 focus:ring-emerald-100",
-                          STATUS_STYLES[followUpBadge] || STATUS_STYLES.New,
-                        ].join(" ")}
-                      >
-                        {PIPELINE_STAGES.map((stage) => (
-                          <option key={stage} value={stage}>
-                            {statusLabel(stage)}
-                          </option>
-                        ))}
-                      </select>
+                        onChange={(value) => setFollowUpBadge(value)}
+                        options={PIPELINE_STAGES.map((stage) => ({ value: stage, label: statusLabel(stage) }))}
+                        onConfirm={() => followUpFileRef.current?.focus()}
+                        className={["font-semibold", STATUS_STYLES[followUpBadge] || STATUS_STYLES.New].join(" ")}
+                      />
                     </div>
 
                     {/* Optional attachment for this follow-up. */}
@@ -403,8 +430,14 @@ const AdminLeadDetailPage = () => {
                         Attachment <span className="font-normal normal-case text-slate-400">(optional)</span>
                       </label>
                       <input
+                        ref={followUpFileRef}
                         type="file"
                         onChange={(e) => setFollowUpFile(e.target.files?.[0] || null)}
+                        onKeyDown={(event) => {
+                          if (event.key !== "Enter") return;
+                          event.preventDefault();
+                          followUpNoteRef.current?.focus();
+                        }}
                         className="block w-full rounded-2xl border border-slate-200 bg-slate-50 py-2.5 pl-3 text-sm text-slate-700 file:mr-3 file:rounded-xl file:border-0 file:bg-slate-100 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-slate-700 hover:file:bg-slate-200"
                       />
                     </div>
@@ -412,6 +445,8 @@ const AdminLeadDetailPage = () => {
 
                   {/* Remark (last, full width). */}
                   <textarea
+                    ref={followUpNoteRef}
+                    onKeyDown={focusNextOnEnter(followUpSubmitRef)}
                     value={followUpNote}
                     onChange={(e) => setFollowUpNote(e.target.value)}
                     placeholder="Add a follow-up note (call summary, next step, etc.)"
@@ -421,9 +456,10 @@ const AdminLeadDetailPage = () => {
 
                   <div className="flex justify-end">
                     <button
+                      ref={followUpSubmitRef}
                       type="submit"
                       disabled={followUpSaving}
-                      className="inline-flex items-center gap-2 rounded-2xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-60"
+                      className="inline-flex items-center gap-2 rounded-2xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700 focus:animate-pulse focus:outline-none focus:ring-4 focus:ring-emerald-300 disabled:opacity-60"
                     >
                       <MessageSquarePlus size={16} />
                       {followUpSaving ? "Adding..." : "Add Follow-up"}
@@ -443,22 +479,18 @@ const AdminLeadDetailPage = () => {
                       {editingFollowUpId === item._id ? (
                         <form onSubmit={handleSaveEditFollowUp} className="space-y-3">
                           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                            <select
+                            <KeyboardSelect
+                              ref={editBadgeRef}
                               value={editBadge}
-                              onChange={(e) => setEditBadge(e.target.value)}
-                              className={[
-                                "w-full rounded-2xl border px-4 py-3 text-sm font-semibold outline-none transition focus:ring-4 focus:ring-emerald-100",
-                                STATUS_STYLES[editBadge] || STATUS_STYLES.New,
-                              ].join(" ")}
-                            >
-                              {PIPELINE_STAGES.map((stage) => (
-                                <option key={stage} value={stage}>
-                                  {statusLabel(stage)}
-                                </option>
-                              ))}
-                            </select>
+                              onChange={(value) => setEditBadge(value)}
+                              options={PIPELINE_STAGES.map((stage) => ({ value: stage, label: statusLabel(stage) }))}
+                              onConfirm={() => editNoteRef.current?.focus()}
+                              className={["font-semibold", STATUS_STYLES[editBadge] || STATUS_STYLES.New].join(" ")}
+                            />
                           </div>
                           <textarea
+                            ref={editNoteRef}
+                            onKeyDown={focusNextOnEnter(editSubmitRef)}
                             value={editNote}
                             onChange={(e) => setEditNote(e.target.value)}
                             rows={3}
@@ -475,9 +507,10 @@ const AdminLeadDetailPage = () => {
                               Cancel
                             </button>
                             <button
+                              ref={editSubmitRef}
                               type="submit"
                               disabled={editSaving}
-                              className="inline-flex items-center gap-1.5 rounded-2xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-60"
+                              className="inline-flex items-center gap-1.5 rounded-2xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700 focus:animate-pulse focus:outline-none focus:ring-4 focus:ring-emerald-300 disabled:opacity-60"
                             >
                               {editSaving ? "Saving..." : "Save"}
                             </button>

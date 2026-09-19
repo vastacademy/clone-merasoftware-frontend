@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -12,6 +12,7 @@ import AdminLayout from "../components/AdminLayout";
 import AdminWorkspaceShell, { AdminWorkspaceHeader } from "../components/admin/AdminWorkspaceShell";
 import AdminWorkspaceList from "../components/admin/AdminWorkspaceList";
 import AdminFilterDropdown from "../components/admin/AdminFilterDropdown";
+import KeyboardSelect from "../components/KeyboardSelect";
 import { adminReturnState } from "../helpers/adminReturnNavigation";
 
 const STATUS_STYLES = {
@@ -68,6 +69,15 @@ const AdminLeadsPage = () => {
   const [referenceResults, setReferenceResults] = useState([]);
   const [referenceSearching, setReferenceSearching] = useState(false);
   const [selectedReference, setSelectedReference] = useState(null);
+  const [referenceHighlightIndex, setReferenceHighlightIndex] = useState(-1);
+
+  const nameFieldRef = useRef(null);
+  const phoneFieldRef = useRef(null);
+  const emailFieldRef = useRef(null);
+  const sourceFieldRef = useRef(null);
+  const referenceFieldRef = useRef(null);
+  const notesFieldRef = useRef(null);
+  const submitButtonRef = useRef(null);
 
   const handleLogout = async () => {
     try {
@@ -148,6 +158,41 @@ const AdminLeadsPage = () => {
     setReferenceQuery("");
     setReferenceResults([]);
     setSelectedReference(null);
+    setReferenceHighlightIndex(-1);
+  };
+
+  // Modal opens with focus already in the Name field so lead entry needs no mouse.
+  useEffect(() => {
+    if (showAddModal) {
+      nameFieldRef.current?.focus();
+    }
+  }, [showAddModal]);
+
+  useEffect(() => {
+    if (!showAddModal) return undefined;
+    const handleEscape = (event) => {
+      if (event.key === "Escape") {
+        closeAddModal();
+      }
+    };
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showAddModal, saving]);
+
+  // Enter on a text field moves to the next field instead of submitting the form.
+  const focusNextField = (nextRef) => (event) => {
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    nextRef.current?.focus();
+  };
+
+  // Same idea for a textarea: plain Enter moves to the next field, Shift+Enter
+  // keeps the browser's normal newline behavior.
+  const focusNextOnEnter = (nextRef) => (event) => {
+    if (event.key !== "Enter" || event.shiftKey) return;
+    event.preventDefault();
+    nextRef.current?.focus();
   };
 
   const handleFormChange = (field, value) => {
@@ -165,6 +210,41 @@ const AdminLeadsPage = () => {
     setForm((prev) => ({ ...prev, referredByUserId: customer._id }));
     setReferenceResults([]);
     setReferenceQuery("");
+    setReferenceHighlightIndex(-1);
+    notesFieldRef.current?.focus();
+  };
+
+  const handleReferenceKeyDown = (event) => {
+    if (referenceResults.length === 0) {
+      if (event.key === "Enter") {
+        // No match picked — Enter just moves on, name stays as free-text notes context.
+        event.preventDefault();
+        notesFieldRef.current?.focus();
+      }
+      return;
+    }
+
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setReferenceHighlightIndex((prev) => Math.min(prev + 1, referenceResults.length - 1));
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setReferenceHighlightIndex((prev) => Math.max(prev - 1, 0));
+    } else if (event.key === "Enter") {
+      event.preventDefault();
+      const index = referenceHighlightIndex >= 0 ? referenceHighlightIndex : 0;
+      pickReference(referenceResults[index]);
+    }
+  };
+
+  // After Source, the chain branches: Reference search field when source is
+  // "Reference", otherwise straight to Notes.
+  const focusAfterSource = () => {
+    if (form.source === "Reference") {
+      referenceFieldRef.current?.focus();
+    } else {
+      notesFieldRef.current?.focus();
+    }
   };
 
   const clearReference = () => {
@@ -555,9 +635,11 @@ const AdminLeadsPage = () => {
               <div>
                 <label className="mb-1 block text-sm font-semibold text-slate-700">Name<span className="text-red-500"> *</span></label>
                 <input
+                  ref={nameFieldRef}
                   type="text"
                   value={form.name}
                   onChange={(e) => handleFormChange("name", e.target.value)}
+                  onKeyDown={focusNextField(phoneFieldRef)}
                   placeholder="Lead full name"
                   className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
                 />
@@ -567,9 +649,11 @@ const AdminLeadsPage = () => {
                 <div>
                   <label className="mb-1 block text-sm font-semibold text-slate-700">Phone<span className="text-red-500"> *</span></label>
                   <input
+                    ref={phoneFieldRef}
                     type="text"
                     value={form.phone}
                     onChange={(e) => handleFormChange("phone", e.target.value)}
+                    onKeyDown={focusNextField(emailFieldRef)}
                     placeholder="Phone number"
                     className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
                   />
@@ -577,9 +661,15 @@ const AdminLeadsPage = () => {
                 <div>
                   <label className="mb-1 block text-sm font-semibold text-slate-700">Email</label>
                   <input
+                    ref={emailFieldRef}
                     type="email"
                     value={form.email}
                     onChange={(e) => handleFormChange("email", e.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key !== "Enter") return;
+                      event.preventDefault();
+                      sourceFieldRef.current?.focus();
+                    }}
                     placeholder="Email address"
                     className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
                   />
@@ -590,16 +680,14 @@ const AdminLeadsPage = () => {
 
               <div>
                 <label className="mb-1 block text-sm font-semibold text-slate-700">Source</label>
-                <select
+                <KeyboardSelect
+                  ref={sourceFieldRef}
                   value={form.source}
-                  onChange={(e) => handleFormChange("source", e.target.value)}
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
-                >
-                  <option value="">Select source</option>
-                  {SOURCE_OPTIONS.map((option) => (
-                    <option key={option} value={option}>{option}</option>
-                  ))}
-                </select>
+                  onChange={(value) => handleFormChange("source", value)}
+                  options={SOURCE_OPTIONS.map((option) => ({ value: option, label: option }))}
+                  placeholder="Select source"
+                  onConfirm={focusAfterSource}
+                />
               </div>
 
               {form.source === "Reference" && (
@@ -623,9 +711,14 @@ const AdminLeadsPage = () => {
                   ) : (
                     <div className="relative">
                       <input
+                        ref={referenceFieldRef}
                         type="text"
                         value={referenceQuery}
-                        onChange={(e) => setReferenceQuery(e.target.value)}
+                        onChange={(e) => {
+                          setReferenceQuery(e.target.value);
+                          setReferenceHighlightIndex(-1);
+                        }}
+                        onKeyDown={handleReferenceKeyDown}
                         placeholder="Search existing customer by name, phone or email"
                         className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
                       />
@@ -634,12 +727,15 @@ const AdminLeadsPage = () => {
                       )}
                       {referenceResults.length > 0 && (
                         <div className="absolute z-10 mt-1 w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg">
-                          {referenceResults.map((customer) => (
+                          {referenceResults.map((customer, index) => (
                             <button
                               key={customer._id}
                               type="button"
                               onClick={() => pickReference(customer)}
-                              className="flex w-full flex-col px-4 py-2 text-left text-sm hover:bg-slate-50"
+                              onMouseEnter={() => setReferenceHighlightIndex(index)}
+                              className={`flex w-full flex-col px-4 py-2 text-left text-sm ${
+                                index === referenceHighlightIndex ? "bg-emerald-50" : "hover:bg-slate-50"
+                              }`}
                             >
                               <span className="font-medium text-slate-800">{customer.name}</span>
                               <span className="text-xs text-slate-500">{customer.phone || customer.email}</span>
@@ -658,27 +754,22 @@ const AdminLeadsPage = () => {
               <div>
                 <label className="mb-1 block text-sm font-semibold text-slate-700">Notes</label>
                 <textarea
+                  ref={notesFieldRef}
                   value={form.notes}
                   onChange={(e) => handleFormChange("notes", e.target.value)}
+                  onKeyDown={focusNextOnEnter(submitButtonRef)}
                   placeholder="Any context about this lead"
                   rows={3}
                   className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
                 />
               </div>
 
-              <div className="flex justify-end gap-3 pt-2">
+              <div className="flex justify-end pt-2">
                 <button
-                  type="button"
-                  onClick={closeAddModal}
-                  disabled={saving}
-                  className="rounded-2xl border border-slate-200 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 disabled:opacity-60"
-                >
-                  Cancel
-                </button>
-                <button
+                  ref={submitButtonRef}
                   type="submit"
                   disabled={saving}
-                  className="inline-flex items-center gap-2 rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-60"
+                  className="inline-flex items-center gap-2 rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700 focus:animate-pulse focus:outline-none focus:ring-4 focus:ring-emerald-300 disabled:opacity-60"
                 >
                   {saving ? "Saving..." : "Create Lead"}
                 </button>
