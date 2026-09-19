@@ -31,9 +31,14 @@ const AdminWorkspaceList = ({ columns, loading, emptyText, items, renderRow, foo
     if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
     const currentIndex = rowRefs.current.findIndex((el) => el === document.activeElement);
     if (currentIndex === -1) return;
-    event.preventDefault();
     const nextIndex = event.key === "ArrowDown" ? currentIndex + 1 : currentIndex - 1;
-    rowRefs.current[nextIndex]?.focus();
+    const nextRow = rowRefs.current[nextIndex];
+    // At the first/last row there's nothing left to move to inside this list —
+    // don't swallow the key, let it bubble so an ancestor (e.g. a tab's content
+    // container) can decide what "off the edge of this list" means.
+    if (!nextRow) return;
+    event.preventDefault();
+    nextRow.focus();
   };
 
   return (

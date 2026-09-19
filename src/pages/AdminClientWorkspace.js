@@ -53,6 +53,7 @@ import {
   groupLedgerItemsByProject,
 } from "../helpers/paymentLedger";
 import { adminReturnState, getAdminReturnTarget, goToAdminReturn } from "../helpers/adminReturnNavigation";
+import focusFirstInteractiveElement, { getInteractiveElements } from "../utils/focusFirstInteractiveElement";
 import { getOrderDisplayName } from "../helpers/orderPresentation";
 import { getPaymentMethodText } from "../helpers/invoicePresentation";
 
@@ -1205,6 +1206,48 @@ const AdminClientWorkspace = () => {
   // ordering): Projects, Plans, Payments, Documents, Access, Overview last — same for every
   // client regardless of what they currently have running.
   const tabs = WORKSPACE_TABS;
+  const tabContentRef = useRef(null);
+  const tabsRef = useRef(null);
+
+  // Moves focus one step at a time through every interactive element in the
+  // active tab's content (header buttons, list rows, form fields — whatever
+  // order they appear in the DOM), and off the top edge into the tab strip.
+  //
+  // This only ever runs on events that a nested widget chose not to consume:
+  // AdminWorkspaceList's own row-to-row Up/Down already handles in-bounds
+  // moves and only lets Up/Down bubble here at its first/last row (see its
+  // own handleContainerKeyDown), so there's no double-handling. A tab with no
+  // nested list at all (e.g. Overview's single tabIndex=0 stat card) just has
+  // a one-element sequence, so Up from it goes straight to the tab strip.
+  //
+  // Deliberate exception: an open project/plan's checkpoint list
+  // (WorkspaceDetailSubpage, rendered when activeProject/activePlan is set)
+  // owns a separate checkbox multi-select with Shift-range-select, and
+  // clamps Up/Down at its own edges by design so a selection in progress
+  // never loses focus out of the list. It does not bubble here, and isn't
+  // meant to — reaching the tab strip from inside it isn't supported; back
+  // out to the list first.
+  const handleTabContentKeyDown = (event) => {
+    if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
+    const elements = getInteractiveElements(tabContentRef.current);
+    const currentIndex = elements.indexOf(document.activeElement);
+    if (currentIndex === -1) return;
+
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      if (currentIndex === 0) {
+        tabsRef.current?.focus();
+      } else {
+        elements[currentIndex - 1].focus();
+      }
+      return;
+    }
+
+    if (currentIndex < elements.length - 1) {
+      event.preventDefault();
+      elements[currentIndex + 1].focus();
+    }
+  };
 
   useEffect(() => {
     if (activeTab === null && !dataLoading) setActiveTab(tabs[0].id);
@@ -1384,13 +1427,15 @@ const AdminClientWorkspace = () => {
         />
 
         <AdminWorkspaceTabs
+          ref={tabsRef}
           tabs={tabs}
           activeTab={activeTab || tabs[0].id}
           onChange={handleTabChange}
+          onEnterContent={() => focusFirstInteractiveElement(tabContentRef.current)}
           ariaLabel="Client workspace sections"
         />
 
-          <div className="p-5 sm:p-6">
+          <div className="p-5 sm:p-6" ref={tabContentRef} onKeyDown={handleTabContentKeyDown}>
         {activeTab === "overview" && (
           <section>
             <div className="mb-4">
@@ -1398,12 +1443,13 @@ const AdminClientWorkspace = () => {
             </div>
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              {cards.map((card) => {
+              {cards.map((card, cardIndex) => {
                 const Icon = card.icon;
                 return (
                   <div
                     key={card.id}
-                    className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5"
+                    tabIndex={cardIndex === 0 ? 0 : undefined}
+                    className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5 outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
                   >
                     <div className="flex items-start justify-between gap-4">
                       <div className="min-w-0">
