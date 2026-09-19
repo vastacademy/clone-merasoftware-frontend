@@ -79,7 +79,7 @@ const KeyboardSelect = React.forwardRef(
     };
 
     return (
-      <div ref={containerRef} className="relative">
+      <div ref={containerRef} className="peer relative">
         <button
           ref={buttonRef}
           type="button"

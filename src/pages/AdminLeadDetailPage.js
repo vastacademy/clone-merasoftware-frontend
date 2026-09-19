@@ -12,6 +12,7 @@ import AdminLayout from "../components/AdminLayout";
 import AdminWorkspaceShell, { AdminWorkspaceHeader } from "../components/admin/AdminWorkspaceShell";
 import AdminInfoPill from "../components/admin/AdminInfoPill";
 import KeyboardSelect from "../components/KeyboardSelect";
+import KeyboardHint from "../components/KeyboardHint";
 import { goToAdminReturn } from "../helpers/adminReturnNavigation";
 
 // "Won" (Matured) is deliberately excluded — it is system-set only on convert,
@@ -422,6 +423,7 @@ const AdminLeadDetailPage = () => {
                         onConfirm={() => followUpFileRef.current?.focus()}
                         className={["font-semibold", STATUS_STYLES[followUpBadge] || STATUS_STYLES.New].join(" ")}
                       />
+                      <KeyboardHint id="hint-followup-stage" hint="Press ↓ or Enter to open · ↑↓ to move · Enter to select" />
                     </div>
 
                     {/* Optional attachment for this follow-up. */}
@@ -438,21 +440,25 @@ const AdminLeadDetailPage = () => {
                           event.preventDefault();
                           followUpNoteRef.current?.focus();
                         }}
-                        className="block w-full rounded-2xl border border-slate-200 bg-slate-50 py-2.5 pl-3 text-sm text-slate-700 file:mr-3 file:rounded-xl file:border-0 file:bg-slate-100 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-slate-700 hover:file:bg-slate-200"
+                        className="peer block w-full rounded-2xl border border-slate-200 bg-slate-50 py-2.5 pl-3 text-sm text-slate-700 file:mr-3 file:rounded-xl file:border-0 file:bg-slate-100 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-slate-700 hover:file:bg-slate-200"
                       />
+                      <KeyboardHint id="hint-followup-attachment" hint="Space to browse files · Enter to continue" />
                     </div>
                   </div>
 
                   {/* Remark (last, full width). */}
-                  <textarea
-                    ref={followUpNoteRef}
-                    onKeyDown={focusNextOnEnter(followUpSubmitRef)}
-                    value={followUpNote}
-                    onChange={(e) => setFollowUpNote(e.target.value)}
-                    placeholder="Add a follow-up note (call summary, next step, etc.)"
-                    rows={3}
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
-                  />
+                  <div>
+                    <textarea
+                      ref={followUpNoteRef}
+                      onKeyDown={focusNextOnEnter(followUpSubmitRef)}
+                      value={followUpNote}
+                      onChange={(e) => setFollowUpNote(e.target.value)}
+                      placeholder="Add a follow-up note (call summary, next step, etc.)"
+                      rows={3}
+                      className="peer w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
+                    />
+                    <KeyboardHint id="hint-followup-note" hint="Enter for next field · Shift+Enter for new line" />
+                  </div>
 
                   <div className="flex justify-end">
                     <button
@@ -478,24 +484,30 @@ const AdminLeadDetailPage = () => {
                     <div key={item._id || index} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                       {editingFollowUpId === item._id ? (
                         <form onSubmit={handleSaveEditFollowUp} className="space-y-3">
-                          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                            <KeyboardSelect
-                              ref={editBadgeRef}
-                              value={editBadge}
-                              onChange={(value) => setEditBadge(value)}
-                              options={PIPELINE_STAGES.map((stage) => ({ value: stage, label: statusLabel(stage) }))}
-                              onConfirm={() => editNoteRef.current?.focus()}
-                              className={["font-semibold", STATUS_STYLES[editBadge] || STATUS_STYLES.New].join(" ")}
-                            />
+                          <div>
+                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                              <KeyboardSelect
+                                ref={editBadgeRef}
+                                value={editBadge}
+                                onChange={(value) => setEditBadge(value)}
+                                options={PIPELINE_STAGES.map((stage) => ({ value: stage, label: statusLabel(stage) }))}
+                                onConfirm={() => editNoteRef.current?.focus()}
+                                className={["font-semibold", STATUS_STYLES[editBadge] || STATUS_STYLES.New].join(" ")}
+                              />
+                            </div>
+                            <KeyboardHint id="hint-editfollowup-stage" hint="Press ↓ or Enter to open · ↑↓ to move · Enter to select" />
                           </div>
-                          <textarea
-                            ref={editNoteRef}
-                            onKeyDown={focusNextOnEnter(editSubmitRef)}
-                            value={editNote}
-                            onChange={(e) => setEditNote(e.target.value)}
-                            rows={3}
-                            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
-                          />
+                          <div>
+                            <textarea
+                              ref={editNoteRef}
+                              onKeyDown={focusNextOnEnter(editSubmitRef)}
+                              value={editNote}
+                              onChange={(e) => setEditNote(e.target.value)}
+                              rows={3}
+                              className="peer w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100"
+                            />
+                            <KeyboardHint id="hint-editfollowup-note" hint="Enter for next field · Shift+Enter for new line" />
+                          </div>
                           <div className="flex justify-end gap-2">
                             <button
                               type="button"

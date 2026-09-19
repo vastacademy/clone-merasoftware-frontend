@@ -413,7 +413,7 @@ const AdminPlanProductsPage = () => {
                   if (event.key === "Enter" || event.key === " ") handlePlanOpen(plan);
                 }}
                 className={[
-                  "grid w-full grid-cols-12 gap-3 px-5 py-4 text-left transition hover:bg-slate-100 sm:px-6",
+                  "grid w-full grid-cols-12 gap-3 px-5 py-4 text-left transition outline-none hover:bg-slate-100 focus:bg-slate-100 sm:px-6",
                   planIndex % 2 === 0 ? "bg-white" : "bg-slate-50",
                 ].join(" ")}
               >
@@ -421,9 +421,8 @@ const AdminPlanProductsPage = () => {
                   {/* No "Retired" chip here: the row only appears under the Retired
                       tab, and the status column already states it. */}
                   <p className="truncate text-base font-bold text-slate-950">
-                    {plan.serviceName || "N/A"}
+                    {planIndex + 1}. {plan.serviceName || "N/A"}
                   </p>
-                  <p className="mt-1 text-xs text-slate-500">Plan #{planIndex + 1}</p>
                 </div>
                 <div className="col-span-6 lg:col-span-3 lg:flex lg:items-center">
                   <p className="text-sm font-semibold text-slate-900">{getPlanTypeLabel(plan)}</p>

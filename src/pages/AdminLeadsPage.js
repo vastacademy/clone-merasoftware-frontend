@@ -13,6 +13,7 @@ import AdminWorkspaceShell, { AdminWorkspaceHeader } from "../components/admin/A
 import AdminWorkspaceList from "../components/admin/AdminWorkspaceList";
 import AdminFilterDropdown from "../components/admin/AdminFilterDropdown";
 import KeyboardSelect from "../components/KeyboardSelect";
+import KeyboardHint from "../components/KeyboardHint";
 import { adminReturnState } from "../helpers/adminReturnNavigation";
 
 const STATUS_STYLES = {
@@ -553,16 +554,18 @@ const AdminLeadsPage = () => {
                   if (e.key === "Enter" || e.key === " ") {
                     e.preventDefault();
                     openLead(lead);
+                  } else if (e.key === "Delete" && !lead.convertedToUserId) {
+                    e.preventDefault();
+                    requestDeleteLead(lead);
                   }
                 }}
                 className={[
-                  "group grid w-full cursor-pointer grid-cols-12 gap-3 px-5 py-4 text-left transition hover:bg-slate-100 sm:px-6",
+                  "group grid w-full cursor-pointer grid-cols-12 gap-3 px-5 py-4 text-left transition outline-none hover:bg-slate-100 focus:bg-slate-100 sm:px-6",
                   index % 2 === 0 ? "bg-white" : "bg-slate-50",
                 ].join(" ")}
               >
                 <div className="col-span-12 lg:col-span-3">
-                  <p className="truncate text-base font-bold text-slate-950">{lead.name || "N/A"}</p>
-                  <p className="mt-1 text-xs text-slate-500">Lead #{index + 1}</p>
+                  <p className="truncate text-base font-bold text-slate-950">{index + 1}. {lead.name || "N/A"}</p>
                 </div>
                 <div className="col-span-6 lg:col-span-3 lg:flex lg:items-center">
                   <div className="min-w-0">
@@ -599,7 +602,7 @@ const AdminLeadsPage = () => {
                       }}
                       disabled={deletingId === lead._id}
                       aria-label={`Delete lead ${lead.name || ""}`}
-                      className="inline-flex items-center gap-1.5 rounded-xl bg-red-600 px-3 py-2 text-xs font-semibold text-white opacity-0 transition hover:bg-red-700 focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-red-300 group-hover:opacity-100 disabled:cursor-not-allowed disabled:opacity-100"
+                      className="inline-flex items-center gap-1.5 rounded-xl bg-red-600 px-3 py-2 text-xs font-semibold text-white opacity-0 transition hover:bg-red-700 focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-red-300 group-hover:opacity-100 group-focus:opacity-100 disabled:cursor-not-allowed disabled:opacity-100"
                     >
                       {deletingId === lead._id ? (
                         <Loader2 size={14} className="animate-spin" />
@@ -641,8 +644,9 @@ const AdminLeadsPage = () => {
                   onChange={(e) => handleFormChange("name", e.target.value)}
                   onKeyDown={focusNextField(phoneFieldRef)}
                   placeholder="Lead full name"
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
+                  className="peer w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
                 />
+                <KeyboardHint id="hint-lead-name" hint="Press Enter to go to next field" />
               </div>
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -655,8 +659,9 @@ const AdminLeadsPage = () => {
                     onChange={(e) => handleFormChange("phone", e.target.value)}
                     onKeyDown={focusNextField(emailFieldRef)}
                     placeholder="Phone number"
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
+                    className="peer w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
                   />
+                  <KeyboardHint id="hint-lead-phone" hint="Press Enter to go to next field" />
                 </div>
                 <div>
                   <label className="mb-1 block text-sm font-semibold text-slate-700">Email</label>
@@ -671,8 +676,9 @@ const AdminLeadsPage = () => {
                       sourceFieldRef.current?.focus();
                     }}
                     placeholder="Email address"
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
+                    className="peer w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
                   />
+                  <KeyboardHint id="hint-lead-email" hint="Press Enter to go to next field" />
                 </div>
               </div>
 
@@ -688,6 +694,7 @@ const AdminLeadsPage = () => {
                   placeholder="Select source"
                   onConfirm={focusAfterSource}
                 />
+                <KeyboardHint id="hint-lead-source" hint="Press ↓ or Enter to open · ↑↓ to move · Enter to select" />
               </div>
 
               {form.source === "Reference" && (

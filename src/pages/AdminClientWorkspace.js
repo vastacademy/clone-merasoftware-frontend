@@ -3535,12 +3535,12 @@ const CompactWorkspaceCard = ({ title, subtitle, items, emptyText, onRowClick, o
                   }
                 }}
                 className={[
-                  "grid w-full cursor-pointer grid-cols-12 gap-3 px-5 py-4 text-left transition hover:bg-slate-100 sm:px-6",
+                  "grid w-full cursor-pointer grid-cols-12 gap-3 px-5 py-4 text-left transition outline-none hover:bg-slate-100 focus:bg-slate-100 sm:px-6",
                   index % 2 === 0 ? "bg-white" : "bg-slate-50",
                 ].join(" ")}
               >
                 <div className="col-span-12 lg:col-span-5">
-                  <p className="truncate text-base font-semibold text-slate-900">{getWorkspaceItemName(item)}</p>
+                  <p className="truncate text-base font-semibold text-slate-900">{index + 1}. {getWorkspaceItemName(item)}</p>
                 </div>
 
                 <div className="col-span-12 lg:col-span-4 lg:flex lg:items-center">

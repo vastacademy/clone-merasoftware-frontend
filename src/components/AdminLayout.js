@@ -16,6 +16,7 @@ import MobileSidebarDrawer from "./MobileSidebarDrawer";
 import MobileBottomNav from "./MobileBottomNav";
 import AdminGlobalSearch from "./admin/AdminGlobalSearch";
 import PortalHeader from "./PortalHeader";
+import useSidebarFocusZones from "../hooks/useSidebarFocusZones";
 
 export const adminSidebarModules = [
   { id: "dashboard", label: "Dashboard", icon: BarChart3, live: true, to: "/admin-panel/dashboard" },
@@ -54,6 +55,11 @@ const AdminLayout = ({
   const location = useLocation();
   const currentPath = location.pathname;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { sidebarRef, mainRef, navRefs, handleSidebarKeyDown } = useSidebarFocusZones();
+  navRefs.current = [];
+  const registerNavRef = (el) => {
+    if (el) navRefs.current.push(el);
+  };
 
   // Flatten the sidebar modules (incl. group children) into routable header
   // links — same SSOT array as the sidebar, only "soon" placeholders skipped.
@@ -132,9 +138,11 @@ const AdminLayout = ({
                     return (
                       <Link
                         key={child.id}
+                        ref={registerNavRef}
                         to={child.to}
+                        aria-current={childIsActive ? "page" : undefined}
                         onClick={() => setMobileMenuOpen(false)}
-                        className={`group ml-3 flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition-all ${childIsActive ? "bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-950/30" : "bg-slate-900/70 text-slate-200 hover:bg-slate-800"}`}
+                        className={`group ml-3 flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2 focus:ring-offset-slate-950 ${childIsActive ? "bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-950/30" : "bg-slate-900/70 text-slate-200 hover:bg-slate-800"}`}
                       >
                         <ChildIcon size={18} className="shrink-0" />
                         <span className="flex-1">{child.label}</span>
@@ -152,7 +160,7 @@ const AdminLayout = ({
             const Icon = module.icon;
             const isUpcoming = Boolean(module.soon);
             const buttonClassName = [
-              "group flex w-full min-w-0 items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm font-semibold transition-all",
+              "group flex w-full min-w-0 items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2 focus:ring-offset-slate-950",
               isActive
                 ? "bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-950/30"
                 : isUpcoming
@@ -164,7 +172,9 @@ const AdminLayout = ({
               return (
                 <Link
                   key={module.id}
+                  ref={registerNavRef}
                   to={module.to}
+                  aria-current={isActive ? "page" : undefined}
                   onClick={() => setMobileMenuOpen(false)}
                   className={buttonClassName}
                 >
@@ -219,7 +229,11 @@ const AdminLayout = ({
         links={headerLinks}
       />
       <div className="flex min-h-full items-stretch bg-slate-100">
-        <aside className="sticky top-16 z-40 hidden h-[calc(100vh-4rem)] w-72 shrink-0 self-start overflow-y-auto border-r border-slate-800 bg-slate-950 text-white shadow-2xl lg:flex lg:flex-col">
+        <aside
+          ref={sidebarRef}
+          onKeyDown={handleSidebarKeyDown}
+          className="sticky top-16 z-40 hidden h-[calc(100vh-4rem)] w-72 shrink-0 self-start overflow-y-auto border-r border-slate-800 bg-slate-950 text-white shadow-2xl lg:flex lg:flex-col"
+        >
           {sidebarContent}
         </aside>
 
@@ -228,7 +242,11 @@ const AdminLayout = ({
         </MobileSidebarDrawer>
 
         <div className="min-w-0 flex-1">
-        <main className="min-h-full bg-slate-100 pb-16 lg:pb-0">
+        <main
+          ref={mainRef}
+          tabIndex={-1}
+          className="min-h-full bg-slate-100 pb-16 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-500 lg:pb-0"
+        >
           {children}
         </main>
       </div>

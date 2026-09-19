@@ -412,7 +412,7 @@ const AdminFeatureProductsPage = () => {
                   className={`grid w-full grid-cols-12 items-center gap-3 px-5 py-4 text-left transition hover:bg-slate-100 ${index % 2 === 0 ? "bg-white" : "bg-slate-50"}`}
                 >
                   <div className="col-span-6">
-                    <p className="text-sm font-semibold text-slate-900">{feature.serviceName}</p>
+                    <p className="text-sm font-semibold text-slate-900">{index + 1}. {feature.serviceName}</p>
                     <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
                       <span
                         className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ${

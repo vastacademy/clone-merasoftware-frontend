@@ -251,7 +251,7 @@ const AdminTrashPage = () => {
                   ].join(" ")}
                 >
                   <div className="col-span-12 lg:col-span-3">
-                    <p className="truncate text-base font-bold text-slate-950">{item.name || "N/A"}</p>
+                    <p className="truncate text-base font-bold text-slate-950">{index + 1}. {item.name || "N/A"}</p>
                     <p className="mt-1 text-xs text-slate-500">
                       {item.type === "lead" ? `Lead · ${item.status || "New"}` : "Client"}
                     </p>

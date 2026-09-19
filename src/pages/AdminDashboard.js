@@ -9,6 +9,7 @@ import CookieManager from "../utils/cookieManager";
 import StorageService from "../utils/storageService";
 import { useOnlineStatus } from "../App";
 import AdminLayout from "../components/AdminLayout";
+import AdminWorkspaceList from "../components/admin/AdminWorkspaceList";
 import { adminReturnState } from "../helpers/adminReturnNavigation";
 
 const AdminDashboard = () => {
@@ -136,7 +137,7 @@ const AdminDashboard = () => {
               type="button"
               onClick={handleRefresh}
               disabled={loading || refreshing}
-              className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-sm font-semibold text-white outline-none transition hover:bg-white/15 focus:ring-4 focus:ring-emerald-400/30 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <RefreshCw size={16} className={refreshing ? "animate-spin" : ""} />
               Refresh
@@ -154,7 +155,7 @@ const AdminDashboard = () => {
           <button
             type="button"
             onClick={openClientsPage}
-            className="rounded-[1.5rem] border border-slate-200 bg-white p-5 text-left shadow-sm transition hover:border-emerald-200 hover:bg-emerald-50/40"
+            className="rounded-[1.5rem] border border-slate-200 bg-white p-5 text-left shadow-sm outline-none transition hover:border-emerald-200 hover:bg-emerald-50/40 focus:ring-4 focus:ring-emerald-100"
           >
             <div className="flex items-start justify-between gap-4">
               <div>
@@ -195,54 +196,57 @@ const AdminDashboard = () => {
             <button
               type="button"
               onClick={openClientsPage}
-              className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+              className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-semibold text-slate-700 outline-none transition hover:bg-slate-100 focus:ring-4 focus:ring-emerald-100"
             >
               View all clients
               <ArrowRight size={16} />
             </button>
           </div>
 
-          <div>
-            {loading ? (
-              <div className="px-5 py-10 text-center text-sm text-slate-500 sm:px-6">Loading recent clients...</div>
-            ) : recentClients.length === 0 ? (
-              <div className="px-5 py-10 text-center text-sm text-slate-500 sm:px-6">No clients found.</div>
-            ) : (
-              <div className="divide-y divide-slate-200">
-                {recentClients.map((client, index) => (
-                  <button
-                    key={client._id}
-                    type="button"
-                    onClick={() => navigate(`/admin-panel/clients/${client._id}`, {
-                      state: { client, ...adminReturnState("/admin-panel/dashboard") },
-                    })}
-                    className={[
-                      "grid w-full grid-cols-12 gap-3 px-5 py-4 text-left transition hover:bg-slate-100 sm:px-6",
-                      index % 2 === 0 ? "bg-white" : "bg-slate-50",
-                    ].join(" ")}
-                  >
-                    <div className="col-span-12 lg:col-span-5">
-                      <p className="truncate text-base font-bold text-slate-950">{client.name || "N/A"}</p>
-                      <p className="mt-1 truncate text-xs text-slate-500">{client.email || "N/A"}</p>
-                    </div>
-                    <div className="col-span-6 lg:col-span-3 lg:flex lg:items-center">
-                      <p className="truncate text-sm font-semibold text-slate-900">{client.phone || "No phone"}</p>
-                    </div>
-                    <div className="col-span-6 lg:col-span-2 lg:flex lg:items-center">
-                      <span className="inline-flex rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-800">
-                        {client.status || "Active"}
-                      </span>
-                    </div>
-                    <div className="col-span-12 flex items-center justify-between lg:col-span-2 lg:justify-end">
-                      <span className="text-xs text-slate-500">
-                        {client.createdAt ? new Date(client.createdAt).toLocaleDateString("en-IN") : "N/A"}
-                      </span>
-                      <ArrowRight className="ml-3 h-5 w-5 text-slate-400" />
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
+          <div className="p-5 sm:p-6">
+            <AdminWorkspaceList
+              columns={[
+                { label: "Client", className: "col-span-12 lg:col-span-5" },
+                { label: "Phone", className: "col-span-6 lg:col-span-3" },
+                { label: "Status", className: "col-span-6 lg:col-span-2" },
+                { label: "Joined", className: "col-span-12 text-right lg:col-span-2" },
+              ]}
+              loading={loading}
+              emptyText="No clients found."
+              items={recentClients}
+              renderRow={(client, index) => (
+                <button
+                  key={client._id}
+                  type="button"
+                  onClick={() => navigate(`/admin-panel/clients/${client._id}`, {
+                    state: { client, ...adminReturnState("/admin-panel/dashboard") },
+                  })}
+                  className={[
+                    "grid w-full grid-cols-12 gap-3 px-5 py-4 text-left transition outline-none hover:bg-slate-100 focus:bg-slate-100 sm:px-6",
+                    index % 2 === 0 ? "bg-white" : "bg-slate-50",
+                  ].join(" ")}
+                >
+                  <div className="col-span-12 lg:col-span-5">
+                    <p className="truncate text-base font-bold text-slate-950">{index + 1}. {client.name || "N/A"}</p>
+                    <p className="mt-1 truncate text-xs text-slate-500">{client.email || "N/A"}</p>
+                  </div>
+                  <div className="col-span-6 lg:col-span-3 lg:flex lg:items-center">
+                    <p className="truncate text-sm font-semibold text-slate-900">{client.phone || "No phone"}</p>
+                  </div>
+                  <div className="col-span-6 lg:col-span-2 lg:flex lg:items-center">
+                    <span className="inline-flex rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-800">
+                      {client.status || "Active"}
+                    </span>
+                  </div>
+                  <div className="col-span-12 flex items-center justify-between lg:col-span-2 lg:justify-end">
+                    <span className="text-xs text-slate-500">
+                      {client.createdAt ? new Date(client.createdAt).toLocaleDateString("en-IN") : "N/A"}
+                    </span>
+                    <ArrowRight className="ml-3 h-5 w-5 text-slate-400" />
+                  </div>
+                </button>
+              )}
+            />
           </div>
         </section>
       </div>

@@ -247,7 +247,7 @@ const AdminCategoryBasePricePage = () => {
                 >
                   <div className="col-span-5">
                     <p className="text-sm font-semibold text-slate-900">
-                      {CATEGORY_LABELS[entry.category] || entry.category}
+                      {index + 1}. {CATEGORY_LABELS[entry.category] || entry.category}
                     </p>
                   </div>
                   <div className="col-span-3">

@@ -220,13 +220,12 @@ const AdminClientsPage = () => {
                 type="button"
                 onClick={() => handleClientOpen(client)}
                 className={[
-                  "grid w-full grid-cols-12 gap-3 px-5 py-4 text-left transition hover:bg-slate-100 sm:px-6",
+                  "grid w-full grid-cols-12 gap-3 px-5 py-4 text-left transition outline-none hover:bg-slate-100 focus:bg-slate-100 sm:px-6",
                   index % 2 === 0 ? "bg-white" : "bg-slate-50",
                 ].join(" ")}
               >
                 <div className="col-span-12 lg:col-span-4">
-                  <p className="truncate text-base font-bold text-slate-950">{client.name || "N/A"}</p>
-                  <p className="mt-1 text-xs text-slate-500">Client #{index + 1}</p>
+                  <p className="truncate text-base font-bold text-slate-950">{index + 1}. {client.name || "N/A"}</p>
                   <p className="mt-1 truncate text-xs text-emerald-700">Latest: {formatActivity(client)}</p>
                 </div>
                 <div className="col-span-6 lg:col-span-3 lg:flex lg:items-center">
