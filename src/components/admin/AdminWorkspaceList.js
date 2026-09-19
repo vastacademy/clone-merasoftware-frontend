@@ -39,6 +39,8 @@ const AdminWorkspaceList = ({ columns, loading, emptyText, items, renderRow, foo
     if (!nextRow) return;
     event.preventDefault();
     nextRow.focus();
+    // eslint-disable-next-line no-console
+    console.log("DEBUG focus moved to:", nextRow.tagName, nextRow.className, "activeElement now:", document.activeElement.tagName, document.activeElement.className);
   };
 
   return (

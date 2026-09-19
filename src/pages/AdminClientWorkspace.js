@@ -57,6 +57,12 @@ import focusFirstInteractiveElement, { getInteractiveElements } from "../utils/f
 import { getOrderDisplayName } from "../helpers/orderPresentation";
 import { getPaymentMethodText } from "../helpers/invoicePresentation";
 
+const CANCEL_REFUND_MODE_OPTIONS = [
+  { key: "source", label: "To source", hint: "Same proportion it was paid" },
+  { key: "wallet_first", label: "Wallet first", hint: "Fill the wallet, then the rest" },
+  { key: "manual", label: "Manual", hint: "Set each method yourself" },
+];
+
 const OVERVIEW_TAB = { id: "overview", label: "Overview", active: true };
 const PROJECTS_TAB = { id: "projects", label: "Projects", active: true };
 const PLANS_TAB = { id: "plans", label: "Plans", active: true };
@@ -288,6 +294,10 @@ const AdminClientWorkspace = () => {
   const [deleteSelections, setDeleteSelections] = useState({});
   const [deleteError, setDeleteError] = useState("");
   const [deletingOrderId, setDeletingOrderId] = useState(null);
+  const deleteCheckboxRefs = useRef([]);
+  const deleteSubmitButtonRef = useRef(null);
+  const deleteHasAutoFocused = useRef(false);
+  const deletePendingAdvanceIndex = useRef(null);
   // Cancellation flow — mirrors the delete flow above: a target, a read-only preview fetched
   // when the modal opens, and per-method reference ids the admin fills in before confirming.
   const [cancelTarget, setCancelTarget] = useState(null);
@@ -307,6 +317,17 @@ const AdminClientWorkspace = () => {
   const [cancelServiceRefs, setCancelServiceRefs] = useState({});
   const [cancelError, setCancelError] = useState("");
   const [cancellingOrderId, setCancellingOrderId] = useState(null);
+  const cancelAmountFieldRef = useRef(null);
+  const cancelModeButtonRefs = useRef([]);
+  const cancelLegRefs = useRef([]);
+  const cancelManualLegRefs = useRef([]);
+  const cancelRefundReasonFieldRef = useRef(null);
+  const cancelServiceCheckboxRefs = useRef([]);
+  const cancelServiceRefInputRefs = useRef({});
+  const cancelReasonTextareaRef = useRef(null);
+  const cancelSubmitButtonRef = useRef(null);
+  const cancelHasAutoFocused = useRef(false);
+  const cancelPendingServiceAdvanceIndex = useRef(null);
   const [showCreateProjectForm, setShowCreateProjectForm] = useState(false);
   const [workspaceRefreshKey, setWorkspaceRefreshKey] = useState(0);
   const [activeProjectId, setActiveProjectId] = useState(null);
@@ -823,6 +844,98 @@ const AdminClientWorkspace = () => {
     String(cancelReferenceIds[leg.method] || "").trim()
   );
 
+  // Same idea as Add Lead's focusAfterSource — the field after the legs is computed live off
+  // form state, never a fixed position, since which fields even exist depends on the mode and
+  // on whether a wallet top-up needs a reason. Takes `mode` explicitly (rather than reading
+  // cancelRefundMode) because it can be called from the mode button's own onClick, in the same
+  // tick as setCancelRefundMode — before that state update has actually re-rendered.
+  const cancelServicesList = useMemo(() => cancelPreview?.services || [], [cancelPreview]);
+  const focusAfterAllLegs = (mode) => {
+    const chosenWallet = Number(cancelSplitFor(mode).find((leg) => leg.method === "wallet")?.amount || 0);
+    const needsReason = chosenWallet > cancelSourceWallet;
+    if (needsReason) {
+      cancelRefundReasonFieldRef.current?.focus();
+    } else if (cancelServicesList.length > 0) {
+      cancelServiceCheckboxRefs.current[0]?.focus();
+    } else {
+      cancelReasonTextareaRef.current?.focus();
+    }
+  };
+
+  const focusAfterAmount = () => {
+    cancelModeButtonRefs.current[0]?.focus();
+  };
+
+  const focusAfterMode = (mode) => {
+    if (mode === "manual") {
+      cancelManualLegRefs.current[0]?.focus();
+    } else {
+      const externalLegs = cancelSplitFor(mode).filter((leg) => leg.method !== "wallet");
+      if (externalLegs.length > 0) {
+        cancelLegRefs.current[0]?.focus();
+      } else {
+        focusAfterAllLegs(mode);
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (!cancelTarget) return;
+    const handleEscape = (event) => {
+      if (event.key !== "Escape") return;
+      if (cancellingOrderId) return;
+      resetCancelFlow();
+    };
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cancelTarget, cancellingOrderId]);
+
+  // Mirrors the delete modal's auto-focus: land on the refund-amount field once the preview has
+  // actually loaded, not before — falls back to whatever field is first when there's nothing to
+  // refund (no amount field renders in that case).
+  useEffect(() => {
+    if (!cancelPreview || cancelPreviewLoading) {
+      cancelHasAutoFocused.current = false;
+      return;
+    }
+    if (cancelHasAutoFocused.current) return;
+    cancelHasAutoFocused.current = true;
+    if (cancelPreview.refundable > 0) {
+      cancelAmountFieldRef.current?.focus();
+    } else if (cancelServicesList.length > 0) {
+      cancelServiceCheckboxRefs.current[0]?.focus();
+    } else {
+      cancelReasonTextareaRef.current?.focus();
+    }
+  }, [cancelPreview, cancelPreviewLoading, cancelServicesList.length]);
+
+  // Runs after cancelServiceIds has actually re-rendered — same race the delete checklist's
+  // Enter handler avoids: focusing the checkbox's sibling/next target synchronously would still
+  // see the pre-toggle disabled/enabled state.
+  useEffect(() => {
+    if (cancelPendingServiceAdvanceIndex.current === null) return;
+    const { index, orderId } = cancelPendingServiceAdvanceIndex.current;
+    cancelPendingServiceAdvanceIndex.current = null;
+    const svc = cancelServicesList[index];
+    const isChosen = svc && cancelServiceIds.includes(svc.orderId);
+    const hasRefInput =
+      isChosen &&
+      Number(svc.suggestion?.suggested || 0) > 0 &&
+      (svc.legs || []).some((leg) => leg.method !== "wallet");
+    if (hasRefInput) {
+      const firstExternalLeg = (svc.legs || []).find((leg) => leg.method !== "wallet");
+      cancelServiceRefInputRefs.current[`${orderId}-${firstExternalLeg.method}`]?.focus();
+      return;
+    }
+    const nextCheckbox = cancelServiceCheckboxRefs.current[index + 1];
+    if (nextCheckbox) {
+      nextCheckbox.focus();
+    } else {
+      cancelReasonTextareaRef.current?.focus();
+    }
+  }, [cancelServiceIds, cancelServicesList]);
+
   const deleteChecklistSections = deleteScan?.sections || [];
   const deleteRequiredSections = deleteChecklistSections.filter((section) => section.present);
   // Delete is cleanup only — a project that took money must be cancelled (and refunded) first.
@@ -833,6 +946,44 @@ const AdminClientWorkspace = () => {
   const allDeleteSectionsSelected =
     deleteRequiredSections.length > 0 &&
     deleteRequiredSections.every((section) => deleteSelections[section.key]);
+
+  useEffect(() => {
+    if (!deleteTarget) return;
+    const handleEscape = (event) => {
+      if (event.key !== "Escape") return;
+      if (deletingOrderId || deleteScanLoading) return;
+      resetDeleteFlow();
+    };
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, [deleteTarget, deletingOrderId, deleteScanLoading]);
+
+  useEffect(() => {
+    if (!deleteScan || deleteScanLoading) {
+      deleteHasAutoFocused.current = false;
+      return;
+    }
+    if (deleteHasAutoFocused.current) return;
+    if (deleteRequiredSections.length === 0) return;
+    deleteHasAutoFocused.current = true;
+    deleteCheckboxRefs.current[0]?.focus();
+  }, [deleteScan, deleteScanLoading, deleteRequiredSections.length]);
+
+  // Runs after the toggled checkbox's state has actually re-rendered — moving focus inside
+  // the same keydown that called handleToggleDeleteSection would target the submit button
+  // while its `disabled` prop still reflected the pre-toggle value, and a disabled element
+  // silently refuses focus.
+  useEffect(() => {
+    if (deletePendingAdvanceIndex.current === null) return;
+    const index = deletePendingAdvanceIndex.current;
+    deletePendingAdvanceIndex.current = null;
+    const nextRef = deleteCheckboxRefs.current[index + 1];
+    if (nextRef) {
+      nextRef.focus();
+    } else {
+      deleteSubmitButtonRef.current?.focus();
+    }
+  }, [deleteSelections]);
 
   // In-place subpage, same pattern as Projects/Plans (activeProjectId/activePlanId) — no route
   // navigation, so opening a payment group's history no longer leaves AdminClientWorkspace.
@@ -1748,11 +1899,17 @@ const AdminClientWorkspace = () => {
                         <div className="flex items-center gap-2">
                           <span className="text-base font-bold text-slate-500">₹</span>
                           <input
+                            ref={cancelAmountFieldRef}
                             type="number"
                             min="0"
                             max={cancelPreview.refundable}
                             value={cancelRefundAmount}
                             onChange={(event) => setCancelRefundAmount(event.target.value)}
+                            onKeyDown={(event) => {
+                              if (event.key !== "Enter") return;
+                              event.preventDefault();
+                              focusAfterAmount();
+                            }}
                             className="w-40 rounded-xl border border-slate-200 px-3 py-2 text-base font-bold text-slate-900 outline-none focus:border-emerald-500"
                           />
                         </div>
@@ -1785,18 +1942,38 @@ const AdminClientWorkspace = () => {
                       <p className="text-sm font-bold uppercase tracking-wide text-slate-500">
                         How it goes back
                       </p>
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        {[
-                          { key: "source", label: "To source", hint: "Same proportion it was paid" },
-                          { key: "wallet_first", label: "Wallet first", hint: "Fill the wallet, then the rest" },
-                          { key: "manual", label: "Manual", hint: "Set each method yourself" },
-                        ].map((option) => (
+                      <div
+                        role="radiogroup"
+                        aria-label="How the refund goes back"
+                        className="mt-3 flex flex-wrap gap-2"
+                        onKeyDown={(event) => {
+                          if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") return;
+                          event.preventDefault();
+                          const currentIndex = CANCEL_REFUND_MODE_OPTIONS.findIndex(
+                            (option) => option.key === cancelRefundMode
+                          );
+                          if (currentIndex === -1) return;
+                          const nextIndex = event.key === "ArrowRight"
+                            ? (currentIndex + 1) % CANCEL_REFUND_MODE_OPTIONS.length
+                            : (currentIndex - 1 + CANCEL_REFUND_MODE_OPTIONS.length) % CANCEL_REFUND_MODE_OPTIONS.length;
+                          const nextMode = CANCEL_REFUND_MODE_OPTIONS[nextIndex].key;
+                          setCancelRefundMode(nextMode);
+                          cancelModeButtonRefs.current[nextIndex]?.focus();
+                        }}
+                      >
+                        {CANCEL_REFUND_MODE_OPTIONS.map((option, optionIndex) => (
                           <button
                             key={option.key}
+                            ref={(el) => { cancelModeButtonRefs.current[optionIndex] = el; }}
                             type="button"
-                            onClick={() => setCancelRefundMode(option.key)}
+                            role="radio"
+                            aria-checked={cancelRefundMode === option.key}
+                            onClick={() => {
+                              setCancelRefundMode(option.key);
+                              focusAfterMode(option.key);
+                            }}
                             title={option.hint}
-                            className={`rounded-xl border px-3 py-2 text-sm font-semibold transition ${
+                            className={`rounded-xl border px-3 py-2 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-emerald-300 ${
                               cancelRefundMode === option.key
                                 ? "border-emerald-400 bg-emerald-50 text-emerald-700"
                                 : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
@@ -1814,44 +1991,63 @@ const AdminClientWorkspace = () => {
                             : "Set each method's share yourself. No method can get back more than it paid."}
                       </p>
                       <div className="mt-4 space-y-3">
-                        {cancelPayoutLegs.map((leg) => (
-                          <div key={leg.method} className="border-t border-slate-200 pt-3 first:border-t-0 first:pt-0">
-                            <div className="flex items-center justify-between">
-                              <span className="text-base font-semibold text-slate-900">
-                                {getPaymentMethodText(leg.method)}
-                              </span>
-                              <span className="text-base font-bold text-slate-900">
-                                {displayINRCurrency(leg.amount)}
-                              </span>
-                            </div>
-                            {leg.method === "wallet" ? (
-                              <p className="mt-1 text-sm text-emerald-600">
-                                Credited to the wallet automatically.
-                              </p>
-                            ) : (
-                              <div className="mt-2">
-                                <p className="text-sm text-slate-500">
-                                  Send this amount yourself, then enter the reference id.
-                                </p>
-                                <input
-                                  type="text"
-                                  value={cancelReferenceIds[leg.method] || ""}
-                                  onChange={(event) =>
-                                    setCancelReferenceIds((prev) => ({
-                                      ...prev,
-                                      [leg.method]: event.target.value,
-                                    }))
-                                  }
-                                  placeholder="Reference / UTR id"
-                                  className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-base text-slate-900 outline-none focus:border-emerald-500"
-                                />
+                        {(() => {
+                          let externalLegIndex = -1;
+                          return cancelPayoutLegs.map((leg) => {
+                            const isExternal = leg.method !== "wallet";
+                            if (isExternal) externalLegIndex += 1;
+                            const legRefIndex = externalLegIndex;
+                            return (
+                              <div key={leg.method} className="border-t border-slate-200 pt-3 first:border-t-0 first:pt-0">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-base font-semibold text-slate-900">
+                                    {getPaymentMethodText(leg.method)}
+                                  </span>
+                                  <span className="text-base font-bold text-slate-900">
+                                    {displayINRCurrency(leg.amount)}
+                                  </span>
+                                </div>
+                                {!isExternal ? (
+                                  <p className="mt-1 text-sm text-emerald-600">
+                                    Credited to the wallet automatically.
+                                  </p>
+                                ) : (
+                                  <div className="mt-2">
+                                    <p className="text-sm text-slate-500">
+                                      Send this amount yourself, then enter the reference id.
+                                    </p>
+                                    <input
+                                      ref={(el) => { cancelLegRefs.current[legRefIndex] = el; }}
+                                      type="text"
+                                      value={cancelReferenceIds[leg.method] || ""}
+                                      onChange={(event) =>
+                                        setCancelReferenceIds((prev) => ({
+                                          ...prev,
+                                          [leg.method]: event.target.value,
+                                        }))
+                                      }
+                                      onKeyDown={(event) => {
+                                        if (event.key !== "Enter") return;
+                                        event.preventDefault();
+                                        const nextRef = cancelLegRefs.current[legRefIndex + 1];
+                                        if (nextRef) {
+                                          nextRef.focus();
+                                        } else {
+                                          focusAfterAllLegs(cancelRefundMode);
+                                        }
+                                      }}
+                                      placeholder="Reference / UTR id"
+                                      className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-base text-slate-900 outline-none focus:border-emerald-500"
+                                    />
+                                  </div>
+                                )}
                               </div>
-                            )}
-                          </div>
-                        ))}
+                            );
+                          });
+                        })()}
                         {cancelRefundMode === "manual" ? (
                           <div className="space-y-2 border-t border-slate-200 pt-3">
-                            {(cancelPreview.legs || []).map((leg) => (
+                            {(cancelPreview.legs || []).map((leg, manualIndex) => (
                               <div key={`manual-${leg.method}`} className="flex items-center justify-between gap-3">
                                 <span className="text-sm font-semibold text-slate-700">
                                   {getPaymentMethodText(leg.method)}
@@ -1860,6 +2056,7 @@ const AdminClientWorkspace = () => {
                                   </span>
                                 </span>
                                 <input
+                                  ref={(el) => { cancelManualLegRefs.current[manualIndex] = el; }}
                                   type="number"
                                   min="0"
                                   max={leg.amount}
@@ -1870,6 +2067,18 @@ const AdminClientWorkspace = () => {
                                       [leg.method]: event.target.value,
                                     }))
                                   }
+                                  onKeyDown={(event) => {
+                                    if (event.key !== "Enter") return;
+                                    event.preventDefault();
+                                    const nextRef = cancelManualLegRefs.current[manualIndex + 1];
+                                    if (nextRef) {
+                                      nextRef.focus();
+                                    } else if (cancelExternalLegs.length > 0) {
+                                      cancelLegRefs.current[0]?.focus();
+                                    } else {
+                                      focusAfterAllLegs(cancelRefundMode);
+                                    }
+                                  }}
                                   className="w-32 rounded-xl border border-slate-200 px-3 py-2 text-base text-slate-900 outline-none focus:border-emerald-500"
                                 />
                               </div>
@@ -1893,9 +2102,19 @@ const AdminClientWorkspace = () => {
                               withdraw — record that they asked for it.
                             </p>
                             <input
+                              ref={cancelRefundReasonFieldRef}
                               type="text"
                               value={cancelRefundReason}
                               onChange={(event) => setCancelRefundReason(event.target.value)}
+                              onKeyDown={(event) => {
+                                if (event.key !== "Enter") return;
+                                event.preventDefault();
+                                if (cancelServicesList.length > 0) {
+                                  cancelServiceCheckboxRefs.current[0]?.focus();
+                                } else {
+                                  cancelReasonTextareaRef.current?.focus();
+                                }
+                              }}
                               placeholder="e.g. Customer asked to keep it in the wallet"
                               className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-base text-slate-900 outline-none focus:border-emerald-500"
                             />
@@ -1926,14 +2145,48 @@ const AdminClientWorkspace = () => {
                         A service left running will keep billing the customer for a project that no
                         longer exists. Choose which to cancel and refund too.
                       </p>
-                      <div className="mt-3 space-y-3">
-                        {cancelPreview.services.map((svc) => {
+                      <div
+                        className="mt-3 space-y-3"
+                        onKeyDown={(event) => {
+                          if (event.key !== "ArrowDown" && event.key !== "ArrowUp" && event.key !== "Enter") return;
+                          const refs = cancelServiceCheckboxRefs.current;
+                          const currentIndex = refs.findIndex((el) => el === document.activeElement);
+                          if (currentIndex === -1) return;
+
+                          if (event.key === "Enter") {
+                            event.preventDefault();
+                            const svc = cancelServicesList[currentIndex];
+                            cancelPendingServiceAdvanceIndex.current = { index: currentIndex, orderId: svc.orderId };
+                            setCancelServiceIds((prev) =>
+                              prev.includes(svc.orderId)
+                                ? prev.filter((id) => id !== svc.orderId)
+                                : [...prev, svc.orderId]
+                            );
+                            return;
+                          }
+
+                          if (event.key === "ArrowDown") {
+                            event.preventDefault();
+                            refs[currentIndex + 1]?.focus();
+                            return;
+                          }
+
+                          if (event.key === "ArrowUp") {
+                            const prevRef = refs[currentIndex - 1];
+                            if (!prevRef) return;
+                            event.preventDefault();
+                            prevRef.focus();
+                          }
+                        }}
+                      >
+                        {cancelPreview.services.map((svc, serviceIndex) => {
                           const chosen = cancelServiceIds.includes(svc.orderId);
                           const externalLegs = (svc.legs || []).filter((leg) => leg.method !== "wallet");
                           return (
                             <div key={svc.orderId} className="border-t border-slate-200 pt-3 first:border-t-0 first:pt-0">
                               <label className="flex items-start gap-3">
                                 <input
+                                  ref={(el) => { cancelServiceCheckboxRefs.current[serviceIndex] = el; }}
                                   type="checkbox"
                                   checked={chosen}
                                   onChange={(event) =>
@@ -1962,13 +2215,14 @@ const AdminClientWorkspace = () => {
 
                               {chosen && Number(svc.suggestion?.suggested || 0) > 0 && externalLegs.length > 0 ? (
                                 <div className="mt-2 space-y-2 pl-7">
-                                  {externalLegs.map((leg) => (
+                                  {externalLegs.map((leg, legIndex) => (
                                     <div key={`${svc.orderId}-${leg.method}`}>
                                       <p className="text-sm text-slate-500">
                                         Send the {getPaymentMethodText(leg.method)}{" "}
                                         share yourself, then enter the reference id.
                                       </p>
                                       <input
+                                        ref={(el) => { cancelServiceRefInputRefs.current[`${svc.orderId}-${leg.method}`] = el; }}
                                         type="text"
                                         value={cancelServiceRefs[svc.orderId]?.[leg.method] || ""}
                                         onChange={(event) =>
@@ -1980,6 +2234,21 @@ const AdminClientWorkspace = () => {
                                             },
                                           }))
                                         }
+                                        onKeyDown={(event) => {
+                                          if (event.key !== "Enter") return;
+                                          event.preventDefault();
+                                          const nextLeg = externalLegs[legIndex + 1];
+                                          if (nextLeg) {
+                                            cancelServiceRefInputRefs.current[`${svc.orderId}-${nextLeg.method}`]?.focus();
+                                          } else {
+                                            const nextCheckbox = cancelServiceCheckboxRefs.current[serviceIndex + 1];
+                                            if (nextCheckbox) {
+                                              nextCheckbox.focus();
+                                            } else {
+                                              cancelReasonTextareaRef.current?.focus();
+                                            }
+                                          }
+                                        }}
                                         placeholder="Reference / UTR id"
                                         className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-base text-slate-900 outline-none focus:border-emerald-500"
                                       />
@@ -2002,8 +2271,14 @@ const AdminClientWorkspace = () => {
                   <div>
                     <label className="text-sm font-bold text-slate-700">Reason (optional)</label>
                     <textarea
+                      ref={cancelReasonTextareaRef}
                       value={cancelReason}
                       onChange={(event) => setCancelReason(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key !== "Enter" || event.shiftKey) return;
+                        event.preventDefault();
+                        cancelSubmitButtonRef.current?.focus();
+                      }}
                       rows={2}
                       placeholder="Shared with the customer"
                       className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-base text-slate-900 outline-none focus:border-emerald-500"
@@ -2022,16 +2297,9 @@ const AdminClientWorkspace = () => {
                 </div>
               ) : null}
 
-              <div className="mt-6 flex justify-end gap-3">
+              <div className="mt-6 flex justify-end">
                 <button
-                  type="button"
-                  onClick={resetCancelFlow}
-                  disabled={Boolean(cancellingOrderId)}
-                  className="rounded-2xl border border-slate-200 px-5 py-2.5 text-base font-bold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
-                >
-                  Keep project
-                </button>
-                <button
+                  ref={cancelSubmitButtonRef}
                   type="button"
                   onClick={handleConfirmCancel}
                   disabled={
@@ -2044,7 +2312,7 @@ const AdminClientWorkspace = () => {
                     !cancelReasonSatisfied ||
                     !allCancelServiceRefsFilled
                   }
-                  className="inline-flex items-center gap-2 rounded-2xl bg-amber-600 px-5 py-2.5 text-base font-bold text-white transition hover:bg-amber-700 disabled:opacity-50"
+                  className="inline-flex items-center gap-2 rounded-2xl bg-amber-600 px-5 py-2.5 text-base font-bold text-white transition hover:bg-amber-700 focus:animate-pulse focus:ring-4 focus:ring-amber-300 disabled:opacity-50"
                 >
                   {cancellingOrderId ? <Loader2 size={16} className="animate-spin" /> : null}
                   Cancel project
@@ -2153,65 +2421,102 @@ const AdminClientWorkspace = () => {
                         </span>
                       </div>
 
-                      <div className="mt-4 space-y-2">
-                        {deleteChecklistSections.map((section) => {
-                          const isLocked = !section.present;
-                          const isChecked = isLocked ? true : Boolean(deleteSelections[section.key]);
+                      <div
+                        className="mt-4 space-y-2"
+                        onKeyDown={(event) => {
+                          if (event.key !== "ArrowDown" && event.key !== "ArrowUp" && event.key !== "Enter") return;
+                          const refs = deleteCheckboxRefs.current;
+                          const currentIndex = refs.findIndex((el) => el === document.activeElement);
+                          if (currentIndex === -1) return;
 
-                          return (
-                            <label
-                              key={section.key}
-                              className={[
-                                "flex items-center gap-3 rounded-2xl border px-4 py-3 text-sm transition",
-                                isLocked
-                                  ? "cursor-not-allowed border-slate-200 bg-white text-slate-400"
-                                  : "cursor-pointer border-slate-200 bg-white text-slate-700 hover:border-emerald-200 hover:bg-emerald-50/40",
-                              ].join(" ")}
-                            >
-                              <input
-                                type="checkbox"
-                                className="h-4 w-4 shrink-0 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
-                                checked={isChecked}
-                                disabled={isLocked || Boolean(deletingOrderId)}
-                                onChange={() => handleToggleDeleteSection(section.key)}
-                              />
-                              <span className="min-w-0 flex-1 truncate font-semibold text-slate-900">
-                                {section.label}
-                              </span>
-                              <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-500">
-                                {section.count}
-                              </span>
-                              <span
+                          const focusNext = () => {
+                            const nextRef = refs[currentIndex + 1];
+                            if (nextRef) {
+                              nextRef.focus();
+                            } else {
+                              deleteSubmitButtonRef.current?.focus();
+                            }
+                          };
+
+                          if (event.key === "Enter") {
+                            event.preventDefault();
+                            deletePendingAdvanceIndex.current = currentIndex;
+                            handleToggleDeleteSection(deleteRequiredSections[currentIndex]?.key);
+                            return;
+                          }
+
+                          if (event.key === "ArrowDown") {
+                            event.preventDefault();
+                            focusNext();
+                            return;
+                          }
+
+                          if (event.key === "ArrowUp") {
+                            const prevRef = refs[currentIndex - 1];
+                            if (!prevRef) return;
+                            event.preventDefault();
+                            prevRef.focus();
+                          }
+                        }}
+                      >
+                        {(() => {
+                          deleteCheckboxRefs.current = [];
+                          let navigableIndex = -1;
+                          return deleteChecklistSections.map((section) => {
+                            const isLocked = !section.present;
+                            const isChecked = isLocked ? true : Boolean(deleteSelections[section.key]);
+                            if (!isLocked) navigableIndex += 1;
+                            const refIndex = navigableIndex;
+
+                            return (
+                              <label
+                                key={section.key}
                                 className={[
-                                  "shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold",
-                                  section.present ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-400",
+                                  "flex items-center gap-3 rounded-2xl border px-4 py-3 text-sm transition",
+                                  isLocked
+                                    ? "cursor-not-allowed border-slate-200 bg-white text-slate-400"
+                                    : "cursor-pointer border-slate-200 bg-white text-slate-700 hover:border-emerald-200 hover:bg-emerald-50/40 focus-within:border-emerald-400 focus-within:bg-emerald-50/60 focus-within:ring-2 focus-within:ring-emerald-200",
                                 ].join(" ")}
                               >
-                                {section.present ? "Present" : "Missing"}
-                              </span>
-                            </label>
-                          );
-                        })}
+                                <input
+                                  type="checkbox"
+                                  ref={isLocked ? null : (el) => { deleteCheckboxRefs.current[refIndex] = el; }}
+                                  className="h-4 w-4 shrink-0 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                                  checked={isChecked}
+                                  disabled={isLocked || Boolean(deletingOrderId)}
+                                  onChange={() => handleToggleDeleteSection(section.key)}
+                                />
+                                <span className="min-w-0 flex-1 truncate font-semibold text-slate-900">
+                                  {section.label}
+                                </span>
+                                <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-500">
+                                  {section.count}
+                                </span>
+                                <span
+                                  className={[
+                                    "shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold",
+                                    section.present ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-400",
+                                  ].join(" ")}
+                                >
+                                  {section.present ? "Present" : "Missing"}
+                                </span>
+                              </label>
+                            );
+                          });
+                        })()}
                       </div>
                     </div>
                   </>
                 ) : null}
               </div>
 
-              <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+              <div className="mt-6 flex justify-end">
                 <button
-                  type="button"
-                  onClick={resetDeleteFlow}
-                  className="inline-flex items-center justify-center rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-                  disabled={Boolean(deletingOrderId) || deleteScanLoading}
-                >
-                  Cancel
-                </button>
-                <button
+                  ref={deleteSubmitButtonRef}
                   type="button"
                   onClick={handleConfirmDelete}
                   disabled={Boolean(deletingOrderId) || deleteScanLoading || !allDeleteSectionsSelected || deleteNeedsCancelFirst}
-                  className="inline-flex items-center justify-center gap-2 rounded-2xl bg-rose-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-70"
+                  className="inline-flex items-center justify-center gap-2 rounded-2xl bg-rose-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-rose-700 focus:animate-pulse focus:ring-4 focus:ring-rose-300 disabled:cursor-not-allowed disabled:opacity-70"
                 >
                   {deletingOrderId ? (
                     <>
@@ -3569,85 +3874,154 @@ const CompactWorkspaceCard = ({ title, subtitle, items, emptyText, onRowClick, o
           emptyText={emptyText}
           items={items}
           renderRow={(item, index) => (
-              <div
-                key={item._id}
-                role="button"
-                tabIndex={0}
-                onClick={() => onRowClick?.(item)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    onRowClick?.(item);
-                  }
-                }}
-                className={[
-                  "grid w-full cursor-pointer grid-cols-12 gap-3 px-5 py-4 text-left transition outline-none hover:bg-slate-100 focus:bg-slate-100 sm:px-6",
-                  index % 2 === 0 ? "bg-white" : "bg-slate-50",
-                ].join(" ")}
-              >
-                <div className="col-span-12 lg:col-span-5">
-                  <p className="truncate text-base font-semibold text-slate-900">{index + 1}. {getWorkspaceItemName(item)}</p>
-                </div>
-
-                <div className="col-span-12 lg:col-span-4 lg:flex lg:items-center">
-                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
-                    {renderMeta?.(item)?.map((meta) => (
-                      <span key={meta}>{meta}</span>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="col-span-6 lg:col-span-2 lg:flex lg:items-center">
-                  <div>{renderRight?.(item)}</div>
-                </div>
-
-                <div className="col-span-6 flex flex-wrap items-center justify-end gap-2 lg:col-span-1">
-                  {/* Cancel settles the money and closes the project; Delete only removes the
-                      record afterwards. A project already cancelled has nothing left to cancel. */}
-                  {onCancel && item.orderVisibility !== "cancelled" ? (
-                    <button
-                      type="button"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        onCancel(item);
-                      }}
-                      disabled={cancellingOrderId === item._id}
-                      className="inline-flex items-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-70"
-                    >
-                      {cancellingOrderId === item._id ? (
-                        <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-amber-600 border-t-transparent" />
-                      ) : (
-                        <Ban size={14} />
-                      )}
-                      Cancel
-                    </button>
-                  ) : null}
-                  {onDelete ? (
-                    <button
-                      type="button"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        onDelete(item);
-                      }}
-                      disabled={deletingOrderId === item._id}
-                      className="inline-flex items-center gap-2 rounded-2xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-70"
-                    >
-                      {deletingOrderId === item._id ? (
-                        <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-rose-600 border-t-transparent" />
-                      ) : (
-                        <Trash2 size={14} />
-                      )}
-                      Delete
-                    </button>
-                  ) : null}
-                </div>
-              </div>
+            <CompactWorkspaceRow
+              key={item._id}
+              tabIndex={0}
+              item={item}
+              index={index}
+              onRowClick={onRowClick}
+              onDelete={onDelete}
+              onCancel={onCancel}
+              deletingOrderId={deletingOrderId}
+              cancellingOrderId={cancellingOrderId}
+              renderMeta={renderMeta}
+              renderRight={renderRight}
+            />
           )}
         />
       </div>
     </div>
   );
 };
+
+// Forwards its ref to the root div — AdminWorkspaceList clones this element to attach the ref
+// it uses for row-to-row ArrowUp/ArrowDown navigation, so a plain (non-forwardRef) component
+// here would silently drop that ref and break the list's existing keyboard navigation.
+const CompactWorkspaceRow = React.forwardRef(
+  ({ item, index, onRowClick, onDelete, onCancel, deletingOrderId, cancellingOrderId, renderMeta, renderRight }, ref) => {
+    // Which action (if any) ArrowLeft/ArrowRight has currently moved to within this row.
+    // null means the row itself is the target, so Enter/Space opens it — matching every other
+    // row-based list in the app (e.g. AdminLeadsPage.js) where Enter opens by default.
+    const [selectedAction, setSelectedAction] = useState(null);
+    // eslint-disable-next-line no-console
+    console.log("DEBUG row render, index:", index, "selectedAction:", selectedAction);
+
+    const availableActions = [
+      onCancel && item.orderVisibility !== "cancelled" ? "cancel" : null,
+      onDelete ? "delete" : null,
+    ].filter(Boolean);
+
+    const runAction = (action) => {
+      if (action === "cancel") onCancel(item);
+      else if (action === "delete") onDelete(item);
+    };
+
+    return (
+      <div
+        ref={ref}
+        role="button"
+        tabIndex={0}
+        onClick={() => onRowClick?.(item)}
+        onBlur={() => setSelectedAction(null)}
+        onKeyDown={(event) => {
+          if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+            if (availableActions.length === 0) return;
+            event.preventDefault();
+            const currentIndex = availableActions.indexOf(selectedAction);
+            if (event.key === "ArrowRight") {
+              const nextIndex = currentIndex === -1 ? 0 : currentIndex + 1;
+              setSelectedAction(nextIndex < availableActions.length ? availableActions[nextIndex] : null);
+            } else {
+              const prevIndex = currentIndex === -1 ? availableActions.length - 1 : currentIndex - 1;
+              setSelectedAction(prevIndex >= 0 ? availableActions[prevIndex] : null);
+            }
+            return;
+          }
+
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            if (selectedAction) {
+              runAction(selectedAction);
+              setSelectedAction(null);
+            } else {
+              onRowClick?.(item);
+            }
+          } else if (event.key === "Delete" && onDelete) {
+            event.preventDefault();
+            onDelete(item);
+          }
+        }}
+        className={[
+          "grid w-full cursor-pointer grid-cols-12 gap-3 px-5 py-4 text-left transition outline-none hover:bg-slate-100 focus:bg-slate-100 sm:px-6",
+          index % 2 === 0 ? "bg-white" : "bg-slate-50",
+        ].join(" ")}
+      >
+        <div className="col-span-12 lg:col-span-5">
+          <p className="truncate text-base font-semibold text-slate-900">{index + 1}. {getWorkspaceItemName(item)}</p>
+        </div>
+
+        <div className="col-span-12 lg:col-span-4 lg:flex lg:items-center">
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
+            {renderMeta?.(item)?.map((meta) => (
+              <span key={meta}>{meta}</span>
+            ))}
+          </div>
+        </div>
+
+        <div className="col-span-6 lg:col-span-2 lg:flex lg:items-center">
+          <div>{renderRight?.(item)}</div>
+        </div>
+
+        <div className="col-span-6 flex flex-wrap items-center justify-end gap-2 lg:col-span-1">
+          {/* Cancel settles the money and closes the project; Delete only removes the
+              record afterwards. A project already cancelled has nothing left to cancel. */}
+          {onCancel && item.orderVisibility !== "cancelled" ? (
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                onCancel(item);
+              }}
+              disabled={cancellingOrderId === item._id}
+              className={[
+                "inline-flex items-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-70",
+                selectedAction === "cancel" ? "ring-2 ring-amber-400" : "",
+              ].join(" ")}
+            >
+              {cancellingOrderId === item._id ? (
+                <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-amber-600 border-t-transparent" />
+              ) : (
+                <Ban size={14} />
+              )}
+              Cancel
+            </button>
+          ) : null}
+          {onDelete ? (
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                onDelete(item);
+              }}
+              disabled={deletingOrderId === item._id}
+              className={[
+                "inline-flex items-center gap-2 rounded-2xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-70",
+                selectedAction === "delete" ? "ring-2 ring-rose-400" : "",
+              ].join(" ")}
+            >
+              {deletingOrderId === item._id ? (
+                <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-rose-600 border-t-transparent" />
+              ) : (
+                <Trash2 size={14} />
+              )}
+              Delete
+            </button>
+          ) : null}
+        </div>
+      </div>
+    );
+  }
+);
 
 // The four project categories come from helpers/projectCategoryOptions.js, the shared
 // SSOT the Features form also builds its category picker from — so a feature can never
