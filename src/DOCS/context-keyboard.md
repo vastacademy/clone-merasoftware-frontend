@@ -112,6 +112,21 @@ The rules that produce this:
     Shift+Enter for new line" · dropdown → "Press ↓ or Enter to open · ↑↓ to move · Enter to
     select" · file → "Space to browse files · Enter to continue" · submit → no hint.
 
+    **The hint must never occupy layout height.** It shows and hides with `opacity`, from a
+    zero-height (`h-0`) sibling that positions the pill `absolute` inside itself, and it is
+    `pointer-events-none`.
+
+    *Before:* the component toggled `hidden` → `peer-focus:flex`, i.e. `display: none` →
+    `display: flex`. *Why that broke:* pressing the mouse on a button below a focused field
+    blurred the field, the pill left the layout, everything under it jumped up, and `mouseup`
+    landed off the button — the browser then emitted **no click at all**, so the first click on
+    Save/Cancel did nothing and every action needed two clicks. Fixed in
+    `components/KeyboardHint.js` (the only file involved; all 11 usages across
+    `AdminLeadDetailPage.js` and `AdminLeadsPage.js` pick it up).
+
+    Keep the pill's wrapper a **sibling** of the field, never nested: `peer-focus:` compiles to
+    `.peer:focus ~ .peer-focus\:*`, so nesting it silently stops the hint from ever appearing.
+
 ### Build checklist
 
 1. `useRef` per field + one for the submit button.
@@ -122,7 +137,8 @@ The rules that produce this:
 5. Typeahead → add a `*HighlightIndex` state and arrow/Enter `onKeyDown`, reuse the pick function.
 6. Submit button → ref + pulse classes. No `onKeyDown`.
 7. Modal → Esc listener, drop the redundant Cancel button.
-8. Every navigable field: `peer` + a following `<KeyboardHint>`.
+8. Every navigable field: `peer` + a following `<KeyboardHint>`. Never give the hint its own
+   layout height (see rule 11) — that swallows the first mouse click on anything below it.
 
 ### Two race conditions that will recur
 
