@@ -38,9 +38,15 @@ const AdminWorkspaceList = ({ columns, loading, emptyText, items, renderRow, foo
     // container) can decide what "off the edge of this list" means.
     if (!nextRow) return;
     event.preventDefault();
+    // This list has handled the key, so it must not reach an ancestor arrow handler as well.
+    // preventDefault() only cancels the browser's default action — it does NOT stop bubbling,
+    // so without this the event also reached AdminClientWorkspace.js's handleTabContentKeyDown,
+    // which read the already-updated document.activeElement and advanced focus a second time:
+    // one keypress, two rows, i.e. every other row appeared to be skipped. Deliberately placed
+    // after the `!nextRow` guard above, so at the first/last row the key still bubbles and the
+    // climb into the tab strip keeps working.
+    event.stopPropagation();
     nextRow.focus();
-    // eslint-disable-next-line no-console
-    console.log("DEBUG focus moved to:", nextRow.tagName, nextRow.className, "activeElement now:", document.activeElement.tagName, document.activeElement.className);
   };
 
   return (

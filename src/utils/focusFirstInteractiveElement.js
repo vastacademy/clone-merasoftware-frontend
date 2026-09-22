@@ -1,5 +1,9 @@
 const INTERACTIVE_SELECTOR = [
-  "button:not(:disabled)",
+  // `tabindex="-1"` means "not a keyboard navigation stop", so it has to be excluded here too,
+  // not just by the [tabindex] clause below. A selector list ORs its clauses: without this,
+  // a `<button tabindex="-1">` still matched on `button:not(:disabled)` alone and stayed in the
+  // sequence — which is how arrow-navigation could land on a row's own action button.
+  'button:not(:disabled):not([tabindex="-1"])',
   "[href]",
   "input:not(:disabled)",
   "select:not(:disabled)",

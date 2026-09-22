@@ -551,6 +551,10 @@ const AdminLeadsPage = () => {
                 tabIndex={0}
                 onClick={() => openLead(lead)}
                 onKeyDown={(e) => {
+                  // Only act on keys pressed on the row itself — a keydown on the row's own
+                  // Delete button bubbles up here, and preventDefault() on it would cancel the
+                  // browser's native click, so the button's action never ran.
+                  if (e.target !== e.currentTarget) return;
                   if (e.key === "Enter" || e.key === " ") {
                     e.preventDefault();
                     openLead(lead);

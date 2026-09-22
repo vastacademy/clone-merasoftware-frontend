@@ -343,12 +343,12 @@ const SinglePaymentRecordDetail = () => {
   // The workspace's own return target is carried through, so Back from there still
   // reaches whichever parent opened the client (clients list or dashboard).
   const handleBackToPayments = () => {
-    navigate(`/admin-panel/clients/${customerId}`, {
+    // Which tab the workspace opens on is a URL param now, not location.state — the workspace
+    // derives activeTab from ?tab=. The return target stays in state; it is not navigation
+    // state of that page, it is where that page's own Back should go.
+    navigate(`/admin-panel/clients/${customerId}?tab=payments`, {
       replace: true,
-      state: {
-        activeTab: "payments",
-        ...adminReturnState(getAdminReturnTarget(location, "/admin-panel/clients")),
-      },
+      state: adminReturnState(getAdminReturnTarget(location, "/admin-panel/clients")),
     });
   };
 
@@ -902,12 +902,12 @@ const PaymentOrderHistory = ({ customerId, orderId }) => {
   // Same contract as the single-record view: Back to Payments is a step back, so it
   // replaces this history entry and forwards the workspace's own return target.
   const handleBackToPayments = () => {
-    navigate(`/admin-panel/clients/${customerId}`, {
+    // Which tab the workspace opens on is a URL param now, not location.state — the workspace
+    // derives activeTab from ?tab=. The return target stays in state; it is not navigation
+    // state of that page, it is where that page's own Back should go.
+    navigate(`/admin-panel/clients/${customerId}?tab=payments`, {
       replace: true,
-      state: {
-        activeTab: "payments",
-        ...adminReturnState(getAdminReturnTarget(location, "/admin-panel/clients")),
-      },
+      state: adminReturnState(getAdminReturnTarget(location, "/admin-panel/clients")),
     });
   };
 

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "sonner";
 import {
@@ -283,7 +283,60 @@ const AdminClientWorkspace = () => {
   const dispatch = useDispatch();
   const user = useSelector((state) => state?.user?.user);
   const { isOnline } = useOnlineStatus();
-  const [activeTab, setActiveTab] = useState(location.state?.activeTab || null);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Which tab is open, and which project/plan/payment-group subpage is open inside it, is
+  // NAVIGATION state, so it lives in the URL — not in useState. Storing it in component state
+  // meant the browser had a single history entry for the whole page, so Alt+Left (which is the
+  // browser's own gesture, not ours to intercept) left the workspace entirely instead of closing
+  // the open subpage. Opening a subpage now pushes a history entry, so Back steps one layer.
+  // Refresh and shareable links come free from the same change.
+  const activeTab = searchParams.get("tab") || null;
+  const activeProjectId = searchParams.get("project") || null;
+  const activePlanId = searchParams.get("plan") || null;
+  const activePaymentGroupId = searchParams.get("group") || null;
+
+  // Single writer for every param above. The four subpage layers reset each other, so this
+  // always writes the complete set and drops what the caller omitted — a partial merge would
+  // let a stale `project` survive into the plans tab. `location.state` must be carried forward
+  // by hand: setSearchParams drops it, and it holds both the preloaded client and the
+  // adminReturnState that handleBack reads to find the parent that opened this workspace.
+  const setWorkspaceParams = (next, { replace = false } = {}) => {
+    const params = new URLSearchParams();
+    if (next.tab) params.set("tab", next.tab);
+    if (next.project) params.set("project", next.project);
+    if (next.plan) params.set("plan", next.plan);
+    if (next.group) params.set("group", next.group);
+    setSearchParams(params, { replace, state: location.state });
+  };
+
+  // Closing a layer with the header's Back button must be the SAME operation as Alt+Left —
+  // a real history step — or Back and Forward stop being symmetric. Writing a "closed" URL
+  // instead looks identical on screen but appends a third entry: Alt+Right then has nowhere
+  // to go, and Alt+Left reopens the project that was just closed. Only history.back() leaves
+  // a forward entry behind, which is exactly what Alt+Right needs.
+  //
+  // Guarded, because stepping back is only correct when there IS an entry behind us. On a
+  // direct load or refresh of a subpage URL there is none, and navigate(-1) would leave the
+  // app entirely — that case drops the param instead.
+  //
+  // The guard reads React Router's own history index rather than counting pushes ourselves.
+  // A counter drifts: the user pressing Alt+Left closes a subpage without going through any
+  // handler, so our count would say one entry is behind us when none is. The router maintains
+  // window.history.state.idx for every entry (initialising it to 0 on a fresh load), so it
+  // stays correct no matter which gesture moved us.
+  const canStepBackInHistory = () => {
+    const index = window.history.state?.idx;
+    return typeof index === "number" ? index > 0 : false;
+  };
+
+  const stepBackOrReplace = (tab) => {
+    if (canStepBackInHistory()) {
+      navigate(-1);
+      return;
+    }
+    setWorkspaceParams({ tab }, { replace: true });
+  };
   const [customerLoading, setCustomerLoading] = useState(true);
   const [dataLoading, setDataLoading] = useState(true);
   const [fetchError, setFetchError] = useState("");
@@ -330,16 +383,13 @@ const AdminClientWorkspace = () => {
   const cancelPendingServiceAdvanceIndex = useRef(null);
   const [showCreateProjectForm, setShowCreateProjectForm] = useState(false);
   const [workspaceRefreshKey, setWorkspaceRefreshKey] = useState(0);
-  const [activeProjectId, setActiveProjectId] = useState(null);
   const [activeProject, setActiveProject] = useState(null);
   const [activeProjectLoading, setActiveProjectLoading] = useState(false);
   const [activeProjectError, setActiveProjectError] = useState("");
   const [activeProjectRefreshKey, setActiveProjectRefreshKey] = useState(0);
   const [selectedProjectCheckpointId, setSelectedProjectCheckpointId] = useState(null);
-  const [activePlanId, setActivePlanId] = useState(null);
   const [activePlan, setActivePlan] = useState(null);
   const [activePlanLoading, setActivePlanLoading] = useState(false);
-  const [activePaymentGroupId, setActivePaymentGroupId] = useState(null);
   const [activePlanError, setActivePlanError] = useState("");
   // Account & Access section state
   const [accessData, setAccessData] = useState(null);
@@ -382,7 +432,16 @@ const AdminClientWorkspace = () => {
     summary: null,
   });
 
-  const fallbackClient = location.state?.client ?? null;
+  // Memoised on the id, not the object. The browser structured-clones history state on
+  // every navigation, so `location.state.client` is a NEW object each time even when the
+  // client is identical — and this value is a dependency of the workspace load effect,
+  // which would then refetch the whole workspace on every Back/Forward.
+  const fallbackClientId = location.state?.client?._id ?? null;
+  const fallbackClient = useMemo(
+    () => location.state?.client ?? null,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [fallbackClientId],
+  );
   const client = customer || fallbackClient;
   const clientName = client?.name || "Client";
   const clientEmail = client?.email || "No email available";
@@ -437,27 +496,38 @@ const AdminClientWorkspace = () => {
     }
   };
 
+  // Pushes a history entry, so Alt+Left closes this project and lands back on the projects
+  // tab. Writes nothing but the URL: the fetch effect loads the project from the id, and the
+  // checkpoint effect picks the selected node from what it loads. Seeding the list's own
+  // partial object here would make a mouse click show data that a Back/Forward could not,
+  // which is exactly the kind of two-paths-two-behaviours split this page had.
   const handleOpenProject = (project) => {
     if (!project?._id) return;
-    setActiveProjectId(project._id);
-    setActiveProject(project);
-    setActiveProjectError("");
-    const activeNodes = (project?.projectNodes || []).filter((node) => node?.status === "active");
-    const lastNode = activeNodes[activeNodes.length - 1];
-    setSelectedProjectCheckpointId(lastNode ? getNodeSelectionKey(lastNode) : null);
-    setActiveTab("projects");
-    setActivePlanId(null);
-    setActivePlan(null);
-    setActivePlanError("");
-    setActivePlanLoading(false);
+    setWorkspaceParams({ tab: "projects", project: project._id });
   };
 
+  // Closing a project subpage happens for two unrelated reasons, and they need opposite
+  // history behaviour, so they are two named functions rather than one with a flag:
+  //
+  //   handleBackToProjects   — the user is stepping back a layer. PUSHES, so Alt+Right
+  //                            reopens the project, matching Windows Back/Forward symmetry.
+  //   closeDeletedProject    — the project no longer exists. REPLACES, so no history entry
+  //                            is ever left pointing at a deleted project's URL.
+  //
+  // Both clear the same cached objects, so that part is shared below. Never collapse these
+  // back into one function: a caller would have to remember which history behaviour it wants,
+  // and the safe-looking default is wrong for exactly one of them.
+  // Neither of these clears activeProject by hand. Dropping the `project` param is what
+  // closes the subpage, and the fetch effect clears the cache when that id goes away —
+  // including when the user presses Alt+Left, which calls no handler at all.
   const handleBackToProjects = () => {
-    setActiveProjectId(null);
-    setActiveProject(null);
-    setActiveProjectError("");
-    setActiveProjectLoading(false);
-    setSelectedProjectCheckpointId(null);
+    stepBackOrReplace("projects");
+  };
+
+  // Replace, not a history step: the entry being overwritten is the deleted project's own
+  // URL, so nothing must be able to reach it again — not Alt+Right, not Alt+Left.
+  const closeDeletedProject = () => {
+    setWorkspaceParams({ tab: "projects" }, { replace: true });
   };
 
   const handleSoftRefreshActiveProject = () => {
@@ -466,21 +536,16 @@ const AdminClientWorkspace = () => {
 
   const handleOpenPlan = (plan) => {
     if (!plan?._id) return;
-    setActivePlanId(plan._id);
-    setActivePlan(plan);
-    setActivePlanError("");
-    setActiveTab("plans");
-    setActiveProjectId(null);
-    setActiveProject(null);
-    setActiveProjectError("");
-    setActiveProjectLoading(false);
+    setWorkspaceParams({ tab: "plans", plan: plan._id });
   };
 
+  // Same contract as Projects above.
   const handleBackToPlans = () => {
-    setActivePlanId(null);
-    setActivePlan(null);
-    setActivePlanError("");
-    setActivePlanLoading(false);
+    stepBackOrReplace("plans");
+  };
+
+  const closeDeletedPlan = () => {
+    setWorkspaceParams({ tab: "plans" }, { replace: true });
   };
 
   const handleToggleDeleteSection = (sectionKey) => {
@@ -512,13 +577,28 @@ const AdminClientWorkspace = () => {
     });
   };
 
+  // Sole owner of activeProject. Nothing else writes it: the id in the URL says WHICH
+  // project is open, and this effect supplies its data and clears it again. Both halves
+  // matter — closing a project by pressing Alt+Left runs no handler at all, so if the
+  // cache were only cleared by the Back handlers a closed project would stay in memory.
   useEffect(() => {
-    if (!activeProjectId) return;
+    if (!activeProjectId) {
+      setActiveProject(null);
+      setActiveProjectError("");
+      setActiveProjectLoading(false);
+      setSelectedProjectCheckpointId(null);
+      return;
+    }
 
     let isMounted = true;
 
     const loadProjectDetails = async () => {
       try {
+        // Cleared BEFORE the request, not after it returns: otherwise switching from one
+        // project to another renders the previous project's data under the new project's
+        // URL until the response lands.
+        setActiveProject(null);
+        setSelectedProjectCheckpointId(null);
         setActiveProjectLoading(true);
         setActiveProjectError("");
 
@@ -552,13 +632,21 @@ const AdminClientWorkspace = () => {
     };
   }, [activeProjectId, activeProjectRefreshKey]);
 
+  // Sole owner of activePlan — same contract as the project effect above.
   useEffect(() => {
-    if (!activePlanId) return;
+    if (!activePlanId) {
+      setActivePlan(null);
+      setActivePlanError("");
+      setActivePlanLoading(false);
+      return;
+    }
 
     let isMounted = true;
 
     const loadPlanDetails = async () => {
       try {
+        // Cleared before the request — see the project effect above.
+        setActivePlan(null);
         setActivePlanLoading(true);
         setActivePlanError("");
 
@@ -635,11 +723,13 @@ const AdminClientWorkspace = () => {
       }
 
       removeOrderFromWorkspace(orderId);
+      // Cleanup, not navigation — the order is gone, so this must not leave a forward
+      // history entry pointing at it.
       if (activeProjectId === orderId) {
-        handleBackToProjects();
+        closeDeletedProject();
       }
       if (activePlanId === orderId) {
-        handleBackToPlans();
+        closeDeletedPlan();
       }
       if (client?._id || customerId) {
         StorageService.clearUserOrders(client?._id || customerId);
@@ -985,15 +1075,22 @@ const AdminClientWorkspace = () => {
     }
   }, [deleteSelections]);
 
-  // In-place subpage, same pattern as Projects/Plans (activeProjectId/activePlanId) — no route
-  // navigation, so opening a payment group's history no longer leaves AdminClientWorkspace.
+  // Same URL-param pattern as Projects/Plans, with one difference: a payment group is openable
+  // from TWO tabs — Payments and Deleted Projects both pass this as onOpenGroup — so the tab
+  // must be carried through, never hardcoded to "payments", or opening a group from Deleted
+  // Projects would silently switch tabs. Group keys are `group-<invoiceId>`,
+  // `invoice-<id>-txn-<id>`, `transaction-<id>` or the literal "general"; all ASCII, but
+  // encoded anyway rather than trusting that to stay true.
+  const paymentGroupTab = () => (activeTab === "deleted-projects" ? "deleted-projects" : "payments");
+
   const handleOpenPaymentGroup = (group) => {
     if (!group?.key) return;
-    setActivePaymentGroupId(group.key);
+    setWorkspaceParams({ tab: paymentGroupTab(), group: group.key });
   };
 
+  // Navigation only — nothing deletes a payment group, so there is no cleanup twin here.
   const handleBackToPayments = () => {
-    setActivePaymentGroupId(null);
+    stepBackOrReplace(paymentGroupTab());
   };
 
   // --- Account & Access handlers ---
@@ -1324,13 +1421,13 @@ const AdminClientWorkspace = () => {
           plans: workspaceData.plans || [],
           summary: workspaceData.summary || null,
         });
-        setActiveProject(null);
-        setActiveProjectId(null);
-        setActiveProjectError("");
-        setSelectedProjectCheckpointId(null);
-        setActivePlan(null);
-        setActivePlanId(null);
-        setActivePlanError("");
+        // Deliberately does NOT touch activeProject/activePlan. This effect loads the
+        // CLIENT; the open subpage's data belongs to the fetch effects keyed on
+        // activeProjectId/activePlanId, and a value with two owners is how the open project
+        // used to blank out: a history navigation gave location.state a new object identity,
+        // this effect re-ran on it and cleared the cache, and the fetch effect did not
+        // reload because the id itself had not changed — so the subpage fell through to the
+        // list mid-flight.
       } catch (error) {
         console.error("Error loading admin client workspace:", error);
         setFetchError("Failed to load customer data");
@@ -1400,10 +1497,16 @@ const AdminClientWorkspace = () => {
     }
   };
 
+  // A URL with no ?tab= gets the default written in, with replace so the bare URL does not
+  // become a history entry of its own. Legacy callers that still pass location.state.activeTab
+  // (AdminPaymentRecordDetail) are migrated to the param here rather than being special-cased
+  // everywhere downstream.
   useEffect(() => {
-    if (activeTab === null && !dataLoading) setActiveTab(tabs[0].id);
+    if (activeTab === null && !dataLoading) {
+      setWorkspaceParams({ tab: location.state?.activeTab || tabs[0].id }, { replace: true });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dataLoading]);
+  }, [dataLoading, activeTab]);
 
   const cards = useMemo(() => {
     const activeOrders = projectOrders.filter(isActiveOrder);
@@ -1505,16 +1608,15 @@ const AdminClientWorkspace = () => {
     }
   };
 
-  // Switching tabs closes whatever project/plan subpage is open. This is the single
-  // owner of that rule (it replaced two after-the-fact effects); every tab change goes
-  // through here, so a subpage can never survive into a tab that does not render it.
+  // Switching tabs closes whatever subpage is open, because setWorkspaceParams writes the
+  // complete param set and this call omits project/plan/group — so a subpage cannot survive
+  // into a tab that does not render it. Replace, not push: switching tabs should not stack a
+  // history entry per tab, or Alt+Left out of a project would walk back through every tab
+  // visited on the way in.
   const handleTabChange = (tabId) => {
     if (tabId === activeTab) return;
 
-    if (activeProjectId) handleBackToProjects();
-    if (activePlanId) handleBackToPlans();
-    if (activePaymentGroupId) handleBackToPayments();
-    setActiveTab(tabId);
+    setWorkspaceParams({ tab: tabId }, { replace: true });
   };
 
   // Back is one step, never a history jump. Inside an open project/plan subpage the
@@ -3898,61 +4000,47 @@ const CompactWorkspaceCard = ({ title, subtitle, items, emptyText, onRowClick, o
 // it uses for row-to-row ArrowUp/ArrowDown navigation, so a plain (non-forwardRef) component
 // here would silently drop that ref and break the list's existing keyboard navigation.
 const CompactWorkspaceRow = React.forwardRef(
-  ({ item, index, onRowClick, onDelete, onCancel, deletingOrderId, cancellingOrderId, renderMeta, renderRight }, ref) => {
-    // Which action (if any) ArrowLeft/ArrowRight has currently moved to within this row.
-    // null means the row itself is the target, so Enter/Space opens it — matching every other
-    // row-based list in the app (e.g. AdminLeadsPage.js) where Enter opens by default.
-    const [selectedAction, setSelectedAction] = useState(null);
-    // eslint-disable-next-line no-console
-    console.log("DEBUG row render, index:", index, "selectedAction:", selectedAction);
-
-    const availableActions = [
-      onCancel && item.orderVisibility !== "cancelled" ? "cancel" : null,
-      onDelete ? "delete" : null,
-    ].filter(Boolean);
-
-    const runAction = (action) => {
-      if (action === "cancel") onCancel(item);
-      else if (action === "delete") onDelete(item);
-    };
-
+  ({ item, index, onRowClick, onDelete, onCancel, deletingOrderId, cancellingOrderId, renderMeta, renderRight, tabIndex = 0 }, ref) => {
     return (
       <div
         ref={ref}
         role="button"
-        tabIndex={0}
+        // Comes from the `tabIndex={0}` the caller puts on this component: AdminWorkspaceList
+        // reads `row.props.tabIndex` to decide whether a row is a navigation target, so the prop
+        // has to actually reach the element it claims to describe. Previously it was dropped
+        // here and the root div hardcoded its own 0 — the check passed on a prop that had no
+        // effect, which is exactly the kind of mismatch that makes focus land inconsistently.
+        tabIndex={tabIndex}
         onClick={() => onRowClick?.(item)}
-        onBlur={() => setSelectedAction(null)}
         onKeyDown={(event) => {
-          if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
-            if (availableActions.length === 0) return;
-            event.preventDefault();
-            const currentIndex = availableActions.indexOf(selectedAction);
-            if (event.key === "ArrowRight") {
-              const nextIndex = currentIndex === -1 ? 0 : currentIndex + 1;
-              setSelectedAction(nextIndex < availableActions.length ? availableActions[nextIndex] : null);
-            } else {
-              const prevIndex = currentIndex === -1 ? availableActions.length - 1 : currentIndex - 1;
-              setSelectedAction(prevIndex >= 0 ? availableActions[prevIndex] : null);
-            }
-            return;
-          }
-
+          // Only act on keys pressed on the row itself. A keydown on one of the row's own
+          // buttons (Cancel/Delete) bubbles up here too, and preventDefault() on it would
+          // cancel the browser's native click — so the button's action never ran and the row
+          // opened instead.
+          if (event.target !== event.currentTarget) return;
           if (event.key === "Enter" || event.key === " ") {
             event.preventDefault();
-            if (selectedAction) {
-              runAction(selectedAction);
-              setSelectedAction(null);
+            onRowClick?.(item);
+          } else if (event.key === "Delete") {
+            // One key, one action — whichever single action this row is actually offering.
+            // A row is never showing both buttons at once (see the action column below), so
+            // Delete always maps to the one that is visible: Cancel while the project is
+            // still running, the real delete once it has been cancelled. This is what lets
+            // the row keep a single keyboard target (the lead-list model) instead of needing
+            // ArrowLeft/Right to pick between two buttons inside the row.
+            if (item.orderVisibility !== "cancelled") {
+              if (!onCancel) return;
+              event.preventDefault();
+              onCancel(item);
             } else {
-              onRowClick?.(item);
+              if (!onDelete) return;
+              event.preventDefault();
+              onDelete(item);
             }
-          } else if (event.key === "Delete" && onDelete) {
-            event.preventDefault();
-            onDelete(item);
           }
         }}
         className={[
-          "grid w-full cursor-pointer grid-cols-12 gap-3 px-5 py-4 text-left transition outline-none hover:bg-slate-100 focus:bg-slate-100 sm:px-6",
+          "group grid w-full cursor-pointer grid-cols-12 gap-3 px-5 py-4 text-left transition outline-none hover:bg-slate-100 focus:bg-slate-100 sm:px-6",
           index % 2 === 0 ? "bg-white" : "bg-slate-50",
         ].join(" ")}
       >
@@ -3973,20 +4061,32 @@ const CompactWorkspaceRow = React.forwardRef(
         </div>
 
         <div className="col-span-6 flex flex-wrap items-center justify-end gap-2 lg:col-span-1">
-          {/* Cancel settles the money and closes the project; Delete only removes the
-              record afterwards. A project already cancelled has nothing left to cancel. */}
+          {/* Exactly one action is ever offered here, so the row has a single keyboard target.
+              Cancel settles the money and closes the project; Delete only removes the record
+              afterwards — so a running project can only be cancelled, and a cancelled one can
+              only be deleted. `orderVisibility` is the field cancelProjectOrder.js writes, so
+              "cancelled" here means genuinely cancelled — a payment-rejected order is not.
+
+              Both buttons follow the lead-list reveal pattern (AdminLeadsPage.js): hidden until
+              the row is hovered or focused, so "selected row" is what makes the action appear.
+              `disabled:opacity-100` keeps the in-flight spinner visible even if focus moves away.
+              The row is the only thing that is ever focused here — a button inside it is a mouse
+              target, never a keyboard stop. `tabIndex={-1}` keeps them out of
+              getInteractiveElements()'s sequence (so the tab's content handler and
+              AdminWorkspaceList's row handler walk the same list of stops), and preventDefault on
+              mousedown stops the browser's native focus-on-click, which would otherwise move
+              focus off the row and leave arrow-navigation with nowhere to resume from. */}
           {onCancel && item.orderVisibility !== "cancelled" ? (
             <button
               type="button"
+              tabIndex={-1}
+              onMouseDown={(event) => event.preventDefault()}
               onClick={(event) => {
                 event.stopPropagation();
                 onCancel(item);
               }}
               disabled={cancellingOrderId === item._id}
-              className={[
-                "inline-flex items-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-70",
-                selectedAction === "cancel" ? "ring-2 ring-amber-400" : "",
-              ].join(" ")}
+              className="inline-flex items-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700 opacity-0 transition hover:bg-amber-100 focus:opacity-100 group-hover:opacity-100 group-focus:opacity-100 disabled:cursor-not-allowed disabled:opacity-100"
             >
               {cancellingOrderId === item._id ? (
                 <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-amber-600 border-t-transparent" />
@@ -3996,18 +4096,17 @@ const CompactWorkspaceRow = React.forwardRef(
               Cancel
             </button>
           ) : null}
-          {onDelete ? (
+          {onDelete && item.orderVisibility === "cancelled" ? (
             <button
               type="button"
+              tabIndex={-1}
+              onMouseDown={(event) => event.preventDefault()}
               onClick={(event) => {
                 event.stopPropagation();
                 onDelete(item);
               }}
               disabled={deletingOrderId === item._id}
-              className={[
-                "inline-flex items-center gap-2 rounded-2xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-70",
-                selectedAction === "delete" ? "ring-2 ring-rose-400" : "",
-              ].join(" ")}
+              className="inline-flex items-center gap-2 rounded-2xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 opacity-0 transition hover:bg-rose-100 focus:opacity-100 group-hover:opacity-100 group-focus:opacity-100 disabled:cursor-not-allowed disabled:opacity-100"
             >
               {deletingOrderId === item._id ? (
                 <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-rose-600 border-t-transparent" />
