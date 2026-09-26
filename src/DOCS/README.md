@@ -1,22 +1,32 @@
 # Documentation Index
 
-This folder holds one file: **`CODEBASE_MAP.md`** — the current-state reference for this codebase.
+Two files:
 
-Start there. It tells you, for every major system (auth, leads, projects, service plans, payments/invoices, trash, documents, chess, UI design system), the current rule and the exact file/function where the code lives — no history, no session logs, no rejected attempts.
+- **`CODEBASE_MAP.md`** — what the code does **today**: the current rule for every major system (auth, leads, projects, service plans, payments/invoices, trash, documents, chess, UI design system) and where it lives. No history, no session logs, no rejected attempts. Start here.
+- **`plan-system.md`** — what we are **building** in the plan allowance / top-up rebuild, and why. Design only, nothing written yet.
 
-## Why only one file
+**Never duplicate between them.** Current behaviour, audits and bugs → the map. Target design, decisions and open questions → `plan-system.md`, which links to the map instead of restating it.
 
-This folder previously held 63 session-log documents written over many development sessions, each describing one feature build or fix. They were consolidated into `CODEBASE_MAP.md` on 2026-08-25 because:
+## How to update these docs
 
-- Reading 63 files to find "where is the code for X" was a heavy, error-prone burden for both humans and AI sessions.
-- Many of the older documents had been silently superseded by later ones, or by direct code changes never written back to any doc.
-- A single, code-verified, current-state file is faster to scan and harder to get wrong.
+**What to keep.** A line earns its place only if the next agent would **go wrong without it** — the *why*, and what was already tried and failed. Every update tightens or deletes what it supersedes; never append. Drop line numbers and anything a grep answers in seconds.
 
-A full backup of all 63 original files is kept at `frontend/src/DOCS_backup_before_consolidation_work1/` if historical context is ever needed (e.g. "why was this decision made," "what did we try before this").
+**When to write it.** These are not the same moment:
+
+- **The instant the owner says it** — what they want, why, their decisions, and any correction they make to how you work. This exists nowhere but the conversation; if the session ends it is gone for good. Do not save it for the end of the task.
+- **After the work** — what the code now does, and what was tried and failed. Written earlier it is a guess.
+
+**The failure mode that keeps happening: a full claim on partial evidence.** Every doc error found so far is this one — one file checked and reported as the whole problem when thirty were affected; a figure copied from a doc instead of queried from the database; a cross-reference written from memory to a section that did not exist. So: check the whole surface before describing it, query live data rather than quoting a doc's numbers, and open a section before citing it. If you only checked part, say which part — partial and labelled is useful, partial and stated as whole sends the next agent away believing the job is done.
 
 ## Working rule for this project
 
-- No code or file changes without explicit permission — always propose and get approval first.
+- No code or file changes without explicit permission — propose first, get approval.
+- **Read-only investigation needs no permission** — reading code, grepping, and running read-only DB queries to check live data. Verify against the database rather than trusting a doc's figures. Any **write** still needs approval.
+- Warning: `backend/.env` points at the **production** Atlas cluster (verified 2026-09-23) — there is no separate dev database, so every query runs against real customer data and any write is a live write. Keep throwaway scripts out of the repo.
 - No `npm run build` unless explicitly requested.
-- Evidence-based only: verify against the actual code before stating something as current.
-- When you update a system covered in `CODEBASE_MAP.md`, update the relevant section of that file too — keep it current, don't let it drift back into needing another audit.
+- Fix the whole system, not a narrow slice; no patch work.
+- When you change a system the map covers, update that section in the same pass.
+
+## History
+
+63 session-log documents were consolidated into `CODEBASE_MAP.md` on 2026-08-25: reading 63 files to find one answer was error-prone, and many had been silently superseded by later docs or by code changes never written back. The originals are backed up at `frontend/src/DOCS_backup_before_consolidation_work1/` — history only, never current truth.

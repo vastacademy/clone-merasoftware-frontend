@@ -112,20 +112,66 @@ The rules that produce this:
     Shift+Enter for new line" · dropdown → "Press ↓ or Enter to open · ↑↓ to move · Enter to
     select" · file → "Space to browse files · Enter to continue" · submit → no hint.
 
-    **The hint must never occupy layout height.** It shows and hides with `opacity`, from a
-    zero-height (`h-0`) sibling that positions the pill `absolute` inside itself, and it is
-    `pointer-events-none`.
+    **The hint must never occupy layout height** — see "The hint vs. the mouse" below before
+    touching `KeyboardHint.js`.
 
-    *Before:* the component toggled `hidden` → `peer-focus:flex`, i.e. `display: none` →
-    `display: flex`. *Why that broke:* pressing the mouse on a button below a focused field
-    blurred the field, the pill left the layout, everything under it jumped up, and `mouseup`
-    landed off the button — the browser then emitted **no click at all**, so the first click on
-    Save/Cancel did nothing and every action needed two clicks. Fixed in
-    `components/KeyboardHint.js` (the only file involved; all 11 usages across
-    `AdminLeadDetailPage.js` and `AdminLeadsPage.js` pick it up).
+### The hint vs. the mouse (fixed 22-09-2026 — do not undo)
 
-    Keep the pill's wrapper a **sibling** of the field, never nested: `peer-focus:` compiles to
-    `.peer:focus ~ .peer-focus\:*`, so nesting it silently stops the hint from ever appearing.
+This keyboard system is built for the keyboard, but the **mouse** has to keep working too. The
+`KeyboardHint` pill silently broke it on every form that uses a hint, and the failure reads as a
+click bug, not a CSS bug — so it will be misdiagnosed again unless you read this first.
+
+**The symptom users report:** "the first click does nothing — I have to click twice." Clicking
+Save, Cancel, or a dropdown right after typing in a field appears to only "leave the previous
+state"; the second click then works. It looks like a React state or focus problem. It is neither.
+
+**What actually happened (before):**
+
+`KeyboardHint` rendered as `hidden` and became visible via `peer-focus:flex` — i.e. it toggled
+`display: none` → `display: flex`. `display` changes participation in layout, so the pill's
+~28px **appeared and disappeared**, moving everything below it.
+
+A mouse click is not one event. The browser fires `mousedown`, then `mouseup`, and only emits a
+`click` if **both landed on the same element**. With a focused field above the button:
+
+```
+  1. user is typing        → field focused  → hint VISIBLE  → Save sits at y = 500
+  2. user presses mouse on Save at y = 500  → mousedown fires, field BLURS
+  3. blur hides the hint   → display:none   → everything below jumps UP ~28px
+                                             → Save is now at y = 472
+  4. user releases at y = 500               → mouseup lands on empty space
+  5. mousedown ≠ mouseup element            → NO click event is emitted
+  6. second click: hint already hidden, layout stable → click works
+```
+
+That is the whole bug: the button moved out from under the cursor between press and release.
+
+**The fix (current):** the hint takes **no layout height at all**. It stays a peer sibling of the
+field but is `h-0`; the pill is `absolute` inside it and toggles with `opacity`, never `display`.
+It is also `pointer-events-none` so it can never swallow a click by sitting on top of one.
+All 9 usages (5 in `AdminLeadDetailPage.js`, 4 in `AdminLeadsPage.js`) are fixed by that one
+component file — do not patch this per page.
+
+**Two traps if you edit `KeyboardHint.js`:**
+
+1. **Keep it a sibling of the field, never nested.** `peer-focus:` compiles to
+   `.peer:focus ~ .peer-focus\:*` — a sibling combinator. Wrapping the pill in an extra element
+   that carries the `peer-focus:` class silently stops the hint from ever appearing, with no
+   error. (This was tried during the fix and caught by compiling the CSS.)
+2. **Never reintroduce `display` toggling** (`hidden`, `block`, `flex`, `h-*`, margins that only
+   apply when visible, or a wrapper that grows on focus). Anything that changes height on focus
+   brings the two-click bug straight back. Visibility must cost zero pixels.
+
+**Verifying a change here:** this project declares Tailwind v4 but actually compiles with
+react-scripts' nested **v3.4.17** — confirm any variant you rely on by compiling it, not by
+assuming (see `project_tailwind_version_trap`). jsdom cannot test this: it implements neither
+`:focus-visible` nor layout, so the real check is a browser — type in a field, then click a
+button below it **once**.
+
+**Not the cause, so don't "fix" it again:** `focus:animate-pulse` on submit buttons makes the
+button flash when clicked by mouse (because `:focus` matches mouse focus too). That is a cosmetic
+issue and was *not* what swallowed clicks; changing it to `focus-visible:` was tried, did not fix
+the two-click bug, and was reverted. Keep the pulse classes as rule 8 describes them.
 
 ### Build checklist
 
@@ -353,6 +399,11 @@ keeps "which screen am I on" in the URL instead of in `useState`:
 
 ESLint clean on changed files. No `npm run build` unless asked. No automated tests — Tab, Enter,
 Esc and arrows in-browser before calling anything done.
+
+**Also test with the mouse, not only the keyboard.** Type in a field, then click a button below
+it **once** — if it takes two clicks, something is changing layout height on focus/blur. That
+class of bug is invisible to keyboard-only testing, which is how it reached production (see
+"The hint vs. the mouse").
 
 **For list-row work:** test Projects **and** Plans (they share a component but differ in whether
 a `headerAction` exists, which shifts every index in the flat sequence), and re-test the other
